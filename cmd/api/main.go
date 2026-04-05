@@ -22,6 +22,9 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/logger"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
+	specialistapp "github.com/sasrgita/crm-juridico/internal/specialist/application"
+	specialistinfra "github.com/sasrgita/crm-juridico/internal/specialist/infrastructure"
+	specialisthttp "github.com/sasrgita/crm-juridico/internal/specialist/interfaces/http"
 	tenantapp "github.com/sasrgita/crm-juridico/internal/tenant/application"
 	tenantinfra "github.com/sasrgita/crm-juridico/internal/tenant/infrastructure"
 	tenanthttp "github.com/sasrgita/crm-juridico/internal/tenant/interfaces/http"
@@ -96,12 +99,34 @@ func main() {
 		getBlockHistoryUC,
 	)
 
+	// Specialist CRUD (admin)
+	specialistRepo := specialistinfra.NewGormSpecialistRepository(db)
+	specialistTenantRepo := specialistinfra.NewGormSpecialistTenantRepository(db)
+
+	createSpecialistUC := specialistapp.NewCreateSpecialistUseCase(specialistRepo)
+	listSpecialistsUC := specialistapp.NewListSpecialistsUseCase(specialistRepo, specialistTenantRepo)
+	getSpecialistUC := specialistapp.NewGetSpecialistUseCase(specialistRepo)
+	updateSpecialistUC := specialistapp.NewUpdateSpecialistUseCase(specialistRepo)
+	deactivateSpecialistUC := specialistapp.NewDeactivateSpecialistUseCase(specialistRepo)
+	activateSpecialistUC := specialistapp.NewActivateSpecialistUseCase(specialistRepo)
+	associateTenantUC := specialistapp.NewAssociateTenantUseCase(specialistRepo, tenantRepo, specialistTenantRepo)
+	dissociateTenantUC := specialistapp.NewDissociateTenantUseCase(specialistRepo, specialistTenantRepo)
+	listSpecialistTenantsUC := specialistapp.NewListSpecialistTenantsUseCase(specialistRepo, specialistTenantRepo, tenantRepo)
+	listAvailableTenantsUC := specialistapp.NewListAvailableTenantsUseCase(specialistTenantRepo, tenantRepo)
+
+	specialistHandler := specialisthttp.NewHandler(
+		createSpecialistUC, listSpecialistsUC, getSpecialistUC,
+		updateSpecialistUC, deactivateSpecialistUC, activateSpecialistUC,
+		associateTenantUC, dissociateTenantUC,
+		listSpecialistTenantsUC, listAvailableTenantsUC,
+	)
+
 	// Middlewares
 	authMw := middleware.Auth(tokenProvider)
 	tenantMw := middleware.RequireTenant()
 	adminMw := middleware.RequireAdmin()
 
-	router := setupRouter(log, authHandler, tenantHandler, loginUC, authMw, tenantMw, adminMw, cfg.Server.SecureCookie)
+	router := setupRouter(log, authHandler, tenantHandler, specialistHandler, loginUC, authMw, tenantMw, adminMw, cfg.Server.SecureCookie)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -141,7 +166,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, tenantHandler *tenanthttp.Handler, loginUC *authapp.LoginUseCase, authMw, tenantMw, adminMw gin.HandlerFunc, secureCookie bool) *gin.Engine {
+func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, tenantHandler *tenanthttp.Handler, specialistHandler *specialisthttp.Handler, loginUC *authapp.LoginUseCase, authMw, tenantMw, adminMw gin.HandlerFunc, secureCookie bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -232,6 +257,7 @@ func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, tenantHandler *
 	})
 
 	tenantHandler.RegisterRoutes(router, authMw, adminMw)
+	specialistHandler.RegisterRoutes(router, authMw, adminMw)
 
 	return router
 }

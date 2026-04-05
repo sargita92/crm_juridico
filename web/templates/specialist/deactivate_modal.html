@@ -1,0 +1,16 @@
+{{define "specialist/deactivate_modal.html"}}
+<div id="deactivate-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('deactivate-modal')">
+    <div class="modal-card">
+        <h2>Desativar Especialista</h2>
+        <p>Tem certeza que deseja desativar este especialista?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deactivate-modal')">Cancelar</button>
+            <button class="btn btn-danger">
+                <span class="btn-text">Desativar</span>
+                <span class="btn-loading-text">Desativando...</span>
+                <span class="spinner"></span>
+            </button>
+        </div>
+    </div>
+</div>
+{{end}}

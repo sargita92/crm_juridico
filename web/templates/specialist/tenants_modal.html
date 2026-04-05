@@ -1,0 +1,28 @@
+{{define "specialist/tenants_modal.html"}}
+{{if .AvailableTenants}}
+<table class="data-table" style="margin:1rem 0">
+    <thead>
+        <tr>
+            <th style="width:40px"></th>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Documento</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .AvailableTenants}}
+        <tr>
+            <td><input type="checkbox" name="tenant_ids[]" value="{{.TenantID}}"></td>
+            <td>{{.Name}}</td>
+            <td><span class="badge badge-{{if eq .Type "PJ"}}pj{{else}}pf{{end}}">{{.Type}}</span></td>
+            <td>{{.Document}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<div class="empty-state" style="padding:2rem 1rem">
+    <p class="text-muted">Nenhum tenant disponivel</p>
+</div>
+{{end}}
+{{end}}

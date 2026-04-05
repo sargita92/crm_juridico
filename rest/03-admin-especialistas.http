@@ -1,53 +1,117 @@
-### Criar especialista
-POST {{base_url}}/api/admin/specialists
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### --- Variaveis ---
+### Assumir que voce tem um token admin valido
+### e pelo menos um tenant criado
 
-{
-  "nome": "Especialista Trabalhista",
-  "descricao": "Atende leads de direito trabalhista",
-  "prompt": "Você é um assistente especializado em direito trabalhista. Seja cordial e objetivo."
-}
+@base_url = http://localhost:8080
+@token = SEU_TOKEN_ADMIN_AQUI
+@specialist_id = SEU_SPECIALIST_ID_AQUI
+@tenant_id = SEU_TENANT_ID_AQUI
 
-> {%
-    client.global.set("specialist_id", response.body.id);
-%}
+### =============================================
+### CRUD de Especialistas (Admin)
+### =============================================
 
-### Listar especialistas
-GET {{base_url}}/api/admin/specialists?page=1&per_page=20
-Authorization: Bearer {{token}}
+### Listar especialistas (HTML)
+GET {{base_url}}/admin/specialists
+Cookie: token={{token}}
 
-### Buscar especialista por ID
-GET {{base_url}}/api/admin/specialists/{{specialist_id}}
-Authorization: Bearer {{token}}
+### Listar especialistas — filtro por status
+GET {{base_url}}/admin/specialists?status=active
+Cookie: token={{token}}
 
-### Editar especialista
-PUT {{base_url}}/api/admin/specialists/{{specialist_id}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Listar especialistas — busca por nome
+GET {{base_url}}/admin/specialists?search=Juridico
+Cookie: token={{token}}
 
-{
-  "nome": "Especialista Trabalhista v2",
-  "prompt": "Você é um assistente especializado em direito trabalhista. Seja cordial, objetivo e peça os documentos necessários."
-}
+### Listar especialistas — HTMX (retorna fragmento tabela)
+GET {{base_url}}/admin/specialists?search=Juridico
+Cookie: token={{token}}
+HX-Request: true
 
-### Associar especialista a tenant
-POST {{base_url}}/api/admin/specialists/{{specialist_id}}/tenants
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Formulario de criacao (HTML)
+GET {{base_url}}/admin/specialists/new
+Cookie: token={{token}}
 
-{
-  "tenant_id": "{{tenant_id}}"
-}
+### Criar especialista (form POST)
+POST {{base_url}}/admin/specialists
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
 
-### Listar tenants de um especialista
-GET {{base_url}}/api/admin/specialists/{{specialist_id}}/tenants
-Authorization: Bearer {{token}}
+name=Assistente Juridico&description=Atende leads de direito civil&prompt=Voce e um assistente juridico especializado. Seja cordial e objetivo.
 
-### Desassociar especialista de tenant
-DELETE {{base_url}}/api/admin/specialists/{{specialist_id}}/tenants/{{tenant_id}}
-Authorization: Bearer {{token}}
+### Detalhe do especialista (HTML)
+GET {{base_url}}/admin/specialists/{{specialist_id}}
+Cookie: token={{token}}
 
-### Excluir especialista
-DELETE {{base_url}}/api/admin/specialists/{{specialist_id}}
-Authorization: Bearer {{token}}
+### Formulario de edicao (HTML)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/edit
+Cookie: token={{token}}
+
+### Editar especialista (form PUT)
+PUT {{base_url}}/admin/specialists/{{specialist_id}}
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=Assistente Juridico v2&description=Atende leads de direito civil e trabalhista&prompt=Voce e um assistente juridico. Peca os documentos necessarios.
+
+### Desativar especialista
+POST {{base_url}}/admin/specialists/{{specialist_id}}/deactivate
+Cookie: token={{token}}
+
+### Reativar especialista
+POST {{base_url}}/admin/specialists/{{specialist_id}}/activate
+Cookie: token={{token}}
+
+### =============================================
+### Associacao com Tenants
+### =============================================
+
+### Listar tenants associados
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants
+Cookie: token={{token}}
+
+### Listar tenants disponiveis para associacao
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants/available
+Cookie: token={{token}}
+
+### Listar tenants disponiveis — com busca
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants/available?search=Escritorio
+Cookie: token={{token}}
+
+### Associar tenant(s) ao especialista
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tenants
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tenant_ids[]={{tenant_id}}
+
+### Desassociar tenant do especialista
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/tenants/{{tenant_id}}
+Cookie: token={{token}}
+
+### =============================================
+### Testes OWASP
+### =============================================
+
+### A01 — Sem token (deve retornar 401)
+GET {{base_url}}/admin/specialists
+
+### A01 — Token de usuario comum (deve retornar 403)
+# Substituir pelo token de um usuario com role "user"
+GET {{base_url}}/admin/specialists
+Cookie: token=TOKEN_USER_AQUI
+
+### A03 — SQL Injection na busca
+GET {{base_url}}/admin/specialists?search='+OR+1=1+--
+Cookie: token={{token}}
+
+### A03 — XSS no nome
+POST {{base_url}}/admin/specialists
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=<script>alert('xss')</script>&prompt=prompt valido
+
+### A07 — Token invalido (deve retornar 401)
+GET {{base_url}}/admin/specialists
+Cookie: token=invalid.token.here
