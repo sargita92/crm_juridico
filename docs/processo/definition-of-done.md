@@ -1,13 +1,24 @@
 # Definition of Done, Checklist e Fluxo Git
 
-## Definition of Done (obrigatória)
+## Definition of Done — por step (obrigatória)
 
-Só considerar uma entrega concluída quando, **simultaneamente**:
+Cada step da feature deve ser validado **individualmente** antes de avançar:
 
-1. todos os testes necessários estiverem passando
-2. a cobertura de testes estiver em pelo menos 80%
+1. testes do step passando
+2. **todos** os testes anteriores continuam passando (sem regressão)
 3. a aplicação compilar sem erro
-4. os containers obrigatórios estiverem de pé e sem erros de runtime
+4. commit atômico do step realizado
+5. sistema em estado funcional (o step não quebra o que já existe)
+
+## Definition of Done — por feature (obrigatória)
+
+Só considerar a feature concluída quando, **simultaneamente**:
+
+1. todos os steps implementados e validados
+2. todos os testes passando (unitários, integração, OWASP)
+3. a cobertura de testes estiver em pelo menos 80%
+4. a aplicação compilar sem erro
+5. os containers obrigatórios estiverem de pé e sem erros de runtime
 
 Se qualquer item falhar, retornar ao ciclo de correção.
 
@@ -91,5 +102,8 @@ A pasta `rest/` contém arquivos `.http` (formato JetBrains HTTP Client) para te
 | Documento | Função |
 |-----------|--------|
 | `docs/processo/backlog.md` | tudo que ainda precisa ser feito |
-| `docs/processo/feature-em-andamento.md` | escopo da feature atual (limpar ao concluir) |
+| `docs/artefatos/FXX-*/status.md` | progresso da feature atual |
+| `docs/artefatos/FXX-*/po-stories/` | stories versionadas (PO) |
+| `docs/artefatos/FXX-*/uiux-wireframes/` | wireframes versionados (UI/UX) |
+| `docs/artefatos/FXX-*/arquiteto-design/` | design técnico versionado (Arquiteto) |
 | `docs/processo/changelog.md` | registro histórico de entregas |

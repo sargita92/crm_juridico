@@ -25,7 +25,8 @@ Transformar tasks do backlog em stories menores, claras e testáveis.
   - objetivo de negócio
   - escopo (o que entra e o que não entra)
   - critérios de aceite testáveis
-- atualização de `docs/processo/feature-em-andamento.md`
+- artefato salvo em `docs/artefatos/FXX-nome/po-stories/vN.md` (com frontmatter padrão)
+- atualização de `docs/artefatos/FXX-nome/status.md`
 
 ## Regras
 
@@ -53,5 +54,6 @@ Regras:
 - Stories pequenas e independentes
 - Linguagem de negócio (sem termos técnicos)
 - Cada critério de aceite deve ser verificável pelo QA
-- Registre o resultado em docs/processo/feature-em-andamento.md
+- Registre o resultado em docs/artefatos/FXX-nome/po-stories/vN.md (com frontmatter: feature, agent, version, created_at, reason)
+- Atualize docs/artefatos/FXX-nome/status.md
 ```

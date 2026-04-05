@@ -2,6 +2,7 @@ package database_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -9,6 +10,28 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
 	"github.com/sasrgita/crm-juridico/internal/shared/testhelper"
 )
+
+var sharedContainer *testhelper.MySQLContainer
+
+func TestMain(m *testing.M) {
+	short := false
+	for _, arg := range os.Args {
+		if arg == "-test.short" || arg == "-short" {
+			short = true
+			break
+		}
+	}
+
+	if !short {
+		ctx := context.Background()
+		sharedContainer = testhelper.NewMySQLContainerForMain(ctx)
+		code := m.Run()
+		_ = sharedContainer.Container.Terminate(ctx)
+		os.Exit(code)
+	}
+
+	os.Exit(m.Run())
+}
 
 func migrationsSource() string {
 	_, filename, _, _ := runtime.Caller(0)
@@ -21,11 +44,7 @@ func TestDatabaseConnection(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
-	container := testhelper.NewMySQLContainer(ctx, t)
-	defer container.Teardown(ctx, t)
-
-	db := container.DB(t)
+	db := sharedContainer.DB(t)
 
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -42,12 +61,8 @@ func TestRunMigrations(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
-	container := testhelper.NewMySQLContainer(ctx, t)
-	defer container.Teardown(ctx, t)
-
-	db := container.DB(t)
-	log := container.Logger()
+	db := sharedContainer.DB(t)
+	log := sharedContainer.Logger()
 
 	if err := database.RunMigrations(db, log, migrationsSource()); err != nil {
 		t.Fatalf("failed to run migrations: %v", err)
@@ -69,12 +84,8 @@ func TestRunMigrations_Idempotent(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
-	container := testhelper.NewMySQLContainer(ctx, t)
-	defer container.Teardown(ctx, t)
-
-	db := container.DB(t)
-	log := container.Logger()
+	db := sharedContainer.DB(t)
+	log := sharedContainer.Logger()
 
 	if err := database.RunMigrations(db, log, migrationsSource()); err != nil {
 		t.Fatalf("first migration run failed: %v", err)

@@ -1,0 +1,145 @@
+{{define "tenant/detail.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Tenant}}{{.Tenant.Name}}{{else}}Tenant{{end}} — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "tenants")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <div class="breadcrumb">
+                    <a href="/admin/tenants">Tenants</a>
+                    <span>/</span>
+                    {{if .Tenant}}{{.Tenant.Name}}{{else}}—{{end}}
+                </div>
+                <h1>{{if .Tenant}}{{.Tenant.Name}}{{else}}Tenant{{end}}</h1>
+            </div>
+            <a href="/admin/tenants" class="btn btn-outline">Voltar</a>
+        </div>
+        <div class="detail-page">
+            {{if .Error}}
+            <div class="alert alert-danger">{{.Error}}</div>
+            {{end}}
+            {{if .Success}}
+            <div class="alert alert-success">{{.Success}}</div>
+            {{end}}
+            {{if .Tenant}}
+            <div id="tenant-detail" class="detail-card">
+                <h2>
+                    {{.Tenant.Name}}
+                    <span class="badge {{if eq .Tenant.Status "active"}}badge-active{{else if eq .Tenant.Status "blocked"}}badge-blocked{{else}}badge-inactive{{end}}">
+                        {{if eq .Tenant.Status "active"}}Ativo{{else if eq .Tenant.Status "blocked"}}Bloqueado{{else}}Inativo{{end}}
+                    </span>
+                    <span class="badge {{if eq .Tenant.Type "PJ"}}badge-pj{{else}}badge-pf{{end}}">{{.Tenant.Type}}</span>
+                </h2>
+                {{if and (eq .Tenant.Status "blocked") .Tenant.BlockReason}}
+                <div class="alert alert-danger">
+                    <strong>Motivo do bloqueio:</strong> {{.Tenant.BlockReason}}
+                </div>
+                {{end}}
+                <div class="detail-grid">
+                    <span class="detail-label">Nome</span>
+                    <span class="detail-value">{{.Tenant.Name}}</span>
+                    <span class="detail-label">Tipo</span>
+                    <span class="detail-value">{{.Tenant.Type}}</span>
+                    <span class="detail-label">Documento</span>
+                    <span class="detail-value">{{.Tenant.Document}}</span>
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value">
+                        {{if eq .Tenant.Status "active"}}Ativo{{else if eq .Tenant.Status "blocked"}}Bloqueado{{else}}Inativo{{end}}
+                    </span>
+                    <span class="detail-label">Criado em</span>
+                    <span class="detail-value">{{.Tenant.CreatedAt.Format "02/01/2006 15:04"}}</span>
+                    <span class="detail-label">Atualizado em</span>
+                    <span class="detail-value">{{.Tenant.UpdatedAt.Format "02/01/2006 15:04"}}</span>
+                </div>
+                <div class="detail-actions">
+                    <a href="/admin/tenants/{{.Tenant.ID}}/edit" class="btn btn-primary">Editar</a>
+                    {{if eq .Tenant.Status "active"}}
+                    <button class="btn btn-danger" onclick="openModal('block-modal')">Bloquear</button>
+                    {{end}}
+                    {{if eq .Tenant.Status "blocked"}}
+                    <button class="btn btn-success" onclick="openModal('unblock-modal')">Desbloquear</button>
+                    {{end}}
+                    {{if ne .Tenant.Status "inactive"}}
+                    <button class="btn btn-secondary" onclick="openModal('deactivate-modal')">Desativar</button>
+                    {{end}}
+                </div>
+            </div>
+
+            <!-- Modal: Bloquear -->
+            <div id="block-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('block-modal')">
+                <div class="modal-card">
+                    <h2>Bloquear Tenant</h2>
+                    <p>Ao bloquear, o tenant <strong>{{.Tenant.Name}}</strong> perdera acesso ao sistema.</p>
+                    <form hx-post="/admin/tenants/{{.Tenant.ID}}/block" hx-target="#tenant-detail" hx-swap="outerHTML">
+                        <div class="form-group">
+                            <label for="block-reason">Motivo</label>
+                            <textarea id="block-reason" name="reason" placeholder="Informe o motivo do bloqueio..." required minlength="10"></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('block-modal')">Cancelar</button>
+                            <button type="submit" class="btn btn-danger">
+                                <span class="btn-text">Bloquear</span>
+                                <span class="btn-loading-text">Bloqueando...</span>
+                                <span class="spinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal: Desbloquear -->
+            <div id="unblock-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('unblock-modal')">
+                <div class="modal-card">
+                    <h2>Desbloquear Tenant</h2>
+                    <p>O tenant <strong>{{.Tenant.Name}}</strong> voltara a ter acesso ao sistema.</p>
+                    <form hx-post="/admin/tenants/{{.Tenant.ID}}/unblock" hx-target="#tenant-detail" hx-swap="outerHTML">
+                        <div class="form-group">
+                            <label for="unblock-reason">Motivo</label>
+                            <textarea id="unblock-reason" name="reason" placeholder="Informe o motivo do desbloqueio..." required minlength="10"></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('unblock-modal')">Cancelar</button>
+                            <button type="submit" class="btn btn-success">
+                                <span class="btn-text">Desbloquear</span>
+                                <span class="btn-loading-text">Desbloqueando...</span>
+                                <span class="spinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal: Desativar -->
+            <div id="deactivate-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('deactivate-modal')">
+                <div class="modal-card">
+                    <h2>Desativar Tenant</h2>
+                    <p>Tem certeza que deseja desativar o tenant <strong>{{.Tenant.Name}}</strong>? Essa acao pode ser revertida apenas por um administrador.</p>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('deactivate-modal')">Cancelar</button>
+                        <button class="btn btn-danger"
+                                hx-delete="/admin/tenants/{{.Tenant.ID}}"
+                                hx-confirm="">
+                            <span class="btn-text">Desativar</span>
+                            <span class="btn-loading-text">Desativando...</span>
+                            <span class="spinner"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

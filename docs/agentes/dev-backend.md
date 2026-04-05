@@ -31,6 +31,8 @@ Implementar a lógica de negócio, casos de uso, persistência e endpoints HTTP 
 
 ## Regras
 
+- **implementação step-by-step**: seguir os steps definidos pelo Arquiteto, um por vez
+- **nunca implementar a feature inteira de uma vez** — completar e validar cada step antes de avançar
 - TDD obrigatório: escrever teste → implementar → refatorar
 - regras de negócio no domínio (nunca no handler ou repositório)
 - handlers HTTP finos (receber request, chamar caso de uso, retornar response)
@@ -39,7 +41,7 @@ Implementar a lógica de negócio, casos de uso, persistência e endpoints HTTP 
 - injeção de dependências por construtor
 - `context.Context` propagado
 - cobertura >= 80%
-- não alterar código fora do escopo da feature sem alinhar com Arquiteto
+- não alterar código fora do escopo do step atual sem alinhar com Arquiteto
 
 ## Prompt
 
@@ -56,15 +58,18 @@ Design técnico e cenários de teste: docs/processo/feature-em-andamento.md
 
 Fluxo de trabalho:
 1. Criar branch: feature/FXX-nome
-2. Para cada caso de uso:
-   a. Escrever teste que falha
+2. Consultar os steps definidos pelo Arquiteto em docs/artefatos/FXX-nome/arquiteto-design/vN.md
+3. Para cada step (um por vez, em ordem):
+   a. Escrever testes que falham (TDD)
    b. Implementar o mínimo para passar
    c. Refatorar mantendo cobertura
-3. Implementar migration
-4. Implementar repositório
-5. Implementar handler HTTP
-6. Verificar cobertura >= 80%
-7. Abrir PR
+   d. Verificar que TODOS os testes passam (não só os do step atual)
+   e. Fazer commit atômico do step
+   f. Só então avançar para o próximo step
+4. Após todos os steps: verificar cobertura >= 80%
+5. Abrir PR
+
+IMPORTANTE: Nunca implementar a feature inteira de uma vez. Cada step é uma entrega incremental validada.
 
 Regras:
 - Domínio isolado (sem Gin, Gorm no domínio)

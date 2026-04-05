@@ -1,0 +1,100 @@
+{{define "tenant/form.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .IsEdit}}Editar{{else}}Novo{{end}} Tenant — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "tenants")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <div class="breadcrumb">
+                    <a href="/admin/tenants">Tenants</a>
+                    <span>/</span>
+                    {{if .IsEdit}}
+                    <a href="/admin/tenants/{{.Tenant.ID}}">{{.Tenant.Name}}</a>
+                    <span>/</span>
+                    Editar
+                    {{else}}
+                    Novo Tenant
+                    {{end}}
+                </div>
+                <h1>{{if .IsEdit}}Editar Tenant{{else}}Novo Tenant{{end}}</h1>
+            </div>
+        </div>
+        <div class="form-page">
+            <div id="form-container" class="form-card">
+                {{if .Error}}
+                <div class="alert alert-danger">{{.Error}}</div>
+                {{end}}
+                <form {{if .IsEdit}}
+                          hx-put="/admin/tenants/{{.Tenant.ID}}"
+                      {{else}}
+                          hx-post="/admin/tenants"
+                      {{end}}
+                      hx-target="#form-container"
+                      hx-swap="outerHTML"
+                      hx-disabled-elt="button[type='submit']">
+                    <div class="form-group">
+                        <label for="name">Nome</label>
+                        <input type="text" id="name" name="name"
+                               placeholder="Nome do tenant"
+                               value="{{if .Tenant}}{{.Tenant.Name}}{{end}}"
+                               required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="type">Tipo</label>
+                        <select id="type" name="type" required onchange="updateDocPlaceholder()">
+                            <option value="">Selecione...</option>
+                            <option value="PF" {{if and .Tenant (eq .Tenant.Type "PF")}}selected{{end}}>Pessoa Fisica (PF)</option>
+                            <option value="PJ" {{if and .Tenant (eq .Tenant.Type "PJ")}}selected{{end}}>Pessoa Juridica (PJ)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="document">Documento</label>
+                        <input type="text" id="document" name="document"
+                               placeholder="CPF ou CNPJ"
+                               value="{{if .Tenant}}{{.Tenant.Document}}{{end}}"
+                               required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <span class="btn-text">{{if .IsEdit}}Salvar{{else}}Criar{{end}}</span>
+                            <span class="btn-loading-text">Salvando...</span>
+                            <span class="spinner"></span>
+                        </button>
+                        {{if .IsEdit}}
+                        <a href="/admin/tenants/{{.Tenant.ID}}" class="btn btn-secondary">Cancelar</a>
+                        {{else}}
+                        <a href="/admin/tenants" class="btn btn-secondary">Cancelar</a>
+                        {{end}}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+<script>
+function updateDocPlaceholder() {
+    var type = document.getElementById("type").value;
+    var doc = document.getElementById("document");
+    if (type === "PF") {
+        doc.placeholder = "000.000.000-00";
+    } else if (type === "PJ") {
+        doc.placeholder = "00.000.000/0000-00";
+    } else {
+        doc.placeholder = "CPF ou CNPJ";
+    }
+}
+document.addEventListener("DOMContentLoaded", updateDocPlaceholder);
+</script>
+</body>
+</html>
+{{end}}

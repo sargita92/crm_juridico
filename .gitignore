@@ -7,14 +7,24 @@ docker-compose.prod.yml
 tmp/
 
 # Binários Go
+/api
 /cmd/api/api
 *.exe
+
+# Cobertura de testes
+*.out
+
+# Superpowers (plugin Claude Code)
+docs/superpowers/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# Claude Code
+.claude/
 
 # OS
 .DS_Store

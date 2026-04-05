@@ -12,13 +12,13 @@
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F01 | [Setup Inicial](../features/F01-setup-inicial.md) | concluído | — | alta |
-| F02 | [Autenticação e Multitenancy](../features/F02-autenticacao-multitenancy.md) | backlog | F01 | alta |
+| F02 | [Autenticação e Multitenancy](../features/F02-autenticacao-multitenancy.md) | concluído | F01 | alta |
 
 ## Épico 2: Admin — Tenants e Especialistas
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
-| F03 | [CRUD de Tenants](../features/F03-crud-tenants-admin.md) | backlog | F02 | alta |
+| F03 | [CRUD de Tenants](../features/F03-crud-tenants-admin.md) | concluído | F02 | alta |
 | F04 | [CRUD de Especialistas](../features/F04-especialistas-crud.md) | backlog | F03 | alta |
 | F05 | [Treinamento de Especialistas](../features/F05-especialistas-treinamento.md) | backlog | F04 | alta |
 

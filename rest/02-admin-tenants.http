@@ -1,67 +1,75 @@
-### Criar tenant PJ
-POST {{base_url}}/api/admin/tenants
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Login como admin
+POST {{base_url}}/login
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "nome": "Escritório Silva & Associados",
-  "tipo": "PJ",
-  "documento": "12.345.678/0001-90"
-}
+email={{admin_email}}&password={{admin_password}}
 
 > {%
-    client.global.set("tenant_id", response.body.id);
-    client.test("Tenant criado", function() {
-        client.assert(response.status === 201);
-    });
+client.global.set("token", response.headers.valueOf("Set-Cookie"));
+%}
+
+### Listar tenants
+GET {{base_url}}/admin/tenants
+Cookie: {{token}}
+
+### Listar tenants com filtro de status
+GET {{base_url}}/admin/tenants?status=active
+Cookie: {{token}}
+
+### Listar tenants com filtro de tipo
+GET {{base_url}}/admin/tenants?type=PJ
+Cookie: {{token}}
+
+### Buscar tenants por nome
+GET {{base_url}}/admin/tenants?search=escritorio
+Cookie: {{token}}
+
+### Criar tenant PJ
+POST {{base_url}}/admin/tenants
+Content-Type: application/x-www-form-urlencoded
+Cookie: {{token}}
+
+name=Escritório Silva & Associados&type=PJ&document=12.345.678/0001-90
+
+> {%
+client.global.set("tenant_id", response.headers.valueOf("HX-Redirect").split("/").pop());
 %}
 
 ### Criar tenant PF
-POST {{base_url}}/api/admin/tenants
-Authorization: Bearer {{token}}
-Content-Type: application/json
+POST {{base_url}}/admin/tenants
+Content-Type: application/x-www-form-urlencoded
+Cookie: {{token}}
 
-{
-  "nome": "Dr. João Pereira",
-  "tipo": "PF",
-  "documento": "123.456.789-00"
-}
+name=Dr. João Pereira&type=PF&document=123.456.789-00
 
-### Listar tenants
-GET {{base_url}}/api/admin/tenants?page=1&per_page=20
-Authorization: Bearer {{token}}
-
-### Buscar tenant por ID
-GET {{base_url}}/api/admin/tenants/{{tenant_id}}
-Authorization: Bearer {{token}}
+### Ver detalhe do tenant
+GET {{base_url}}/admin/tenants/{{tenant_id}}
+Cookie: {{token}}
 
 ### Editar tenant
-PUT {{base_url}}/api/admin/tenants/{{tenant_id}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
+PUT {{base_url}}/admin/tenants/{{tenant_id}}
+Content-Type: application/x-www-form-urlencoded
+Cookie: {{token}}
 
-{
-  "nome": "Escritório Silva & Associados LTDA"
-}
+name=Escritório Silva & Associados LTDA&type=PJ&document=12.345.678/0001-90
 
 ### Bloquear tenant
-POST {{base_url}}/api/admin/tenants/{{tenant_id}}/block
-Authorization: Bearer {{token}}
-Content-Type: application/json
+POST {{base_url}}/admin/tenants/{{tenant_id}}/block
+Content-Type: application/x-www-form-urlencoded
+Cookie: {{token}}
 
-{
-  "motivo": "Pagamento em atraso há 30 dias"
-}
+reason=Pagamento em atraso há 30 dias
 
 ### Desbloquear tenant
-POST {{base_url}}/api/admin/tenants/{{tenant_id}}/unblock
-Authorization: Bearer {{token}}
-Content-Type: application/json
+POST {{base_url}}/admin/tenants/{{tenant_id}}/unblock
+Content-Type: application/x-www-form-urlencoded
+Cookie: {{token}}
 
-{
-  "motivo": "Pagamento regularizado"
-}
+reason=Pagamento regularizado
 
 ### Desativar tenant
-DELETE {{base_url}}/api/admin/tenants/{{tenant_id}}
-Authorization: Bearer {{token}}
+DELETE {{base_url}}/admin/tenants/{{tenant_id}}
+Cookie: {{token}}
+
+### Tentar acessar sem token (deve retornar 401)
+GET {{base_url}}/admin/tenants

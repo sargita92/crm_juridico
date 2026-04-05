@@ -14,11 +14,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
+	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
+	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
+	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
 	"github.com/sasrgita/crm-juridico/internal/shared/logger"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
+	tenantapp "github.com/sasrgita/crm-juridico/internal/tenant/application"
+	tenantinfra "github.com/sasrgita/crm-juridico/internal/tenant/infrastructure"
+	tenanthttp "github.com/sasrgita/crm-juridico/internal/tenant/interfaces/http"
 )
 
 func main() {
@@ -55,7 +61,44 @@ func main() {
 		log.Fatal("failed to run migrations", zap.Error(err))
 	}
 
-	router := setupRouter(log)
+	// --- Wire-up ---
+
+	// Tenant
+	tenantRepo := tenantinfra.NewGormTenantRepository(db)
+
+	// Auth
+	userRepo := authinfra.NewGormUserRepository(db)
+	userTenantRepo := authinfra.NewGormUserTenantRepository(db)
+	passwordHasher := authinfra.NewBcryptHasher()
+	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
+
+	loginUC := authapp.NewLoginUseCase(userRepo, userTenantRepo, tenantRepo, passwordHasher, tokenProvider)
+	selectTenantUC := authapp.NewSelectTenantUseCase(userTenantRepo, tenantRepo, tokenProvider)
+	listTenantsUC := authapp.NewListUserTenantsUseCase(userTenantRepo, tenantRepo)
+
+	authHandler := authhttp.NewHandler(loginUC, selectTenantUC, listTenantsUC, cfg.Server.SecureCookie)
+
+	// Tenant CRUD (admin)
+	createTenantUC := tenantapp.NewCreateTenantUseCase(tenantRepo)
+	listTenantsAdminUC := tenantapp.NewListTenantsUseCase(tenantRepo)
+	getTenantUC := tenantapp.NewGetTenantUseCase(tenantRepo)
+	updateTenantUC := tenantapp.NewUpdateTenantUseCase(tenantRepo)
+	deactivateTenantUC := tenantapp.NewDeactivateTenantUseCase(tenantRepo)
+	blockTenantUC := tenantapp.NewBlockTenantUseCase(tenantRepo)
+	unblockTenantUC := tenantapp.NewUnblockTenantUseCase(tenantRepo)
+
+	tenantHandler := tenanthttp.NewHandler(
+		createTenantUC, listTenantsAdminUC, getTenantUC,
+		updateTenantUC, deactivateTenantUC,
+		blockTenantUC, unblockTenantUC,
+	)
+
+	// Middlewares
+	authMw := middleware.Auth(tokenProvider)
+	tenantMw := middleware.RequireTenant()
+	adminMw := middleware.RequireAdmin()
+
+	router := setupRouter(log, authHandler, tenantHandler, loginUC, authMw, tenantMw, adminMw, cfg.Server.SecureCookie)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -87,11 +130,29 @@ func main() {
 	log.Info("server exited gracefully")
 }
 
-func setupRouter(log *zap.Logger) *gin.Engine {
+func renderAdminLoginError(c *gin.Context) {
+	tmpl := "admin/login.html"
+	if c.GetHeader("HX-Request") == "true" {
+		tmpl = "admin/login_card.html"
+	}
+	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
+}
+
+func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, tenantHandler *tenanthttp.Handler, loginUC *authapp.LoginUseCase, authMw, tenantMw, adminMw gin.HandlerFunc, secureCookie bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
-	tmpl := template.Must(template.ParseGlob("web/templates/**/*.html"))
+	funcMap := template.FuncMap{
+		"dict": func(values ...interface{}) map[string]interface{} {
+			m := make(map[string]interface{})
+			for i := 0; i+1 < len(values); i += 2 {
+				key, _ := values[i].(string)
+				m[key] = values[i+1]
+			}
+			return m
+		},
+	}
+	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("web/templates/**/*.html"))
 	router.SetHTMLTemplate(tmpl)
 	router.Static("/static", "web/static")
 
@@ -100,6 +161,7 @@ func setupRouter(log *zap.Logger) *gin.Engine {
 	router.Use(middleware.Prometheus())
 	router.Use(middleware.Logger(log))
 
+	// Health routes
 	router.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "health/index.html", nil)
 	})
@@ -119,6 +181,54 @@ func setupRouter(log *zap.Logger) *gin.Engine {
 	})
 
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	// Auth routes
+	authHandler.RegisterRoutes(router, authMw, tenantMw)
+
+	// Admin public routes
+	router.GET("/admin/login", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "admin/login.html", gin.H{"Error": ""})
+	})
+	router.POST("/admin/login", func(c *gin.Context) {
+		email := c.PostForm("email")
+		password := c.PostForm("password")
+
+		if email == "" || password == "" {
+			renderAdminLoginError(c)
+			return
+		}
+
+		output, err := loginUC.Execute(c.Request.Context(), authapp.LoginInput{
+			Email:    email,
+			Password: password,
+		})
+		if err != nil {
+			renderAdminLoginError(c)
+			return
+		}
+
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("token", output.Token, 86400, "/", "", secureCookie, true)
+		c.Header("HX-Redirect", "/admin/dashboard")
+		c.Status(http.StatusOK)
+	})
+
+	router.GET("/admin", func(c *gin.Context) {
+		if t, err := c.Cookie("token"); err != nil || t == "" {
+			c.Redirect(http.StatusFound, "/admin/login")
+			return
+		}
+		c.Redirect(http.StatusFound, "/admin/dashboard")
+	})
+
+	// Admin authenticated routes
+	adminGroup := router.Group("/admin")
+	adminGroup.Use(authMw, adminMw)
+	adminGroup.GET("/dashboard", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "admin/dashboard.html", gin.H{})
+	})
+
+	tenantHandler.RegisterRoutes(router, authMw, adminMw)
 
 	return router
 }

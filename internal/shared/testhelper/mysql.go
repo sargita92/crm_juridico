@@ -3,6 +3,9 @@ package testhelper
 import (
 	"context"
 	"fmt"
+	"html/template"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -110,6 +113,98 @@ func (mc *MySQLContainer) DB(t *testing.T) *gorm.DB {
 func (mc *MySQLContainer) Logger() *zap.Logger {
 	log, _ := zap.NewDevelopment()
 	return log
+}
+
+func projectRoot() string {
+	dir, _ := os.Getwd()
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return "."
+}
+
+func MigrationsPath() string {
+	return filepath.Join(projectRoot(), "migrations")
+}
+
+func TemplatesPath() string {
+	return filepath.Join(projectRoot(), "web", "templates", "**", "*.html")
+}
+
+func TemplateFuncMap() template.FuncMap {
+	return template.FuncMap{
+		"dict": func(values ...interface{}) map[string]interface{} {
+			m := make(map[string]interface{})
+			for i := 0; i+1 < len(values); i += 2 {
+				key, _ := values[i].(string)
+				m[key] = values[i+1]
+			}
+			return m
+		},
+	}
+}
+
+func ParseTemplates() *template.Template {
+	return template.Must(template.New("").Funcs(TemplateFuncMap()).ParseGlob(TemplatesPath()))
+}
+
+func NewMySQLContainerForMain(ctx context.Context) *MySQLContainer {
+	req := testcontainers.ContainerRequest{
+		Image:        "mysql:8.0",
+		ExposedPorts: []string{"3306/tcp"},
+		Env: map[string]string{
+			"MYSQL_ROOT_PASSWORD": dbRoot,
+			"MYSQL_DATABASE":     dbName,
+			"MYSQL_USER":         dbUser,
+			"MYSQL_PASSWORD":     dbPassword,
+		},
+		WaitingFor: wait.ForAll(
+			wait.ForLog("ready for connections").
+				WithOccurrence(2).
+				WithStartupTimeout(60*time.Second),
+			wait.ForSQL("3306/tcp", "mysql", func(host string, port nat.Port) string {
+				return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True",
+					dbUser, dbPassword, host, port.Port(), dbName,
+				)
+			}).WithStartupTimeout(60*time.Second),
+		),
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to start mysql container: %v", err))
+	}
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get container host: %v", err))
+	}
+
+	mappedPort, err := container.MappedPort(ctx, "3306")
+	if err != nil {
+		panic(fmt.Sprintf("failed to get mapped port: %v", err))
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		dbUser, dbPassword, host, mappedPort.Port(), dbName,
+	)
+
+	return &MySQLContainer{
+		Container: container,
+		DSN:       dsn,
+		Host:      host,
+		Port:      mappedPort.Port(),
+	}
 }
 
 func (mc *MySQLContainer) Teardown(ctx context.Context, t *testing.T) {

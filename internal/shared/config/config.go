@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -12,12 +13,14 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	Log      LogConfig
+	JWT      JWTConfig
 }
 
 type ServerConfig struct {
 	Port         string
 	ReadTimeout  int
 	WriteTimeout int
+	SecureCookie bool
 }
 
 type DatabaseConfig struct {
@@ -30,6 +33,11 @@ type DatabaseConfig struct {
 
 type LogConfig struct {
 	Level string
+}
+
+type JWTConfig struct {
+	Secret     string
+	Expiration time.Duration
 }
 
 func Load() (*Config, error) {
@@ -46,12 +54,15 @@ func Load() (*Config, error) {
 	viper.SetDefault("server.port", "8533")
 	viper.SetDefault("server.readtimeout", 10)
 	viper.SetDefault("server.writetimeout", 10)
+	viper.SetDefault("server.securecookie", false)
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", "3307")
 	viper.SetDefault("database.user", "crm")
 	viper.SetDefault("database.password", "crm_secret")
 	viper.SetDefault("database.name", "crm_juridico")
 	viper.SetDefault("log.level", "info")
+	viper.SetDefault("jwt.secret", "change-me-in-production")
+	viper.SetDefault("jwt.expiration", "24h")
 
 	_ = viper.ReadInConfig()
 
@@ -60,6 +71,7 @@ func Load() (*Config, error) {
 			Port:         viper.GetString("server.port"),
 			ReadTimeout:  viper.GetInt("server.readtimeout"),
 			WriteTimeout: viper.GetInt("server.writetimeout"),
+			SecureCookie: viper.GetBool("server.securecookie"),
 		},
 		Database: DatabaseConfig{
 			Host:     viper.GetString("database.host"),
@@ -70,6 +82,10 @@ func Load() (*Config, error) {
 		},
 		Log: LogConfig{
 			Level: viper.GetString("log.level"),
+		},
+		JWT: JWTConfig{
+			Secret:     viper.GetString("jwt.secret"),
+			Expiration: viper.GetDuration("jwt.expiration"),
 		},
 	}
 

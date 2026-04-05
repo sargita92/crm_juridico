@@ -30,6 +30,19 @@ cp docker-compose.dev.yml.dist docker-compose.dev.yml
 - variáveis de ambiente via `.env` + `godotenv`
 - migrations executam automaticamente no startup
 
+### Script de refresh (reset completo do banco)
+
+```bash
+./scripts/refresh.sh
+```
+
+O script dropa e recria o banco, roda todas as migrations e carrega as fixtures (`fixture/fixtures.sql`) com dados iniciais para dev.
+
+**Credenciais padrão após refresh:**
+- Email: `admin@teste.com`
+- Senha: `admin123`
+- URL: `http://localhost:8533/login`
+
 ## Produção
 
 - build multi-stage (compilar + imagem mínima)

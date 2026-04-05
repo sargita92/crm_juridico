@@ -22,19 +22,20 @@ Antes de implementar qualquer feature, consultar:
 
 ## Regras invioláveis
 
-1. **TDD**: escrever teste antes de implementar
-2. **Cobertura >= 80%**: se cair abaixo, corrigir antes de prosseguir
-3. **DDD + Clean Architecture**: domínio isolado, handlers finos, sem vazamento de infraestrutura
-4. **Branch por feature**: sem branch e PR aberta, entrega não está concluída
-5. **DoD completa**: testes passando + cobertura + build ok + containers ok
-6. **UI/UX**: toda interface deve ser simples, intuitiva e bonita
-7. **HTMX primeiro**: evitar JavaScript customizado quando HTMX resolver
-8. **Agentes**: seguir o fluxo PO → UI/UX → Arquiteto → QA → Dev Backend → Dev Front-end → QA → Segurança
-9. **Feature em andamento**: manter `docs/processo/feature-em-andamento.md` atualizado durante o desenvolvimento e limpar ao concluir
-10. **Observabilidade**: todo endpoint com métricas, logs com contexto (request_id, tenant_id, user_id), traces end-to-end
-11. **WhatsApp via whatsmeow**: usar whatsmeow em dev/testes; interface de provider abstrai para trocar por Meta Business API no futuro
-12. **Testes OWASP**: todo endpoint deve ter testes de acesso não autorizado (401/403), isolamento de tenant e anti-injection
-13. **Arquivos .http**: manter `rest/` atualizado com novos endpoints a cada feature entregue
+1. **Step-by-step**: NUNCA implementar uma feature inteira de uma vez — seguir os steps do Arquiteto, um por vez, validando antes de avançar
+2. **TDD**: escrever teste antes de implementar
+3. **Cobertura >= 80%**: se cair abaixo, corrigir antes de prosseguir
+4. **DDD + Clean Architecture**: domínio isolado, handlers finos, sem vazamento de infraestrutura
+5. **Branch por feature**: sem branch e PR aberta, entrega não está concluída
+6. **DoD completa**: testes passando + cobertura + build ok + containers ok
+7. **UI/UX**: toda interface deve ser simples, intuitiva e bonita
+8. **HTMX primeiro**: evitar JavaScript customizado quando HTMX resolver
+9. **Agentes**: seguir o fluxo PO → UI/UX → Arquiteto → QA → Dev Backend → Dev Front-end → QA → Segurança
+10. **Artefatos rastreáveis**: cada agente (PO, UI/UX, Arquiteto) escreve direto em `docs/artefatos/FXX-nome/` com versionamento (`v1.md`, `v2.md`); manter `status.md` atualizado
+11. **Observabilidade**: todo endpoint com métricas, logs com contexto (request_id, tenant_id, user_id), traces end-to-end
+12. **WhatsApp via whatsmeow**: usar whatsmeow em dev/testes; interface de provider abstrai para trocar por Meta Business API no futuro
+13. **Testes OWASP**: todo endpoint deve ter testes de acesso não autorizado (401/403), isolamento de tenant e anti-injection
+14. **Arquivos .http**: manter `rest/` atualizado com novos endpoints a cada feature entregue
 
 ## Stack resumida
 
@@ -68,4 +69,5 @@ docs/
   agentes/
   produto/
   features/
+  artefatos/                       # artefatos versionados por feature (PO, UI/UX, Arquiteto)
 ```

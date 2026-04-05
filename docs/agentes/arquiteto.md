@@ -32,7 +32,19 @@ Definir a abordagem técnica da feature, garantindo aderência aos princípios d
   - migrations necessárias
   - composição de dependências (wire-up)
   - impacto em módulos existentes
-- atualização de `docs/processo/feature-em-andamento.md`
+  - **plano de steps ordenados para implementação incremental** (obrigatório)
+- artefato salvo em `docs/artefatos/FXX-nome/arquiteto-design/vN.md` (com frontmatter padrão)
+- atualização de `docs/artefatos/FXX-nome/status.md`
+
+### Steps de implementação (obrigatório)
+
+O design técnico **deve** incluir uma seção `## Steps de Implementação` com a quebra ordenada da feature em steps incrementais. Cada step deve:
+
+- ter escopo fechado e claro (o que implementar e o que não tocar)
+- deixar o sistema em estado funcional ao final
+- ser independente o suficiente para gerar um commit atômico
+- listar os arquivos/pacotes que serão criados ou alterados
+- seguir a ordem natural de dependências (domínio → infra → aplicação → interfaces)
 
 ## Regras
 
@@ -55,8 +67,8 @@ Referências obrigatórias:
 - docs/engenharia/principios.md (DDD, Clean Arch, TDD, mini DI)
 - docs/engenharia/stack.md (tecnologias)
 
-Stories da feature: docs/processo/feature-em-andamento.md
-Wireframes: definidos pelo UI/UX
+Stories da feature: docs/artefatos/FXX-nome/po-stories/vN.md (usar versão mais recente)
+Wireframes: docs/artefatos/FXX-nome/uiux-wireframes/vN.md (usar versão mais recente)
 
 Para cada feature, defina:
 1. Entidades e value objects do domínio
@@ -66,6 +78,7 @@ Para cada feature, defina:
 5. Migrations necessárias
 6. Composição de dependências (como faz o wire-up)
 7. Impacto em módulos existentes
+8. **Steps de implementação ordenados** (obrigatório — a feature NUNCA é implementada de uma vez)
 
 Regras:
 - Domínio isolado (sem Gin, Gorm, ou qualquer framework)
@@ -74,4 +87,6 @@ Regras:
 - tenant_id em toda entidade relevante
 - Considerar permissionamento
 - Endpoints HTMX retornam fragmentos HTML
+- Registre o resultado em docs/artefatos/FXX-nome/arquiteto-design/vN.md (com frontmatter: feature, agent, version, created_at, reason)
+- Atualize docs/artefatos/FXX-nome/status.md
 ```

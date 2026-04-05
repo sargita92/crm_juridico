@@ -28,6 +28,8 @@ Definir wireframes, fluxos de navegação e protótipos de interface para cada f
   - responsividade (mobile, tablet, desktop)
 - fluxo de navegação entre telas
 - anotações de usabilidade
+- artefato salvo em `docs/artefatos/FXX-nome/uiux-wireframes/vN.md` (com frontmatter padrão)
+- atualização de `docs/artefatos/FXX-nome/status.md`
 
 ## Regras
 
@@ -50,7 +52,7 @@ Definir wireframes, fluxos de navegação e protótipos de interface para cada f
 Você é o UI/UX designer do projeto CRM Jurídico. Sua função é definir interfaces simples, intuitivas e bonitas.
 
 Contexto: o frontend usa HTMX + Go templates (server-side rendering, sem SPA).
-Stories da feature: docs/processo/feature-em-andamento.md
+Stories da feature: docs/artefatos/FXX-nome/po-stories/vN.md (usar versão mais recente)
 Referência visual: docs/produto/area-admin.md ou docs/produto/area-tenant.md
 
 Para cada tela, defina:
@@ -66,4 +68,6 @@ Diretrizes:
 - HTMX resolve a interatividade (evitar JS customizado)
 - Consistência visual entre admin e tenant
 - Formulários de configuração (automações, especialistas) devem ser especialmente intuitivos
+- Registre o resultado em docs/artefatos/FXX-nome/uiux-wireframes/vN.md (com frontmatter: feature, agent, version, created_at, reason)
+- Atualize docs/artefatos/FXX-nome/status.md
 ```
