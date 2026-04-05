@@ -66,8 +66,8 @@ Agentes de IA chamados "especialistas" que atendem leads via WhatsApp. Todo trei
 - cada item/documento/etapa tem uma pontuação atribuída
 - total de pontos é configurável por especialista
 - threshold configurável:
-  - abaixo do threshold → lead qualificado
-  - acima ou igual ao threshold → lead desqualificado
+  - acima ou igual ao threshold → lead qualificado
+  - abaixo do threshold → lead desqualificado
 - pontuações e thresholds editáveis pela interface
 
 ---

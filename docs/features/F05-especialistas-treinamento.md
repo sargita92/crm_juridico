@@ -51,7 +51,7 @@ Implementar as funcionalidades avançadas de configuração dos especialistas: R
 - [ ] migration
 - [ ] caso de uso: configurar scoring de um especialista
 - [ ] lógica: soma dos pontos dos steps atendidos vs threshold
-- [ ] abaixo do threshold → qualificado / acima → desqualificado
+- [ ] acima do threshold → qualificado / abaixo → desqualificado
 - [ ] telas HTMX para configurar pontuação e threshold
 - [ ] testes
 
