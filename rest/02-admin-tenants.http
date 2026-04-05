@@ -67,6 +67,10 @@ Cookie: {{token}}
 
 reason=Pagamento regularizado
 
+### Ver historico de bloqueio/desbloqueio
+GET {{base_url}}/admin/tenants/{{tenant_id}}/block-history
+Cookie: {{token}}
+
 ### Desativar tenant
 DELETE {{base_url}}/admin/tenants/{{tenant_id}}
 Cookie: {{token}}

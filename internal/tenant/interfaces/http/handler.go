@@ -12,13 +12,14 @@ import (
 )
 
 type Handler struct {
-	createUC     *application.CreateTenantUseCase
-	listUC       *application.ListTenantsUseCase
-	getUC        *application.GetTenantUseCase
-	updateUC     *application.UpdateTenantUseCase
-	deactivateUC *application.DeactivateTenantUseCase
-	blockUC      *application.BlockTenantUseCase
-	unblockUC    *application.UnblockTenantUseCase
+	createUC          *application.CreateTenantUseCase
+	listUC            *application.ListTenantsUseCase
+	getUC             *application.GetTenantUseCase
+	updateUC          *application.UpdateTenantUseCase
+	deactivateUC      *application.DeactivateTenantUseCase
+	blockUC           *application.BlockTenantUseCase
+	unblockUC         *application.UnblockTenantUseCase
+	getBlockHistoryUC *application.GetBlockHistoryUseCase
 }
 
 func NewHandler(
@@ -29,15 +30,17 @@ func NewHandler(
 	deactivateUC *application.DeactivateTenantUseCase,
 	blockUC *application.BlockTenantUseCase,
 	unblockUC *application.UnblockTenantUseCase,
+	getBlockHistoryUC *application.GetBlockHistoryUseCase,
 ) *Handler {
 	return &Handler{
-		createUC:     createUC,
-		listUC:       listUC,
-		getUC:        getUC,
-		updateUC:     updateUC,
-		deactivateUC: deactivateUC,
-		blockUC:      blockUC,
-		unblockUC:    unblockUC,
+		createUC:          createUC,
+		listUC:            listUC,
+		getUC:             getUC,
+		updateUC:          updateUC,
+		deactivateUC:      deactivateUC,
+		blockUC:           blockUC,
+		unblockUC:         unblockUC,
+		getBlockHistoryUC: getBlockHistoryUC,
 	}
 }
 
@@ -54,6 +57,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.Handler
 	admin.DELETE("/:id", h.HandleDeactivate)
 	admin.POST("/:id/block", h.HandleBlock)
 	admin.POST("/:id/unblock", h.HandleUnblock)
+	admin.GET("/:id/block-history", h.HandleGetBlockHistory)
 }
 
 func (h *Handler) RenderList(c *gin.Context) {
@@ -201,10 +205,12 @@ func (h *Handler) HandleDeactivate(c *gin.Context) {
 func (h *Handler) HandleBlock(c *gin.Context) {
 	id := c.Param("id")
 	reason := c.PostForm("reason")
+	performedBy := c.GetString("user_id")
 
 	err := h.blockUC.Execute(c.Request.Context(), application.BlockTenantInput{
-		ID:     id,
-		Reason: reason,
+		ID:          id,
+		Reason:      reason,
+		PerformedBy: performedBy,
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
@@ -221,10 +227,12 @@ func (h *Handler) HandleBlock(c *gin.Context) {
 func (h *Handler) HandleUnblock(c *gin.Context) {
 	id := c.Param("id")
 	reason := c.PostForm("reason")
+	performedBy := c.GetString("user_id")
 
 	err := h.unblockUC.Execute(c.Request.Context(), application.UnblockTenantInput{
-		ID:     id,
-		Reason: reason,
+		ID:          id,
+		Reason:      reason,
+		PerformedBy: performedBy,
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
@@ -236,6 +244,25 @@ func (h *Handler) HandleUnblock(c *gin.Context) {
 	}
 
 	h.renderDetailAfterAction(c, id, "Tenant desbloqueado com sucesso")
+}
+
+func (h *Handler) HandleGetBlockHistory(c *gin.Context) {
+	id := c.Param("id")
+
+	history, err := h.getBlockHistoryUC.Execute(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, domain.ErrTenantNotFound) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Tenant não encontrado"})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar histórico"})
+		return
+	}
+
+	c.HTML(http.StatusOK, "tenant/block_history.html", gin.H{
+		"History":  history,
+		"TenantID": id,
+	})
 }
 
 func (h *Handler) renderDetailAfterAction(c *gin.Context, id, successMsg string) {

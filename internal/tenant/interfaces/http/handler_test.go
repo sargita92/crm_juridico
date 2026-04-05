@@ -69,11 +69,13 @@ func setupTestEnv(t *testing.T) *testEnv {
 	err := database.RunMigrations(db, log, "file://"+testhelper.MigrationsPath())
 	require.NoError(t, err)
 
+	db.Exec("DELETE FROM tenant_block_history")
 	db.Exec("DELETE FROM user_tenants")
 	db.Exec("DELETE FROM users")
 	db.Exec("DELETE FROM tenants")
 
 	tenantRepo := tenantinfra.NewGormTenantRepository(db)
+	blockHistoryRepo := tenantinfra.NewGormBlockHistoryRepository(db)
 	jwtProvider := authinfra.NewJWTProvider("test-secret", 24*time.Hour)
 
 	createUC := application.NewCreateTenantUseCase(tenantRepo)
@@ -81,10 +83,11 @@ func setupTestEnv(t *testing.T) *testEnv {
 	getUC := application.NewGetTenantUseCase(tenantRepo)
 	updateUC := application.NewUpdateTenantUseCase(tenantRepo)
 	deactivateUC := application.NewDeactivateTenantUseCase(tenantRepo)
-	blockUC := application.NewBlockTenantUseCase(tenantRepo)
-	unblockUC := application.NewUnblockTenantUseCase(tenantRepo)
+	blockUC := application.NewBlockTenantUseCase(tenantRepo, blockHistoryRepo)
+	unblockUC := application.NewUnblockTenantUseCase(tenantRepo, blockHistoryRepo)
+	getBlockHistoryUC := application.NewGetBlockHistoryUseCase(tenantRepo, blockHistoryRepo)
 
-	handler := NewHandler(createUC, listUC, getUC, updateUC, deactivateUC, blockUC, unblockUC)
+	handler := NewHandler(createUC, listUC, getUC, updateUC, deactivateUC, blockUC, unblockUC, getBlockHistoryUC)
 
 	router := gin.New()
 	tmpl := testhelper.ParseTemplates()
@@ -445,6 +448,7 @@ func TestAdminRoutes_NoToken_Returns401(t *testing.T) {
 		{http.MethodDelete, "/admin/tenants/some-id"},
 		{http.MethodPost, "/admin/tenants/some-id/block"},
 		{http.MethodPost, "/admin/tenants/some-id/unblock"},
+		{http.MethodGet, "/admin/tenants/some-id/block-history"},
 	}
 
 	for _, route := range routes {
@@ -472,6 +476,7 @@ func TestAdminRoutes_UserRole_Returns403(t *testing.T) {
 		{http.MethodDelete, "/admin/tenants/some-id"},
 		{http.MethodPost, "/admin/tenants/some-id/block"},
 		{http.MethodPost, "/admin/tenants/some-id/unblock"},
+		{http.MethodGet, "/admin/tenants/some-id/block-history"},
 	}
 
 	for _, route := range routes {
@@ -556,4 +561,62 @@ func TestAdminRoutes_InvalidToken_Returns401(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+// --- Block History tests ---
+
+func TestHandleGetBlockHistory_Success(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	tenant := env.seedTenant(t, "History Test", "50.505.050/0001-50")
+
+	// Block
+	w := httptest.NewRecorder()
+	req := postForm("/admin/tenants/"+tenant.ID+"/block", url.Values{
+		"reason": {"Inadimplência"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Unblock
+	w = httptest.NewRecorder()
+	req = postForm("/admin/tenants/"+tenant.ID+"/unblock", url.Values{
+		"reason": {"Regularizado"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Get history
+	w = httptest.NewRecorder()
+	req = getReq("/admin/tenants/"+tenant.ID+"/block-history", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "Inadimplência")
+	assert.Contains(t, body, "Regularizado")
+}
+
+func TestHandleGetBlockHistory_TenantNotFound(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+
+	w := httptest.NewRecorder()
+	req := getReq("/admin/tenants/nonexistent-id/block-history", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestHandleGetBlockHistory_EmptyHistory(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	tenant := env.seedTenant(t, "No History", "60.606.060/0001-60")
+
+	w := httptest.NewRecorder()
+	req := getReq("/admin/tenants/"+tenant.ID+"/block-history", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Nenhum")
 }

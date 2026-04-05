@@ -74,6 +74,14 @@
                 </div>
             </div>
 
+            <!-- Historico de Bloqueio (lazy-load via HTMX) -->
+            <div id="block-history-section" class="detail-card"
+                 hx-get="/admin/tenants/{{.Tenant.ID}}/block-history"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <p class="text-muted">Carregando historico...</p>
+            </div>
+
             <!-- Modal: Bloquear -->
             <div id="block-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('block-modal')">
                 <div class="modal-card">

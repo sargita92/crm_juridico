@@ -50,6 +50,7 @@ func setupTenantRepo(t *testing.T) (*GormTenantRepository, *gorm.DB) {
 	require.NoError(t, err)
 
 	// Clean tables for test isolation
+	db.Exec("DELETE FROM tenant_block_history")
 	db.Exec("DELETE FROM user_tenants")
 	db.Exec("DELETE FROM users")
 	db.Exec("DELETE FROM tenants")

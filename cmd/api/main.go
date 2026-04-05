@@ -79,18 +79,21 @@ func main() {
 	authHandler := authhttp.NewHandler(loginUC, selectTenantUC, listTenantsUC, cfg.Server.SecureCookie)
 
 	// Tenant CRUD (admin)
+	blockHistoryRepo := tenantinfra.NewGormBlockHistoryRepository(db)
 	createTenantUC := tenantapp.NewCreateTenantUseCase(tenantRepo)
 	listTenantsAdminUC := tenantapp.NewListTenantsUseCase(tenantRepo)
 	getTenantUC := tenantapp.NewGetTenantUseCase(tenantRepo)
 	updateTenantUC := tenantapp.NewUpdateTenantUseCase(tenantRepo)
 	deactivateTenantUC := tenantapp.NewDeactivateTenantUseCase(tenantRepo)
-	blockTenantUC := tenantapp.NewBlockTenantUseCase(tenantRepo)
-	unblockTenantUC := tenantapp.NewUnblockTenantUseCase(tenantRepo)
+	blockTenantUC := tenantapp.NewBlockTenantUseCase(tenantRepo, blockHistoryRepo)
+	unblockTenantUC := tenantapp.NewUnblockTenantUseCase(tenantRepo, blockHistoryRepo)
+	getBlockHistoryUC := tenantapp.NewGetBlockHistoryUseCase(tenantRepo, blockHistoryRepo)
 
 	tenantHandler := tenanthttp.NewHandler(
 		createTenantUC, listTenantsAdminUC, getTenantUC,
 		updateTenantUC, deactivateTenantUC,
 		blockTenantUC, unblockTenantUC,
+		getBlockHistoryUC,
 	)
 
 	// Middlewares

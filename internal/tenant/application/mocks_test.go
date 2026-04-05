@@ -121,3 +121,30 @@ func (m *mockTenantRepo) addTenant(tenant *domain.Tenant) {
 	m.tenants[tenant.ID] = tenant
 	m.documents[tenant.Document] = tenant
 }
+
+type mockBlockHistoryRepo struct {
+	entries []domain.BlockHistoryEntry
+	saveErr error
+}
+
+func newMockBlockHistoryRepo() *mockBlockHistoryRepo {
+	return &mockBlockHistoryRepo{}
+}
+
+func (m *mockBlockHistoryRepo) Save(_ context.Context, entry *domain.BlockHistoryEntry) error {
+	if m.saveErr != nil {
+		return m.saveErr
+	}
+	m.entries = append(m.entries, *entry)
+	return nil
+}
+
+func (m *mockBlockHistoryRepo) FindByTenantID(_ context.Context, tenantID string) ([]domain.BlockHistoryEntry, error) {
+	var result []domain.BlockHistoryEntry
+	for _, e := range m.entries {
+		if e.TenantID == tenantID {
+			result = append(result, e)
+		}
+	}
+	return result, nil
+}

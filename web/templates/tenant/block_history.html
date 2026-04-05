@@ -1,0 +1,35 @@
+{{define "tenant/block_history.html"}}
+<div class="block-history">
+    <h3>Historico de Bloqueio</h3>
+    {{if .History}}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Acao</th>
+                <th>Motivo</th>
+                <th>Executado por</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .History}}
+            <tr>
+                <td>{{.CreatedAt.Format "02/01/2006 15:04"}}</td>
+                <td>
+                    {{if eq .Action "block"}}
+                    <span class="badge badge-blocked">Bloqueio</span>
+                    {{else}}
+                    <span class="badge badge-active">Desbloqueio</span>
+                    {{end}}
+                </td>
+                <td>{{.Reason}}</td>
+                <td>{{.PerformedBy}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p class="text-muted">Nenhum historico de bloqueio encontrado.</p>
+    {{end}}
+</div>
+{{end}}

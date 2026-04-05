@@ -3,20 +3,24 @@ package application
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
 
 type BlockTenantInput struct {
-	ID     string
-	Reason string
+	ID          string
+	Reason      string
+	PerformedBy string
 }
 
 type BlockTenantUseCase struct {
-	repo domain.TenantRepository
+	repo        domain.TenantRepository
+	historyRepo domain.BlockHistoryRepository
 }
 
-func NewBlockTenantUseCase(repo domain.TenantRepository) *BlockTenantUseCase {
-	return &BlockTenantUseCase{repo: repo}
+func NewBlockTenantUseCase(repo domain.TenantRepository, historyRepo domain.BlockHistoryRepository) *BlockTenantUseCase {
+	return &BlockTenantUseCase{repo: repo, historyRepo: historyRepo}
 }
 
 func (uc *BlockTenantUseCase) Execute(ctx context.Context, input BlockTenantInput) error {
@@ -29,5 +33,14 @@ func (uc *BlockTenantUseCase) Execute(ctx context.Context, input BlockTenantInpu
 		return err
 	}
 
-	return uc.repo.Update(ctx, tenant)
+	if err := uc.repo.Update(ctx, tenant); err != nil {
+		return err
+	}
+
+	entry, err := domain.NewBlockHistoryEntry(uuid.New().String(), input.ID, domain.BlockActionBlock, input.Reason, input.PerformedBy)
+	if err != nil {
+		return err
+	}
+
+	return uc.historyRepo.Save(ctx, entry)
 }
