@@ -37,14 +37,20 @@
 | F09 | [Automações](../features/F09-automacoes.md) | backlog | F07 | média |
 | F10 | [Produtos](../features/F10-produtos.md) | backlog | F07 | média |
 
-## Épico 5: Admin — Financeiro e Operacional
+## Épico 5: Gestão de Arquivos
+
+| # | Feature | Status | Dependência | Prioridade |
+|---|---------|--------|-------------|------------|
+| F14 | [Arquivos por Lead](../features/F14-arquivos.md) | backlog | F06, F07 | média |
+
+## Épico 6: Admin — Financeiro e Operacional
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F11 | [Pagamentos](../features/F11-pagamentos-admin.md) | backlog | F03 | média |
 | F12 | [Logs](../features/F12-logs-admin.md) | backlog | F01 | baixa |
 
-## Épico 6: Marketing
+## Épico 7: Marketing
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
@@ -65,9 +71,10 @@ Iteração 7: F07 (funis/kanban)
 Iteração 8: F08 (usuários e permissões)
 Iteração 9: F09 (automações)
 Iteração 10: F10 (produtos)
-Iteração 11: F11 (pagamentos)
-Iteração 12: F12 (logs)
-Iteração 13: F13 (landing page)
+Iteração 11: F14 (arquivos por lead)
+Iteração 12: F11 (pagamentos)
+Iteração 13: F12 (logs)
+Iteração 14: F13 (landing page)
 ```
 
 ## Notas

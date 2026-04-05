@@ -1,0 +1,44 @@
+### Criar produto
+POST {{base_url}}/api/products
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "nome": "Consultoria Trabalhista",
+  "descricao": "Consultoria em direito trabalhista",
+  "palavras_chave": ["trabalhista", "CLT", "rescisão", "FGTS"]
+}
+
+> {%
+    client.global.set("product_id", response.body.id);
+%}
+
+### Listar produtos do tenant
+GET {{base_url}}/api/products
+Authorization: Bearer {{tenant_token}}
+
+### Editar produto
+PUT {{base_url}}/api/products/{{product_id}}
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "palavras_chave": ["trabalhista", "CLT", "rescisão", "FGTS", "hora extra"]
+}
+
+### Associar produto a lead manualmente
+PUT {{base_url}}/api/leads/{{lead_id}}/product
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "product_id": "{{product_id}}"
+}
+
+### Filtrar leads por produto
+GET {{base_url}}/api/funnels/{{funnel_id}}/leads?product_id={{product_id}}
+Authorization: Bearer {{tenant_token}}
+
+### Excluir produto
+DELETE {{base_url}}/api/products/{{product_id}}
+Authorization: Bearer {{tenant_token}}

@@ -1,0 +1,93 @@
+### Criar funil
+POST {{base_url}}/api/funnels
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "nome": "Funil Trabalhista",
+  "descricao": "Funil para leads de direito trabalhista"
+}
+
+> {%
+    client.global.set("funnel_id", response.body.id);
+%}
+
+### Listar funis do tenant
+GET {{base_url}}/api/funnels
+Authorization: Bearer {{tenant_token}}
+
+### Buscar funil por ID
+GET {{base_url}}/api/funnels/{{funnel_id}}
+Authorization: Bearer {{tenant_token}}
+
+### Editar funil
+PUT {{base_url}}/api/funnels/{{funnel_id}}
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "nome": "Funil Trabalhista v2"
+}
+
+###
+
+### Adicionar coluna ao funil
+POST {{base_url}}/api/funnels/{{funnel_id}}/columns
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "nome": "Novo Lead",
+  "ordem": 1,
+  "tipo": "inicial",
+  "cor": "#3B82F6"
+}
+
+> {%
+    client.global.set("column_id", response.body.id);
+%}
+
+### Listar colunas do funil
+GET {{base_url}}/api/funnels/{{funnel_id}}/columns
+Authorization: Bearer {{tenant_token}}
+
+### Reordenar colunas
+PUT {{base_url}}/api/funnels/{{funnel_id}}/columns/reorder
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "order": ["col_id_1", "col_id_2", "col_id_3"]
+}
+
+###
+
+### Listar leads do funil
+GET {{base_url}}/api/funnels/{{funnel_id}}/leads?page=1&per_page=50
+Authorization: Bearer {{tenant_token}}
+
+### Buscar lead por ID
+GET {{base_url}}/api/leads/{{lead_id}}
+Authorization: Bearer {{tenant_token}}
+
+### Mover lead entre colunas (manual)
+PUT {{base_url}}/api/leads/{{lead_id}}/move
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "column_id": "{{target_column_id}}"
+}
+
+### Mover lead para outro funil
+PUT {{base_url}}/api/leads/{{lead_id}}/transfer
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "funnel_id": "{{target_funnel_id}}"
+}
+
+### Histórico de movimentações do lead
+GET {{base_url}}/api/leads/{{lead_id}}/history
+Authorization: Bearer {{tenant_token}}

@@ -1,0 +1,29 @@
+### Registrar pagamento manual
+POST {{base_url}}/api/admin/tenants/{{tenant_id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "valor": 299.90,
+  "tipo": "manual",
+  "referencia": "PIX 2026-04",
+  "observacao": "Pagamento mensal abril/2026",
+  "data_pagamento": "2026-04-05"
+}
+
+### Listar pagamentos de um tenant
+GET {{base_url}}/api/admin/tenants/{{tenant_id}}/payments?page=1&per_page=20
+Authorization: Bearer {{token}}
+
+### Alterar status de pagamento
+PATCH {{base_url}}/api/admin/payments/{{payment_id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "pago"
+}
+
+### Consultar situação financeira do tenant
+GET {{base_url}}/api/admin/tenants/{{tenant_id}}/financial-status
+Authorization: Bearer {{token}}

@@ -1,0 +1,24 @@
+### Listar logs (todos)
+GET {{base_url}}/api/admin/logs?page=1&per_page=50
+Authorization: Bearer {{token}}
+
+### Filtrar logs por tenant
+GET {{base_url}}/api/admin/logs?tenant_id={{tenant_id}}&page=1&per_page=50
+Authorization: Bearer {{token}}
+
+### Filtrar logs por ação
+GET {{base_url}}/api/admin/logs?acao=login&page=1&per_page=50
+Authorization: Bearer {{token}}
+
+### Filtrar logs por período
+GET {{base_url}}/api/admin/logs?from=2026-04-01&to=2026-04-05&page=1&per_page=50
+Authorization: Bearer {{token}}
+
+### Buscar log por ID
+GET {{base_url}}/api/admin/logs/{{log_id}}
+Authorization: Bearer {{token}}
+
+### Exportar logs CSV
+GET {{base_url}}/api/admin/logs/export?tenant_id={{tenant_id}}&from=2026-04-01&to=2026-04-05
+Authorization: Bearer {{token}}
+Accept: text/csv

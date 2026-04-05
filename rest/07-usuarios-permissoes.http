@@ -1,0 +1,83 @@
+### Listar usuários do tenant
+GET {{base_url}}/api/users?page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Convidar usuário
+POST {{base_url}}/api/users/invite
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "nome": "Maria Souza",
+  "email": "maria@tenant.com",
+  "group_id": "{{group_id}}"
+}
+
+### Remover usuário do tenant
+DELETE {{base_url}}/api/users/{{user_id}}
+Authorization: Bearer {{tenant_token}}
+
+###
+
+### Criar grupo de permissão
+POST {{base_url}}/api/permission-groups
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "nome": "Atendimento",
+  "descricao": "Equipe de atendimento ao lead",
+  "permissoes": ["view_conversations", "view_leads", "move_leads"]
+}
+
+> {%
+    client.global.set("group_id", response.body.id);
+%}
+
+### Listar grupos de permissão
+GET {{base_url}}/api/permission-groups
+Authorization: Bearer {{tenant_token}}
+
+### Editar grupo
+PUT {{base_url}}/api/permission-groups/{{group_id}}
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "nome": "Atendimento Senior",
+  "permissoes": ["view_conversations", "view_leads", "move_leads", "view_automations"]
+}
+
+###
+
+### Configurar perfil de visualização do grupo
+PUT {{base_url}}/api/permission-groups/{{group_id}}/view-profile
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "funnel_id": "{{funnel_id}}",
+  "colunas_visiveis": ["col_id_1", "col_id_2", "col_id_3"]
+}
+
+###
+
+### Configurar load balance do grupo
+PUT {{base_url}}/api/permission-groups/{{group_id}}/load-balance
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "ativo": true,
+  "algoritmo": "round_robin",
+  "funnel_id": "{{funnel_id}}"
+}
+
+### Reatribuir lead manualmente
+PUT {{base_url}}/api/leads/{{lead_id}}/assign
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}"
+}

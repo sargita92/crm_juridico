@@ -1,0 +1,86 @@
+### Criar automação - exclusão por tempo
+POST {{base_url}}/api/automations
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "funnel_id": "{{funnel_id}}",
+  "column_id": "{{column_id}}",
+  "tipo": "exclusao_por_tempo",
+  "config": {
+    "dias": 30
+  },
+  "ativo": true
+}
+
+> {%
+    client.global.set("automation_id", response.body.id);
+%}
+
+### Criar automação - mover para outro funil
+POST {{base_url}}/api/automations
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "funnel_id": "{{funnel_id}}",
+  "column_id": "{{column_id}}",
+  "tipo": "mover_funil",
+  "config": {
+    "target_funnel_id": "{{target_funnel_id}}"
+  },
+  "ativo": true
+}
+
+### Criar automação - mensagem automática
+POST {{base_url}}/api/automations
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "funnel_id": "{{funnel_id}}",
+  "column_id": "{{column_id}}",
+  "tipo": "mensagem_automatica",
+  "config": {
+    "template": "Olá {{nome}}, recebemos seus dados. Em breve entraremos em contato sobre {{produto}}."
+  },
+  "ativo": true
+}
+
+### Criar automação - anotação
+POST {{base_url}}/api/automations
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "funnel_id": "{{funnel_id}}",
+  "column_id": "{{column_id}}",
+  "tipo": "anotacao",
+  "config": {
+    "conteudo": "Lead movido automaticamente para análise"
+  },
+  "ativo": true
+}
+
+### Listar automações do funil
+GET {{base_url}}/api/automations?funnel_id={{funnel_id}}
+Authorization: Bearer {{tenant_token}}
+
+### Editar automação
+PUT {{base_url}}/api/automations/{{automation_id}}
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "config": {
+    "dias": 15
+  }
+}
+
+### Ativar/desativar automação
+PATCH {{base_url}}/api/automations/{{automation_id}}/toggle
+Authorization: Bearer {{tenant_token}}
+
+### Excluir automação
+DELETE {{base_url}}/api/automations/{{automation_id}}
+Authorization: Bearer {{tenant_token}}

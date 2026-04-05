@@ -1,0 +1,53 @@
+### Criar especialista
+POST {{base_url}}/api/admin/specialists
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Especialista Trabalhista",
+  "descricao": "Atende leads de direito trabalhista",
+  "prompt": "Você é um assistente especializado em direito trabalhista. Seja cordial e objetivo."
+}
+
+> {%
+    client.global.set("specialist_id", response.body.id);
+%}
+
+### Listar especialistas
+GET {{base_url}}/api/admin/specialists?page=1&per_page=20
+Authorization: Bearer {{token}}
+
+### Buscar especialista por ID
+GET {{base_url}}/api/admin/specialists/{{specialist_id}}
+Authorization: Bearer {{token}}
+
+### Editar especialista
+PUT {{base_url}}/api/admin/specialists/{{specialist_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Especialista Trabalhista v2",
+  "prompt": "Você é um assistente especializado em direito trabalhista. Seja cordial, objetivo e peça os documentos necessários."
+}
+
+### Associar especialista a tenant
+POST {{base_url}}/api/admin/specialists/{{specialist_id}}/tenants
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tenant_id": "{{tenant_id}}"
+}
+
+### Listar tenants de um especialista
+GET {{base_url}}/api/admin/specialists/{{specialist_id}}/tenants
+Authorization: Bearer {{token}}
+
+### Desassociar especialista de tenant
+DELETE {{base_url}}/api/admin/specialists/{{specialist_id}}/tenants/{{tenant_id}}
+Authorization: Bearer {{token}}
+
+### Excluir especialista
+DELETE {{base_url}}/api/admin/specialists/{{specialist_id}}
+Authorization: Bearer {{token}}

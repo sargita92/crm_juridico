@@ -50,6 +50,7 @@ Profissionais e escritórios jurídicos recebem contatos por WhatsApp sem contro
 | WhatsApp | Conversas estilo WhatsApp Web |
 | Leads/Kanban | Funil(is) de vendas ligados às conversas |
 | Automações | Configuração de regras automáticas (com permissão) |
+| Arquivos | Todos os arquivos enviados/recebidos, organizados por lead |
 | Configurações | Ajustes da conta (com permissão) |
 
 ### Transversal

@@ -33,6 +33,8 @@ Antes de implementar qualquer feature, consultar:
 9. **Feature em andamento**: manter `docs/processo/feature-em-andamento.md` atualizado durante o desenvolvimento e limpar ao concluir
 10. **Observabilidade**: todo endpoint com métricas, logs com contexto (request_id, tenant_id, user_id), traces end-to-end
 11. **WhatsApp via whatsmeow**: usar whatsmeow em dev/testes; interface de provider abstrai para trocar por Meta Business API no futuro
+12. **Testes OWASP**: todo endpoint deve ter testes de acesso não autorizado (401/403), isolamento de tenant e anti-injection
+13. **Arquivos .http**: manter `rest/` atualizado com novos endpoints a cada feature entregue
 
 ## Stack resumida
 
@@ -59,6 +61,7 @@ web/
   static/
     css/
     js/
+rest/                            # arquivos .http (JetBrains HTTP Client) para testes manuais
 docs/
   engenharia/
   processo/

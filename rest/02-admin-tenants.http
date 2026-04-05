@@ -1,0 +1,67 @@
+### Criar tenant PJ
+POST {{base_url}}/api/admin/tenants
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Escritório Silva & Associados",
+  "tipo": "PJ",
+  "documento": "12.345.678/0001-90"
+}
+
+> {%
+    client.global.set("tenant_id", response.body.id);
+    client.test("Tenant criado", function() {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Criar tenant PF
+POST {{base_url}}/api/admin/tenants
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Dr. João Pereira",
+  "tipo": "PF",
+  "documento": "123.456.789-00"
+}
+
+### Listar tenants
+GET {{base_url}}/api/admin/tenants?page=1&per_page=20
+Authorization: Bearer {{token}}
+
+### Buscar tenant por ID
+GET {{base_url}}/api/admin/tenants/{{tenant_id}}
+Authorization: Bearer {{token}}
+
+### Editar tenant
+PUT {{base_url}}/api/admin/tenants/{{tenant_id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Escritório Silva & Associados LTDA"
+}
+
+### Bloquear tenant
+POST {{base_url}}/api/admin/tenants/{{tenant_id}}/block
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "motivo": "Pagamento em atraso há 30 dias"
+}
+
+### Desbloquear tenant
+POST {{base_url}}/api/admin/tenants/{{tenant_id}}/unblock
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "motivo": "Pagamento regularizado"
+}
+
+### Desativar tenant
+DELETE {{base_url}}/api/admin/tenants/{{tenant_id}}
+Authorization: Bearer {{token}}

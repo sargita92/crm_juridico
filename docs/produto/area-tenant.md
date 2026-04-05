@@ -76,6 +76,21 @@ Aba dedicada para configurar automações do tenant. Visível apenas para usuár
 
 ---
 
+## Aba Arquivos
+
+### Descrição
+Área para visualizar todos os arquivos enviados e recebidos nas conversas do WhatsApp, organizados por lead.
+
+### Funcionalidades
+- listagem de todos os arquivos do tenant
+- organização/filtro por lead
+- filtro por tipo de arquivo (imagem, documento, áudio, vídeo)
+- filtro por período
+- preview/download de arquivos
+- indicação de qual conversa/mensagem originou o arquivo
+
+---
+
 ## Configurações da conta (visível com permissão)
 
 - ajustes gerais do tenant

@@ -1,0 +1,23 @@
+### Listar todos os arquivos do tenant
+GET {{base_url}}/api/files?page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Filtrar arquivos por lead
+GET {{base_url}}/api/files?lead_id={{lead_id}}&page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Filtrar arquivos por tipo
+GET {{base_url}}/api/files?tipo=imagem&page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Filtrar arquivos por período
+GET {{base_url}}/api/files?from=2026-04-01&to=2026-04-05&page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Buscar por nome
+GET {{base_url}}/api/files?search=contrato&page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Download de arquivo
+GET {{base_url}}/api/files/{{file_id}}/download
+Authorization: Bearer {{tenant_token}}

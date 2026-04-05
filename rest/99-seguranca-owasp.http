@@ -1,0 +1,184 @@
+### ============================================
+### Testes manuais de segurança (OWASP Top 10)
+### ============================================
+
+### --- A01: Broken Access Control ---
+
+### Acessar recurso sem token (deve retornar 401)
+GET {{base_url}}/api/admin/tenants
+
+### Acessar admin com token de usuário comum (deve retornar 403)
+GET {{base_url}}/api/admin/tenants
+Authorization: Bearer {{tenant_token}}
+
+### Acessar tenant de outro usuário (deve retornar 403 ou 404)
+GET {{base_url}}/api/conversations
+Authorization: Bearer {{tenant_token}}
+X-Tenant-Id: outro-tenant-id-invalido
+
+### --- A02: Cryptographic Failures ---
+
+### Login e verificar que token não expõe dados sensíveis
+POST {{base_url}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{admin_email}}",
+  "password": "{{admin_password}}"
+}
+
+> {%
+    // Verificar que o token JWT não contém senha ou dados sensíveis no payload
+    client.test("Token não expõe dados sensíveis", function() {
+        client.assert(response.body.token !== undefined);
+    });
+%}
+
+### --- A03: Injection ---
+
+### SQL injection no parâmetro de busca
+GET {{base_url}}/api/conversations?search=' OR '1'='1
+Authorization: Bearer {{tenant_token}}
+
+> {%
+    client.test("Não retorna dados indevidos", function() {
+        client.assert(response.status === 200 || response.status === 400);
+    });
+%}
+
+### SQL injection no login
+POST {{base_url}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@crm.local' OR '1'='1",
+  "password": "qualquer"
+}
+
+> {%
+    client.test("Login rejeitado", function() {
+        client.assert(response.status === 401 || response.status === 400);
+    });
+%}
+
+### XSS no campo de nome do tenant
+POST {{base_url}}/api/admin/tenants
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "<script>alert('xss')</script>",
+  "tipo": "PJ",
+  "documento": "00.000.000/0001-00"
+}
+
+> {%
+    client.test("XSS sanitizado ou rejeitado", function() {
+        client.assert(response.status === 201 || response.status === 400);
+        if (response.status === 201) {
+            client.assert(!response.body.nome.includes("<script>"));
+        }
+    });
+%}
+
+### --- A04: Insecure Design ---
+
+### Tentar criar tenant sem campos obrigatórios
+POST {{base_url}}/api/admin/tenants
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+> {%
+    client.test("Validação rejeita payload vazio", function() {
+        client.assert(response.status === 400 || response.status === 422);
+    });
+%}
+
+### --- A05: Security Misconfiguration ---
+
+### Verificar que stack trace não é exposto em erro
+GET {{base_url}}/api/rota-inexistente
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Sem stack trace no corpo", function() {
+        var body = JSON.stringify(response.body);
+        client.assert(!body.includes("goroutine"));
+        client.assert(!body.includes("panic"));
+    });
+%}
+
+### Verificar headers de segurança
+GET {{base_url}}/health
+
+> {%
+    client.test("Headers de segurança presentes", function() {
+        client.assert(response.headers.valueOf("X-Content-Type-Options") === "nosniff");
+    });
+%}
+
+### --- A07: Identification and Authentication Failures ---
+
+### Brute force - múltiplas tentativas de login com senha errada
+POST {{base_url}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{admin_email}}",
+  "password": "senha_errada_1"
+}
+
+### (repetir manualmente 5-10 vezes e verificar se há rate limiting ou bloqueio)
+
+### Token expirado (usar um JWT antigo/inválido)
+GET {{base_url}}/api/admin/tenants
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MDAwMDAwMDB9.invalid
+
+> {%
+    client.test("Token expirado rejeitado", function() {
+        client.assert(response.status === 401);
+    });
+%}
+
+### --- A08: Software and Data Integrity Failures ---
+
+### Enviar JWT manipulado (alterar payload)
+GET {{base_url}}/api/admin/tenants
+Authorization: Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJyb2xlIjoiYWRtaW4ifQ.
+
+> {%
+    client.test("JWT manipulado rejeitado", function() {
+        client.assert(response.status === 401);
+    });
+%}
+
+### --- A09: Security Logging and Monitoring Failures ---
+
+### Verificar que login falho gera log (checar no Grafana/logs depois)
+POST {{base_url}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "atacante@fake.com",
+  "password": "tentativa_invasao"
+}
+
+### --- Isolamento de Tenant ---
+
+### Criar dado no tenant A e tentar acessar do tenant B
+// 1. Criar conversa/lead no tenant A (usar token do tenant A)
+// 2. Tentar acessar com token do tenant B
+// 3. Deve retornar 404 ou 403
+
+### Listar leads - deve retornar APENAS do tenant autenticado
+GET {{base_url}}/api/funnels/{{funnel_id}}/leads
+Authorization: Bearer {{tenant_token}}
+
+> {%
+    client.test("Leads pertencem ao tenant correto", function() {
+        client.assert(response.status === 200);
+        // Verificar manualmente que todos os leads retornados são do tenant correto
+    });
+%}

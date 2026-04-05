@@ -1,0 +1,8 @@
+### Healthcheck
+GET {{base_url}}/health
+
+### Readiness
+GET {{base_url}}/ready
+
+### Métricas Prometheus
+GET {{base_url}}/metrics

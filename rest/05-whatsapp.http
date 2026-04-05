@@ -1,0 +1,33 @@
+### Listar conversas do tenant
+GET {{base_url}}/api/conversations?page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Buscar conversa por ID
+GET {{base_url}}/api/conversations/{{conversation_id}}
+Authorization: Bearer {{tenant_token}}
+
+### Listar mensagens de uma conversa
+GET {{base_url}}/api/conversations/{{conversation_id}}/messages?page=1&per_page=50
+Authorization: Bearer {{tenant_token}}
+
+### Enviar mensagem
+POST {{base_url}}/api/conversations/{{conversation_id}}/messages
+Authorization: Bearer {{tenant_token}}
+Content-Type: application/json
+
+{
+  "conteudo": "Olá, como posso ajudá-lo?",
+  "tipo": "text"
+}
+
+### Buscar conversas (por nome ou telefone)
+GET {{base_url}}/api/conversations?search=joao&page=1&per_page=20
+Authorization: Bearer {{tenant_token}}
+
+### Assumir conversa manualmente (humano substitui IA)
+POST {{base_url}}/api/conversations/{{conversation_id}}/takeover
+Authorization: Bearer {{tenant_token}}
+
+### Devolver conversa ao especialista
+POST {{base_url}}/api/conversations/{{conversation_id}}/release
+Authorization: Bearer {{tenant_token}}

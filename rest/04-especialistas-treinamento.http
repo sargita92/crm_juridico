@@ -1,0 +1,127 @@
+### Upload documento RAG
+POST {{base_url}}/api/admin/documents
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="nome"
+
+Tabela de honorários trabalhistas
+--boundary
+Content-Disposition: form-data; name="file"; filename="honorarios.pdf"
+Content-Type: application/pdf
+
+< ./fixtures/honorarios.pdf
+--boundary--
+
+> {%
+    client.global.set("document_id", response.body.id);
+%}
+
+### Listar documentos RAG
+GET {{base_url}}/api/admin/documents?page=1&per_page=20
+Authorization: Bearer {{token}}
+
+### Associar documento a especialista
+POST {{base_url}}/api/admin/specialists/{{specialist_id}}/documents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "document_id": "{{document_id}}"
+}
+
+### Listar documentos de um especialista
+GET {{base_url}}/api/admin/specialists/{{specialist_id}}/documents
+Authorization: Bearer {{token}}
+
+### Desassociar documento
+DELETE {{base_url}}/api/admin/specialists/{{specialist_id}}/documents/{{document_id}}
+Authorization: Bearer {{token}}
+
+###
+
+### Criar MCP server
+POST {{base_url}}/api/admin/mcps
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nome": "Consulta processual",
+  "url": "http://mcp-consulta:3000",
+  "config": {}
+}
+
+> {%
+    client.global.set("mcp_id", response.body.id);
+%}
+
+### Associar MCP a especialista
+POST {{base_url}}/api/admin/specialists/{{specialist_id}}/mcps
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "mcp_id": "{{mcp_id}}"
+}
+
+###
+
+### Criar guardrail
+POST {{base_url}}/api/admin/specialists/{{specialist_id}}/guardrails
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "tipo": "topico_proibido",
+  "regra": "Nunca dar conselho médico",
+  "mensagem": "Desculpe, não posso ajudar com questões médicas. Posso ajudar com questões jurídicas."
+}
+
+### Listar guardrails do especialista
+GET {{base_url}}/api/admin/specialists/{{specialist_id}}/guardrails
+Authorization: Bearer {{token}}
+
+###
+
+### Criar step do script de atendimento
+POST {{base_url}}/api/admin/specialists/{{specialist_id}}/steps
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ordem": 1,
+  "texto": "Qual é o seu nome completo?",
+  "tipo_dado_esperado": "texto",
+  "obrigatorio": true,
+  "pontuacao": 2
+}
+
+### Listar steps do especialista
+GET {{base_url}}/api/admin/specialists/{{specialist_id}}/steps
+Authorization: Bearer {{token}}
+
+### Reordenar steps
+PUT {{base_url}}/api/admin/specialists/{{specialist_id}}/steps/reorder
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "order": ["step_id_1", "step_id_2", "step_id_3"]
+}
+
+###
+
+### Configurar scoring
+PUT {{base_url}}/api/admin/specialists/{{specialist_id}}/scoring
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "total_pontos": 10,
+  "threshold_qualificacao": 6
+}
+
+### Consultar scoring
+GET {{base_url}}/api/admin/specialists/{{specialist_id}}/scoring
+Authorization: Bearer {{token}}
