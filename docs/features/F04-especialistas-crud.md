@@ -53,6 +53,10 @@ Permitir que o admin crie, edite, liste e exclua especialistas (agentes de IA) e
 - [x] prompt é editável pela interface
 - [x] cobertura >= 80% (87.8%)
 
+## Melhorias futuras
+
+- [ ] **Otimizador de prompt com IA**: botão no editor de prompt que envia o texto atual para uma IA e retorna uma versão otimizada (melhor estrutura, clareza e eficácia). O admin digita o prompt, clica em "Otimizar com IA" e recebe uma sugestão reescrita que pode aceitar ou descartar.
+
 ## Entrega
 - **Branch**: main
 - **Commit**: feat(F04): CRUD de especialistas com associação a tenants
