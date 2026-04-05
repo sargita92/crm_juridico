@@ -2,12 +2,23 @@
 
 ## Arquivos
 
-| Arquivo | Ambiente | Descrição |
-|---------|----------|-----------|
-| `Dockerfile.dev` | Desenvolvimento | Com Air (hot reload) |
-| `Dockerfile` | Produção | Sem dependências de desenvolvimento |
-| `docker-compose.dev.yml` | Desenvolvimento | App + MySQL + volumes |
-| `docker-compose.yml` | Produção | App + MySQL + healthchecks |
+| Arquivo | Ambiente | Versionado? | Descrição |
+|---------|----------|-------------|-----------|
+| `Dockerfile.dev` | Desenvolvimento | Sim | Com Air (hot reload) |
+| `Dockerfile` | Produção | Sim | Sem dependências de desenvolvimento |
+| `docker-compose.yaml.dist` | Desenvolvimento | Sim | Referência funcional para dev (copiar para `docker-compose.yaml`) |
+| `docker-compose.yaml` | Local | **Não** (.gitignore) | Cópia local, pode ter ajustes pessoais |
+| `.env.dist` | Desenvolvimento | Sim | Referência funcional com valores padrão para dev |
+| `.env` | Local | **Não** (.gitignore) | Cópia local com credenciais reais |
+
+### Setup inicial
+
+```bash
+cp .env.dist .env
+cp docker-compose.yaml.dist docker-compose.yaml
+```
+
+> Os arquivos `.dist` devem estar **sempre funcionais** para desenvolvimento — basta copiar e rodar.
 
 ## Desenvolvimento
 
@@ -31,8 +42,17 @@
 - app: `GET /health` retorna 200 com status dos serviços
 - MySQL: conexão de teste periódica
 
+## Portas
+
+- **não usar portas padrão** (3306, 8080, 5432, etc.) para evitar conflitos com serviços locais
+- usar portas aleatórias/não-convencionais (ex: `8533` para a API, `3307` para MySQL)
+- portas definidas no `docker-compose.yaml.dist` e no `.env.dist`
+
 ## Regras
 
+- **`.env` e `docker-compose.yaml` nunca vão para o Git** — apenas os `.dist`
+- os `.dist` devem estar sempre funcionais para desenvolvimento (copiar e rodar)
+- `tmp/` no `.gitignore` (usado pelo Air para hot reload)
 - nunca incluir `.env` na imagem Docker
 - manter `.dockerignore` atualizado
 - separar concerns entre containers (app, banco, etc.)

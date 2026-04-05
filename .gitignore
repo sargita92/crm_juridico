@@ -1,0 +1,20 @@
+# Arquivos locais (usar .dist como referência)
+.env
+docker-compose.yaml
+
+# Air (hot reload)
+tmp/
+
+# Binários Go
+/cmd/api/api
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
