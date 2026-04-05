@@ -11,7 +11,7 @@
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
-| F01 | [Setup Inicial](../features/F01-setup-inicial.md) | backlog | — | alta |
+| F01 | [Setup Inicial](../features/F01-setup-inicial.md) | concluído | — | alta |
 | F02 | [Autenticação e Multitenancy](../features/F02-autenticacao-multitenancy.md) | backlog | F01 | alta |
 
 ## Épico 2: Admin — Tenants e Especialistas

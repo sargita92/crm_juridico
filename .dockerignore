@@ -1,0 +1,12 @@
+.git
+.env
+docker-compose.dev.yml
+docker-compose.prod.yml
+tmp/
+docs/
+rest/
+.idea/
+.vscode/
+*.md
+.air.toml
+.claude/

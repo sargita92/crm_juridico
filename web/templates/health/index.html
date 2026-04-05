@@ -1,0 +1,19 @@
+{{template "layouts/base.html" .}}
+
+{{define "title"}}Health — CRM Jurídico{{end}}
+
+{{define "content"}}
+<div class="health-container">
+    <h1>CRM Jurídico</h1>
+    <div
+        id="health-status"
+        hx-get="/health"
+        hx-trigger="load, every 10s"
+        hx-target="#health-result"
+        hx-swap="innerHTML"
+    >
+        <p>Verificando status...</p>
+    </div>
+    <div id="health-result"></div>
+</div>
+{{end}}

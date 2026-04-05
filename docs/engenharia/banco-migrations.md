@@ -24,7 +24,7 @@
 
 ## Ambiente de desenvolvimento
 
-- MySQL sobe via `docker-compose.dev.yml`
+- MySQL sobe via `docker-compose.dev.yml` (cópia local do `docker-compose.dev.yml.dist`)
 - migrations executam automaticamente no startup
 - seed de dados de desenvolvimento (quando aplicável)
 

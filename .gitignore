@@ -1,6 +1,7 @@
 # Arquivos locais (usar .dist como referência)
 .env
-docker-compose.yaml
+docker-compose.dev.yml
+docker-compose.prod.yml
 
 # Air (hot reload)
 tmp/

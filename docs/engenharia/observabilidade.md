@@ -108,7 +108,7 @@ Dashboards sugeridos:
 
 - Prometheus para coleta de métricas
 - Grafana para dashboards
-- configuração pronta no `docker-compose.dev.yml`
+- configuração pronta no `docker-compose.dev.yml.dist`
 
 ## Regras
 

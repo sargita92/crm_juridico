@@ -6,8 +6,10 @@
 |---------|----------|-------------|-----------|
 | `Dockerfile.dev` | Desenvolvimento | Sim | Com Air (hot reload) |
 | `Dockerfile` | Produção | Sim | Sem dependências de desenvolvimento |
-| `docker-compose.yaml.dist` | Desenvolvimento | Sim | Referência funcional para dev (copiar para `docker-compose.yaml`) |
-| `docker-compose.yaml` | Local | **Não** (.gitignore) | Cópia local, pode ter ajustes pessoais |
+| `docker-compose.dev.yml.dist` | Desenvolvimento | Sim | Referência funcional para dev (copiar para `docker-compose.dev.yml`) |
+| `docker-compose.dev.yml` | Local | **Não** (.gitignore) | Cópia local, pode ter ajustes pessoais |
+| `docker-compose.prod.yml.dist` | Produção | Sim | Referência funcional para prod (copiar para `docker-compose.prod.yml`) |
+| `docker-compose.prod.yml` | Local | **Não** (.gitignore) | Cópia local, pode ter ajustes pessoais |
 | `.env.dist` | Desenvolvimento | Sim | Referência funcional com valores padrão para dev |
 | `.env` | Local | **Não** (.gitignore) | Cópia local com credenciais reais |
 
@@ -15,7 +17,7 @@
 
 ```bash
 cp .env.dist .env
-cp docker-compose.yaml.dist docker-compose.yaml
+cp docker-compose.dev.yml.dist docker-compose.dev.yml
 ```
 
 > Os arquivos `.dist` devem estar **sempre funcionais** para desenvolvimento — basta copiar e rodar.
@@ -46,11 +48,11 @@ cp docker-compose.yaml.dist docker-compose.yaml
 
 - **não usar portas padrão** (3306, 8080, 5432, etc.) para evitar conflitos com serviços locais
 - usar portas aleatórias/não-convencionais (ex: `8533` para a API, `3307` para MySQL)
-- portas definidas no `docker-compose.yaml.dist` e no `.env.dist`
+- portas definidas no `docker-compose.dev.yml.dist` e no `.env.dist`
 
 ## Regras
 
-- **`.env` e `docker-compose.yaml` nunca vão para o Git** — apenas os `.dist`
+- **`.env`, `docker-compose.dev.yml` e `docker-compose.prod.yml` nunca vão para o Git** — apenas os `.dist`
 - os `.dist` devem estar sempre funcionais para desenvolvimento (copiar e rodar)
 - `tmp/` no `.gitignore` (usado pelo Air para hot reload)
 - nunca incluir `.env` na imagem Docker
