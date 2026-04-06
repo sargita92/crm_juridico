@@ -18,12 +18,12 @@
         </div>
         <div class="kanban-column-body" data-column-id="{{$col.ID}}" style="padding:0.5rem;min-height:calc(100vh - 180px);flex:1;display:flex;flex-direction:column;gap:0.5rem">
             {{range $col.Leads}}
-            <div class="kanban-card" data-lead-id="{{.ID}}" style="background:#fff;padding:0.75rem;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,0.08);cursor:grab"
-                 hx-get="/tenant/leads/{{.ID}}" hx-target="#lead-modal" hx-swap="innerHTML">
+            <div class="kanban-card" data-lead-id="{{.ID}}" style="background:#fff;padding:0.75rem;border-radius:6px;box-shadow:0 1px 2px rgba(0,0,0,0.08);cursor:grab">
                 <div style="font-weight:500;font-size:0.875rem;color:#111b21;margin-bottom:2px">{{if .ContactName}}{{.ContactName}}{{else}}{{.ContactPhone}}{{end}}</div>
                 {{if .ContactName}}<div style="font-size:0.75rem;color:#667781;margin-bottom:4px">{{.ContactPhone}}</div>{{end}}
                 <div style="display:flex;justify-content:space-between;align-items:center">
                     <span style="font-size:0.75rem;color:#eab308;font-weight:600">&#9733; {{.Score}}</span>
+                    <button class="kanban-card-detail-btn" hx-get="/tenant/leads/{{.ID}}" hx-target="#lead-modal" hx-swap="innerHTML">Ver detalhes</button>
                 </div>
             </div>
             {{end}}

@@ -16,8 +16,8 @@ function initKanbanSortable() {
         el._sortable = new Sortable(el, {
             group: 'kanban',
             animation: 150,
-            delay: 150,
-            delayOnTouchOnly: false,
+            filter: '.kanban-card-detail-btn',
+            preventOnFilter: false,
             ghostClass: 'sortable-ghost',
             dragClass: 'sortable-drag',
             onEnd: function(evt) {
