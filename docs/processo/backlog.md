@@ -35,7 +35,7 @@
 |---|---------|--------|-------------|------------|
 | F08 | [Usuários e Permissões](../features/F08-usuarios-permissoes.md) | backlog | F07 | média |
 | F09 | [Automações](../features/F09-automacoes.md) | backlog | F07 | média |
-| F10 | [Produtos](../features/F10-produtos.md) | backlog | F07 | média |
+| F10 | [Produtos](../features/F10-produtos.md) | backlog | F07 | alta |
 
 ## Épico 5: Gestão de Arquivos
 
@@ -55,6 +55,7 @@
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F15 | [MCP Interno para Especialistas](../features/F15-mcp-interno-especialistas.md) | backlog | F05 | média |
+| F16 | [Motor de IA dos Especialistas](../features/F16-motor-ia-especialistas.md) | backlog | F05, F06, F07, F10 | alta |
 
 ## Épico 8: Marketing
 
@@ -72,16 +73,17 @@ Iteração 2: F02 (auth + multitenancy)
 Iteração 3: F03 (CRUD tenants)
 Iteração 4: F04 (CRUD especialistas)
 Iteração 5: F05 (treinamento especialistas)
-Iteração 6: F06 (integração WhatsApp)
+Iteração 6: F06 (integração WhatsApp — steps 1-4)
 Iteração 7: F07 (funis/kanban)
-Iteração 8: F08 (usuários e permissões)
-Iteração 9: F09 (automações)
-Iteração 10: F10 (produtos)
-Iteração 11: F14 (arquivos por lead)
-Iteração 12: F15 (MCP interno para especialistas)
-Iteração 13: F11 (pagamentos)
-Iteração 14: F12 (logs)
-Iteração 15: F13 (landing page)
+Iteração 8: F10 (produtos)
+Iteração 9: F16 (motor de IA — especialista responde no WhatsApp)
+Iteração 10: F08 (usuários e permissões)
+Iteração 11: F09 (automações)
+Iteração 12: F14 (arquivos por lead)
+Iteração 13: F15 (MCP interno para especialistas)
+Iteração 14: F11 (pagamentos)
+Iteração 15: F12 (logs)
+Iteração 16: F13 (landing page)
 ```
 
 ## Notas

@@ -43,11 +43,8 @@ Conectar o sistema ao WhatsApp para receber e enviar mensagens, criando a base p
 - [ ] indicador de novas mensagens
 
 ### Step 5: Conexão com especialista
-- [ ] ao receber primeira mensagem, acionar especialista associado ao tenant
-- [ ] especialista responde automaticamente seguindo o script de steps
-- [ ] registrar respostas do especialista como mensagens na conversa
-- [ ] possibilidade de assumir conversa manualmente (humano substitui IA)
-- [ ] testes
+
+> **Movido para F16 (Motor de IA dos Especialistas)**. Este step foi extraído para uma feature dedicada que cobre: integração com provider de IA, montagem de contexto (prompt + RAG + guardrails + steps + histórico), engine de conversa, scoring, guardrails em runtime e handoff humano. Ver [F16](F16-motor-ia-especialistas.md).
 
 ## Critérios de aceite
 - mensagens do WhatsApp chegam e são persistidas
