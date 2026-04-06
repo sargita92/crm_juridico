@@ -1,0 +1,29 @@
+{{define "funnel/lead_notes_section.html"}}
+<h4>Anotacoes</h4>
+{{if .Error}}
+<p style="color:#ef4444;font-size:0.8125rem;margin-bottom:0.5rem">{{.Error}}</p>
+{{end}}
+{{if .Lead}}
+<form class="lead-note-form"
+      hx-post="/tenant/leads/{{.Lead.ID}}/notes"
+      hx-target="#lead-notes-section"
+      hx-swap="innerHTML">
+    <textarea name="content" placeholder="Adicionar anotacao..." rows="2" class="lead-note-input" required></textarea>
+    <button type="submit" class="btn btn-sm btn-primary">Adicionar</button>
+</form>
+{{if .Lead.Notes}}
+<div class="lead-notes-list">
+    {{range .Lead.Notes}}
+    <div class="lead-note-item">
+        <div class="lead-note-meta">
+            <span class="lead-note-date">{{.CreatedAt.Format "02/01/2006 15:04"}}</span>
+        </div>
+        <p class="lead-note-content">{{.Content}}</p>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<p class="lead-empty-text">Nenhuma anotacao</p>
+{{end}}
+{{end}}
+{{end}}

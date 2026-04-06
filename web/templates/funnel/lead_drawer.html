@@ -1,0 +1,112 @@
+{{define "funnel/lead_drawer.html"}}
+<div class="lead-drawer-overlay" onclick="closeLeadDrawer(event)">
+    <div class="lead-drawer" onclick="event.stopPropagation()">
+        <div class="lead-drawer-header">
+            <h3>{{if .Lead}}{{.Lead.ContactName}}{{if not .Lead.ContactName}}Lead{{end}}{{else}}Erro{{end}}</h3>
+            <button class="modal-close" onclick="document.getElementById('lead-modal').innerHTML=''">&times;</button>
+        </div>
+        {{if .Error}}
+        <div class="lead-drawer-body">
+            <p style="color:#ef4444">{{.Error}}</p>
+        </div>
+        {{else}}
+        <div class="lead-drawer-body">
+            <!-- Contato -->
+            <div class="lead-detail-section">
+                <h4>Contato</h4>
+                <p><strong>Nome:</strong> {{.Lead.ContactName}}</p>
+                <p><strong>Telefone:</strong> {{.Lead.ContactPhone}}</p>
+            </div>
+
+            <!-- Funil -->
+            <div class="lead-detail-section">
+                <h4>Funil</h4>
+                <p><strong>Funil:</strong> {{.Lead.FunnelName}}</p>
+                <p><strong>Coluna:</strong> {{.Lead.ColumnName}}</p>
+                <p><strong>Score:</strong> <span style="color:#eab308;font-weight:600">&#9733; {{.Lead.Score}}</span></p>
+                <p><strong>Status:</strong> <span class="badge {{if eq .Lead.Status "won"}}badge-green{{else if eq .Lead.Status "lost"}}badge-gray{{else}}badge-blue{{end}}">{{.Lead.Status}}</span></p>
+                <p><strong>Criado em:</strong> {{.Lead.CreatedAt.Format "02/01/2006 15:04"}}</p>
+            </div>
+
+            <!-- Acoes -->
+            <div class="lead-detail-actions">
+                <a href="/tenant/whatsapp" class="btn btn-primary btn-sm">Abrir Conversa</a>
+                <button class="btn btn-outline btn-sm"
+                        hx-get="/tenant/leads/{{.Lead.ID}}/move-form"
+                        hx-target="#lead-modal"
+                        hx-swap="innerHTML">Mover Lead</button>
+            </div>
+
+            <!-- Mensagens WhatsApp -->
+            <div class="lead-detail-section">
+                <h4>Mensagens recentes</h4>
+                {{if .Lead.Messages}}
+                <div class="lead-messages">
+                    {{range .Lead.Messages}}
+                    <div class="lead-message-bubble lead-message-{{.Direction}}">
+                        <p>{{.Content}}</p>
+                        <span class="lead-message-time">{{.Timestamp.Format "02/01 15:04"}}</span>
+                    </div>
+                    {{end}}
+                </div>
+                <a href="/tenant/whatsapp" class="lead-messages-link">Ver conversa completa &rarr;</a>
+                {{else}}
+                <p class="lead-empty-text">Nenhuma mensagem</p>
+                {{end}}
+            </div>
+
+            <!-- Anotacoes -->
+            <div class="lead-detail-section" id="lead-notes-section">
+                {{template "funnel/lead_notes_section.html" .}}
+            </div>
+
+            <!-- Historico de movimentacoes -->
+            <div class="lead-detail-section">
+                <h4>Historico de movimentacoes</h4>
+                {{if .Lead.Movements}}
+                <div class="lead-movements">
+                    {{range .Lead.Movements}}
+                    <div class="lead-movement-item">
+                        <span class="lead-movement-date">{{.MovedAt.Format "02/01 15:04"}}</span>
+                        <span class="lead-movement-desc">
+                            {{if .FromColumnName}}{{.FromColumnName}} &rarr; {{end}}{{.ToColumnName}}
+                            {{if not .FromColumnName}}(criacao automatica){{end}}
+                        </span>
+                    </div>
+                    {{end}}
+                </div>
+                {{else}}
+                <p class="lead-empty-text">Nenhuma movimentacao</p>
+                {{end}}
+            </div>
+
+            <!-- Produto (placeholder F10) -->
+            <div class="lead-detail-section">
+                <h4>Produto</h4>
+                {{if .Lead.ProductName}}
+                <p>{{.Lead.ProductName}}</p>
+                {{else}}
+                <p class="lead-empty-text">Nenhum produto associado</p>
+                {{end}}
+            </div>
+
+            <!-- Responsavel (placeholder F08) -->
+            <div class="lead-detail-section">
+                <h4>Responsavel</h4>
+                {{if .Lead.AssignedToName}}
+                <p>{{.Lead.AssignedToName}}</p>
+                {{else}}
+                <p class="lead-empty-text">Nenhum responsavel atribuido</p>
+                {{end}}
+            </div>
+
+            <!-- Documentos (placeholder F14) -->
+            <div class="lead-detail-section">
+                <h4>Documentos</h4>
+                <p class="lead-empty-text">Nenhum documento anexado</p>
+            </div>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}
