@@ -17,6 +17,7 @@ type Lead struct {
 	ColumnID        string
 	ContactID       string
 	ConversationID  string
+	ProductID       string
 	Score           int
 	Status          LeadStatus
 	ColumnEnteredAt time.Time
@@ -64,6 +65,11 @@ func (l *Lead) MoveTo(columnID string, colType ColumnType) {
 			l.Status = LeadStatusOpen
 		}
 	}
+}
+
+func (l *Lead) SetProduct(productID string) {
+	l.ProductID = productID
+	l.UpdatedAt = time.Now()
 }
 
 func (l *Lead) UpdateScore(score int) {

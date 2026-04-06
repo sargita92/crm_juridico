@@ -377,3 +377,76 @@ func (m *mockUserNameProvider) FindNameByID(_ context.Context, userID string) (s
 	}
 	return "", errors.New("user not found")
 }
+
+// --- Mock ProductDetector ---
+
+type mockProductDetector struct {
+	// tenantID -> messageText -> (productID, found)
+	results map[string]map[string]string
+	err     error
+}
+
+func newMockProductDetector() *mockProductDetector {
+	return &mockProductDetector{results: make(map[string]map[string]string)}
+}
+
+func (m *mockProductDetector) AddResult(tenantID, keyword, productID string) {
+	if m.results[tenantID] == nil {
+		m.results[tenantID] = make(map[string]string)
+	}
+	m.results[tenantID][keyword] = productID
+}
+
+func (m *mockProductDetector) DetectFromMessage(_ context.Context, tenantID, messageText string) (string, bool, error) {
+	if m.err != nil {
+		return "", false, m.err
+	}
+	if tenant, ok := m.results[tenantID]; ok {
+		// Simple substring matching for testing
+		for keyword, productID := range tenant {
+			if strings.Contains(strings.ToLower(messageText), strings.ToLower(keyword)) {
+				return productID, true, nil
+			}
+		}
+	}
+	return "", false, nil
+}
+
+// --- Mock FunnelProductRouter ---
+
+type mockFunnelProductRouter struct {
+	// productID -> funnelID
+	routes map[string]string
+	err    error
+}
+
+func newMockFunnelProductRouter() *mockFunnelProductRouter {
+	return &mockFunnelProductRouter{routes: make(map[string]string)}
+}
+
+func (m *mockFunnelProductRouter) FindTopPriorityFunnelID(_ context.Context, productID string) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
+	if funnelID, ok := m.routes[productID]; ok {
+		return funnelID, nil
+	}
+	return "", errors.New("no funnel-product mapping found")
+}
+
+// --- Mock ProductProvider ---
+
+type mockProductProvider struct {
+	names map[string]string
+}
+
+func newMockProductProvider() *mockProductProvider {
+	return &mockProductProvider{names: make(map[string]string)}
+}
+
+func (m *mockProductProvider) FindProductNameByID(_ context.Context, id string) (string, error) {
+	if name, ok := m.names[id]; ok {
+		return name, nil
+	}
+	return "", errors.New("product not found")
+}

@@ -27,3 +27,15 @@ type MessageProvider interface {
 type UserNameProvider interface {
 	FindNameByID(ctx context.Context, userID string) (string, error)
 }
+
+type ProductDetector interface {
+	DetectFromMessage(ctx context.Context, tenantID, messageText string) (productID string, found bool, err error)
+}
+
+type ProductProvider interface {
+	FindProductNameByID(ctx context.Context, id string) (string, error)
+}
+
+type FunnelProductRouter interface {
+	FindTopPriorityFunnelID(ctx context.Context, productID string) (funnelID string, err error)
+}

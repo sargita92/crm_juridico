@@ -82,15 +82,19 @@ func main() {
 
 	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
 
+	// Product module (must be created before funnel module for adapter wiring)
+	productMod := product.NewModule(db, log)
+
 	// Cross-module adapters
 	contactAdapter := funnelinfra.NewWhatsAppContactAdapter(whatsappMod.ContactRepo())
 	messageAdapter := funnelinfra.NewWhatsAppMessageAdapter(whatsappMod.MessageRepo())
 	userNameAdapter := funnelinfra.NewUserNameAdapter(authinfra.NewGormUserRepository(db))
+	productDetectorAdapter := funnelinfra.NewProductDetectorAdapter(productMod.DetectUseCase())
+	productProviderAdapter := funnelinfra.NewProductProviderAdapter(productMod.ProductRepo())
+	funnelProductRouterAdapter := funnelinfra.NewFunnelProductRouterAdapter(productMod.FunnelProductRepo())
 
-	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, log)
+	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
-
-	productMod := product.NewModule(db, log)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod}
 

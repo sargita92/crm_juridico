@@ -161,10 +161,10 @@ func setupOwaspEnv() *owaspEnv {
 	createColumnUC := application.NewCreateColumnUseCase(funnelRepo, columnRepo)
 	deleteColumnUC := application.NewDeleteColumnUseCase(funnelRepo, columnRepo, leadRepo)
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
-	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
+	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil)
 	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
 	userNameProvider := &owaspMockUserNameProvider{}
-	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider)
+	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider, nil)
 	createLeadNoteUC := application.NewCreateLeadNoteUseCase(leadRepo, noteRepo)
 
 	testLog, _ := zap.NewDevelopment()

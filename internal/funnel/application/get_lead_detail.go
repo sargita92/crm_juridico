@@ -66,6 +66,7 @@ type GetLeadDetailUseCase struct {
 	messageProvider  domain.MessageProvider
 	noteRepo         domain.LeadNoteRepository
 	userNameProvider domain.UserNameProvider
+	productProvider  domain.ProductProvider
 }
 
 func NewGetLeadDetailUseCase(
@@ -77,6 +78,7 @@ func NewGetLeadDetailUseCase(
 	messageProvider domain.MessageProvider,
 	noteRepo domain.LeadNoteRepository,
 	userNameProvider domain.UserNameProvider,
+	productProvider domain.ProductProvider,
 ) *GetLeadDetailUseCase {
 	return &GetLeadDetailUseCase{
 		leadRepo:         leadRepo,
@@ -87,6 +89,7 @@ func NewGetLeadDetailUseCase(
 		messageProvider:  messageProvider,
 		noteRepo:         noteRepo,
 		userNameProvider: userNameProvider,
+		productProvider:  productProvider,
 	}
 }
 
@@ -176,6 +179,14 @@ func (uc *GetLeadDetailUseCase) Execute(ctx context.Context, input GetLeadDetail
 		}
 	}
 
+	// Product name
+	var productName string
+	if lead.ProductID != "" && uc.productProvider != nil {
+		if name, err := uc.productProvider.FindProductNameByID(ctx, lead.ProductID); err == nil {
+			productName = name
+		}
+	}
+
 	return &LeadDetailOutput{
 		ID:              lead.ID,
 		TenantID:        lead.TenantID,
@@ -194,5 +205,6 @@ func (uc *GetLeadDetailUseCase) Execute(ctx context.Context, input GetLeadDetail
 		Messages:        messages,
 		Movements:       mvOutputs,
 		Notes:           noteOutputs,
+		ProductName:     productName,
 	}, nil
 }

@@ -37,10 +37,11 @@ type LeadMovementRepository interface {
 }
 
 type LeadFilter struct {
-	Search   string
-	ColumnID string
-	Page     int
-	Limit    int
+	Search    string
+	ColumnID  string
+	ProductID string
+	Page      int
+	Limit     int
 }
 
 type LeadList struct {

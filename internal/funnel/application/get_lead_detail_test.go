@@ -22,7 +22,7 @@ func setupLeadDetailTest() (*GetLeadDetailUseCase, *mockLeadRepo, *mockLeadMovem
 	noteRepo := newMockLeadNoteRepo()
 	userNameProvider := newMockUserNameProvider()
 
-	uc := NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider)
+	uc := NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider, nil)
 	return uc, leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider
 }
 

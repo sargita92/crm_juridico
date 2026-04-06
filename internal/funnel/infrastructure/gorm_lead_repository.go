@@ -90,6 +90,9 @@ func (r *GormLeadRepository) FindByFunnelID(ctx context.Context, funnelID string
 	if filter.ColumnID != "" {
 		countQuery = countQuery.Where("leads.column_id = ?", filter.ColumnID)
 	}
+	if filter.ProductID != "" {
+		countQuery = countQuery.Where("leads.product_id = ?", filter.ProductID)
+	}
 
 	var total int64
 	if err := countQuery.Count(&total).Error; err != nil {
@@ -104,6 +107,7 @@ func (r *GormLeadRepository) FindByFunnelID(ctx context.Context, funnelID string
 		ColumnID        string `gorm:"column:column_id"`
 		ContactID       string `gorm:"column:contact_id"`
 		ConversationID  string `gorm:"column:conversation_id"`
+		ProductID       string `gorm:"column:product_id"`
 		Score           int    `gorm:"column:score"`
 		Status          string `gorm:"column:status"`
 		ColumnEnteredAt string `gorm:"column:column_entered_at"`
@@ -119,7 +123,7 @@ func (r *GormLeadRepository) FindByFunnelID(ctx context.Context, funnelID string
 	dataQuery := r.db.WithContext(ctx).
 		Table("leads").
 		Select(`leads.id, leads.tenant_id, leads.funnel_id, leads.column_id,
-			leads.contact_id, leads.conversation_id, leads.score, leads.status,
+			leads.contact_id, leads.conversation_id, leads.product_id, leads.score, leads.status,
 			leads.column_entered_at, leads.created_at as lead_created_at, leads.updated_at as lead_updated_at,
 			contacts.name as contact_name, contacts.phone as contact_phone,
 			funnel_columns.name as column_name, funnel_columns.color as column_color,
@@ -135,6 +139,9 @@ func (r *GormLeadRepository) FindByFunnelID(ctx context.Context, funnelID string
 	}
 	if filter.ColumnID != "" {
 		dataQuery = dataQuery.Where("leads.column_id = ?", filter.ColumnID)
+	}
+	if filter.ProductID != "" {
+		dataQuery = dataQuery.Where("leads.product_id = ?", filter.ProductID)
 	}
 
 	offset := (page - 1) * limit
@@ -156,6 +163,7 @@ func (r *GormLeadRepository) FindByFunnelID(ctx context.Context, funnelID string
 				ColumnID:       row.ColumnID,
 				ContactID:      row.ContactID,
 				ConversationID: row.ConversationID,
+				ProductID:      row.ProductID,
 				Score:          row.Score,
 				Status:         domain.LeadStatus(row.Status),
 			},
