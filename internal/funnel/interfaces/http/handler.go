@@ -28,9 +28,10 @@ type Handler struct {
 	moveColumnUC    *application.MoveColumnUseCase
 	createLeadUC    *application.CreateLeadUseCase
 	moveLeadUC      *application.MoveLeadUseCase
-	getLeadDetailUC *application.GetLeadDetailUseCase
-	leadRepo        domain.LeadRepository
-	log             *zap.Logger
+	getLeadDetailUC  *application.GetLeadDetailUseCase
+	createLeadNoteUC *application.CreateLeadNoteUseCase
+	leadRepo         domain.LeadRepository
+	log              *zap.Logger
 }
 
 func NewHandler(
@@ -46,6 +47,7 @@ func NewHandler(
 	createLeadUC *application.CreateLeadUseCase,
 	moveLeadUC *application.MoveLeadUseCase,
 	getLeadDetailUC *application.GetLeadDetailUseCase,
+	createLeadNoteUC *application.CreateLeadNoteUseCase,
 	leadRepo domain.LeadRepository,
 	log *zap.Logger,
 ) *Handler {
@@ -61,8 +63,9 @@ func NewHandler(
 		moveColumnUC:    moveColumnUC,
 		createLeadUC:    createLeadUC,
 		moveLeadUC:      moveLeadUC,
-		getLeadDetailUC: getLeadDetailUC,
-		leadRepo:        leadRepo,
+		getLeadDetailUC:  getLeadDetailUC,
+		createLeadNoteUC: createLeadNoteUC,
+		leadRepo:         leadRepo,
 		log:             log,
 	}
 }
@@ -400,13 +403,13 @@ func (h *Handler) RenderLeadDetail(c *gin.Context) {
 	})
 	if err != nil {
 		h.log.Error("failed to get lead detail", zap.Error(err))
-		c.HTML(http.StatusNotFound, "funnel/lead_detail.html", gin.H{
+		c.HTML(http.StatusNotFound, "funnel/lead_drawer.html", gin.H{
 			"Error": "Lead nao encontrado",
 		})
 		return
 	}
 
-	c.HTML(http.StatusOK, "funnel/lead_detail.html", gin.H{
+	c.HTML(http.StatusOK, "funnel/lead_drawer.html", gin.H{
 		"Lead": detail,
 	})
 }
@@ -478,4 +481,40 @@ func (h *Handler) HandleMoveLead(c *gin.Context) {
 
 	c.Header("HX-Redirect", "/tenant/leads")
 	c.Status(http.StatusOK)
+}
+
+func (h *Handler) HandleCreateNote(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	leadID := c.Param("id")
+	content := c.PostForm("content")
+	userID := c.GetString("user_id")
+
+	_, err := h.createLeadNoteUC.Execute(c.Request.Context(), application.CreateLeadNoteInput{
+		TenantID:  tenantID,
+		LeadID:    leadID,
+		Content:   content,
+		CreatedBy: userID,
+	})
+	if err != nil {
+		h.log.Error("failed to create note", zap.Error(err))
+		c.HTML(http.StatusUnprocessableEntity, "funnel/lead_notes_section.html", gin.H{
+			"Error": "Erro ao adicionar anotacao: " + err.Error(),
+		})
+		return
+	}
+
+	// Re-fetch lead detail to get updated notes list
+	detail, err := h.getLeadDetailUC.Execute(c.Request.Context(), application.GetLeadDetailInput{
+		TenantID: tenantID,
+		LeadID:   leadID,
+	})
+	if err != nil {
+		h.log.Error("failed to reload lead detail", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.HTML(http.StatusOK, "funnel/lead_notes_section.html", gin.H{
+		"Lead": detail,
+	})
 }

@@ -31,4 +31,5 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.Handle
 	tenant.GET("/:id", h.RenderLeadDetail)
 	tenant.GET("/:id/move-form", h.RenderLeadMoveForm)
 	tenant.POST("/:id/move", h.HandleMoveLead)
+	tenant.POST("/:id/notes", h.HandleCreateNote)
 }
