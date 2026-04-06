@@ -54,21 +54,21 @@ Implementar o sistema de funis de vendas em formato kanban, conectado às conver
 - [ ] filtros por produto, responsável, score (F08, F10)
 - [ ] visualização filtrada por perfil do grupo de permissão (F08)
 - [x] seletor de funil (quando há mais de um)
-- [ ] clique no lead abre painel de detalhes (Step 7)
+- [x] clique no lead abre painel de detalhes (Step 7)
 
-### Step 7: Painel de detalhes do lead (futuro)
-- [ ] ao clicar no card, abrir painel lateral ou modal com:
-  - [ ] dados do contato (nome, telefone)
-  - [ ] funil e coluna atual, score
-  - [ ] conversa do WhatsApp embutida (últimas mensagens + link para abrir)
-  - [ ] histórico de movimentações no funil
+### Step 7: Painel de detalhes do lead
+- [x] ao clicar no card, abrir painel lateral ou modal com:
+  - [x] dados do contato (nome, telefone)
+  - [x] funil e coluna atual, score
+  - [x] conversa do WhatsApp embutida (últimas mensagens + link para abrir)
+  - [x] histórico de movimentações no funil
   - [ ] documentos/arquivos do lead (F14)
   - [ ] produto associado (F10)
   - [ ] responsável atribuído (F08)
-  - [ ] anotações manuais
-  - [ ] botão "Mover Lead" (funil + coluna)
-  - [ ] botão "Abrir Conversa" (navega para WhatsApp)
-- [ ] design: painel lateral estilo drawer (abre da direita, não bloqueia o kanban)
+  - [x] anotações manuais
+  - [x] botão "Mover Lead" (funil + coluna)
+  - [x] botão "Abrir Conversa" (navega para WhatsApp)
+- [x] design: painel lateral estilo drawer (abre da direita, não bloqueia o kanban)
 
 ## Decisões técnicas
 - Módulo `internal/funnel/` com DDD + Clean Architecture
