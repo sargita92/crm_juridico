@@ -71,6 +71,20 @@
     </main>
 </div>
 <script src="/static/js/admin.js"></script>
+<script>
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var convId = params.get('conv');
+    if (convId) {
+        document.addEventListener('htmx:afterSettle', function handler(e) {
+            if (e.detail.target.id === 'conversations-list') {
+                document.removeEventListener('htmx:afterSettle', handler);
+                htmx.ajax('GET', '/tenant/whatsapp/conversations/' + convId, '#chat-area');
+            }
+        });
+    }
+})();
+</script>
 </body>
 </html>
 {{end}}
