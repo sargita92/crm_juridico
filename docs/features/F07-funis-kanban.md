@@ -61,14 +61,17 @@ Implementar o sistema de funis de vendas em formato kanban, conectado às conver
   - [x] dados do contato (nome, telefone)
   - [x] funil e coluna atual, score
   - [x] conversa do WhatsApp embutida (últimas mensagens + link para abrir)
-  - [x] histórico de movimentações no funil
+  - [x] histórico de movimentações no funil (colapsável)
   - [ ] documentos/arquivos do lead (F14)
   - [ ] produto associado (F10)
   - [ ] responsável atribuído (F08)
-  - [x] anotações manuais
+  - [x] anotações manuais (colapsável, com autor e data)
   - [x] botão "Mover Lead" (funil + coluna)
-  - [x] botão "Abrir Conversa" (navega para WhatsApp)
-- [x] design: painel lateral estilo drawer (abre da direita, não bloqueia o kanban)
+  - [x] botão "Abrir Conversa" (navega para WhatsApp com conversa selecionada)
+- [x] design: painel lateral estilo drawer (abre da direita, 50% da tela)
+- [x] botão de ícone no card do kanban para abrir detalhes (sem conflito com drag)
+- [x] seções colapsáveis (mensagens, anotações, histórico) via details/summary
+- [x] deep link para conversa WhatsApp via parâmetro ?conv=
 
 ## Decisões técnicas
 - Módulo `internal/funnel/` com DDD + Clean Architecture
@@ -77,6 +80,10 @@ Implementar o sistema de funis de vendas em formato kanban, conectado às conver
 - Drag-and-drop via Sortable.js (lib leve, sem framework)
 - Sessão WhatsApp persistida em SQLite (volume Docker)
 - Templates inline no kanban (evita problema de sub-templates Go)
+- Cross-module via interfaces: ContactProvider, MessageProvider, UserNameProvider (adapters no funnel infra)
+- LeadNote como entidade de domínio com validação (max 2000 chars)
+- Drawer com estilos inline para evitar problemas de cache CSS
+- Sortable.js com `filter` para não interceptar cliques no botão de detalhes
 
 ## Critérios de aceite
 - [x] funis são configuráveis com múltiplas colunas
@@ -85,12 +92,12 @@ Implementar o sistema de funis de vendas em formato kanban, conectado às conver
 - [x] movimentação manual por drag-and-drop
 - [ ] visualização filtrada por perfil (F08)
 - [x] kanban é intuitivo e bonito
-- [x] cobertura >= 80%
+- [x] cobertura >= 80% (88.8%)
 
 ## Melhorias futuras
-- Painel de detalhes do lead (Step 7) — ver dados, conversa, documentos, histórico
 - Filtros avançados por produto (F10), responsável (F08), score
 - Visualização por perfil de permissão (F08)
 - Movimentação automática por IA (F16)
-- Anotações manuais no lead
 - Indicador de tempo na coluna nos cards
+- Edição/exclusão de anotações
+- Paginação de anotações e mensagens no drawer
