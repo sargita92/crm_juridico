@@ -1,0 +1,13 @@
+{{define "funnel/lead_card.html"}}
+<div class="kanban-card" data-lead-id="{{.ID}}"
+     hx-get="/tenant/leads/{{.ID}}"
+     hx-target="#lead-modal"
+     hx-swap="innerHTML">
+    <div class="kanban-card-name">{{.ContactName}}</div>
+    <div class="kanban-card-phone">{{.ContactPhone}}</div>
+    <div class="kanban-card-meta">
+        <span class="kanban-card-score">{{.Score}}</span>
+        <span class="kanban-card-time">{{.TimeInColumn}}</span>
+    </div>
+</div>
+{{end}}

@@ -1,93 +1,105 @@
+### ============================================
+### F07 — Funis de Vendas (Kanban)
+### ============================================
+### Variaveis:
+###   {{base_url}}     = http://localhost:8533
+###   {{tenant_token}} = JWT com tenant_id selecionado
+
+### --- Kanban ---
+
+### Pagina principal do Kanban
+GET {{base_url}}/tenant/leads
+Cookie: token={{tenant_token}}
+
+### Fragmento do kanban (HTMX)
+GET {{base_url}}/tenant/leads/kanban?funnel_id={{funnel_id}}
+Cookie: token={{tenant_token}}
+
+### Buscar leads no kanban
+GET {{base_url}}/tenant/leads/kanban?search=maria&funnel_id={{funnel_id}}
+Cookie: token={{tenant_token}}
+
+### --- Funis ---
+
+### Listar funis
+GET {{base_url}}/tenant/leads/funnels
+Cookie: token={{tenant_token}}
+
 ### Criar funil
-POST {{base_url}}/api/funnels
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+POST {{base_url}}/tenant/leads/funnels
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "nome": "Funil Trabalhista",
-  "descricao": "Funil para leads de direito trabalhista"
-}
+name=Consultoria Trabalhista&description=Pipeline principal
 
-> {%
-    client.global.set("funnel_id", response.body.id);
-%}
-
-### Listar funis do tenant
-GET {{base_url}}/api/funnels
-Authorization: Bearer {{tenant_token}}
-
-### Buscar funil por ID
-GET {{base_url}}/api/funnels/{{funnel_id}}
-Authorization: Bearer {{tenant_token}}
+### Detalhe do funil
+GET {{base_url}}/tenant/leads/funnels/{{funnel_id}}
+Cookie: token={{tenant_token}}
 
 ### Editar funil
-PUT {{base_url}}/api/funnels/{{funnel_id}}
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+PUT {{base_url}}/tenant/leads/funnels/{{funnel_id}}
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "nome": "Funil Trabalhista v2"
-}
+name=Consultoria Trabalhista 2026&description=Pipeline atualizado
 
-###
+### Ativar/desativar funil
+POST {{base_url}}/tenant/leads/funnels/{{funnel_id}}/toggle
+Cookie: token={{tenant_token}}
 
-### Adicionar coluna ao funil
-POST {{base_url}}/api/funnels/{{funnel_id}}/columns
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
-
-{
-  "nome": "Novo Lead",
-  "ordem": 1,
-  "tipo": "inicial",
-  "cor": "#3B82F6"
-}
-
-> {%
-    client.global.set("column_id", response.body.id);
-%}
+### --- Colunas ---
 
 ### Listar colunas do funil
-GET {{base_url}}/api/funnels/{{funnel_id}}/columns
-Authorization: Bearer {{tenant_token}}
+GET {{base_url}}/tenant/leads/funnels/{{funnel_id}}/columns
+Cookie: token={{tenant_token}}
 
-### Reordenar colunas
-PUT {{base_url}}/api/funnels/{{funnel_id}}/columns/reorder
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+### Criar coluna
+POST {{base_url}}/tenant/leads/funnels/{{funnel_id}}/columns
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "order": ["col_id_1", "col_id_2", "col_id_3"]
-}
+name=Proposta Enviada&type=intermediate&color=%23eab308
 
-###
+### Mover coluna para cima
+POST {{base_url}}/tenant/leads/funnels/{{funnel_id}}/columns/{{column_id}}/move-up
+Cookie: token={{tenant_token}}
 
-### Listar leads do funil
-GET {{base_url}}/api/funnels/{{funnel_id}}/leads?page=1&per_page=50
-Authorization: Bearer {{tenant_token}}
+### Mover coluna para baixo
+POST {{base_url}}/tenant/leads/funnels/{{funnel_id}}/columns/{{column_id}}/move-down
+Cookie: token={{tenant_token}}
 
-### Buscar lead por ID
-GET {{base_url}}/api/leads/{{lead_id}}
-Authorization: Bearer {{tenant_token}}
+### Remover coluna
+DELETE {{base_url}}/tenant/leads/funnels/{{funnel_id}}/columns/{{column_id}}
+Cookie: token={{tenant_token}}
 
-### Mover lead entre colunas (manual)
-PUT {{base_url}}/api/leads/{{lead_id}}/move
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+### --- Leads ---
 
-{
-  "column_id": "{{target_column_id}}"
-}
+### Detalhe do lead (modal)
+GET {{base_url}}/tenant/leads/{{lead_id}}
+Cookie: token={{tenant_token}}
 
-### Mover lead para outro funil
-PUT {{base_url}}/api/leads/{{lead_id}}/transfer
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+### Mover lead
+POST {{base_url}}/tenant/leads/{{lead_id}}/move
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "funnel_id": "{{target_funnel_id}}"
-}
+column_id={{column_id}}&funnel_id={{funnel_id}}
 
-### Histórico de movimentações do lead
-GET {{base_url}}/api/leads/{{lead_id}}/history
-Authorization: Bearer {{tenant_token}}
+### ============================================
+### Testes OWASP
+### ============================================
+
+### Sem token (401)
+GET {{base_url}}/tenant/leads
+
+### Sem tenant (403)
+GET {{base_url}}/tenant/leads
+Cookie: token={{admin_token_sem_tenant}}
+
+### SQL injection na busca
+GET {{base_url}}/tenant/leads/kanban?search=%27%20OR%201%3D1%20--
+Cookie: token={{tenant_token}}
+
+### Token invalido (401)
+GET {{base_url}}/tenant/leads
+Cookie: token=invalid.token

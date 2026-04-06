@@ -1,0 +1,50 @@
+{{define "funnel/funnel_detail.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Funnel.Name}} — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/whatsapp.css">
+    <link rel="stylesheet" href="/static/css/kanban.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "leads")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <a href="/tenant/leads/funnels" class="btn-back">← Voltar</a>
+                <h1>{{.Funnel.Name}}</h1>
+                {{if .Funnel.Description}}<p class="text-muted">{{.Funnel.Description}}</p>{{end}}
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+                <a href="/tenant/leads/funnels/{{.Funnel.ID}}/edit" class="btn btn-outline btn-sm">Editar</a>
+                <form method="POST" action="/tenant/leads/funnels/{{.Funnel.ID}}/toggle" style="margin:0">
+                    {{if .Funnel.Active}}
+                    <button type="submit" class="btn btn-outline btn-sm">Desativar</button>
+                    {{else}}
+                    <button type="submit" class="btn btn-primary btn-sm">Ativar</button>
+                    {{end}}
+                </form>
+            </div>
+        </div>
+
+        <div class="admin-table-wrapper">
+            <div class="section-header">
+                <h2>Colunas</h2>
+            </div>
+            <div id="columns-section"
+                 hx-get="/tenant/leads/funnels/{{.Funnel.ID}}/columns"
+                 hx-trigger="load"
+                 hx-target="#columns-section">
+            </div>
+        </div>
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

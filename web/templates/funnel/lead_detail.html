@@ -1,0 +1,47 @@
+{{define "funnel/lead_detail.html"}}
+<div class="modal-overlay" onclick="closeLeadModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Lead — {{.ContactName}}</h3>
+            <button class="modal-close" onclick="document.getElementById('lead-modal').innerHTML=''">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="lead-detail-section">
+                <h4>Contato</h4>
+                <p><strong>Nome:</strong> {{.ContactName}}</p>
+                <p><strong>Telefone:</strong> {{.ContactPhone}}</p>
+            </div>
+            <div class="lead-detail-section">
+                <h4>Funil</h4>
+                <p><strong>Funil:</strong> {{.FunnelName}}</p>
+                <p><strong>Coluna:</strong> {{.ColumnName}}</p>
+                <p><strong>Score:</strong> {{.Score}} pontos</p>
+                <p><strong>Criado:</strong> {{.CreatedAt.Format "02/01/2006 15:04"}}</p>
+            </div>
+            <div class="lead-detail-actions">
+                <a href="/tenant/whatsapp" class="btn btn-primary btn-sm">Abrir Conversa</a>
+                <button class="btn btn-outline btn-sm"
+                        hx-get="/tenant/leads/{{.ID}}/move-form"
+                        hx-target="#lead-modal"
+                        hx-swap="innerHTML">Mover Lead</button>
+            </div>
+            {{if .Movements}}
+            <div class="lead-detail-section">
+                <h4>Historico de movimentacoes</h4>
+                <div class="lead-movements">
+                    {{range .Movements}}
+                    <div class="lead-movement-item">
+                        <span class="lead-movement-date">{{.MovedAt.Format "02/01 15:04"}}</span>
+                        <span class="lead-movement-desc">
+                            {{if .FromColumnName}}{{.FromColumnName}} → {{end}}{{.ToColumnName}}
+                            {{if not .FromColumnName}}(criacao automatica){{end}}
+                        </span>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}

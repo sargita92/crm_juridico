@@ -18,6 +18,7 @@ import (
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/document"
+	"github.com/sasrgita/crm-juridico/internal/funnel"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
@@ -77,9 +78,12 @@ func main() {
 	whatsmeowProvider := whatsappinfra.NewWhatsmeowProvider("storage/whatsmeow", log)
 	defer whatsmeowProvider.Shutdown()
 
-	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
+	funnelMod := funnel.NewModule(db, log)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod}
+	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
+	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod}
 
 	// Auth (uses tenant repo from module)
 	userRepo := authinfra.NewGormUserRepository(db)
@@ -157,6 +161,8 @@ func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []modul
 			}
 			return m
 		},
+		"add": func(a, b int) int { return a + b },
+		"sub": func(a, b int) int { return a - b },
 		"formatFileSize": func(size int64) string {
 			const (
 				kb = 1024

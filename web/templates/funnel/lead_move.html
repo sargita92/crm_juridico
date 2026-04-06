@@ -1,0 +1,40 @@
+{{define "funnel/lead_move.html"}}
+<div class="modal-overlay" onclick="closeLeadModal(event)">
+    <div class="modal-card modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Mover Lead</h3>
+            <button class="modal-close" onclick="document.getElementById('lead-modal').innerHTML=''">&times;</button>
+        </div>
+        <form hx-post="/tenant/leads/{{.LeadID}}/move"
+              hx-target="#kanban-content"
+              hx-on::after-request="document.getElementById('lead-modal').innerHTML=''">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Funil</label>
+                    <select name="funnel_id" class="form-control"
+                            hx-get="/tenant/leads/funnels/columns-select"
+                            hx-target="#column-select"
+                            hx-trigger="change"
+                            hx-include="this">
+                        {{range .Funnels}}
+                        <option value="{{.ID}}" {{if eq .ID $.CurrentFunnelID}}selected{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <div class="form-group" id="column-select">
+                    <label>Coluna</label>
+                    <select name="column_id" class="form-control">
+                        {{range .Columns}}
+                        <option value="{{.ID}}" {{if eq .ID $.CurrentColumnID}}selected{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('lead-modal').innerHTML=''">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Mover</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}

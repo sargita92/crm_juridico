@@ -15,8 +15,9 @@ import (
 )
 
 type Module struct {
-	handler  *whatsapphttp.Handler
-	provider domain.WhatsAppProvider
+	handler          *whatsapphttp.Handler
+	provider         domain.WhatsAppProvider
+	receiveMessageUC *application.ReceiveMessageUseCase
 }
 
 func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, log *zap.Logger) *Module {
@@ -42,12 +43,16 @@ func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, log *zap.Logger) *
 		connectUC, statusUC, disconnectUC, eventBus, log,
 	)
 
-	return &Module{handler: handler, provider: provider}
+	return &Module{handler: handler, provider: provider, receiveMessageUC: receiveMessageUC}
 }
 
 func (m *Module) Name() string { return "whatsapp" }
 
 func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.handler.RegisterRoutes(router, mw.Auth, mw.Tenant)
+}
+
+func (m *Module) SetLeadCreator(lc domain.LeadCreator) {
+	m.receiveMessageUC.SetLeadCreator(lc)
 }
 

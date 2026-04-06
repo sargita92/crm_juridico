@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS leads (
+    id CHAR(36) PRIMARY KEY,
+    tenant_id CHAR(36) NOT NULL,
+    funnel_id CHAR(36) NOT NULL,
+    column_id CHAR(36) NOT NULL,
+    contact_id CHAR(36) NOT NULL,
+    conversation_id CHAR(36) NOT NULL,
+    score INT NOT NULL DEFAULT 0,
+    status ENUM('open', 'won', 'lost') NOT NULL DEFAULT 'open',
+    column_entered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_leads_tenant_id (tenant_id),
+    INDEX idx_leads_funnel_id (funnel_id),
+    INDEX idx_leads_column_id (column_id),
+    UNIQUE INDEX idx_leads_tenant_contact (tenant_id, contact_id),
+    CONSTRAINT fk_leads_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    CONSTRAINT fk_leads_funnel FOREIGN KEY (funnel_id) REFERENCES funnels(id),
+    CONSTRAINT fk_leads_column FOREIGN KEY (column_id) REFERENCES funnel_columns(id),
+    CONSTRAINT fk_leads_contact FOREIGN KEY (contact_id) REFERENCES contacts(id),
+    CONSTRAINT fk_leads_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -15,6 +15,7 @@ type ReceiveMessageUseCase struct {
 	conversationRepo domain.ConversationRepository
 	messageRepo      domain.MessageRepository
 	eventBus         domain.EventBus
+	leadCreator      domain.LeadCreator
 }
 
 func NewReceiveMessageUseCase(
@@ -29,6 +30,10 @@ func NewReceiveMessageUseCase(
 		messageRepo:      messageRepo,
 		eventBus:         eventBus,
 	}
+}
+
+func (uc *ReceiveMessageUseCase) SetLeadCreator(lc domain.LeadCreator) {
+	uc.leadCreator = lc
 }
 
 func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.IncomingMessage) error {
@@ -72,6 +77,7 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 	}
 
 	// Find or create conversation
+	newConversation := false
 	conv, err := uc.conversationRepo.FindByContactID(ctx, event.TenantID, contact.ID)
 	if errors.Is(err, domain.ErrConversationNotFound) {
 		conv, err = domain.NewConversation(uuid.New().String(), event.TenantID, contact.ID)
@@ -81,6 +87,7 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 		if err := uc.conversationRepo.Create(ctx, conv); err != nil {
 			return err
 		}
+		newConversation = true
 	} else if err != nil {
 		return err
 	}
@@ -119,6 +126,11 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 		TenantID: event.TenantID,
 		Payload:  conv,
 	})
+
+	// Create lead in funnel if this is a new conversation
+	if newConversation && uc.leadCreator != nil {
+		_ = uc.leadCreator.CreateFromConversation(ctx, event.TenantID, contact.ID, conv.ID)
+	}
 
 	return nil
 }

@@ -1,0 +1,75 @@
+{{define "funnel/columns_section.html"}}
+{{if .Columns}}
+<div class="columns-list">
+    {{range $i, $col := .Columns}}
+    <div class="column-row">
+        <div class="column-row-color" style="background: {{$col.Color}}"></div>
+        <span class="column-row-order">#{{add $i 1}}</span>
+        <span class="column-row-name">{{$col.Name}}</span>
+        <span class="badge badge-sm">{{$col.Type}}</span>
+        <span class="column-row-leads">{{$col.LeadCount}} leads</span>
+        <div class="column-row-actions">
+            {{if gt $i 0}}
+            <button class="btn-icon" title="Mover para cima"
+                    hx-post="/tenant/leads/funnels/{{$col.FunnelID}}/columns/{{$col.ID}}/move-up"
+                    hx-target="#columns-section"
+                    hx-swap="innerHTML">&#9650;</button>
+            {{end}}
+            {{if lt $i (sub (len $.Columns) 1)}}
+            <button class="btn-icon" title="Mover para baixo"
+                    hx-post="/tenant/leads/funnels/{{$col.FunnelID}}/columns/{{$col.ID}}/move-down"
+                    hx-target="#columns-section"
+                    hx-swap="innerHTML">&#9660;</button>
+            {{end}}
+            {{if eq $col.LeadCount 0}}
+            <button class="btn-icon btn-icon-danger" title="Remover"
+                    hx-delete="/tenant/leads/funnels/{{$col.FunnelID}}/columns/{{$col.ID}}"
+                    hx-target="#columns-section"
+                    hx-swap="innerHTML"
+                    hx-confirm="Remover coluna '{{$col.Name}}'?">&#10005;</button>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<p class="text-muted" style="padding:1rem">Nenhuma coluna configurada</p>
+{{end}}
+
+<div style="margin-top:1rem;padding:1rem;background:#f9fafb;border-radius:8px;border:1px dashed #d1d5db">
+    <h4 style="font-size:0.875rem;margin-bottom:0.75rem;color:#4b5563">Adicionar coluna</h4>
+    <form hx-post="/tenant/leads/funnels/{{.FunnelID}}/columns"
+          hx-target="#columns-section"
+          hx-swap="innerHTML"
+          style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:150px">
+            <label style="display:block;font-size:0.75rem;margin-bottom:0.25rem;color:#667781">Nome</label>
+            <input type="text" name="name" placeholder="Nome da coluna" required
+                   style="width:100%;padding:0.4rem 0.6rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">
+        </div>
+        <div style="min-width:140px">
+            <label style="display:block;font-size:0.75rem;margin-bottom:0.25rem;color:#667781">Tipo</label>
+            <select name="type" style="width:100%;padding:0.4rem 0.6rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">
+                <option value="intermediate">Intermediaria</option>
+                <option value="entry">Entrada</option>
+                <option value="won">Ganho</option>
+                <option value="lost">Perdido</option>
+            </select>
+        </div>
+        <div style="min-width:120px">
+            <label style="display:block;font-size:0.75rem;margin-bottom:0.25rem;color:#667781">Cor</label>
+            <select name="color" style="width:100%;padding:0.4rem 0.6rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">
+                <option value="#22c55e">Verde</option>
+                <option value="#3b82f6" selected>Azul</option>
+                <option value="#eab308">Amarelo</option>
+                <option value="#f97316">Laranja</option>
+                <option value="#ef4444">Vermelho</option>
+                <option value="#8b5cf6">Roxo</option>
+                <option value="#ec4899">Rosa</option>
+                <option value="#6b7280">Cinza</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Adicionar</button>
+    </form>
+</div>
+{{end}}

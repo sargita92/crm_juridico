@@ -1,0 +1,45 @@
+{{define "funnel/column_form.html"}}
+<div class="modal-overlay" onclick="closeFunnelModal(event)">
+    <div class="modal-card modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Nova Coluna</h3>
+            <button class="modal-close" onclick="document.getElementById('funnel-modal').innerHTML=''">&times;</button>
+        </div>
+        <form hx-post="/tenant/leads/funnels/{{.FunnelID}}/columns"
+              hx-target="#columns-section"
+              hx-on::after-request="document.getElementById('funnel-modal').innerHTML=''">
+            <div class="modal-body">
+                {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+                <div class="form-group">
+                    <label>Nome *</label>
+                    <input type="text" name="name" class="form-control" placeholder="Nome da coluna" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="type" class="form-control">
+                        <option value="intermediate">Intermediaria</option>
+                        <option value="entry">Entrada</option>
+                        <option value="won">Ganho</option>
+                        <option value="lost">Perdido</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cor</label>
+                    <div class="color-picker">
+                        {{range $color := .Colors}}
+                        <label class="color-option">
+                            <input type="radio" name="color" value="{{$color}}" {{if eq $color "#3b82f6"}}checked{{end}}>
+                            <span class="color-swatch" style="background:{{$color}}"></span>
+                        </label>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('funnel-modal').innerHTML=''">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}
