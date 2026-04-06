@@ -19,10 +19,11 @@ type MessageSummaryOutput struct {
 }
 
 type LeadNoteOutput struct {
-	ID        string
-	Content   string
-	CreatedBy string
-	CreatedAt time.Time
+	ID            string
+	Content       string
+	CreatedBy     string
+	CreatedByName string
+	CreatedAt     time.Time
 }
 
 type LeadMovementOutput struct {
@@ -57,13 +58,14 @@ type LeadDetailOutput struct {
 }
 
 type GetLeadDetailUseCase struct {
-	leadRepo        domain.LeadRepository
-	movementRepo    domain.LeadMovementRepository
-	funnelRepo      domain.FunnelRepository
-	columnRepo      domain.ColumnRepository
-	contactProvider domain.ContactProvider
-	messageProvider domain.MessageProvider
-	noteRepo        domain.LeadNoteRepository
+	leadRepo         domain.LeadRepository
+	movementRepo     domain.LeadMovementRepository
+	funnelRepo       domain.FunnelRepository
+	columnRepo       domain.ColumnRepository
+	contactProvider  domain.ContactProvider
+	messageProvider  domain.MessageProvider
+	noteRepo         domain.LeadNoteRepository
+	userNameProvider domain.UserNameProvider
 }
 
 func NewGetLeadDetailUseCase(
@@ -74,15 +76,17 @@ func NewGetLeadDetailUseCase(
 	contactProvider domain.ContactProvider,
 	messageProvider domain.MessageProvider,
 	noteRepo domain.LeadNoteRepository,
+	userNameProvider domain.UserNameProvider,
 ) *GetLeadDetailUseCase {
 	return &GetLeadDetailUseCase{
-		leadRepo:        leadRepo,
-		movementRepo:    movementRepo,
-		funnelRepo:      funnelRepo,
-		columnRepo:      columnRepo,
-		contactProvider: contactProvider,
-		messageProvider: messageProvider,
-		noteRepo:        noteRepo,
+		leadRepo:         leadRepo,
+		movementRepo:     movementRepo,
+		funnelRepo:       funnelRepo,
+		columnRepo:       columnRepo,
+		contactProvider:  contactProvider,
+		messageProvider:  messageProvider,
+		noteRepo:         noteRepo,
+		userNameProvider: userNameProvider,
 	}
 }
 
@@ -158,11 +162,16 @@ func (uc *GetLeadDetailUseCase) Execute(ctx context.Context, input GetLeadDetail
 	if notes, err := uc.noteRepo.FindByLeadID(ctx, lead.ID); err == nil {
 		noteOutputs = make([]LeadNoteOutput, len(notes))
 		for i, n := range notes {
+			var createdByName string
+			if name, err := uc.userNameProvider.FindNameByID(ctx, n.CreatedBy); err == nil {
+				createdByName = name
+			}
 			noteOutputs[i] = LeadNoteOutput{
-				ID:        n.ID,
-				Content:   n.Content,
-				CreatedBy: n.CreatedBy,
-				CreatedAt: n.CreatedAt,
+				ID:            n.ID,
+				Content:       n.Content,
+				CreatedBy:     n.CreatedBy,
+				CreatedByName: createdByName,
+				CreatedAt:     n.CreatedAt,
 			}
 		}
 	}

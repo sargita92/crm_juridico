@@ -360,3 +360,20 @@ func (m *mockLeadNoteRepo) FindByLeadID(_ context.Context, leadID string) ([]dom
 	}
 	return result, nil
 }
+
+// --- Mock UserNameProvider ---
+
+type mockUserNameProvider struct {
+	names map[string]string
+}
+
+func newMockUserNameProvider() *mockUserNameProvider {
+	return &mockUserNameProvider{names: make(map[string]string)}
+}
+
+func (m *mockUserNameProvider) FindNameByID(_ context.Context, userID string) (string, error) {
+	if name, ok := m.names[userID]; ok {
+		return name, nil
+	}
+	return "", errors.New("user not found")
+}

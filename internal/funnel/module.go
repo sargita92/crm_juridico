@@ -17,7 +17,7 @@ type Module struct {
 	leadCreator *application.CreateLeadUseCase
 }
 
-func NewModule(db *gorm.DB, contactProvider domain.ContactProvider, messageProvider domain.MessageProvider, log *zap.Logger) *Module {
+func NewModule(db *gorm.DB, contactProvider domain.ContactProvider, messageProvider domain.MessageProvider, userNameProvider domain.UserNameProvider, log *zap.Logger) *Module {
 	funnelRepo := infrastructure.NewGormFunnelRepository(db)
 	columnRepo := infrastructure.NewGormColumnRepository(db)
 	leadRepo := infrastructure.NewGormLeadRepository(db)
@@ -36,7 +36,7 @@ func NewModule(db *gorm.DB, contactProvider domain.ContactProvider, messageProvi
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
 	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
 	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
-	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo)
+	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider)
 	createLeadNoteUC := application.NewCreateLeadNoteUseCase(leadRepo, noteRepo)
 
 	handler := funnelhttp.NewHandler(

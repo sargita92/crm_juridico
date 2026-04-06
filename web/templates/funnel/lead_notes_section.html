@@ -17,7 +17,7 @@
     {{range .Lead.Notes}}
     <div style="padding:0.5rem 0.75rem;background:#fefce8;border-radius:6px;border-left:3px solid #eab308">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
-            <span style="font-size:0.6875rem;color:#667781;font-weight:500">{{.CreatedBy}}</span>
+            <span style="font-size:0.6875rem;color:#667781;font-weight:500">{{if .CreatedByName}}{{.CreatedByName}}{{else}}Usuario{{end}}</span>
             <span style="font-size:0.6875rem;color:#9ca3af">{{.CreatedAt.Format "02/01/2006 15:04"}}</span>
         </div>
         <p style="font-size:0.8125rem;margin:0;line-height:1.4">{{.Content}}</p>

@@ -135,6 +135,12 @@ func (m *owaspMockNoteRepo) FindByLeadID(_ context.Context, leadID string) ([]do
 	return nil, nil
 }
 
+type owaspMockUserNameProvider struct{}
+
+func (m *owaspMockUserNameProvider) FindNameByID(_ context.Context, id string) (string, error) {
+	return "", nil
+}
+
 func setupOwaspEnv() *owaspEnv {
 	gin.SetMode(gin.TestMode)
 
@@ -157,7 +163,8 @@ func setupOwaspEnv() *owaspEnv {
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
 	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
 	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
-	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo)
+	userNameProvider := &owaspMockUserNameProvider{}
+	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider)
 	createLeadNoteUC := application.NewCreateLeadNoteUseCase(leadRepo, noteRepo)
 
 	testLog, _ := zap.NewDevelopment()

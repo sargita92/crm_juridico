@@ -12,7 +12,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
 
-func setupLeadDetailTest() (*GetLeadDetailUseCase, *mockLeadRepo, *mockLeadMovementRepo, *mockFunnelRepo, *mockColumnRepo, *mockContactProvider, *mockMessageProvider, *mockLeadNoteRepo) {
+func setupLeadDetailTest() (*GetLeadDetailUseCase, *mockLeadRepo, *mockLeadMovementRepo, *mockFunnelRepo, *mockColumnRepo, *mockContactProvider, *mockMessageProvider, *mockLeadNoteRepo, *mockUserNameProvider) {
 	leadRepo := newMockLeadRepo()
 	movementRepo := newMockLeadMovementRepo()
 	funnelRepo := newMockFunnelRepo()
@@ -20,13 +20,14 @@ func setupLeadDetailTest() (*GetLeadDetailUseCase, *mockLeadRepo, *mockLeadMovem
 	contactProvider := newMockContactProvider()
 	messageProvider := newMockMessageProvider()
 	noteRepo := newMockLeadNoteRepo()
+	userNameProvider := newMockUserNameProvider()
 
-	uc := NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo)
-	return uc, leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo
+	uc := NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider)
+	return uc, leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider
 }
 
 func TestGetLeadDetail_Success_Enriched(t *testing.T) {
-	uc, leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo := setupLeadDetailTest()
+	uc, leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider := setupLeadDetailTest()
 
 	// Setup funnel + column
 	funnel, _ := domain.NewFunnel(uuid.New().String(), "tenant-1", "Vendas", "")
@@ -55,6 +56,9 @@ func TestGetLeadDetail_Success_Enriched(t *testing.T) {
 	note, _ := domain.NewLeadNote(uuid.New().String(), lead.ID, "tenant-1", "Ligar amanha", "user-1")
 	_ = noteRepo.Create(context.Background(), note)
 
+	// Setup user name
+	userNameProvider.names["user-1"] = "Maria Santos"
+
 	output, err := uc.Execute(context.Background(), GetLeadDetailInput{
 		TenantID: "tenant-1", LeadID: lead.ID,
 	})
@@ -71,10 +75,11 @@ func TestGetLeadDetail_Success_Enriched(t *testing.T) {
 	assert.Equal(t, "Novo", output.Movements[0].ToColumnName)
 	assert.Len(t, output.Notes, 1)
 	assert.Equal(t, "Ligar amanha", output.Notes[0].Content)
+	assert.Equal(t, "Maria Santos", output.Notes[0].CreatedByName)
 }
 
 func TestGetLeadDetail_NotFound(t *testing.T) {
-	uc, _, _, _, _, _, _, _ := setupLeadDetailTest()
+	uc, _, _, _, _, _, _, _, _ := setupLeadDetailTest()
 
 	_, err := uc.Execute(context.Background(), GetLeadDetailInput{
 		TenantID: "tenant-1", LeadID: "nope",
@@ -83,7 +88,7 @@ func TestGetLeadDetail_NotFound(t *testing.T) {
 }
 
 func TestGetLeadDetail_WrongTenant(t *testing.T) {
-	uc, leadRepo, _, funnelRepo, columnRepo, _, _, _ := setupLeadDetailTest()
+	uc, leadRepo, _, funnelRepo, columnRepo, _, _, _, _ := setupLeadDetailTest()
 
 	funnel, _ := domain.NewFunnel(uuid.New().String(), "tenant-1", "Vendas", "")
 	_ = funnelRepo.Create(context.Background(), funnel)

@@ -23,3 +23,7 @@ type MessageSummary struct {
 type MessageProvider interface {
 	FindRecentByConversationID(ctx context.Context, conversationID string, limit int) ([]MessageSummary, error)
 }
+
+type UserNameProvider interface {
+	FindNameByID(ctx context.Context, userID string) (string, error)
+}
