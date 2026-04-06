@@ -162,16 +162,20 @@
     background: none;
     border: 1px solid #d1d5db;
     border-radius: 4px;
-    padding: 0.125rem 0.5rem;
-    font-size: 0.6875rem;
-    color: #3b82f6;
+    padding: 0.25rem;
+    color: #9ca3af;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .kanban-card-detail-btn:hover {
     background: #eff6ff;
     border-color: #3b82f6;
+    color: #3b82f6;
 }
 
 /* --- Empty / Loading --- */

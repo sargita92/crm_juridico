@@ -1,16 +1,16 @@
 {{define "funnel/lead_drawer.html"}}
-<div class="lead-drawer-overlay" onclick="closeLeadDrawer(event)">
-    <div class="lead-drawer" onclick="event.stopPropagation()">
-        <div class="lead-drawer-header">
-            <h3>{{if .Lead}}{{.Lead.ContactName}}{{if not .Lead.ContactName}}Lead{{end}}{{else}}Erro{{end}}</h3>
-            <button class="modal-close" onclick="document.getElementById('lead-modal').innerHTML=''">&times;</button>
+<div class="lead-drawer-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100" onclick="closeLeadDrawer(event)">
+    <div class="lead-drawer" style="position:fixed;right:0;top:0;bottom:0;width:50%;background:#fff;box-shadow:-4px 0 16px rgba(0,0,0,0.1);display:flex;flex-direction:column;z-index:101;animation:slideIn 0.25s ease" onclick="event.stopPropagation()">
+        <div class="lead-drawer-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid #e5e7eb;flex-shrink:0">
+            <h3 style="font-size:1.1rem;margin:0">{{if .Lead}}{{.Lead.ContactName}}{{if not .Lead.ContactName}}Lead{{end}}{{else}}Erro{{end}}</h3>
+            <button class="modal-close" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#667781" onclick="document.getElementById('lead-modal').innerHTML=''">&times;</button>
         </div>
         {{if .Error}}
-        <div class="lead-drawer-body">
+        <div class="lead-drawer-body" style="flex:1;overflow-y:auto;padding:1.25rem">
             <p style="color:#ef4444">{{.Error}}</p>
         </div>
         {{else}}
-        <div class="lead-drawer-body">
+        <div class="lead-drawer-body" style="flex:1;overflow-y:auto;padding:1.25rem">
             <!-- Contato -->
             <div class="lead-detail-section">
                 <h4>Contato</h4>
