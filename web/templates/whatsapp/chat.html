@@ -15,11 +15,7 @@
             <h3>Conversa</h3>
         </div>
     </div>
-    <div class="wa-messages" id="messages-area"
-         hx-get="/tenant/whatsapp/conversations/{{.ConversationID}}/messages/new?after="
-         hx-trigger="sse:new-message"
-         hx-target="#messages-area"
-         hx-swap="beforeend">
+    <div class="wa-messages" id="messages-area">
         {{if .Messages}}
         {{range .Messages}}
         {{template "whatsapp/message.html" .}}
@@ -30,6 +26,12 @@
         </div>
         {{end}}
     </div>
+    <div id="messages-poll"
+         hx-get="/tenant/whatsapp/conversations/{{.ConversationID}}/messages/new"
+         hx-trigger="sse:new-message, every 5s"
+         hx-target="#messages-area"
+         hx-swap="innerHTML"
+         style="display:none"></div>
     <div class="wa-input-area">
         <form hx-post="/tenant/whatsapp/conversations/{{.ConversationID}}/messages"
               hx-target="#messages-area"

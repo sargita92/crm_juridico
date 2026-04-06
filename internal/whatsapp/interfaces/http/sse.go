@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
@@ -25,14 +26,21 @@ func (h *Handler) HandleSSE(c *gin.Context) {
 	eventCh, cleanup := h.eventBus.Subscribe(tenantID)
 	defer cleanup()
 
+	// Initial keepalive to establish connection
+	c.Writer.WriteString(": keepalive\n\n")
+	c.Writer.Flush()
+
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case event, ok := <-eventCh:
 			if !ok {
 				return false
 			}
-			fmt.Fprintf(w, "event: %s\n", event.Type)
-			fmt.Fprintf(w, "data: %v\n\n", event.Payload)
+			h.log.Info("SSE sending event",
+				zap.String("tenant_id", tenantID),
+				zap.String("event_type", string(event.Type)),
+			)
+			fmt.Fprintf(w, "event: %s\ndata: {}\n\n", event.Type)
 			return true
 		case <-c.Request.Context().Done():
 			return false
