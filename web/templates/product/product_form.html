@@ -1,0 +1,111 @@
+{{define "product/product_form.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Product}}Editar Produto{{else}}Novo Produto{{end}} — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/whatsapp.css">
+    <link rel="stylesheet" href="/static/css/kanban.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "products")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <a href="/tenant/products" class="btn-back">&larr; Voltar</a>
+                <h1>{{if .Product}}Editar Produto{{else}}Novo Produto{{end}}</h1>
+            </div>
+        </div>
+        <div class="form-page">
+            <div class="form-card">
+                {{if .Error}}<div class="alert alert-danger" style="padding:0.75rem;margin-bottom:1rem">{{.Error}}</div>{{end}}
+                <form {{if .Product}}hx-put="/tenant/products/{{.Product.ID}}"{{else}}hx-post="/tenant/products"{{end}} hx-swap="none">
+                    <div class="form-group">
+                        <label>Nome *</label>
+                        <input type="text" name="name" value="{{if .Product}}{{.Product.Name}}{{else}}{{.Name}}{{end}}" placeholder="Nome do produto" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descricao</label>
+                        <textarea name="description" rows="3" placeholder="Descricao do produto">{{if .Product}}{{.Product.Description}}{{else}}{{.Description}}{{end}}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Palavras-chave</label>
+                        <input type="text" name="keywords" value="{{.Keywords}}" placeholder="Separadas por virgula (ex: divorcio, pensao, guarda)">
+                        <small style="color:#9ca3af;font-size:0.75rem">Usadas para detectar automaticamente o produto nas mensagens</small>
+                    </div>
+                    <div class="form-actions">
+                        <a href="/tenant/products" class="btn btn-outline">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+
+            {{if .Product}}
+            <!-- Funnel Links Section -->
+            <div class="form-card" style="margin-top:1.5rem">
+                <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem">Funis vinculados</h3>
+                {{if .LinkedFunnels}}
+                <table class="data-table" style="margin-bottom:1rem">
+                    <thead>
+                        <tr>
+                            <th>Funil</th>
+                            <th>Prioridade</th>
+                            <th>Acoes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .LinkedFunnels}}
+                        <tr>
+                            <td>{{.FunnelName}}</td>
+                            <td>
+                                <form hx-put="/tenant/products/{{$.Product.ID}}/funnels/{{.FunnelID}}/priority" hx-swap="none" style="display:flex;gap:0.5rem;align-items:center">
+                                    <input type="number" name="priority" value="{{.Priority}}" min="1" max="100" style="width:60px;padding:0.25rem 0.5rem;border:1px solid #d1d5db;border-radius:4px;font-size:0.8125rem">
+                                    <button type="submit" class="btn btn-sm btn-outline">Salvar</button>
+                                </form>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-danger"
+                                        hx-delete="/tenant/products/{{$.Product.ID}}/funnels/{{.FunnelID}}"
+                                        hx-swap="none"
+                                        hx-confirm="Desvincular este funil?">Desvincular</button>
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                {{else}}
+                <p style="color:#9ca3af;font-size:0.8125rem;font-style:italic;margin-bottom:1rem">Nenhum funil vinculado</p>
+                {{end}}
+
+                {{if .AvailableFunnels}}
+                <h4 style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;margin-bottom:0.5rem;letter-spacing:0.05em">Vincular novo funil</h4>
+                <form hx-post="/tenant/products/{{.Product.ID}}/funnels" hx-swap="none" style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap">
+                    <div style="flex:1;min-width:150px">
+                        <label style="display:block;font-size:0.75rem;color:#4a5568;margin-bottom:0.25rem">Funil</label>
+                        <select name="funnel_id" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">
+                            <option value="">Selecione...</option>
+                            {{range .AvailableFunnels}}
+                            <option value="{{.ID}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div style="width:80px">
+                        <label style="display:block;font-size:0.75rem;color:#4a5568;margin-bottom:0.25rem">Prioridade</label>
+                        <input type="number" name="priority" value="1" min="1" max="100" style="width:100%;padding:0.5rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Vincular</button>
+                </form>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

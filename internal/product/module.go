@@ -59,3 +59,7 @@ func (m *Module) ProductRepo() *infrastructure.GormProductRepository {
 func (m *Module) FunnelProductRepo() *infrastructure.GormFunnelProductRepository {
 	return m.fpRepo
 }
+
+func (m *Module) Handler() *producthttp.Handler {
+	return m.handler
+}
