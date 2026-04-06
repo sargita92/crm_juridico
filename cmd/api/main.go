@@ -19,6 +19,7 @@ import (
 	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
+	"github.com/sasrgita/crm-juridico/internal/product"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
@@ -89,7 +90,9 @@ func main() {
 	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod}
+	productMod := product.NewModule(db, log)
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod}
 
 	// Auth (uses tenant repo from module)
 	userRepo := authinfra.NewGormUserRepository(db)
