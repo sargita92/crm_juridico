@@ -7,7 +7,6 @@ import (
 )
 
 type ToggleProductInput struct {
-	TenantID  string
 	ProductID string
 }
 
@@ -24,9 +23,6 @@ func (uc *ToggleProductUseCase) Execute(ctx context.Context, input ToggleProduct
 	product, err := uc.productRepo.FindByID(ctx, input.ProductID)
 	if err != nil {
 		return false, err
-	}
-	if product.TenantID != input.TenantID {
-		return false, domain.ErrProductNotFound
 	}
 
 	if product.Active {

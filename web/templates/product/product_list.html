@@ -16,9 +16,8 @@
     <main class="admin-content">
         <div class="page-header">
             <div>
-                <h1>Produtos</h1>
+                <h1>Meus Produtos</h1>
             </div>
-            <a href="/tenant/products/new" class="btn btn-primary">+ Novo Produto</a>
         </div>
         <div class="admin-table-wrapper">
             {{if .Error}}<div class="alert alert-danger">{{.Error}}</div>{{end}}
@@ -27,16 +26,15 @@
                 <thead>
                     <tr>
                         <th>Nome</th>
+                        <th>Descricao</th>
                         <th>Palavras-chave</th>
-                        <th>Funis vinculados</th>
-                        <th>Status</th>
-                        <th>Acoes</th>
                     </tr>
                 </thead>
                 <tbody>
                     {{range .Products}}
-                    <tr{{if not .Active}} style="opacity:0.55"{{end}}>
+                    <tr>
                         <td style="font-weight:500">{{.Name}}</td>
+                        <td>{{.Description}}</td>
                         <td>
                             {{if .Keywords}}
                             {{range .Keywords}}
@@ -46,32 +44,14 @@
                             <span style="color:#9ca3af;font-size:0.8125rem;font-style:italic">Nenhuma</span>
                             {{end}}
                         </td>
-                        <td>
-                            {{if .Funnels}}
-                            <span style="font-size:0.8125rem">{{len .Funnels}} funil(is)</span>
-                            {{else}}
-                            <span style="color:#9ca3af;font-size:0.8125rem;font-style:italic">Nenhum</span>
-                            {{end}}
-                        </td>
-                        <td>
-                            {{if .Active}}<span class="badge badge-green">Ativo</span>{{else}}<span class="badge badge-gray">Inativo</span>{{end}}
-                        </td>
-                        <td>
-                            <div style="display:flex;gap:0.5rem;align-items:center">
-                                <a href="/tenant/products/{{.ID}}/edit" class="btn btn-sm btn-outline">Editar</a>
-                                <button class="btn btn-sm {{if .Active}}btn-secondary{{else}}btn-success{{end}}"
-                                        hx-post="/tenant/products/{{.ID}}/toggle"
-                                        hx-swap="none">{{if .Active}}Desativar{{else}}Ativar{{end}}</button>
-                            </div>
-                        </td>
                     </tr>
                     {{end}}
                 </tbody>
             </table>
             {{else}}
             <div class="empty-state">
-                <p>Nenhum produto criado</p>
-                <a href="/tenant/products/new" class="btn btn-primary">Criar primeiro produto</a>
+                <p>Nenhum produto associado</p>
+                <p style="color:#9ca3af;font-size:0.875rem">Os produtos sao gerenciados pelo administrador.</p>
             </div>
             {{end}}
         </div>

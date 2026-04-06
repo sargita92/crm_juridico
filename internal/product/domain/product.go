@@ -9,7 +9,6 @@ const MaxProductNameLength = 255
 
 type Product struct {
 	ID          string
-	TenantID    string
 	Name        string
 	Description string
 	Keywords    []string
@@ -18,10 +17,7 @@ type Product struct {
 	UpdatedAt   time.Time
 }
 
-func NewProduct(id, tenantID, name, description string, keywords []string) (*Product, error) {
-	if tenantID == "" {
-		return nil, ErrTenantIDRequired
-	}
+func NewProduct(id, name, description string, keywords []string) (*Product, error) {
 	if name == "" {
 		return nil, ErrProductNameRequired
 	}
@@ -33,7 +29,7 @@ func NewProduct(id, tenantID, name, description string, keywords []string) (*Pro
 	}
 	now := time.Now()
 	return &Product{
-		ID: id, TenantID: tenantID, Name: name,
+		ID: id, Name: name,
 		Description: description, Keywords: keywords,
 		Active: true, CreatedAt: now, UpdatedAt: now,
 	}, nil

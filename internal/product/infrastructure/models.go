@@ -11,7 +11,6 @@ import (
 
 type productModel struct {
 	ID          string    `gorm:"primaryKey;column:id;type:char(36)"`
-	TenantID    string    `gorm:"column:tenant_id;type:char(36);not null"`
 	Name        string    `gorm:"column:name;type:varchar(255);not null"`
 	Description string    `gorm:"column:description;type:text"`
 	Keywords    string    `gorm:"column:keywords;type:text"`
@@ -26,7 +25,6 @@ func productToModel(p *domain.Product) *productModel {
 	kw, _ := json.Marshal(p.Keywords)
 	return &productModel{
 		ID:          p.ID,
-		TenantID:    p.TenantID,
 		Name:        p.Name,
 		Description: p.Description,
 		Keywords:    string(kw),
@@ -46,13 +44,41 @@ func productToDomain(m *productModel) *domain.Product {
 	}
 	return &domain.Product{
 		ID:          m.ID,
-		TenantID:    m.TenantID,
 		Name:        m.Name,
 		Description: m.Description,
 		Keywords:    keywords,
 		Active:      m.Active,
 		CreatedAt:   m.CreatedAt,
 		UpdatedAt:   m.UpdatedAt,
+	}
+}
+
+// --- TenantProduct model ---
+
+type tenantProductModel struct {
+	ID        string    `gorm:"primaryKey;column:id;type:char(36)"`
+	TenantID  string    `gorm:"column:tenant_id;type:char(36);not null"`
+	ProductID string    `gorm:"column:product_id;type:char(36);not null"`
+	CreatedAt time.Time `gorm:"column:created_at"`
+}
+
+func (tenantProductModel) TableName() string { return "tenant_products" }
+
+func tenantProductToModel(tp *domain.TenantProduct) *tenantProductModel {
+	return &tenantProductModel{
+		ID:        tp.ID,
+		TenantID:  tp.TenantID,
+		ProductID: tp.ProductID,
+		CreatedAt: tp.CreatedAt,
+	}
+}
+
+func tenantProductToDomain(m *tenantProductModel) *domain.TenantProduct {
+	return &domain.TenantProduct{
+		ID:        m.ID,
+		TenantID:  m.TenantID,
+		ProductID: m.ProductID,
+		CreatedAt: m.CreatedAt,
 	}
 }
 

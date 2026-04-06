@@ -6,8 +6,17 @@ type ProductRepository interface {
 	Create(ctx context.Context, product *Product) error
 	FindByID(ctx context.Context, id string) (*Product, error)
 	Update(ctx context.Context, product *Product) error
-	FindByTenantID(ctx context.Context, tenantID string, activeOnly bool) ([]Product, error)
-	FindActiveByTenantID(ctx context.Context, tenantID string) ([]Product, error)
+	Delete(ctx context.Context, id string) error
+	FindAll(ctx context.Context, activeOnly bool) ([]Product, error)
+	FindActiveByIDs(ctx context.Context, ids []string) ([]Product, error)
+}
+
+type TenantProductRepository interface {
+	Create(ctx context.Context, tp *TenantProduct) error
+	Delete(ctx context.Context, tenantID, productID string) error
+	FindByTenantID(ctx context.Context, tenantID string) ([]TenantProduct, error)
+	FindByProductID(ctx context.Context, productID string) ([]TenantProduct, error)
+	Exists(ctx context.Context, tenantID, productID string) (bool, error)
 }
 
 type FunnelProductRepository interface {

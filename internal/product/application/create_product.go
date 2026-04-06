@@ -9,7 +9,6 @@ import (
 )
 
 type CreateProductInput struct {
-	TenantID    string
 	Name        string
 	Description string
 	Keywords    []string
@@ -32,7 +31,7 @@ func NewCreateProductUseCase(productRepo domain.ProductRepository) *CreateProduc
 }
 
 func (uc *CreateProductUseCase) Execute(ctx context.Context, input CreateProductInput) (*ProductOutput, error) {
-	product, err := domain.NewProduct(uuid.New().String(), input.TenantID, input.Name, input.Description, input.Keywords)
+	product, err := domain.NewProduct(uuid.New().String(), input.Name, input.Description, input.Keywords)
 	if err != nil {
 		return nil, err
 	}

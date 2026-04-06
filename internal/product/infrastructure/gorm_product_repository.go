@@ -45,8 +45,19 @@ func (r *GormProductRepository) Update(ctx context.Context, p *domain.Product) e
 	return nil
 }
 
-func (r *GormProductRepository) FindByTenantID(ctx context.Context, tenantID string, activeOnly bool) ([]domain.Product, error) {
-	query := r.db.WithContext(ctx).Where("tenant_id = ?", tenantID)
+func (r *GormProductRepository) Delete(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&productModel{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrProductNotFound
+	}
+	return nil
+}
+
+func (r *GormProductRepository) FindAll(ctx context.Context, activeOnly bool) ([]domain.Product, error) {
+	query := r.db.WithContext(ctx)
 	if activeOnly {
 		query = query.Where("active = ?", true)
 	}
@@ -61,6 +72,20 @@ func (r *GormProductRepository) FindByTenantID(ctx context.Context, tenantID str
 	return products, nil
 }
 
-func (r *GormProductRepository) FindActiveByTenantID(ctx context.Context, tenantID string) ([]domain.Product, error) {
-	return r.FindByTenantID(ctx, tenantID, true)
+func (r *GormProductRepository) FindActiveByIDs(ctx context.Context, ids []string) ([]domain.Product, error) {
+	if len(ids) == 0 {
+		return []domain.Product{}, nil
+	}
+	var models []productModel
+	if err := r.db.WithContext(ctx).
+		Where("id IN ? AND active = ?", ids, true).
+		Order("created_at ASC").
+		Find(&models).Error; err != nil {
+		return nil, err
+	}
+	products := make([]domain.Product, len(models))
+	for i := range models {
+		products[i] = *productToDomain(&models[i])
+	}
+	return products, nil
 }

@@ -15,7 +15,6 @@ func TestCreateProduct_Success(t *testing.T) {
 	uc := NewCreateProductUseCase(repo)
 
 	output, err := uc.Execute(context.Background(), CreateProductInput{
-		TenantID:    "tenant-1",
 		Name:        "Consultoria Trabalhista",
 		Description: "Servico de consultoria",
 		Keywords:    []string{"trabalhista", "CLT"},
@@ -34,21 +33,8 @@ func TestCreateProduct_EmptyName_Error(t *testing.T) {
 	uc := NewCreateProductUseCase(repo)
 
 	_, err := uc.Execute(context.Background(), CreateProductInput{
-		TenantID: "tenant-1",
-		Name:     "",
+		Name: "",
 	})
 
 	assert.ErrorIs(t, err, domain.ErrProductNameRequired)
-}
-
-func TestCreateProduct_EmptyTenantID_Error(t *testing.T) {
-	repo := newMockProductRepo()
-	uc := NewCreateProductUseCase(repo)
-
-	_, err := uc.Execute(context.Background(), CreateProductInput{
-		TenantID: "",
-		Name:     "Produto",
-	})
-
-	assert.ErrorIs(t, err, domain.ErrTenantIDRequired)
 }

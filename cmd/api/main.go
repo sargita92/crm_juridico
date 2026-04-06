@@ -94,13 +94,17 @@ func main() {
 	productProviderAdapter := funnelinfra.NewProductProviderAdapter(productMod.ProductRepo())
 	funnelProductRouterAdapter := funnelinfra.NewFunnelProductRouterAdapter(productMod.FunnelProductRepo())
 
-	productListerAdapter := funnelinfra.NewProductListerAdapter(productMod.ProductRepo())
+	productListerAdapter := funnelinfra.NewProductListerAdapter(productMod.ProductRepo(), productMod.TenantProductRepo())
 	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
 	// Cross-module: product handler needs funnel lister for link form
 	funnelListerAdapter := productinfra.NewFunnelListerAdapter(funnelMod.ListFunnelsUC())
 	productMod.Handler().SetFunnelLister(funnelListerAdapter)
+
+	// Cross-module: product handler needs tenant lister for association form
+	tenantListerAdapter := productinfra.NewTenantListerAdapter(tenantMod.TenantRepo())
+	productMod.Handler().SetTenantLister(tenantListerAdapter)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod}
 

@@ -21,7 +21,7 @@ type ProductListItem struct {
 }
 
 type ListProductsUseCase struct {
-	productRepo      domain.ProductRepository
+	productRepo       domain.ProductRepository
 	funnelProductRepo domain.FunnelProductRepository
 }
 
@@ -29,8 +29,9 @@ func NewListProductsUseCase(productRepo domain.ProductRepository, funnelProductR
 	return &ListProductsUseCase{productRepo: productRepo, funnelProductRepo: funnelProductRepo}
 }
 
-func (uc *ListProductsUseCase) Execute(ctx context.Context, tenantID string, activeOnly bool) ([]ProductListItem, error) {
-	products, err := uc.productRepo.FindByTenantID(ctx, tenantID, activeOnly)
+// Execute lists all products (admin view). activeOnly filters inactive products.
+func (uc *ListProductsUseCase) Execute(ctx context.Context, activeOnly bool) ([]ProductListItem, error) {
+	products, err := uc.productRepo.FindAll(ctx, activeOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +58,50 @@ func (uc *ListProductsUseCase) Execute(ctx context.Context, tenantID string, act
 			Keywords:    p.Keywords,
 			Active:      p.Active,
 			Funnels:     funnelInfos,
+		}
+	}
+
+	return items, nil
+}
+
+// ListTenantProductsUseCase lists products associated to a specific tenant.
+type ListTenantProductsUseCase struct {
+	productRepo       domain.ProductRepository
+	tenantProductRepo domain.TenantProductRepository
+}
+
+func NewListTenantProductsUseCase(productRepo domain.ProductRepository, tenantProductRepo domain.TenantProductRepository) *ListTenantProductsUseCase {
+	return &ListTenantProductsUseCase{productRepo: productRepo, tenantProductRepo: tenantProductRepo}
+}
+
+func (uc *ListTenantProductsUseCase) Execute(ctx context.Context, tenantID string) ([]ProductListItem, error) {
+	tenantProducts, err := uc.tenantProductRepo.FindByTenantID(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tenantProducts) == 0 {
+		return []ProductListItem{}, nil
+	}
+
+	ids := make([]string, len(tenantProducts))
+	for i, tp := range tenantProducts {
+		ids[i] = tp.ProductID
+	}
+
+	products, err := uc.productRepo.FindActiveByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]ProductListItem, len(products))
+	for i, p := range products {
+		items[i] = ProductListItem{
+			ID:          p.ID,
+			Name:        p.Name,
+			Description: p.Description,
+			Keywords:    p.Keywords,
+			Active:      p.Active,
 		}
 	}
 

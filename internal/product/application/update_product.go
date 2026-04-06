@@ -7,7 +7,6 @@ import (
 )
 
 type UpdateProductInput struct {
-	TenantID    string
 	ProductID   string
 	Name        string
 	Description string
@@ -26,9 +25,6 @@ func (uc *UpdateProductUseCase) Execute(ctx context.Context, input UpdateProduct
 	product, err := uc.productRepo.FindByID(ctx, input.ProductID)
 	if err != nil {
 		return nil, err
-	}
-	if product.TenantID != input.TenantID {
-		return nil, domain.ErrProductNotFound
 	}
 
 	if err := product.Update(input.Name, input.Description, input.Keywords); err != nil {
