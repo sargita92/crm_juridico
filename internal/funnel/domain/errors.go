@@ -22,4 +22,9 @@ var (
 	ErrLeadAlreadyExists      = errors.New("lead already exists for this contact")
 	ErrContactIDRequired      = errors.New("contact ID is required")
 	ErrConversationIDRequired = errors.New("conversation ID is required")
+
+	// Lead notes
+	ErrNoteContentRequired  = errors.New("note content is required")
+	ErrNoteContentTooLong   = errors.New("note content exceeds 2000 characters")
+	ErrNoteCreatedByRequired = errors.New("note created_by is required")
 )
