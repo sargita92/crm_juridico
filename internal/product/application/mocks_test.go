@@ -10,7 +10,6 @@ import (
 
 type mockProductRepo struct {
 	products  map[string]*domain.Product
-	byTenant  map[string][]*domain.Product
 	createErr error
 	updateErr error
 }
@@ -18,7 +17,6 @@ type mockProductRepo struct {
 func newMockProductRepo() *mockProductRepo {
 	return &mockProductRepo{
 		products: make(map[string]*domain.Product),
-		byTenant: make(map[string][]*domain.Product),
 	}
 }
 
@@ -27,7 +25,6 @@ func (m *mockProductRepo) Create(_ context.Context, p *domain.Product) error {
 		return m.createErr
 	}
 	m.products[p.ID] = p
-	m.byTenant[p.TenantID] = append(m.byTenant[p.TenantID], p)
 	return nil
 }
 
@@ -46,10 +43,17 @@ func (m *mockProductRepo) Update(_ context.Context, p *domain.Product) error {
 	return nil
 }
 
-func (m *mockProductRepo) FindByTenantID(_ context.Context, tenantID string, activeOnly bool) ([]domain.Product, error) {
-	list := m.byTenant[tenantID]
+func (m *mockProductRepo) Delete(_ context.Context, id string) error {
+	if _, ok := m.products[id]; !ok {
+		return domain.ErrProductNotFound
+	}
+	delete(m.products, id)
+	return nil
+}
+
+func (m *mockProductRepo) FindAll(_ context.Context, activeOnly bool) ([]domain.Product, error) {
 	var result []domain.Product
-	for _, p := range list {
+	for _, p := range m.products {
 		if activeOnly && !p.Active {
 			continue
 		}
@@ -61,11 +65,14 @@ func (m *mockProductRepo) FindByTenantID(_ context.Context, tenantID string, act
 	return result, nil
 }
 
-func (m *mockProductRepo) FindActiveByTenantID(_ context.Context, tenantID string) ([]domain.Product, error) {
-	list := m.byTenant[tenantID]
+func (m *mockProductRepo) FindActiveByIDs(_ context.Context, ids []string) ([]domain.Product, error) {
+	idSet := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		idSet[id] = true
+	}
 	var result []domain.Product
-	for _, p := range list {
-		if p.Active {
+	for _, p := range m.products {
+		if idSet[p.ID] && p.Active {
 			result = append(result, *p)
 		}
 	}
@@ -73,6 +80,72 @@ func (m *mockProductRepo) FindActiveByTenantID(_ context.Context, tenantID strin
 		result = []domain.Product{}
 	}
 	return result, nil
+}
+
+// --- Mock TenantProductRepository ---
+
+type mockTenantProductRepo struct {
+	associations map[string]*domain.TenantProduct // key: tenantID+"|"+productID
+	createErr    error
+}
+
+func newMockTenantProductRepo() *mockTenantProductRepo {
+	return &mockTenantProductRepo{
+		associations: make(map[string]*domain.TenantProduct),
+	}
+}
+
+func (m *mockTenantProductRepo) Create(_ context.Context, tp *domain.TenantProduct) error {
+	if m.createErr != nil {
+		return m.createErr
+	}
+	key := tp.TenantID + "|" + tp.ProductID
+	if _, exists := m.associations[key]; exists {
+		return domain.ErrTenantProductAlreadyExists
+	}
+	m.associations[key] = tp
+	return nil
+}
+
+func (m *mockTenantProductRepo) Delete(_ context.Context, tenantID, productID string) error {
+	key := tenantID + "|" + productID
+	if _, exists := m.associations[key]; !exists {
+		return domain.ErrTenantProductNotFound
+	}
+	delete(m.associations, key)
+	return nil
+}
+
+func (m *mockTenantProductRepo) FindByTenantID(_ context.Context, tenantID string) ([]domain.TenantProduct, error) {
+	var result []domain.TenantProduct
+	for _, tp := range m.associations {
+		if tp.TenantID == tenantID {
+			result = append(result, *tp)
+		}
+	}
+	if result == nil {
+		result = []domain.TenantProduct{}
+	}
+	return result, nil
+}
+
+func (m *mockTenantProductRepo) FindByProductID(_ context.Context, productID string) ([]domain.TenantProduct, error) {
+	var result []domain.TenantProduct
+	for _, tp := range m.associations {
+		if tp.ProductID == productID {
+			result = append(result, *tp)
+		}
+	}
+	if result == nil {
+		result = []domain.TenantProduct{}
+	}
+	return result, nil
+}
+
+func (m *mockTenantProductRepo) Exists(_ context.Context, tenantID, productID string) (bool, error) {
+	key := tenantID + "|" + productID
+	_, exists := m.associations[key]
+	return exists, nil
 }
 
 // --- Mock FunnelProductRepository ---

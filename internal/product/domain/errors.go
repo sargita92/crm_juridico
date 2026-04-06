@@ -10,4 +10,7 @@ var (
 
 	ErrFunnelProductNotFound      = errors.New("funnel-product link not found")
 	ErrFunnelProductAlreadyExists = errors.New("funnel-product link already exists")
+
+	ErrTenantProductAlreadyExists = errors.New("tenant-product association already exists")
+	ErrTenantProductNotFound      = errors.New("tenant-product association not found")
 )

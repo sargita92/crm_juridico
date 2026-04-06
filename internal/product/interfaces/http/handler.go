@@ -18,43 +18,64 @@ type FunnelLister interface {
 	ListFunnels(ctx *gin.Context, tenantID string) ([]FunnelInfo, error)
 }
 
+// TenantLister provides tenant data for admin views.
+type TenantLister interface {
+	ListTenants(ctx *gin.Context) ([]TenantInfo, error)
+}
+
 // FunnelInfo is a lightweight funnel representation for dropdowns.
 type FunnelInfo struct {
 	ID   string
 	Name string
 }
 
+// TenantInfo is a lightweight tenant representation for dropdowns.
+type TenantInfo struct {
+	ID   string
+	Name string
+}
+
 type Handler struct {
-	createProductUC *application.CreateProductUseCase
-	updateProductUC *application.UpdateProductUseCase
-	listProductsUC  *application.ListProductsUseCase
-	toggleProductUC *application.ToggleProductUseCase
-	manageFPUC      *application.ManageFunnelProductsUseCase
-	productRepo     domain.ProductRepository
-	fpRepo          domain.FunnelProductRepository
-	funnelLister    FunnelLister
-	log             *zap.Logger
+	createProductUC  *application.CreateProductUseCase
+	updateProductUC  *application.UpdateProductUseCase
+	listProductsUC   *application.ListProductsUseCase
+	listTenantProdUC *application.ListTenantProductsUseCase
+	toggleProductUC  *application.ToggleProductUseCase
+	deleteProductUC  *application.DeleteProductUseCase
+	manageFPUC       *application.ManageFunnelProductsUseCase
+	manageTPUC       *application.ManageTenantProductsUseCase
+	productRepo      domain.ProductRepository
+	fpRepo           domain.FunnelProductRepository
+	funnelLister     FunnelLister
+	tenantLister     TenantLister
+	log              *zap.Logger
 }
 
 func NewHandler(
 	createProductUC *application.CreateProductUseCase,
 	updateProductUC *application.UpdateProductUseCase,
 	listProductsUC *application.ListProductsUseCase,
+	listTenantProdUC *application.ListTenantProductsUseCase,
 	toggleProductUC *application.ToggleProductUseCase,
+	deleteProductUC *application.DeleteProductUseCase,
 	manageFPUC *application.ManageFunnelProductsUseCase,
+	manageTPUC *application.ManageTenantProductsUseCase,
 	productRepo domain.ProductRepository,
 	fpRepo domain.FunnelProductRepository,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
-		createProductUC: createProductUC,
-		updateProductUC: updateProductUC,
-		listProductsUC:  listProductsUC,
-		toggleProductUC: toggleProductUC,
-		manageFPUC:      manageFPUC,
-		productRepo:     productRepo,
-		fpRepo:          fpRepo,
-		log:             log,
+		createProductUC:  createProductUC,
+		updateProductUC:  updateProductUC,
+		listProductsUC:   listProductsUC,
+		listTenantProdUC: listTenantProdUC,
+		toggleProductUC:  toggleProductUC,
+		deleteProductUC:  deleteProductUC,
+		manageFPUC:       manageFPUC,
+		manageTPUC:       manageTPUC,
+		productRepo:      productRepo,
+		fpRepo:           fpRepo,
+		log:              log,
 	}
 }
 
@@ -63,31 +84,33 @@ func (h *Handler) SetFunnelLister(fl FunnelLister) {
 	h.funnelLister = fl
 }
 
-// --- Product List ---
+// SetTenantLister sets the tenant lister dependency.
+func (h *Handler) SetTenantLister(tl TenantLister) {
+	h.tenantLister = tl
+}
 
-func (h *Handler) RenderProductList(c *gin.Context) {
-	tenantID := middleware.GetTenantID(c.Request.Context())
+// ===== ADMIN HANDLERS =====
 
-	products, err := h.listProductsUC.Execute(c.Request.Context(), tenantID, false)
+// RenderAdminProductList renders the admin product list page.
+func (h *Handler) RenderAdminProductList(c *gin.Context) {
+	products, err := h.listProductsUC.Execute(c.Request.Context(), false)
 	if err != nil {
 		h.log.Error("failed to list products", zap.Error(err))
-		c.HTML(http.StatusInternalServerError, "product/product_list.html", gin.H{
+		c.HTML(http.StatusInternalServerError, "product/admin_product_list.html", gin.H{
 			"Error":     "Erro ao carregar produtos",
 			"ActiveNav": "products",
 		})
 		return
 	}
 
-	c.HTML(http.StatusOK, "product/product_list.html", gin.H{
+	c.HTML(http.StatusOK, "product/admin_product_list.html", gin.H{
 		"Products":  products,
 		"ActiveNav": "products",
 	})
 }
 
-// --- Product Form ---
-
-func (h *Handler) RenderProductForm(c *gin.Context) {
-	tenantID := middleware.GetTenantID(c.Request.Context())
+// RenderAdminProductForm renders the admin product create/edit form.
+func (h *Handler) RenderAdminProductForm(c *gin.Context) {
 	productID := c.Param("id")
 
 	data := gin.H{
@@ -98,14 +121,7 @@ func (h *Handler) RenderProductForm(c *gin.Context) {
 		product, err := h.productRepo.FindByID(c.Request.Context(), productID)
 		if err != nil {
 			h.log.Error("failed to get product for edit", zap.Error(err))
-			c.HTML(http.StatusNotFound, "product/product_form.html", gin.H{
-				"Error":     "Produto nao encontrado",
-				"ActiveNav": "products",
-			})
-			return
-		}
-		if product.TenantID != tenantID {
-			c.HTML(http.StatusNotFound, "product/product_form.html", gin.H{
+			c.HTML(http.StatusNotFound, "product/admin_product_form.html", gin.H{
 				"Error":     "Produto nao encontrado",
 				"ActiveNav": "products",
 			})
@@ -128,7 +144,8 @@ func (h *Handler) RenderProductForm(c *gin.Context) {
 		for _, fl := range funnelLinks {
 			name := fl.FunnelID // fallback to ID
 			if h.funnelLister != nil {
-				funnels, err := h.funnelLister.ListFunnels(c, tenantID)
+				// For admin, we try to list funnels; pass empty tenantID as admin doesn't scope by tenant
+				funnels, err := h.funnelLister.ListFunnels(c, "")
 				if err == nil {
 					for _, f := range funnels {
 						if f.ID == fl.FunnelID {
@@ -149,22 +166,51 @@ func (h *Handler) RenderProductForm(c *gin.Context) {
 		data["Keywords"] = strings.Join(product.Keywords, ", ")
 		data["LinkedFunnels"] = linkedFunnels
 
-		// Get available funnels for linking
-		if h.funnelLister != nil {
-			funnels, err := h.funnelLister.ListFunnels(c, tenantID)
+		// Get tenant associations
+		tenantAssocs, err := h.manageTPUC.ListProductTenants(c.Request.Context(), productID)
+		if err != nil {
+			h.log.Error("failed to get tenant associations", zap.Error(err))
+		}
+
+		type tenantAssocDisplay struct {
+			TenantID   string
+			TenantName string
+		}
+		var linkedTenants []tenantAssocDisplay
+		for _, ta := range tenantAssocs {
+			name := ta.TenantID
+			if h.tenantLister != nil {
+				tenants, err := h.tenantLister.ListTenants(c)
+				if err == nil {
+					for _, t := range tenants {
+						if t.ID == ta.TenantID {
+							name = t.Name
+							break
+						}
+					}
+				}
+			}
+			linkedTenants = append(linkedTenants, tenantAssocDisplay{
+				TenantID:   ta.TenantID,
+				TenantName: name,
+			})
+		}
+		data["LinkedTenants"] = linkedTenants
+
+		// Get available tenants for association
+		if h.tenantLister != nil {
+			tenants, err := h.tenantLister.ListTenants(c)
 			if err == nil {
-				data["AvailableFunnels"] = funnels
+				data["AvailableTenants"] = tenants
 			}
 		}
 	}
 
-	c.HTML(http.StatusOK, "product/product_form.html", data)
+	c.HTML(http.StatusOK, "product/admin_product_form.html", data)
 }
 
-// --- Create Product ---
-
-func (h *Handler) HandleCreateProduct(c *gin.Context) {
-	tenantID := middleware.GetTenantID(c.Request.Context())
+// HandleAdminCreateProduct handles product creation (admin).
+func (h *Handler) HandleAdminCreateProduct(c *gin.Context) {
 	name := c.PostForm("name")
 	description := c.PostForm("description")
 	keywordsStr := c.PostForm("keywords")
@@ -172,14 +218,13 @@ func (h *Handler) HandleCreateProduct(c *gin.Context) {
 	keywords := parseKeywords(keywordsStr)
 
 	_, err := h.createProductUC.Execute(c.Request.Context(), application.CreateProductInput{
-		TenantID:    tenantID,
 		Name:        name,
 		Description: description,
 		Keywords:    keywords,
 	})
 	if err != nil {
 		h.log.Error("failed to create product", zap.Error(err))
-		c.HTML(http.StatusUnprocessableEntity, "product/product_form.html", gin.H{
+		c.HTML(http.StatusUnprocessableEntity, "product/admin_product_form.html", gin.H{
 			"Error":       err.Error(),
 			"Name":        name,
 			"Description": description,
@@ -189,14 +234,12 @@ func (h *Handler) HandleCreateProduct(c *gin.Context) {
 		return
 	}
 
-	c.Header("HX-Redirect", "/tenant/products")
+	c.Header("HX-Redirect", "/admin/products")
 	c.Status(http.StatusOK)
 }
 
-// --- Update Product ---
-
-func (h *Handler) HandleUpdateProduct(c *gin.Context) {
-	tenantID := middleware.GetTenantID(c.Request.Context())
+// HandleAdminUpdateProduct handles product update (admin).
+func (h *Handler) HandleAdminUpdateProduct(c *gin.Context) {
 	productID := c.Param("id")
 	name := c.PostForm("name")
 	description := c.PostForm("description")
@@ -205,7 +248,6 @@ func (h *Handler) HandleUpdateProduct(c *gin.Context) {
 	keywords := parseKeywords(keywordsStr)
 
 	_, err := h.updateProductUC.Execute(c.Request.Context(), application.UpdateProductInput{
-		TenantID:    tenantID,
 		ProductID:   productID,
 		Name:        name,
 		Description: description,
@@ -213,7 +255,7 @@ func (h *Handler) HandleUpdateProduct(c *gin.Context) {
 	})
 	if err != nil {
 		h.log.Error("failed to update product", zap.Error(err))
-		c.HTML(http.StatusUnprocessableEntity, "product/product_form.html", gin.H{
+		c.HTML(http.StatusUnprocessableEntity, "product/admin_product_form.html", gin.H{
 			"Error":     "Erro ao atualizar produto: " + err.Error(),
 			"Product":   &domain.Product{ID: productID, Name: name, Description: description, Keywords: keywords},
 			"Keywords":  keywordsStr,
@@ -222,31 +264,42 @@ func (h *Handler) HandleUpdateProduct(c *gin.Context) {
 		return
 	}
 
-	c.Header("HX-Redirect", "/tenant/products")
+	c.Header("HX-Redirect", "/admin/products")
 	c.Status(http.StatusOK)
 }
 
-// --- Toggle Product ---
-
-func (h *Handler) HandleToggleProduct(c *gin.Context) {
-	tenantID := middleware.GetTenantID(c.Request.Context())
+// HandleAdminToggleProduct handles product toggle (admin).
+func (h *Handler) HandleAdminToggleProduct(c *gin.Context) {
 	productID := c.Param("id")
 
 	_, err := h.toggleProductUC.Execute(c.Request.Context(), application.ToggleProductInput{
-		TenantID:  tenantID,
 		ProductID: productID,
 	})
 	if err != nil {
 		h.log.Error("failed to toggle product", zap.Error(err))
 	}
 
-	c.Header("HX-Redirect", "/tenant/products")
+	c.Header("HX-Redirect", "/admin/products")
 	c.Status(http.StatusOK)
 }
 
-// --- Link Funnel ---
+// HandleAdminDeleteProduct handles product deletion (admin).
+func (h *Handler) HandleAdminDeleteProduct(c *gin.Context) {
+	productID := c.Param("id")
 
-func (h *Handler) HandleLinkFunnel(c *gin.Context) {
+	err := h.deleteProductUC.Execute(c.Request.Context(), application.DeleteProductInput{
+		ProductID: productID,
+	})
+	if err != nil {
+		h.log.Error("failed to delete product", zap.Error(err))
+	}
+
+	c.Header("HX-Redirect", "/admin/products")
+	c.Status(http.StatusOK)
+}
+
+// HandleAdminLinkFunnel links a funnel to a product (admin).
+func (h *Handler) HandleAdminLinkFunnel(c *gin.Context) {
 	productID := c.Param("id")
 	funnelID := c.PostForm("funnel_id")
 	priorityStr := c.PostForm("priority")
@@ -265,13 +318,12 @@ func (h *Handler) HandleLinkFunnel(c *gin.Context) {
 		h.log.Error("failed to link funnel to product", zap.Error(err))
 	}
 
-	c.Header("HX-Redirect", "/tenant/products/"+productID+"/edit")
+	c.Header("HX-Redirect", "/admin/products/"+productID+"/edit")
 	c.Status(http.StatusOK)
 }
 
-// --- Unlink Funnel ---
-
-func (h *Handler) HandleUnlinkFunnel(c *gin.Context) {
+// HandleAdminUnlinkFunnel unlinks a funnel from a product (admin).
+func (h *Handler) HandleAdminUnlinkFunnel(c *gin.Context) {
 	productID := c.Param("id")
 	funnelID := c.Param("funnelId")
 
@@ -283,13 +335,12 @@ func (h *Handler) HandleUnlinkFunnel(c *gin.Context) {
 		h.log.Error("failed to unlink funnel from product", zap.Error(err))
 	}
 
-	c.Header("HX-Redirect", "/tenant/products/"+productID+"/edit")
+	c.Header("HX-Redirect", "/admin/products/"+productID+"/edit")
 	c.Status(http.StatusOK)
 }
 
-// --- Update Priority ---
-
-func (h *Handler) HandleUpdatePriority(c *gin.Context) {
+// HandleAdminUpdatePriority updates funnel-product priority (admin).
+func (h *Handler) HandleAdminUpdatePriority(c *gin.Context) {
 	productID := c.Param("id")
 	funnelID := c.Param("funnelId")
 	priorityStr := c.PostForm("priority")
@@ -308,8 +359,64 @@ func (h *Handler) HandleUpdatePriority(c *gin.Context) {
 		h.log.Error("failed to update priority", zap.Error(err))
 	}
 
-	c.Header("HX-Redirect", "/tenant/products/"+productID+"/edit")
+	c.Header("HX-Redirect", "/admin/products/"+productID+"/edit")
 	c.Status(http.StatusOK)
+}
+
+// HandleAdminAssociateTenant associates a product with a tenant (admin).
+func (h *Handler) HandleAdminAssociateTenant(c *gin.Context) {
+	productID := c.Param("id")
+	tenantID := c.PostForm("tenant_id")
+
+	err := h.manageTPUC.Associate(c.Request.Context(), application.AssociateTenantProductInput{
+		TenantID:  tenantID,
+		ProductID: productID,
+	})
+	if err != nil {
+		h.log.Error("failed to associate tenant to product", zap.Error(err))
+	}
+
+	c.Header("HX-Redirect", "/admin/products/"+productID+"/edit")
+	c.Status(http.StatusOK)
+}
+
+// HandleAdminDisassociateTenant removes a tenant-product association (admin).
+func (h *Handler) HandleAdminDisassociateTenant(c *gin.Context) {
+	productID := c.Param("id")
+	tenantID := c.Param("tenantId")
+
+	err := h.manageTPUC.Disassociate(c.Request.Context(), application.DisassociateTenantProductInput{
+		TenantID:  tenantID,
+		ProductID: productID,
+	})
+	if err != nil {
+		h.log.Error("failed to disassociate tenant from product", zap.Error(err))
+	}
+
+	c.Header("HX-Redirect", "/admin/products/"+productID+"/edit")
+	c.Status(http.StatusOK)
+}
+
+// ===== TENANT HANDLERS (read-only) =====
+
+// RenderTenantProductList renders the tenant product list page (read-only).
+func (h *Handler) RenderTenantProductList(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+
+	products, err := h.listTenantProdUC.Execute(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to list tenant products", zap.Error(err))
+		c.HTML(http.StatusInternalServerError, "product/product_list.html", gin.H{
+			"Error":     "Erro ao carregar produtos",
+			"ActiveNav": "products",
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "product/product_list.html", gin.H{
+		"Products":  products,
+		"ActiveNav": "products",
+	})
 }
 
 // parseKeywords splits a comma-separated string into trimmed non-empty keywords.
