@@ -4,26 +4,27 @@
 <p style="color:#ef4444;font-size:0.8125rem;margin-bottom:0.5rem">{{.Error}}</p>
 {{end}}
 {{if .Lead}}
-<form class="lead-note-form"
+<form style="display:flex;gap:0.5rem;align-items:flex-start;margin-bottom:0.75rem"
       hx-post="/tenant/leads/{{.Lead.ID}}/notes"
       hx-target="#lead-notes-section"
       hx-swap="innerHTML">
-    <textarea name="content" placeholder="Adicionar anotacao..." rows="2" class="lead-note-input" required></textarea>
-    <button type="submit" class="btn btn-sm btn-primary">Adicionar</button>
+    <textarea name="content" placeholder="Adicionar anotacao..." rows="2" required
+              style="flex:1;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.8125rem;resize:vertical;min-height:2.5rem;font-family:inherit"></textarea>
+    <button type="submit" class="btn btn-sm btn-primary" style="white-space:nowrap;padding:0.5rem 1rem;flex-shrink:0">Adicionar</button>
 </form>
 {{if .Lead.Notes}}
-<div class="lead-notes-list">
+<div style="display:flex;flex-direction:column;gap:0.5rem">
     {{range .Lead.Notes}}
-    <div class="lead-note-item">
-        <div class="lead-note-meta">
-            <span class="lead-note-date">{{.CreatedAt.Format "02/01/2006 15:04"}}</span>
+    <div style="padding:0.5rem 0.75rem;background:#fefce8;border-radius:6px;border-left:3px solid #eab308">
+        <div style="margin-bottom:0.25rem">
+            <span style="font-size:0.6875rem;color:#9ca3af">{{.CreatedAt.Format "02/01/2006 15:04"}}</span>
         </div>
-        <p class="lead-note-content">{{.Content}}</p>
+        <p style="font-size:0.8125rem;margin:0;line-height:1.4">{{.Content}}</p>
     </div>
     {{end}}
 </div>
 {{else}}
-<p class="lead-empty-text">Nenhuma anotacao</p>
+<p style="font-size:0.8125rem;color:#9ca3af;font-style:italic">Nenhuma anotacao</p>
 {{end}}
 {{end}}
 {{end}}
