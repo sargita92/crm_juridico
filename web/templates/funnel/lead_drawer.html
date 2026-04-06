@@ -1,4 +1,8 @@
 {{define "funnel/lead_drawer.html"}}
+<style>
+details[open] > summary .collapse-arrow { transform: rotate(90deg); }
+details > summary::-webkit-details-marker { display: none; }
+</style>
 <div class="lead-drawer-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100" onclick="closeLeadDrawer(event)">
     <div class="lead-drawer" style="position:fixed;right:0;top:0;bottom:0;width:50%;background:#fff;box-shadow:-4px 0 16px rgba(0,0,0,0.1);display:flex;flex-direction:column;z-index:101;animation:slideIn 0.25s ease" onclick="event.stopPropagation()">
         <div class="lead-drawer-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid #e5e7eb;flex-shrink:0">
@@ -56,19 +60,24 @@
             </div>
 
             <!-- Anotacoes -->
-            <div class="lead-detail-section" id="lead-notes-section">
+            <details class="lead-detail-section" id="lead-notes-section" open>
+                <summary style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;cursor:pointer;user-select:none;margin-bottom:0.5rem;font-weight:700;list-style:none;display:flex;align-items:center;gap:0.375rem">
+                    <span style="transition:transform 0.2s;display:inline-block" class="collapse-arrow">&#9656;</span> Anotacoes
+                </summary>
                 {{template "funnel/lead_notes_section.html" .}}
-            </div>
+            </details>
 
             <!-- Historico de movimentacoes -->
-            <div class="lead-detail-section">
-                <h4>Historico de movimentacoes</h4>
+            <details class="lead-detail-section">
+                <summary style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;cursor:pointer;user-select:none;margin-bottom:0.5rem;font-weight:700;list-style:none;display:flex;align-items:center;gap:0.375rem">
+                    <span style="transition:transform 0.2s;display:inline-block" class="collapse-arrow">&#9656;</span> Historico de movimentacoes
+                </summary>
                 {{if .Lead.Movements}}
-                <div class="lead-movements">
+                <div class="lead-movements" style="border-left:2px solid #e5e7eb;padding-left:1rem">
                     {{range .Lead.Movements}}
-                    <div class="lead-movement-item">
-                        <span class="lead-movement-date">{{.MovedAt.Format "02/01 15:04"}}</span>
-                        <span class="lead-movement-desc">
+                    <div style="display:flex;gap:0.75rem;margin-bottom:0.5rem;font-size:0.8125rem">
+                        <span style="color:#9ca3af;white-space:nowrap">{{.MovedAt.Format "02/01 15:04"}}</span>
+                        <span>
                             {{if .FromColumnName}}{{.FromColumnName}} &rarr; {{end}}{{.ToColumnName}}
                             {{if not .FromColumnName}}(criacao automatica){{end}}
                         </span>
@@ -76,9 +85,9 @@
                     {{end}}
                 </div>
                 {{else}}
-                <p class="lead-empty-text">Nenhuma movimentacao</p>
+                <p style="font-size:0.8125rem;color:#9ca3af;font-style:italic">Nenhuma movimentacao</p>
                 {{end}}
-            </div>
+            </details>
 
             <!-- Produto (placeholder F10) -->
             <div class="lead-detail-section">
