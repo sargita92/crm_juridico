@@ -4,19 +4,20 @@
 <p style="color:#ef4444;font-size:0.8125rem;margin-bottom:0.5rem">{{.Error}}</p>
 {{end}}
 {{if .Lead}}
-<form style="display:flex;gap:0.5rem;align-items:flex-start;margin-bottom:0.75rem"
+<form style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.75rem"
       hx-post="/tenant/leads/{{.Lead.ID}}/notes"
       hx-target="#lead-notes-section"
       hx-swap="innerHTML">
     <textarea name="content" placeholder="Adicionar anotacao..." rows="2" required
-              style="flex:1;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.8125rem;resize:vertical;min-height:2.5rem;font-family:inherit"></textarea>
-    <button type="submit" style="width:auto;padding:0.5rem 1rem;font-size:0.8125rem;font-weight:600;color:#fff;background:#0f3460;border:none;border-radius:6px;cursor:pointer;white-space:nowrap;flex-shrink:0;margin:0">Adicionar</button>
+              style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.8125rem;resize:vertical;min-height:2.5rem;font-family:inherit;box-sizing:border-box"></textarea>
+    <button type="submit" style="width:auto;align-self:flex-end;padding:0.5rem 1rem;font-size:0.8125rem;font-weight:600;color:#fff;background:#0f3460;border:none;border-radius:6px;cursor:pointer">Adicionar</button>
 </form>
 {{if .Lead.Notes}}
 <div style="display:flex;flex-direction:column;gap:0.5rem">
     {{range .Lead.Notes}}
     <div style="padding:0.5rem 0.75rem;background:#fefce8;border-radius:6px;border-left:3px solid #eab308">
-        <div style="margin-bottom:0.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+            <span style="font-size:0.6875rem;color:#667781;font-weight:500">{{.CreatedBy}}</span>
             <span style="font-size:0.6875rem;color:#9ca3af">{{.CreatedAt.Format "02/01/2006 15:04"}}</span>
         </div>
         <p style="font-size:0.8125rem;margin:0;line-height:1.4">{{.Content}}</p>
