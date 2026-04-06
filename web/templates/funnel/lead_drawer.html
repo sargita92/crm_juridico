@@ -1,5 +1,8 @@
 {{define "funnel/lead_drawer.html"}}
 <style>
+details > summary { background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:0.5rem 0.75rem; transition:background 0.15s,border-color 0.15s; }
+details > summary:hover { background:#f0f2f5; border-color:#d1d5db; }
+details[open] > summary { border-color:#d1d5db; margin-bottom:0.75rem; }
 details[open] > summary .collapse-arrow { transform: rotate(90deg); }
 details > summary::-webkit-details-marker { display: none; }
 </style>
@@ -60,7 +63,7 @@ details > summary::-webkit-details-marker { display: none; }
             </div>
 
             <!-- Anotacoes -->
-            <details class="lead-detail-section" id="lead-notes-section" open>
+            <details class="lead-detail-section" id="lead-notes-section">
                 <summary style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;cursor:pointer;user-select:none;margin-bottom:0.5rem;font-weight:700;list-style:none;display:flex;align-items:center;gap:0.375rem">
                     <span style="transition:transform 0.2s;display:inline-block" class="collapse-arrow">&#9656;</span> Anotacoes
                 </summary>
