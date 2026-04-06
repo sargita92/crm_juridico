@@ -50,7 +50,13 @@
 | F11 | [Pagamentos](../features/F11-pagamentos-admin.md) | backlog | F03 | média |
 | F12 | [Logs](../features/F12-logs-admin.md) | backlog | F01 | baixa |
 
-## Épico 7: Marketing
+## Épico 7: IA e MCP
+
+| # | Feature | Status | Dependência | Prioridade |
+|---|---------|--------|-------------|------------|
+| F15 | [MCP Interno para Especialistas](../features/F15-mcp-interno-especialistas.md) | backlog | F05 | média |
+
+## Épico 8: Marketing
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
@@ -72,9 +78,10 @@ Iteração 8: F08 (usuários e permissões)
 Iteração 9: F09 (automações)
 Iteração 10: F10 (produtos)
 Iteração 11: F14 (arquivos por lead)
-Iteração 12: F11 (pagamentos)
-Iteração 13: F12 (logs)
-Iteração 14: F13 (landing page)
+Iteração 12: F15 (MCP interno para especialistas)
+Iteração 13: F11 (pagamentos)
+Iteração 14: F12 (logs)
+Iteração 15: F13 (landing page)
 ```
 
 ## Notas
