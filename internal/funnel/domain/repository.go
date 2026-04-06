@@ -57,3 +57,8 @@ type LeadWithContact struct {
 	ColumnName   string
 	ColumnColor  string
 }
+
+type LeadNoteRepository interface {
+	Create(ctx context.Context, note *LeadNote) error
+	FindByLeadID(ctx context.Context, leadID string) ([]LeadNote, error)
+}
