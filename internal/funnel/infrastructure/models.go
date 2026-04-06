@@ -169,3 +169,38 @@ func movementToDomain(m *leadMovementModel) *domain.LeadMovement {
 		MovedAt:      m.MovedAt,
 	}
 }
+
+// --- LeadNote model ---
+
+type leadNoteModel struct {
+	ID        string    `gorm:"primaryKey;column:id;type:char(36)"`
+	LeadID    string    `gorm:"column:lead_id;type:char(36);not null"`
+	TenantID  string    `gorm:"column:tenant_id;type:char(36);not null"`
+	Content   string    `gorm:"column:content;type:text;not null"`
+	CreatedBy string    `gorm:"column:created_by;type:char(36);not null"`
+	CreatedAt time.Time `gorm:"column:created_at;not null"`
+}
+
+func (leadNoteModel) TableName() string { return "lead_notes" }
+
+func noteToModel(n *domain.LeadNote) *leadNoteModel {
+	return &leadNoteModel{
+		ID:        n.ID,
+		LeadID:    n.LeadID,
+		TenantID:  n.TenantID,
+		Content:   n.Content,
+		CreatedBy: n.CreatedBy,
+		CreatedAt: n.CreatedAt,
+	}
+}
+
+func noteToDomain(m *leadNoteModel) *domain.LeadNote {
+	return &domain.LeadNote{
+		ID:        m.ID,
+		LeadID:    m.LeadID,
+		TenantID:  m.TenantID,
+		Content:   m.Content,
+		CreatedBy: m.CreatedBy,
+		CreatedAt: m.CreatedAt,
+	}
+}
