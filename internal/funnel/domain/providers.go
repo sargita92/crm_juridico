@@ -39,3 +39,14 @@ type ProductProvider interface {
 type FunnelProductRouter interface {
 	FindTopPriorityFunnelID(ctx context.Context, productID string) (funnelID string, err error)
 }
+
+// ProductInfo is a lightweight product representation for UI dropdowns and badges.
+type ProductInfo struct {
+	ID   string
+	Name string
+}
+
+// ProductLister lists active products for a tenant (used by kanban for filter dropdown).
+type ProductLister interface {
+	ListActiveProducts(ctx context.Context, tenantID string) ([]ProductInfo, error)
+}

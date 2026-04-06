@@ -174,7 +174,7 @@ func setupOwaspEnv() *owaspEnv {
 		createColumnUC, deleteColumnUC, moveColumnUC,
 		createLeadUC, moveLeadUC, getLeadDetailUC,
 		createLeadNoteUC,
-		leadRepo, testLog,
+		leadRepo, nil, nil, testLog,
 	)
 
 	router := gin.New()
@@ -186,6 +186,7 @@ func setupOwaspEnv() *owaspEnv {
 		"funnel/lead_move.html", "funnel/funnel_list.html",
 		"funnel/funnel_detail.html", "funnel/funnel_form.html",
 		"funnel/columns_section.html", "funnel/column_form.html",
+		"funnel/lead_product_form.html", "funnel/lead_product_section.html",
 	} {
 		template.Must(tmpl.New(name).Parse("ok"))
 	}

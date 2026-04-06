@@ -13,8 +13,10 @@ import (
 )
 
 type Module struct {
-	handler     *funnelhttp.Handler
-	leadCreator *application.CreateLeadUseCase
+	handler       *funnelhttp.Handler
+	leadCreator   *application.CreateLeadUseCase
+	listFunnelsUC *application.ListFunnelsUseCase
+	leadRepo      domain.LeadRepository
 }
 
 func NewModule(
@@ -25,6 +27,7 @@ func NewModule(
 	productDetector domain.ProductDetector,
 	productProvider domain.ProductProvider,
 	funnelProductRouter domain.FunnelProductRouter,
+	productLister domain.ProductLister,
 	log *zap.Logger,
 ) *Module {
 	funnelRepo := infrastructure.NewGormFunnelRepository(db)
@@ -54,12 +57,14 @@ func NewModule(
 		createColumnUC, deleteColumnUC, moveColumnUC,
 		createLeadUC, moveLeadUC, getLeadDetailUC,
 		createLeadNoteUC,
-		leadRepo, log,
+		leadRepo, productLister, productProvider, log,
 	)
 
 	return &Module{
-		handler:     handler,
-		leadCreator: createLeadUC,
+		handler:       handler,
+		leadCreator:   createLeadUC,
+		listFunnelsUC: listFunnelsUC,
+		leadRepo:      leadRepo,
 	}
 }
 
@@ -71,4 +76,12 @@ func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 
 func (m *Module) LeadCreator() *application.CreateLeadUseCase {
 	return m.leadCreator
+}
+
+func (m *Module) ListFunnelsUC() *application.ListFunnelsUseCase {
+	return m.listFunnelsUC
+}
+
+func (m *Module) LeadRepo() domain.LeadRepository {
+	return m.leadRepo
 }

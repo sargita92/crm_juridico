@@ -20,6 +20,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
 	"github.com/sasrgita/crm-juridico/internal/product"
+	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
@@ -93,8 +94,13 @@ func main() {
 	productProviderAdapter := funnelinfra.NewProductProviderAdapter(productMod.ProductRepo())
 	funnelProductRouterAdapter := funnelinfra.NewFunnelProductRouterAdapter(productMod.FunnelProductRepo())
 
-	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, log)
+	productListerAdapter := funnelinfra.NewProductListerAdapter(productMod.ProductRepo())
+	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
+
+	// Cross-module: product handler needs funnel lister for link form
+	funnelListerAdapter := productinfra.NewFunnelListerAdapter(funnelMod.ListFunnelsUC())
+	productMod.Handler().SetFunnelLister(funnelListerAdapter)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod}
 

@@ -17,20 +17,22 @@ var columnColors = []string{
 }
 
 type Handler struct {
-	getKanbanUC     *application.GetKanbanUseCase
-	listFunnelsUC   *application.ListFunnelsUseCase
-	getFunnelUC     *application.GetFunnelUseCase
-	createFunnelUC  *application.CreateFunnelUseCase
-	updateFunnelUC  *application.UpdateFunnelUseCase
-	toggleFunnelUC  *application.ToggleFunnelUseCase
-	createColumnUC  *application.CreateColumnUseCase
-	deleteColumnUC  *application.DeleteColumnUseCase
-	moveColumnUC    *application.MoveColumnUseCase
-	createLeadUC    *application.CreateLeadUseCase
-	moveLeadUC      *application.MoveLeadUseCase
+	getKanbanUC      *application.GetKanbanUseCase
+	listFunnelsUC    *application.ListFunnelsUseCase
+	getFunnelUC      *application.GetFunnelUseCase
+	createFunnelUC   *application.CreateFunnelUseCase
+	updateFunnelUC   *application.UpdateFunnelUseCase
+	toggleFunnelUC   *application.ToggleFunnelUseCase
+	createColumnUC   *application.CreateColumnUseCase
+	deleteColumnUC   *application.DeleteColumnUseCase
+	moveColumnUC     *application.MoveColumnUseCase
+	createLeadUC     *application.CreateLeadUseCase
+	moveLeadUC       *application.MoveLeadUseCase
 	getLeadDetailUC  *application.GetLeadDetailUseCase
 	createLeadNoteUC *application.CreateLeadNoteUseCase
 	leadRepo         domain.LeadRepository
+	productLister    domain.ProductLister
+	productProvider  domain.ProductProvider
 	log              *zap.Logger
 }
 
@@ -49,24 +51,28 @@ func NewHandler(
 	getLeadDetailUC *application.GetLeadDetailUseCase,
 	createLeadNoteUC *application.CreateLeadNoteUseCase,
 	leadRepo domain.LeadRepository,
+	productLister domain.ProductLister,
+	productProvider domain.ProductProvider,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
-		getKanbanUC:     getKanbanUC,
-		listFunnelsUC:   listFunnelsUC,
-		getFunnelUC:     getFunnelUC,
-		createFunnelUC:  createFunnelUC,
-		updateFunnelUC:  updateFunnelUC,
-		toggleFunnelUC:  toggleFunnelUC,
-		createColumnUC:  createColumnUC,
-		deleteColumnUC:  deleteColumnUC,
-		moveColumnUC:    moveColumnUC,
-		createLeadUC:    createLeadUC,
-		moveLeadUC:      moveLeadUC,
+		getKanbanUC:      getKanbanUC,
+		listFunnelsUC:    listFunnelsUC,
+		getFunnelUC:      getFunnelUC,
+		createFunnelUC:   createFunnelUC,
+		updateFunnelUC:   updateFunnelUC,
+		toggleFunnelUC:   toggleFunnelUC,
+		createColumnUC:   createColumnUC,
+		deleteColumnUC:   deleteColumnUC,
+		moveColumnUC:     moveColumnUC,
+		createLeadUC:     createLeadUC,
+		moveLeadUC:       moveLeadUC,
 		getLeadDetailUC:  getLeadDetailUC,
 		createLeadNoteUC: createLeadNoteUC,
 		leadRepo:         leadRepo,
-		log:             log,
+		productLister:    productLister,
+		productProvider:  productProvider,
+		log:              log,
 	}
 }
 
@@ -96,9 +102,17 @@ func (h *Handler) RenderKanbanPage(c *gin.Context) {
 		currentFunnelID = funnels[0].ID
 	}
 
+	// Load products for filter dropdown
+	var products []domain.ProductInfo
+	if h.productLister != nil {
+		products, _ = h.productLister.ListActiveProducts(c.Request.Context(), tenantID)
+	}
+
 	c.HTML(http.StatusOK, "funnel/kanban.html", gin.H{
 		"CurrentFunnelID": currentFunnelID,
 		"Funnels":         funnels,
+		"Products":        products,
+		"CurrentProductID": c.Query("product_id"),
 		"ActiveNav":       "leads",
 	})
 }
@@ -107,17 +121,22 @@ func (h *Handler) RenderKanbanContent(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Query("funnel_id")
 	search := c.Query("search")
+	productID := c.Query("product_id")
 
 	output, err := h.getKanbanUC.Execute(c.Request.Context(), application.GetKanbanInput{
-		TenantID: tenantID,
-		FunnelID: funnelID,
-		Search:   search,
+		TenantID:  tenantID,
+		FunnelID:  funnelID,
+		Search:    search,
+		ProductID: productID,
 	})
 	if err != nil {
 		// No funnel = empty kanban (not an error)
 		c.HTML(http.StatusOK, "funnel/kanban_content.html", gin.H{})
 		return
 	}
+
+	// Resolve product names for leads that have a product_id
+	h.resolveProductNames(c, output)
 
 	h.log.Info("kanban data",
 		zap.String("funnel", output.FunnelName),
@@ -132,6 +151,101 @@ func (h *Handler) RenderKanbanContent(c *gin.Context) {
 		"TotalLeads": output.TotalLeads,
 		"Search":     search,
 	})
+}
+
+// --- Lead Product ---
+
+func (h *Handler) RenderLeadProductForm(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	leadID := c.Param("id")
+
+	var products []domain.ProductInfo
+	if h.productLister != nil {
+		products, _ = h.productLister.ListActiveProducts(c.Request.Context(), tenantID)
+	}
+
+	// Get lead to know current product_id
+	lead, err := h.getLeadDetailUC.Execute(c.Request.Context(), application.GetLeadDetailInput{
+		TenantID: tenantID,
+		LeadID:   leadID,
+	})
+	if err != nil {
+		h.log.Error("failed to get lead for product form", zap.Error(err))
+		c.HTML(http.StatusNotFound, "funnel/lead_product_form.html", gin.H{
+			"Error": "Lead nao encontrado",
+		})
+		return
+	}
+
+	// Find the current product ID from the lead domain object
+	domainLead, _ := h.leadRepo.FindByID(c.Request.Context(), leadID)
+	var currentProductID string
+	if domainLead != nil {
+		currentProductID = domainLead.ProductID
+	}
+
+	c.HTML(http.StatusOK, "funnel/lead_product_form.html", gin.H{
+		"LeadID":           leadID,
+		"Products":         products,
+		"CurrentProductID": currentProductID,
+		"Lead":             lead,
+	})
+}
+
+func (h *Handler) HandleSetLeadProduct(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	leadID := c.Param("id")
+	productID := c.PostForm("product_id")
+
+	lead, err := h.leadRepo.FindByID(c.Request.Context(), leadID)
+	if err != nil {
+		h.log.Error("failed to find lead", zap.Error(err))
+		c.Status(http.StatusNotFound)
+		return
+	}
+	if lead.TenantID != tenantID {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	lead.SetProduct(productID)
+	if err := h.leadRepo.Update(c.Request.Context(), lead); err != nil {
+		h.log.Error("failed to update lead product", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	// Return updated product section
+	var productName string
+	if productID != "" && h.productProvider != nil {
+		name, err := h.productProvider.FindProductNameByID(c.Request.Context(), productID)
+		if err == nil {
+			productName = name
+		}
+	}
+
+	c.HTML(http.StatusOK, "funnel/lead_product_section.html", gin.H{
+		"LeadID":      leadID,
+		"ProductName": productName,
+	})
+}
+
+// resolveProductNames enriches KanbanLead with ProductName if available.
+func (h *Handler) resolveProductNames(c *gin.Context, output *application.KanbanOutput) {
+	if h.productProvider == nil {
+		return
+	}
+	for i := range output.Columns {
+		for j := range output.Columns[i].Leads {
+			lead := &output.Columns[i].Leads[j]
+			if lead.ProductID != "" {
+				name, err := h.productProvider.FindProductNameByID(c.Request.Context(), lead.ProductID)
+				if err == nil {
+					lead.ProductName = name
+				}
+			}
+		}
+	}
 }
 
 // --- Funnels ---

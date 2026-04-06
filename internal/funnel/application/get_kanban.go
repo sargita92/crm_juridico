@@ -7,9 +7,10 @@ import (
 )
 
 type GetKanbanInput struct {
-	TenantID string
-	FunnelID string // optional: if empty, use default funnel
-	Search   string
+	TenantID  string
+	FunnelID  string // optional: if empty, use default funnel
+	Search    string
+	ProductID string // optional: filter leads by product
 }
 
 type KanbanColumn struct {
@@ -29,6 +30,8 @@ type KanbanLead struct {
 	Score          int
 	Status         string
 	ConversationID string
+	ProductID      string
+	ProductName    string
 }
 
 type KanbanOutput struct {
@@ -77,10 +80,11 @@ func (uc *GetKanbanUseCase) Execute(ctx context.Context, input GetKanbanInput) (
 
 	for i, col := range columns {
 		leadList, err := uc.leadRepo.FindByFunnelID(ctx, funnel.ID, domain.LeadFilter{
-			Search:   input.Search,
-			ColumnID: col.ID,
-			Page:     1,
-			Limit:    100,
+			Search:    input.Search,
+			ColumnID:  col.ID,
+			ProductID: input.ProductID,
+			Page:      1,
+			Limit:     100,
 		})
 		if err != nil {
 			return nil, err
@@ -95,6 +99,7 @@ func (uc *GetKanbanUseCase) Execute(ctx context.Context, input GetKanbanInput) (
 				Score:          lc.Lead.Score,
 				Status:         string(lc.Lead.Status),
 				ConversationID: lc.Lead.ConversationID,
+				ProductID:      lc.Lead.ProductID,
 			}
 		}
 
