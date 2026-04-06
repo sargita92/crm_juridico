@@ -74,9 +74,16 @@ Cookie: token={{tenant_token}}
 
 ### --- Leads ---
 
-### Detalhe do lead (modal)
+### Detalhe do lead (drawer)
 GET {{base_url}}/tenant/leads/{{lead_id}}
 Cookie: token={{tenant_token}}
+
+### Criar anotacao no lead
+POST {{base_url}}/tenant/leads/{{lead_id}}/notes
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
+
+content=Ligar amanha para agendar reuniao
 
 ### Mover lead
 POST {{base_url}}/tenant/leads/{{lead_id}}/move
