@@ -1,0 +1,21 @@
+{{define "funnel/lead_product_form.html"}}
+<h4>Produto</h4>
+<form hx-put="/tenant/leads/{{.LeadID}}/product"
+      hx-target="#lead-product-section"
+      hx-swap="innerHTML"
+      style="display:flex;gap:0.5rem;align-items:flex-end">
+    <div style="flex:1">
+        <select name="product_id" style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.8125rem">
+            <option value="">Nenhum</option>
+            {{range .Products}}
+            <option value="{{.ID}}" {{if eq .ID $.CurrentProductID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+    <button type="button" class="btn btn-sm btn-outline"
+            hx-get="/tenant/leads/{{.LeadID}}"
+            hx-target="#lead-modal"
+            hx-swap="innerHTML">Cancelar</button>
+</form>
+{{end}}

@@ -94,13 +94,25 @@ details > summary::-webkit-details-marker { display: none; }
                 {{end}}
             </details>
 
-            <!-- Produto (placeholder F10) -->
-            <div class="lead-detail-section">
+            <!-- Produto -->
+            <div class="lead-detail-section" id="lead-product-section">
                 <h4>Produto</h4>
                 {{if .Lead.ProductName}}
-                <p>{{.Lead.ProductName}}</p>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="background:#dbeafe;color:#2563eb;padding:2px 10px;border-radius:12px;font-size:0.8125rem">{{.Lead.ProductName}}</span>
+                    <button class="btn btn-sm btn-outline"
+                            hx-get="/tenant/leads/{{.Lead.ID}}/product-form"
+                            hx-target="#lead-product-section"
+                            hx-swap="innerHTML">Alterar</button>
+                </div>
                 {{else}}
-                <p class="lead-empty-text">Nenhum produto associado</p>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <p class="lead-empty-text" style="margin:0">Nenhum produto associado</p>
+                    <button class="btn btn-sm btn-outline"
+                            hx-get="/tenant/leads/{{.Lead.ID}}/product-form"
+                            hx-target="#lead-product-section"
+                            hx-swap="innerHTML">Associar</button>
+                </div>
                 {{end}}
             </div>
 

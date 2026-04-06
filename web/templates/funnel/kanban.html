@@ -20,10 +20,23 @@
                 <select class="kanban-funnel-select"
                         hx-get="/tenant/leads/kanban"
                         hx-target="#kanban-content"
-                        hx-include="this"
+                        hx-include="[name=product_id],[name=search]"
                         name="funnel_id">
                     {{range .Funnels}}
                     <option value="{{.ID}}" {{if eq .ID $.CurrentFunnelID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+                {{end}}
+                {{if .Products}}
+                <select class="kanban-funnel-select"
+                        hx-get="/tenant/leads/kanban"
+                        hx-target="#kanban-content"
+                        hx-include="[name=funnel_id],[name=search]"
+                        name="product_id"
+                        style="min-width:160px">
+                    <option value="">Todos os produtos</option>
+                    {{range .Products}}
+                    <option value="{{.ID}}" {{if eq .ID $.CurrentProductID}}selected{{end}}>{{.Name}}</option>
                     {{end}}
                 </select>
                 {{end}}
@@ -31,7 +44,7 @@
                        hx-get="/tenant/leads/kanban"
                        hx-trigger="input changed delay:300ms"
                        hx-target="#kanban-content"
-                       hx-include="[name=funnel_id]"
+                       hx-include="[name=funnel_id],[name=product_id]"
                        name="search">
             </div>
             <div class="kanban-header-right">

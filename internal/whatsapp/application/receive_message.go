@@ -129,7 +129,7 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 
 	// Create lead in funnel if this is a new conversation
 	if newConversation && uc.leadCreator != nil {
-		_ = uc.leadCreator.CreateFromConversation(ctx, event.TenantID, contact.ID, conv.ID)
+		_ = uc.leadCreator.CreateFromConversation(ctx, event.TenantID, contact.ID, conv.ID, event.Content)
 	}
 
 	return nil

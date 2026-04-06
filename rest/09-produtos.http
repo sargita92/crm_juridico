@@ -1,44 +1,54 @@
+### Listar produtos
+GET {{base_url}}/tenant/products
+Cookie: token={{tenant_token}}
+
+### Novo produto (form)
+GET {{base_url}}/tenant/products/new
+Cookie: token={{tenant_token}}
+
 ### Criar produto
-POST {{base_url}}/api/products
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+POST {{base_url}}/tenant/products
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "nome": "Consultoria Trabalhista",
-  "descricao": "Consultoria em direito trabalhista",
-  "palavras_chave": ["trabalhista", "CLT", "rescisão", "FGTS"]
-}
+name=Consultoria Trabalhista&description=Consultoria em direito trabalhista&keywords=trabalhista,CLT,rescisão,FGTS
 
-> {%
-    client.global.set("product_id", response.body.id);
-%}
+### Editar produto (form)
+GET {{base_url}}/tenant/products/{{product_id}}/edit
+Cookie: token={{tenant_token}}
 
-### Listar produtos do tenant
-GET {{base_url}}/api/products
-Authorization: Bearer {{tenant_token}}
+### Atualizar produto
+PUT {{base_url}}/tenant/products/{{product_id}}
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-### Editar produto
-PUT {{base_url}}/api/products/{{product_id}}
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+name=Consultoria Trabalhista&description=Atualizado&keywords=trabalhista,CLT,rescisão,FGTS,hora extra
 
-{
-  "palavras_chave": ["trabalhista", "CLT", "rescisão", "FGTS", "hora extra"]
-}
+### Toggle ativo/inativo
+POST {{base_url}}/tenant/products/{{product_id}}/toggle
+Cookie: token={{tenant_token}}
 
-### Associar produto a lead manualmente
-PUT {{base_url}}/api/leads/{{lead_id}}/product
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+### Vincular funil
+POST {{base_url}}/tenant/products/{{product_id}}/funnels
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "product_id": "{{product_id}}"
-}
+funnel_id={{funnel_id}}&priority=10
 
-### Filtrar leads por produto
-GET {{base_url}}/api/funnels/{{funnel_id}}/leads?product_id={{product_id}}
-Authorization: Bearer {{tenant_token}}
+### Desvincular funil
+DELETE {{base_url}}/tenant/products/{{product_id}}/funnels/{{funnel_id}}
+Cookie: token={{tenant_token}}
 
-### Excluir produto
-DELETE {{base_url}}/api/products/{{product_id}}
-Authorization: Bearer {{tenant_token}}
+### Alterar prioridade
+PUT {{base_url}}/tenant/products/{{product_id}}/funnels/{{funnel_id}}/priority
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
+
+priority=20
+
+### Associar produto a lead
+PUT {{base_url}}/tenant/leads/{{lead_id}}/product
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
+
+product_id={{product_id}}

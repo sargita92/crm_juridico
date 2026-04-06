@@ -13,13 +13,16 @@ type CreateLeadInput struct {
 	TenantID       string
 	ContactID      string
 	ConversationID string
+	MessageText    string
 }
 
 type CreateLeadUseCase struct {
-	funnelRepo   domain.FunnelRepository
-	columnRepo   domain.ColumnRepository
-	leadRepo     domain.LeadRepository
-	movementRepo domain.LeadMovementRepository
+	funnelRepo          domain.FunnelRepository
+	columnRepo          domain.ColumnRepository
+	leadRepo            domain.LeadRepository
+	movementRepo        domain.LeadMovementRepository
+	productDetector     domain.ProductDetector
+	funnelProductRouter domain.FunnelProductRouter
 }
 
 func NewCreateLeadUseCase(
@@ -27,12 +30,16 @@ func NewCreateLeadUseCase(
 	columnRepo domain.ColumnRepository,
 	leadRepo domain.LeadRepository,
 	movementRepo domain.LeadMovementRepository,
+	productDetector domain.ProductDetector,
+	funnelProductRouter domain.FunnelProductRouter,
 ) *CreateLeadUseCase {
 	return &CreateLeadUseCase{
-		funnelRepo:   funnelRepo,
-		columnRepo:   columnRepo,
-		leadRepo:     leadRepo,
-		movementRepo: movementRepo,
+		funnelRepo:          funnelRepo,
+		columnRepo:          columnRepo,
+		leadRepo:            leadRepo,
+		movementRepo:        movementRepo,
+		productDetector:     productDetector,
+		funnelProductRouter: funnelProductRouter,
 	}
 }
 
@@ -46,10 +53,32 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 		return err
 	}
 
-	// Find default funnel
-	funnel, err := uc.funnelRepo.FindDefaultByTenantID(ctx, input.TenantID)
-	if err != nil {
-		return err
+	// Product detection: try to detect a product from the message text
+	var detectedProductID string
+	if uc.productDetector != nil && input.MessageText != "" {
+		productID, found, detectErr := uc.productDetector.DetectFromMessage(ctx, input.TenantID, input.MessageText)
+		if detectErr == nil && found {
+			detectedProductID = productID
+		}
+	}
+
+	// Funnel routing: if a product was detected, try to find the best funnel for it
+	var funnel *domain.Funnel
+	if detectedProductID != "" && uc.funnelProductRouter != nil {
+		funnelID, routeErr := uc.funnelProductRouter.FindTopPriorityFunnelID(ctx, detectedProductID)
+		if routeErr == nil && funnelID != "" {
+			if candidate, findErr := uc.funnelRepo.FindByID(ctx, funnelID); findErr == nil && candidate.Active {
+				funnel = candidate
+			}
+		}
+	}
+
+	// Fall back to default funnel if no product-routed funnel was found
+	if funnel == nil {
+		funnel, err = uc.funnelRepo.FindDefaultByTenantID(ctx, input.TenantID)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Find entry column
@@ -63,6 +92,9 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 	if err != nil {
 		return err
 	}
+	if detectedProductID != "" {
+		lead.SetProduct(detectedProductID)
+	}
 	if err := uc.leadRepo.Create(ctx, lead); err != nil {
 		return err
 	}
@@ -73,10 +105,11 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 }
 
 // CreateFromConversation implements the whatsapp domain.LeadCreator interface.
-func (uc *CreateLeadUseCase) CreateFromConversation(ctx context.Context, tenantID, contactID, conversationID string) error {
+func (uc *CreateLeadUseCase) CreateFromConversation(ctx context.Context, tenantID, contactID, conversationID, messageText string) error {
 	return uc.Execute(ctx, CreateLeadInput{
 		TenantID:       tenantID,
 		ContactID:      contactID,
 		ConversationID: conversationID,
+		MessageText:    messageText,
 	})
 }

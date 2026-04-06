@@ -13,11 +13,23 @@ import (
 )
 
 type Module struct {
-	handler     *funnelhttp.Handler
-	leadCreator *application.CreateLeadUseCase
+	handler       *funnelhttp.Handler
+	leadCreator   *application.CreateLeadUseCase
+	listFunnelsUC *application.ListFunnelsUseCase
+	leadRepo      domain.LeadRepository
 }
 
-func NewModule(db *gorm.DB, contactProvider domain.ContactProvider, messageProvider domain.MessageProvider, userNameProvider domain.UserNameProvider, log *zap.Logger) *Module {
+func NewModule(
+	db *gorm.DB,
+	contactProvider domain.ContactProvider,
+	messageProvider domain.MessageProvider,
+	userNameProvider domain.UserNameProvider,
+	productDetector domain.ProductDetector,
+	productProvider domain.ProductProvider,
+	funnelProductRouter domain.FunnelProductRouter,
+	productLister domain.ProductLister,
+	log *zap.Logger,
+) *Module {
 	funnelRepo := infrastructure.NewGormFunnelRepository(db)
 	columnRepo := infrastructure.NewGormColumnRepository(db)
 	leadRepo := infrastructure.NewGormLeadRepository(db)
@@ -34,9 +46,9 @@ func NewModule(db *gorm.DB, contactProvider domain.ContactProvider, messageProvi
 	createColumnUC := application.NewCreateColumnUseCase(funnelRepo, columnRepo)
 	deleteColumnUC := application.NewDeleteColumnUseCase(funnelRepo, columnRepo, leadRepo)
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
-	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
+	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, productDetector, funnelProductRouter)
 	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
-	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider)
+	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider, productProvider)
 	createLeadNoteUC := application.NewCreateLeadNoteUseCase(leadRepo, noteRepo)
 
 	handler := funnelhttp.NewHandler(
@@ -45,12 +57,14 @@ func NewModule(db *gorm.DB, contactProvider domain.ContactProvider, messageProvi
 		createColumnUC, deleteColumnUC, moveColumnUC,
 		createLeadUC, moveLeadUC, getLeadDetailUC,
 		createLeadNoteUC,
-		leadRepo, log,
+		leadRepo, productLister, productProvider, log,
 	)
 
 	return &Module{
-		handler:     handler,
-		leadCreator: createLeadUC,
+		handler:       handler,
+		leadCreator:   createLeadUC,
+		listFunnelsUC: listFunnelsUC,
+		leadRepo:      leadRepo,
 	}
 }
 
@@ -62,4 +76,12 @@ func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 
 func (m *Module) LeadCreator() *application.CreateLeadUseCase {
 	return m.leadCreator
+}
+
+func (m *Module) ListFunnelsUC() *application.ListFunnelsUseCase {
+	return m.listFunnelsUC
+}
+
+func (m *Module) LeadRepo() domain.LeadRepository {
+	return m.leadRepo
 }

@@ -1,0 +1,83 @@
+{{define "product/product_list.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produtos — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/whatsapp.css">
+    <link rel="stylesheet" href="/static/css/kanban.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "products")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <h1>Produtos</h1>
+            </div>
+            <a href="/tenant/products/new" class="btn btn-primary">+ Novo Produto</a>
+        </div>
+        <div class="admin-table-wrapper">
+            {{if .Error}}<div class="alert alert-danger">{{.Error}}</div>{{end}}
+            {{if .Products}}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Palavras-chave</th>
+                        <th>Funis vinculados</th>
+                        <th>Status</th>
+                        <th>Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Products}}
+                    <tr{{if not .Active}} style="opacity:0.55"{{end}}>
+                        <td style="font-weight:500">{{.Name}}</td>
+                        <td>
+                            {{if .Keywords}}
+                            {{range .Keywords}}
+                            <span style="display:inline-block;background:#dbeafe;color:#2563eb;padding:1px 8px;border-radius:12px;font-size:0.75rem;margin:1px 2px">{{.}}</span>
+                            {{end}}
+                            {{else}}
+                            <span style="color:#9ca3af;font-size:0.8125rem;font-style:italic">Nenhuma</span>
+                            {{end}}
+                        </td>
+                        <td>
+                            {{if .Funnels}}
+                            <span style="font-size:0.8125rem">{{len .Funnels}} funil(is)</span>
+                            {{else}}
+                            <span style="color:#9ca3af;font-size:0.8125rem;font-style:italic">Nenhum</span>
+                            {{end}}
+                        </td>
+                        <td>
+                            {{if .Active}}<span class="badge badge-green">Ativo</span>{{else}}<span class="badge badge-gray">Inativo</span>{{end}}
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:0.5rem;align-items:center">
+                                <a href="/tenant/products/{{.ID}}/edit" class="btn btn-sm btn-outline">Editar</a>
+                                <button class="btn btn-sm {{if .Active}}btn-secondary{{else}}btn-success{{end}}"
+                                        hx-post="/tenant/products/{{.ID}}/toggle"
+                                        hx-swap="none">{{if .Active}}Desativar{{else}}Ativar{{end}}</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="empty-state">
+                <p>Nenhum produto criado</p>
+                <a href="/tenant/products/new" class="btn btn-primary">Criar primeiro produto</a>
+            </div>
+            {{end}}
+        </div>
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

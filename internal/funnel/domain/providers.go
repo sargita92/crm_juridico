@@ -27,3 +27,26 @@ type MessageProvider interface {
 type UserNameProvider interface {
 	FindNameByID(ctx context.Context, userID string) (string, error)
 }
+
+type ProductDetector interface {
+	DetectFromMessage(ctx context.Context, tenantID, messageText string) (productID string, found bool, err error)
+}
+
+type ProductProvider interface {
+	FindProductNameByID(ctx context.Context, id string) (string, error)
+}
+
+type FunnelProductRouter interface {
+	FindTopPriorityFunnelID(ctx context.Context, productID string) (funnelID string, err error)
+}
+
+// ProductInfo is a lightweight product representation for UI dropdowns and badges.
+type ProductInfo struct {
+	ID   string
+	Name string
+}
+
+// ProductLister lists active products for a tenant (used by kanban for filter dropdown).
+type ProductLister interface {
+	ListActiveProducts(ctx context.Context, tenantID string) ([]ProductInfo, error)
+}

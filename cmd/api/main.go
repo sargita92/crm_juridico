@@ -19,6 +19,8 @@ import (
 	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
+	"github.com/sasrgita/crm-juridico/internal/product"
+	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
@@ -81,15 +83,26 @@ func main() {
 
 	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
 
+	// Product module (must be created before funnel module for adapter wiring)
+	productMod := product.NewModule(db, log)
+
 	// Cross-module adapters
 	contactAdapter := funnelinfra.NewWhatsAppContactAdapter(whatsappMod.ContactRepo())
 	messageAdapter := funnelinfra.NewWhatsAppMessageAdapter(whatsappMod.MessageRepo())
 	userNameAdapter := funnelinfra.NewUserNameAdapter(authinfra.NewGormUserRepository(db))
+	productDetectorAdapter := funnelinfra.NewProductDetectorAdapter(productMod.DetectUseCase())
+	productProviderAdapter := funnelinfra.NewProductProviderAdapter(productMod.ProductRepo())
+	funnelProductRouterAdapter := funnelinfra.NewFunnelProductRouterAdapter(productMod.FunnelProductRepo())
 
-	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, log)
+	productListerAdapter := funnelinfra.NewProductListerAdapter(productMod.ProductRepo())
+	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod}
+	// Cross-module: product handler needs funnel lister for link form
+	funnelListerAdapter := productinfra.NewFunnelListerAdapter(funnelMod.ListFunnelsUC())
+	productMod.Handler().SetFunnelLister(funnelListerAdapter)
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod}
 
 	// Auth (uses tenant repo from module)
 	userRepo := authinfra.NewGormUserRepository(db)
