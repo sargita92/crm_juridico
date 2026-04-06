@@ -30,7 +30,7 @@
 
             <!-- Acoes -->
             <div class="lead-detail-actions">
-                <a href="/tenant/whatsapp" class="btn btn-primary btn-sm">Abrir Conversa</a>
+                <a href="/tenant/whatsapp/conversations/{{.Lead.ConversationID}}" class="btn btn-primary btn-sm">Abrir Conversa</a>
                 <button class="btn btn-outline btn-sm"
                         hx-get="/tenant/leads/{{.Lead.ID}}/move-form"
                         hx-target="#lead-modal"
@@ -49,7 +49,7 @@
                     </div>
                     {{end}}
                 </div>
-                <a href="/tenant/whatsapp" class="lead-messages-link">Ver conversa completa &rarr;</a>
+                <a href="/tenant/whatsapp/conversations/{{.Lead.ConversationID}}" style="display:block;font-size:0.8125rem;color:#3b82f6;margin-top:0.5rem;text-decoration:none">Ver conversa completa &rarr;</a>
                 {{else}}
                 <p class="lead-empty-text">Nenhuma mensagem</p>
                 {{end}}
