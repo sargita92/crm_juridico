@@ -1,0 +1,35 @@
+{{define "whatsapp/qr.html"}}
+{{if .Error}}
+<div class="wa-qr-error">
+    <p>{{.Error}}</p>
+    <button class="btn btn-primary"
+            hx-post="/tenant/whatsapp/connect"
+            hx-target="#qr-container">
+        Tentar novamente
+    </button>
+</div>
+{{else if .Loading}}
+<div class="wa-loading"
+     hx-get="/tenant/whatsapp/qr"
+     hx-trigger="load delay:2s"
+     hx-target="#qr-container">
+    <div class="spinner"></div>
+    <p>Gerando QR code...</p>
+</div>
+{{else if .QRCode}}
+<div class="wa-qr-code"
+     hx-get="/tenant/whatsapp/qr"
+     hx-trigger="every 30s"
+     hx-target="#qr-container">
+    <img src="/tenant/whatsapp/qr.png" alt="QR Code" width="256" height="256">
+</div>
+{{else}}
+<div class="wa-loading"
+     hx-get="/tenant/whatsapp/qr"
+     hx-trigger="load delay:2s"
+     hx-target="#qr-container">
+    <div class="spinner"></div>
+    <p>Conectando...</p>
+</div>
+{{end}}
+{{end}}

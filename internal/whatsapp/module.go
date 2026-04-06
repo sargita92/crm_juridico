@@ -1,0 +1,53 @@
+package whatsapp
+
+import (
+	"context"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
+
+	"github.com/sasrgita/crm-juridico/internal/shared/module"
+	"github.com/sasrgita/crm-juridico/internal/whatsapp/application"
+	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
+	"github.com/sasrgita/crm-juridico/internal/whatsapp/infrastructure"
+	whatsapphttp "github.com/sasrgita/crm-juridico/internal/whatsapp/interfaces/http"
+)
+
+type Module struct {
+	handler  *whatsapphttp.Handler
+	provider domain.WhatsAppProvider
+}
+
+func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, log *zap.Logger) *Module {
+	contactRepo := infrastructure.NewGormContactRepository(db)
+	conversationRepo := infrastructure.NewGormConversationRepository(db)
+	messageRepo := infrastructure.NewGormMessageRepository(db)
+	eventBus := infrastructure.NewMemoryEventBus()
+
+	receiveMessageUC := application.NewReceiveMessageUseCase(contactRepo, conversationRepo, messageRepo, eventBus)
+	sendMessageUC := application.NewSendMessageUseCase(conversationRepo, messageRepo, contactRepo, provider, eventBus)
+	listConversationsUC := application.NewListConversationsUseCase(conversationRepo)
+	getMessagesUC := application.NewGetConversationMessagesUseCase(conversationRepo, messageRepo)
+	connectUC := application.NewConnectWhatsAppUseCase(provider)
+	statusUC := application.NewGetConnectionStatusUseCase(provider)
+	disconnectUC := application.NewDisconnectWhatsAppUseCase(provider)
+
+	provider.SetMessageHandler(func(ctx context.Context, event domain.IncomingMessage) {
+		_ = receiveMessageUC.Execute(ctx, event)
+	})
+
+	handler := whatsapphttp.NewHandler(
+		sendMessageUC, listConversationsUC, getMessagesUC,
+		connectUC, statusUC, disconnectUC, eventBus, log,
+	)
+
+	return &Module{handler: handler, provider: provider}
+}
+
+func (m *Module) Name() string { return "whatsapp" }
+
+func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
+	m.handler.RegisterRoutes(router, mw.Auth, mw.Tenant)
+}
+

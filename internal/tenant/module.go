@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/tenant/application"
 	"github.com/sasrgita/crm-juridico/internal/tenant/domain"
 	"github.com/sasrgita/crm-juridico/internal/tenant/infrastructure"
@@ -43,8 +44,8 @@ func NewModule(db *gorm.DB) *Module {
 
 func (m *Module) Name() string { return "tenant" }
 
-func (m *Module) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.HandlerFunc) {
-	m.handler.RegisterRoutes(router, authMw, adminMw)
+func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
+	m.handler.RegisterRoutes(router, mw.Auth, mw.Admin)
 }
 
 func (m *Module) TenantRepo() domain.TenantRepository {

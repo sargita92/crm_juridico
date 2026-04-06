@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/specialist/application"
 	"github.com/sasrgita/crm-juridico/internal/specialist/domain"
 	"github.com/sasrgita/crm-juridico/internal/specialist/infrastructure"
@@ -85,11 +86,11 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
 
 func (m *Module) Name() string { return "specialist" }
 
-func (m *Module) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.HandlerFunc) {
-	m.handler.RegisterRoutes(router, authMw, adminMw)
-	m.guardrailHandler.RegisterRoutes(router, authMw, adminMw)
-	m.stepHandler.RegisterRoutes(router, authMw, adminMw)
-	m.scoringHandler.RegisterRoutes(router, authMw, adminMw)
+func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
+	m.handler.RegisterRoutes(router, mw.Auth, mw.Admin)
+	m.guardrailHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
+	m.stepHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
+	m.scoringHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 }
 
 func (m *Module) SpecialistRepo() domain.SpecialistRepository {

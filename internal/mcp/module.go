@@ -7,6 +7,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/mcp/application"
 	"github.com/sasrgita/crm-juridico/internal/mcp/infrastructure"
 	mcphttp "github.com/sasrgita/crm-juridico/internal/mcp/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
 
 type Module struct {
@@ -37,6 +38,6 @@ func NewModule(db *gorm.DB, specialistFinder application.SpecialistFinder) *Modu
 
 func (m *Module) Name() string { return "mcp" }
 
-func (m *Module) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.HandlerFunc) {
-	m.handler.RegisterRoutes(router, authMw, adminMw)
+func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
+	m.handler.RegisterRoutes(router, mw.Auth, mw.Admin)
 }

@@ -27,6 +27,8 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	"github.com/sasrgita/crm-juridico/internal/specialist"
 	"github.com/sasrgita/crm-juridico/internal/tenant"
+	"github.com/sasrgita/crm-juridico/internal/whatsapp"
+	whatsappinfra "github.com/sasrgita/crm-juridico/internal/whatsapp/infrastructure"
 )
 
 func main() {
@@ -71,7 +73,13 @@ func main() {
 	documentMod := document.NewModule(db, specialistMod.SpecialistRepo())
 	mcpMod := mcp.NewModule(db, specialistMod.SpecialistRepo())
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod}
+	// WhatsApp provider
+	whatsmeowProvider := whatsappinfra.NewWhatsmeowProvider("storage/whatsmeow", log)
+	defer whatsmeowProvider.Shutdown()
+
+	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod}
 
 	// Auth (uses tenant repo from module)
 	userRepo := authinfra.NewGormUserRepository(db)
@@ -90,7 +98,13 @@ func main() {
 	tenantMw := middleware.RequireTenant()
 	adminMw := middleware.RequireAdmin()
 
-	router := setupRouter(log, authHandler, modules, loginUC, authMw, tenantMw, adminMw, cfg.Server.SecureCookie)
+	mw := module.Middlewares{
+		Auth:   authMw,
+		Tenant: tenantMw,
+		Admin:  adminMw,
+	}
+
+	router := setupRouter(log, authHandler, modules, loginUC, mw, cfg.Server.SecureCookie)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -130,7 +144,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []module.Module, loginUC *authapp.LoginUseCase, authMw, tenantMw, adminMw gin.HandlerFunc, secureCookie bool) *gin.Engine {
+func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -189,7 +203,7 @@ func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []modul
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Auth routes
-	authHandler.RegisterRoutes(router, authMw, tenantMw)
+	authHandler.RegisterRoutes(router, mw.Auth, mw.Tenant)
 
 	// Admin public routes
 	router.GET("/admin/login", func(c *gin.Context) {
@@ -229,13 +243,13 @@ func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []modul
 
 	// Admin authenticated routes
 	adminGroup := router.Group("/admin")
-	adminGroup.Use(authMw, adminMw)
+	adminGroup.Use(mw.Auth, mw.Admin)
 	adminGroup.GET("/dashboard", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "admin/dashboard.html", gin.H{})
 	})
 
 	for _, mod := range modules {
-		mod.RegisterRoutes(router, authMw, adminMw)
+		mod.RegisterRoutes(router, mw)
 	}
 
 	return router

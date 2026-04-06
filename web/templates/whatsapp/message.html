@@ -1,0 +1,13 @@
+{{define "whatsapp/message.html"}}
+<div class="wa-msg {{if eq .Direction "outgoing"}}wa-msg-out{{else}}wa-msg-in{{end}} {{if eq .Status "failed"}}wa-msg-failed{{end}} {{if eq .Status "pending"}}wa-msg-pending{{end}}">
+    <div class="wa-msg-bubble">
+        <span class="wa-msg-text">{{.Content}}</span>
+        <span class="wa-msg-meta">
+            <span class="wa-msg-time">{{.Timestamp.Format "15:04"}}</span>
+            {{if eq .Status "failed"}}
+            <span class="wa-msg-status-icon" title="Falha no envio">!</span>
+            {{end}}
+        </span>
+    </div>
+</div>
+{{end}}

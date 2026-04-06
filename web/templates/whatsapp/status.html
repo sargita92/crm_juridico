@@ -1,0 +1,14 @@
+{{define "whatsapp/status.html"}}
+{{if .Connected}}
+<span class="wa-status wa-status-connected">
+    <span class="wa-status-dot wa-dot-green"></span>
+    WhatsApp conectado
+</span>
+{{else}}
+<span class="wa-status wa-status-disconnected">
+    <span class="wa-status-dot wa-dot-red"></span>
+    WhatsApp desconectado
+    <a href="/tenant/whatsapp" class="wa-reconnect-link">Reconectar</a>
+</span>
+{{end}}
+{{end}}

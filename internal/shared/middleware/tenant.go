@@ -34,6 +34,11 @@ func GetTenantID(ctx context.Context) string {
 	return ""
 }
 
+// SetTenantIDForTest injects a tenant_id into context for testing purposes.
+func SetTenantIDForTest(ctx context.Context, tenantID string) context.Context {
+	return context.WithValue(ctx, tenantIDKey{}, tenantID)
+}
+
 func TenantScope(ctx context.Context) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		claims := GetClaims(ctx)

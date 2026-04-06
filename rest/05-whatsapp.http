@@ -1,33 +1,95 @@
+### ============================================
+### F06 — Integracao com WhatsApp
+### ============================================
+### Variaveis necessarias:
+###   {{base_url}}     = http://localhost:8080
+###   {{tenant_token}} = JWT com tenant_id selecionado
+
+### --- Pagina principal (QR ou conversas) ---
+
+### Pagina principal do WhatsApp
+GET {{base_url}}/tenant/whatsapp
+Cookie: token={{tenant_token}}
+
+### --- Conexao ---
+
+### Obter QR code para conexao
+GET {{base_url}}/tenant/whatsapp/qr
+Cookie: token={{tenant_token}}
+
+### Status da conexao WhatsApp
+GET {{base_url}}/tenant/whatsapp/status
+Cookie: token={{tenant_token}}
+
+### Iniciar conexao
+POST {{base_url}}/tenant/whatsapp/connect
+Cookie: token={{tenant_token}}
+
+### Desconectar WhatsApp
+POST {{base_url}}/tenant/whatsapp/disconnect
+Cookie: token={{tenant_token}}
+
+### --- Conversas ---
+
 ### Listar conversas do tenant
-GET {{base_url}}/api/conversations?page=1&per_page=20
-Authorization: Bearer {{tenant_token}}
+GET {{base_url}}/tenant/whatsapp/conversations
+Cookie: token={{tenant_token}}
 
-### Buscar conversa por ID
-GET {{base_url}}/api/conversations/{{conversation_id}}
-Authorization: Bearer {{tenant_token}}
+### Listar conversas com busca
+GET {{base_url}}/tenant/whatsapp/conversations?search=maria
+Cookie: token={{tenant_token}}
 
-### Listar mensagens de uma conversa
-GET {{base_url}}/api/conversations/{{conversation_id}}/messages?page=1&per_page=50
-Authorization: Bearer {{tenant_token}}
+### Listar conversas paginadas
+GET {{base_url}}/tenant/whatsapp/conversations?page=2
+Cookie: token={{tenant_token}}
+
+### --- Chat ---
+
+### Abrir conversa (mensagens)
+GET {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}
+Cookie: token={{tenant_token}}
+
+### Polling de novas mensagens (fallback SSE)
+GET {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}/messages/new?after={{last_message_id}}
+Cookie: token={{tenant_token}}
 
 ### Enviar mensagem
-POST {{base_url}}/api/conversations/{{conversation_id}}/messages
-Authorization: Bearer {{tenant_token}}
-Content-Type: application/json
+POST {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}/messages
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "conteudo": "Olá, como posso ajudá-lo?",
-  "tipo": "text"
-}
+content=Ola, como posso ajuda-lo?
 
-### Buscar conversas (por nome ou telefone)
-GET {{base_url}}/api/conversations?search=joao&page=1&per_page=20
-Authorization: Bearer {{tenant_token}}
+### --- SSE (tempo real) ---
 
-### Assumir conversa manualmente (humano substitui IA)
-POST {{base_url}}/api/conversations/{{conversation_id}}/takeover
-Authorization: Bearer {{tenant_token}}
+### Stream de eventos SSE (abrir no navegador ou curl)
+# curl -N -H "Cookie: token={{tenant_token}}" {{base_url}}/tenant/whatsapp/events
+GET {{base_url}}/tenant/whatsapp/events
+Cookie: token={{tenant_token}}
 
-### Devolver conversa ao especialista
-POST {{base_url}}/api/conversations/{{conversation_id}}/release
-Authorization: Bearer {{tenant_token}}
+### ============================================
+### Testes OWASP
+### ============================================
+
+### A01 — Sem token (deve retornar 401)
+GET {{base_url}}/tenant/whatsapp
+
+### A01 — Sem tenant selecionado (deve retornar 403)
+# Use um token sem tenant_id
+GET {{base_url}}/tenant/whatsapp
+Cookie: token={{admin_token_sem_tenant}}
+
+### A03 — SQL injection na busca (deve retornar 200 sem erro)
+GET {{base_url}}/tenant/whatsapp/conversations?search=' OR 1=1 --
+Cookie: token={{tenant_token}}
+
+### A03 — XSS no envio de mensagem (template deve escapar)
+POST {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}/messages
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
+
+content=<script>alert('xss')</script>
+
+### A07 — Token invalido (deve retornar 401)
+GET {{base_url}}/tenant/whatsapp
+Cookie: token=invalid.token.here

@@ -7,6 +7,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/document/application"
 	"github.com/sasrgita/crm-juridico/internal/document/infrastructure"
 	documenthttp "github.com/sasrgita/crm-juridico/internal/document/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
 
 type Module struct {
@@ -36,6 +37,6 @@ func NewModule(db *gorm.DB, specialistFinder application.SpecialistFinder) *Modu
 
 func (m *Module) Name() string { return "document" }
 
-func (m *Module) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.HandlerFunc) {
-	m.handler.RegisterRoutes(router, authMw, adminMw)
+func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
+	m.handler.RegisterRoutes(router, mw.Auth, mw.Admin)
 }
