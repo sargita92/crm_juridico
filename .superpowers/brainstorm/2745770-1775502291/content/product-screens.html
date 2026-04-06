@@ -1,0 +1,207 @@
+<h2>F10 — Telas de Produtos</h2>
+<p class="subtitle">4 telas principais para o CRUD e associações</p>
+
+<div class="section">
+  <h3>1. Listagem de Produtos</h3>
+  <div class="mockup">
+    <div class="mockup-header">Produtos — Tenant</div>
+    <div class="mockup-body" style="padding: 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #333;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <input class="mock-input" placeholder="Buscar produto..." style="width: 250px;">
+        </div>
+        <button class="mock-button">+ Novo Produto</button>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="border-bottom: 1px solid #333; color: #999; text-align: left;">
+            <th style="padding: 12px 16px;">Nome</th>
+            <th style="padding: 12px 16px;">Palavras-chave</th>
+            <th style="padding: 12px 16px;">Funis vinculados</th>
+            <th style="padding: 12px 16px;">Status</th>
+            <th style="padding: 12px 16px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid #222;">
+            <td style="padding: 12px 16px; font-weight: 600;">Consultoria Trabalhista</td>
+            <td style="padding: 12px 16px;">
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 4px;">trabalhista</span>
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 4px;">CLT</span>
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 12px;">rescisão</span>
+            </td>
+            <td style="padding: 12px 16px;">Venda (P:10), Pós-venda (P:5)</td>
+            <td style="padding: 12px 16px;"><span style="background: #064e3b; color: #34d399; padding: 2px 10px; border-radius: 12px; font-size: 12px;">Ativo</span></td>
+            <td style="padding: 12px 16px; color: #60a5fa; cursor: pointer;">Editar | Desativar</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #222;">
+            <td style="padding: 12px 16px; font-weight: 600;">Direito Previdenciário</td>
+            <td style="padding: 12px 16px;">
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 4px;">INSS</span>
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-right: 4px;">aposentadoria</span>
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 12px;">benefício</span>
+            </td>
+            <td style="padding: 12px 16px;">Venda Previdenciário (P:10)</td>
+            <td style="padding: 12px 16px;"><span style="background: #064e3b; color: #34d399; padding: 2px 10px; border-radius: 12px; font-size: 12px;">Ativo</span></td>
+            <td style="padding: 12px 16px; color: #60a5fa; cursor: pointer;">Editar | Desativar</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #222; opacity: 0.5;">
+            <td style="padding: 12px 16px; font-weight: 600;">Consultoria Empresarial</td>
+            <td style="padding: 12px 16px;">
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 12px;">empresa</span>
+            </td>
+            <td style="padding: 12px 16px;">—</td>
+            <td style="padding: 12px 16px;"><span style="background: #3b1818; color: #f87171; padding: 2px 10px; border-radius: 12px; font-size: 12px;">Inativo</span></td>
+            <td style="padding: 12px 16px; color: #60a5fa; cursor: pointer;">Editar | Ativar</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>2. Formulário de Criação/Edição</h3>
+  <div class="mockup">
+    <div class="mockup-header">Novo Produto</div>
+    <div class="mockup-body">
+      <div style="max-width: 500px; display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <label class="label">Nome</label>
+          <input class="mock-input" value="Consultoria Trabalhista" style="width: 100%;">
+        </div>
+        <div>
+          <label class="label">Descrição</label>
+          <textarea class="mock-input" style="width: 100%; height: 60px; resize: vertical;">Consultoria e assessoria em direito trabalhista</textarea>
+        </div>
+        <div>
+          <label class="label">Palavras-chave (separadas por vírgula)</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; background: #1a1a2e; border: 1px solid #333; border-radius: 6px; min-height: 40px;">
+            <span style="background: #1e3a5f; color: #60a5fa; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap: 6px;">trabalhista <span style="cursor: pointer; opacity: 0.6;">x</span></span>
+            <span style="background: #1e3a5f; color: #60a5fa; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap: 6px;">CLT <span style="cursor: pointer; opacity: 0.6;">x</span></span>
+            <span style="background: #1e3a5f; color: #60a5fa; padding: 4px 10px; border-radius: 12px; font-size: 13px; display: flex; align-items: center; gap: 6px;">rescisão <span style="cursor: pointer; opacity: 0.6;">x</span></span>
+            <input style="background: transparent; border: none; color: #e0e0e0; outline: none; flex: 1; min-width: 100px;" placeholder="digitar e Enter...">
+          </div>
+        </div>
+        <div>
+          <label class="label">Vincular a funis</label>
+          <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 6px; padding: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #16213e; border-radius: 4px; margin-bottom: 6px;">
+              <span>Venda Trabalhista</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="label" style="margin: 0;">Prioridade:</span>
+                <input class="mock-input" value="10" style="width: 50px; text-align: center;">
+                <span style="color: #f87171; cursor: pointer;">x</span>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #16213e; border-radius: 4px; margin-bottom: 6px;">
+              <span>Pós-venda Trabalhista</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="label" style="margin: 0;">Prioridade:</span>
+                <input class="mock-input" value="5" style="width: 50px; text-align: center;">
+                <span style="color: #f87171; cursor: pointer;">x</span>
+              </div>
+            </div>
+            <button class="mock-button" style="width: 100%; margin-top: 4px; background: transparent; border: 1px dashed #444; color: #999;">+ Vincular funil</button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;">
+          <button class="mock-button" style="background: transparent; border: 1px solid #444;">Cancelar</button>
+          <button class="mock-button">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>3. No Kanban — Filtro por produto + badge no card</h3>
+  <div class="mockup">
+    <div class="mockup-header">Funil: Venda Trabalhista</div>
+    <div class="mockup-body" style="padding: 0;">
+      <div style="display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #333;">
+        <span class="label" style="margin: 0;">Filtrar:</span>
+        <select class="mock-input" style="width: 180px; padding: 6px 8px;">
+          <option>Todos os produtos</option>
+          <option selected>Consultoria Trabalhista</option>
+          <option>Direito Previdenciário</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 12px; padding: 16px; overflow-x: auto;">
+        <div style="min-width: 220px; background: #1a1a2e; border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6;"></span>
+            Novo <span style="color: #666; font-size: 12px;">(2)</span>
+          </div>
+          <div style="background: #16213e; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-left: 3px solid #3b82f6;">
+            <div style="font-weight: 600; font-size: 13px;">João Silva</div>
+            <div style="color: #999; font-size: 12px; margin-top: 2px;">+55 11 99999-0001</div>
+            <div style="margin-top: 6px;">
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 1px 6px; border-radius: 8px; font-size: 11px;">Trabalhista</span>
+            </div>
+          </div>
+          <div style="background: #16213e; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-left: 3px solid #3b82f6;">
+            <div style="font-weight: 600; font-size: 13px;">Maria Souza</div>
+            <div style="color: #999; font-size: 12px; margin-top: 2px;">+55 11 99999-0002</div>
+            <div style="margin-top: 6px;">
+              <span style="background: #374151; color: #9ca3af; padding: 1px 6px; border-radius: 8px; font-size: 11px;">Sem produto</span>
+            </div>
+          </div>
+        </div>
+        <div style="min-width: 220px; background: #1a1a2e; border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b;"></span>
+            Em Atendimento <span style="color: #666; font-size: 12px;">(1)</span>
+          </div>
+          <div style="background: #16213e; border-radius: 6px; padding: 10px; margin-bottom: 8px; border-left: 3px solid #f59e0b;">
+            <div style="font-weight: 600; font-size: 13px;">Carlos Pereira</div>
+            <div style="color: #999; font-size: 12px; margin-top: 2px;">+55 11 99999-0003</div>
+            <div style="margin-top: 6px;">
+              <span style="background: #1e3a5f; color: #60a5fa; padding: 1px 6px; border-radius: 8px; font-size: 11px;">Trabalhista</span>
+            </div>
+          </div>
+        </div>
+        <div style="min-width: 220px; background: #1a1a2e; border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6;"></span>
+            Qualificado <span style="color: #666; font-size: 12px;">(0)</span>
+          </div>
+          <div style="color: #666; font-size: 13px; text-align: center; padding: 20px 0;">Nenhum lead</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>4. No Drawer do Lead — Produto associado</h3>
+  <div class="mockup">
+    <div class="mockup-header">Detalhes do Lead — João Silva</div>
+    <div class="mockup-body">
+      <div style="max-width: 400px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: space-between;">
+          <div>
+            <div style="font-weight: 600;">João Silva</div>
+            <div style="color: #999; font-size: 13px;">+55 11 99999-0001</div>
+          </div>
+          <span style="background: #064e3b; color: #34d399; padding: 2px 10px; border-radius: 12px; font-size: 12px; height: fit-content;">open</span>
+        </div>
+        <div style="border-top: 1px solid #333; padding-top: 12px;">
+          <div class="label">Produto</div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="background: #1e3a5f; color: #60a5fa; padding: 4px 12px; border-radius: 12px; font-size: 13px;">Consultoria Trabalhista</span>
+            <span style="color: #60a5fa; font-size: 13px; cursor: pointer;">Alterar</span>
+          </div>
+        </div>
+        <div style="border-top: 1px solid #333; padding-top: 12px;">
+          <div class="label">Funil / Coluna</div>
+          <div>Venda Trabalhista &rarr; <strong>Novo</strong></div>
+        </div>
+        <div style="border-top: 1px solid #333; padding-top: 12px;">
+          <div class="label">Score</div>
+          <div>0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

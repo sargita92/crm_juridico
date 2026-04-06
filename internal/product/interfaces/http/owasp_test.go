@@ -106,7 +106,7 @@ func setupOwaspProductEnv() *owaspProductEnv {
 	createProductUC := application.NewCreateProductUseCase(productRepo)
 	updateProductUC := application.NewUpdateProductUseCase(productRepo)
 	listProductsUC := application.NewListProductsUseCase(productRepo, fpRepo)
-	listTenantProdUC := application.NewListTenantProductsUseCase(productRepo, tpRepo)
+	listTenantProdUC := application.NewListTenantProductsUseCase(productRepo, tpRepo, fpRepo)
 	toggleProductUC := application.NewToggleProductUseCase(productRepo)
 	deleteProductUC := application.NewDeleteProductUseCase(productRepo)
 	manageFPUC := application.NewManageFunnelProductsUseCase(fpRepo)

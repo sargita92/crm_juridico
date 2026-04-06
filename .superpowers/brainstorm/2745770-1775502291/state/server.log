@@ -1,0 +1,3 @@
+{"type":"server-started","port":58559,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:58559","screen_dir":"/home/sasrgita/projects/crm_juridico/.superpowers/brainstorm/2745770-1775502291/content","state_dir":"/home/sasrgita/projects/crm_juridico/.superpowers/brainstorm/2745770-1775502291/state"}
+{"type":"screen-added","file":"/home/sasrgita/projects/crm_juridico/.superpowers/brainstorm/2745770-1775502291/content/product-screens.html"}
+{"type":"server-stopped","reason":"idle timeout"}

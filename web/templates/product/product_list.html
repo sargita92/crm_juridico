@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Produtos — CRM Juridico</title>
+    <title>Meus Produtos — CRM Juridico</title>
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/whatsapp.css">
     <link rel="stylesheet" href="/static/css/kanban.css">
@@ -17,37 +17,75 @@
         <div class="page-header">
             <div>
                 <h1>Meus Produtos</h1>
+                <p style="color:#667781;font-size:0.875rem;margin-top:0.25rem">Produtos associados ao seu escritorio. Configure quais funis atendem cada produto.</p>
             </div>
         </div>
         <div class="admin-table-wrapper">
             {{if .Error}}<div class="alert alert-danger">{{.Error}}</div>{{end}}
             {{if .Products}}
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Descricao</th>
-                        <th>Palavras-chave</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range .Products}}
-                    <tr>
-                        <td style="font-weight:500">{{.Name}}</td>
-                        <td>{{.Description}}</td>
-                        <td>
-                            {{if .Keywords}}
-                            {{range .Keywords}}
-                            <span style="display:inline-block;background:#dbeafe;color:#2563eb;padding:1px 8px;border-radius:12px;font-size:0.75rem;margin:1px 2px">{{.}}</span>
-                            {{end}}
-                            {{else}}
-                            <span style="color:#9ca3af;font-size:0.8125rem;font-style:italic">Nenhuma</span>
-                            {{end}}
-                        </td>
-                    </tr>
+            {{range .Products}}
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:1.25rem;margin-bottom:1rem">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+                    <div>
+                        <h3 style="margin:0;font-size:1.1rem">{{.Name}}</h3>
+                        {{if .Description}}<p style="color:#667781;font-size:0.8125rem;margin:0.25rem 0 0">{{.Description}}</p>{{end}}
+                    </div>
+                    <div>
+                        {{if .Keywords}}
+                        {{range .Keywords}}
+                        <span style="display:inline-block;background:#dbeafe;color:#2563eb;padding:1px 8px;border-radius:12px;font-size:0.75rem;margin:1px 2px">{{.}}</span>
+                        {{end}}
+                        {{end}}
+                    </div>
+                </div>
+
+                <!-- Funis vinculados -->
+                <div style="border-top:1px solid #f0f0f0;padding-top:0.75rem">
+                    <h4 style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;margin:0 0 0.5rem">Funis vinculados</h4>
+                    {{if .Funnels}}
+                    <div style="display:flex;flex-direction:column;gap:0.375rem;margin-bottom:0.75rem">
+                        {{range .Funnels}}
+                        <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;background:#f9fafb;border-radius:6px">
+                            <span style="flex:1;font-size:0.875rem;font-weight:500">{{.FunnelName}}</span>
+                            <span style="font-size:0.75rem;color:#9ca3af">Prioridade:</span>
+                            <form style="display:flex;align-items:center;gap:0.375rem;margin:0"
+                                  hx-put="/tenant/products/{{$.ID}}/funnels/{{.FunnelID}}/priority"
+                                  hx-swap="none">
+                                <input type="number" name="priority" value="{{.Priority}}" min="1"
+                                       style="width:50px;padding:2px 6px;border:1px solid #d1d5db;border-radius:4px;font-size:0.8125rem;text-align:center">
+                                <button type="submit" class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:0.75rem">Salvar</button>
+                            </form>
+                            <button class="btn btn-sm" style="padding:2px 8px;font-size:0.75rem;color:#ef4444;background:none;border:none;cursor:pointer"
+                                    hx-delete="/tenant/products/{{$.ID}}/funnels/{{.FunnelID}}"
+                                    hx-confirm="Remover este funil do produto?"
+                                    hx-swap="none">Remover</button>
+                        </div>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <p style="font-size:0.8125rem;color:#9ca3af;font-style:italic;margin:0 0 0.75rem">Nenhum funil vinculado</p>
                     {{end}}
-                </tbody>
-            </table>
+
+                    <!-- Form para vincular novo funil -->
+                    {{if $.AvailableFunnels}}
+                    <form style="display:flex;align-items:center;gap:0.5rem;margin:0"
+                          hx-post="/tenant/products/{{.ID}}/funnels"
+                          hx-swap="none">
+                        <select name="funnel_id" class="form-control" style="flex:1;padding:0.375rem 0.5rem;font-size:0.8125rem;border:1px solid #d1d5db;border-radius:6px">
+                            <option value="">Selecionar funil...</option>
+                            {{range $.AvailableFunnels}}
+                            <option value="{{.ID}}">{{.Name}}</option>
+                            {{end}}
+                        </select>
+                        <input type="number" name="priority" value="10" min="1"
+                               style="width:60px;padding:0.375rem 0.5rem;font-size:0.8125rem;border:1px solid #d1d5db;border-radius:6px;text-align:center"
+                               placeholder="Prioridade">
+                        <button type="submit" class="btn btn-sm btn-primary" style="white-space:nowrap">+ Vincular funil</button>
+                    </form>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
             {{else}}
             <div class="empty-state">
                 <p>Nenhum produto associado</p>

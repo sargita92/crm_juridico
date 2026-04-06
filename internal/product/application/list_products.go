@@ -68,10 +68,11 @@ func (uc *ListProductsUseCase) Execute(ctx context.Context, activeOnly bool) ([]
 type ListTenantProductsUseCase struct {
 	productRepo       domain.ProductRepository
 	tenantProductRepo domain.TenantProductRepository
+	funnelProductRepo domain.FunnelProductRepository
 }
 
-func NewListTenantProductsUseCase(productRepo domain.ProductRepository, tenantProductRepo domain.TenantProductRepository) *ListTenantProductsUseCase {
-	return &ListTenantProductsUseCase{productRepo: productRepo, tenantProductRepo: tenantProductRepo}
+func NewListTenantProductsUseCase(productRepo domain.ProductRepository, tenantProductRepo domain.TenantProductRepository, funnelProductRepo domain.FunnelProductRepository) *ListTenantProductsUseCase {
+	return &ListTenantProductsUseCase{productRepo: productRepo, tenantProductRepo: tenantProductRepo, funnelProductRepo: funnelProductRepo}
 }
 
 func (uc *ListTenantProductsUseCase) Execute(ctx context.Context, tenantID string) ([]ProductListItem, error) {
@@ -96,12 +97,21 @@ func (uc *ListTenantProductsUseCase) Execute(ctx context.Context, tenantID strin
 
 	items := make([]ProductListItem, len(products))
 	for i, p := range products {
+		funnelLinks, _ := uc.funnelProductRepo.FindByProductID(ctx, p.ID)
+		funnelInfos := make([]ProductFunnelInfo, len(funnelLinks))
+		for j, fl := range funnelLinks {
+			funnelInfos[j] = ProductFunnelInfo{
+				FunnelID: fl.FunnelID,
+				Priority: fl.Priority,
+			}
+		}
 		items[i] = ProductListItem{
 			ID:          p.ID,
 			Name:        p.Name,
 			Description: p.Description,
 			Keywords:    p.Keywords,
 			Active:      p.Active,
+			Funnels:     funnelInfos,
 		}
 	}
 

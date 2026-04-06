@@ -24,9 +24,12 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw, adminMw g
 	admin.POST("/:id/tenants", h.HandleAdminAssociateTenant)
 	admin.DELETE("/:id/tenants/:tenantId", h.HandleAdminDisassociateTenant)
 
-	// Tenant routes — read-only product list
+	// Tenant routes — product list + funnel linking
 	tenant := router.Group("/tenant/products")
 	tenant.Use(authMw, tenantMw)
 
 	tenant.GET("", h.RenderTenantProductList)
+	tenant.POST("/:id/funnels", h.HandleTenantLinkFunnel)
+	tenant.DELETE("/:id/funnels/:funnelId", h.HandleTenantUnlinkFunnel)
+	tenant.PUT("/:id/funnels/:funnelId/priority", h.HandleTenantUpdatePriority)
 }

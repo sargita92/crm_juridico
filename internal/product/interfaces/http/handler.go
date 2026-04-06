@@ -397,9 +397,9 @@ func (h *Handler) HandleAdminDisassociateTenant(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// ===== TENANT HANDLERS (read-only) =====
+// ===== TENANT HANDLERS =====
 
-// RenderTenantProductList renders the tenant product list page (read-only).
+// RenderTenantProductList renders the tenant product list with funnel linking.
 func (h *Handler) RenderTenantProductList(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
@@ -413,10 +413,121 @@ func (h *Handler) RenderTenantProductList(c *gin.Context) {
 		return
 	}
 
+	// Resolve funnel names for display
+	type funnelLinkDisplay struct {
+		FunnelID   string
+		FunnelName string
+		Priority   int
+	}
+	type productDisplay struct {
+		ID          string
+		Name        string
+		Description string
+		Keywords    []string
+		Funnels     []funnelLinkDisplay
+	}
+
+	var displayProducts []productDisplay
+	for _, p := range products {
+		var funnels []funnelLinkDisplay
+		for _, fl := range p.Funnels {
+			name := fl.FunnelID
+			if h.funnelLister != nil {
+				if flist, err := h.funnelLister.ListFunnels(c, tenantID); err == nil {
+					for _, f := range flist {
+						if f.ID == fl.FunnelID {
+							name = f.Name
+							break
+						}
+					}
+				}
+			}
+			funnels = append(funnels, funnelLinkDisplay{
+				FunnelID: fl.FunnelID, FunnelName: name, Priority: fl.Priority,
+			})
+		}
+		displayProducts = append(displayProducts, productDisplay{
+			ID: p.ID, Name: p.Name, Description: p.Description,
+			Keywords: p.Keywords, Funnels: funnels,
+		})
+	}
+
+	// Get available funnels for the link form
+	var availableFunnels []FunnelInfo
+	if h.funnelLister != nil {
+		availableFunnels, _ = h.funnelLister.ListFunnels(c, tenantID)
+	}
+
 	c.HTML(http.StatusOK, "product/product_list.html", gin.H{
-		"Products":  products,
-		"ActiveNav": "products",
+		"Products":        displayProducts,
+		"AvailableFunnels": availableFunnels,
+		"ActiveNav":       "products",
 	})
+}
+
+// HandleTenantLinkFunnel links a funnel to a product (tenant).
+func (h *Handler) HandleTenantLinkFunnel(c *gin.Context) {
+	productID := c.Param("id")
+	funnelID := c.PostForm("funnel_id")
+	priorityStr := c.PostForm("priority")
+
+	priority, err := strconv.Atoi(priorityStr)
+	if err != nil || priority < 1 {
+		priority = 1
+	}
+
+	err = h.manageFPUC.Link(c.Request.Context(), application.LinkFunnelProductInput{
+		FunnelID:  funnelID,
+		ProductID: productID,
+		Priority:  priority,
+	})
+	if err != nil {
+		h.log.Error("failed to link funnel to product", zap.Error(err))
+	}
+
+	c.Header("HX-Redirect", "/tenant/products")
+	c.Status(http.StatusOK)
+}
+
+// HandleTenantUnlinkFunnel unlinks a funnel from a product (tenant).
+func (h *Handler) HandleTenantUnlinkFunnel(c *gin.Context) {
+	productID := c.Param("id")
+	funnelID := c.Param("funnelId")
+
+	err := h.manageFPUC.Unlink(c.Request.Context(), application.UnlinkFunnelProductInput{
+		FunnelID:  funnelID,
+		ProductID: productID,
+	})
+	if err != nil {
+		h.log.Error("failed to unlink funnel from product", zap.Error(err))
+	}
+
+	c.Header("HX-Redirect", "/tenant/products")
+	c.Status(http.StatusOK)
+}
+
+// HandleTenantUpdatePriority updates funnel-product priority (tenant).
+func (h *Handler) HandleTenantUpdatePriority(c *gin.Context) {
+	productID := c.Param("id")
+	funnelID := c.Param("funnelId")
+	priorityStr := c.PostForm("priority")
+
+	priority, err := strconv.Atoi(priorityStr)
+	if err != nil || priority < 1 {
+		priority = 1
+	}
+
+	err = h.manageFPUC.UpdatePriority(c.Request.Context(), application.UpdateFunnelProductPriorityInput{
+		FunnelID:  funnelID,
+		ProductID: productID,
+		Priority:  priority,
+	})
+	if err != nil {
+		h.log.Error("failed to update priority", zap.Error(err))
+	}
+
+	c.Header("HX-Redirect", "/tenant/products")
+	c.Status(http.StatusOK)
 }
 
 // parseKeywords splits a comma-separated string into trimmed non-empty keywords.
