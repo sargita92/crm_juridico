@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/application"
+	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	funnelhttp "github.com/sasrgita/crm-juridico/internal/funnel/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
@@ -16,11 +17,12 @@ type Module struct {
 	leadCreator *application.CreateLeadUseCase
 }
 
-func NewModule(db *gorm.DB, log *zap.Logger) *Module {
+func NewModule(db *gorm.DB, contactProvider domain.ContactProvider, messageProvider domain.MessageProvider, log *zap.Logger) *Module {
 	funnelRepo := infrastructure.NewGormFunnelRepository(db)
 	columnRepo := infrastructure.NewGormColumnRepository(db)
 	leadRepo := infrastructure.NewGormLeadRepository(db)
 	movementRepo := infrastructure.NewGormLeadMovementRepository(db)
+	noteRepo := infrastructure.NewGormLeadNoteRepository(db)
 
 	// Use cases
 	getKanbanUC := application.NewGetKanbanUseCase(funnelRepo, columnRepo, leadRepo)
@@ -34,13 +36,15 @@ func NewModule(db *gorm.DB, log *zap.Logger) *Module {
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
 	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
 	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
-	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo)
+	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo)
+	createLeadNoteUC := application.NewCreateLeadNoteUseCase(leadRepo, noteRepo)
 
 	handler := funnelhttp.NewHandler(
 		getKanbanUC, listFunnelsUC, getFunnelUC,
 		createFunnelUC, updateFunnelUC, toggleFunnelUC,
 		createColumnUC, deleteColumnUC, moveColumnUC,
 		createLeadUC, moveLeadUC, getLeadDetailUC,
+		createLeadNoteUC,
 		leadRepo, log,
 	)
 

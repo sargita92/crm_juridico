@@ -19,6 +19,7 @@ import (
 	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
+	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
@@ -78,9 +79,13 @@ func main() {
 	whatsmeowProvider := whatsappinfra.NewWhatsmeowProvider("storage/whatsmeow", log)
 	defer whatsmeowProvider.Shutdown()
 
-	funnelMod := funnel.NewModule(db, log)
-
 	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
+
+	// Cross-module adapters
+	contactAdapter := funnelinfra.NewWhatsAppContactAdapter(whatsappMod.ContactRepo())
+	messageAdapter := funnelinfra.NewWhatsAppMessageAdapter(whatsappMod.MessageRepo())
+
+	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod}
