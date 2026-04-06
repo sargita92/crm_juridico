@@ -2,7 +2,7 @@
 
 ## Feature
 
-- **Branch**: —
+- **Branch**: feature/F05-especialistas-treinamento
 - **Referencia**: docs/features/F05-especialistas-treinamento.md
 
 ## Status
