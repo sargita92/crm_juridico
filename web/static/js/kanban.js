@@ -39,11 +39,25 @@ function initKanbanSortable() {
     });
 }
 
-function closeLeadModal(event) {
+function closeLeadDrawer(event) {
     if (event.target === event.currentTarget) {
         document.getElementById('lead-modal').innerHTML = '';
     }
 }
+
+// Keep backward compat
+function closeLeadModal(event) {
+    closeLeadDrawer(event);
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var modal = document.getElementById('lead-modal');
+        if (modal && modal.innerHTML.trim() !== '') {
+            modal.innerHTML = '';
+        }
+    }
+});
 
 function closeFunnelModal(event) {
     if (event.target === event.currentTarget) {
