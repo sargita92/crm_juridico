@@ -297,3 +297,66 @@ func (m *mockLeadMovementRepo) FindByLeadID(_ context.Context, leadID string) ([
 	}
 	return result, nil
 }
+
+// --- Mock ContactProvider ---
+
+type mockContactProvider struct {
+	contacts map[string]domain.ContactInfo
+}
+
+func newMockContactProvider() *mockContactProvider {
+	return &mockContactProvider{contacts: make(map[string]domain.ContactInfo)}
+}
+
+func (m *mockContactProvider) FindByID(_ context.Context, contactID string) (domain.ContactInfo, error) {
+	if info, ok := m.contacts[contactID]; ok {
+		return info, nil
+	}
+	return domain.ContactInfo{}, errors.New("contact not found")
+}
+
+// --- Mock MessageProvider ---
+
+type mockMessageProvider struct {
+	messages map[string][]domain.MessageSummary
+}
+
+func newMockMessageProvider() *mockMessageProvider {
+	return &mockMessageProvider{messages: make(map[string][]domain.MessageSummary)}
+}
+
+func (m *mockMessageProvider) FindRecentByConversationID(_ context.Context, conversationID string, limit int) ([]domain.MessageSummary, error) {
+	msgs := m.messages[conversationID]
+	if limit > 0 && len(msgs) > limit {
+		msgs = msgs[:limit]
+	}
+	return msgs, nil
+}
+
+// --- Mock LeadNoteRepository ---
+
+type mockLeadNoteRepo struct {
+	notes     map[string][]*domain.LeadNote // by leadID
+	createErr error
+}
+
+func newMockLeadNoteRepo() *mockLeadNoteRepo {
+	return &mockLeadNoteRepo{notes: make(map[string][]*domain.LeadNote)}
+}
+
+func (m *mockLeadNoteRepo) Create(_ context.Context, note *domain.LeadNote) error {
+	if m.createErr != nil {
+		return m.createErr
+	}
+	m.notes[note.LeadID] = append(m.notes[note.LeadID], note)
+	return nil
+}
+
+func (m *mockLeadNoteRepo) FindByLeadID(_ context.Context, leadID string) ([]domain.LeadNote, error) {
+	notes := m.notes[leadID]
+	result := make([]domain.LeadNote, len(notes))
+	for i, n := range notes {
+		result[i] = *n
+	}
+	return result, nil
+}
