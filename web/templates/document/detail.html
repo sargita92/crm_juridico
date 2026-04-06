@@ -1,0 +1,72 @@
+{{define "document/detail.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Document}}{{.Document.Name}}{{else}}Documento{{end}} — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "documents")}}
+    <main class="admin-content">
+        {{if .Error}}
+        <div class="alert alert-error">{{.Error}}</div>
+        {{end}}
+        {{if .Success}}
+        <div class="alert alert-success">{{.Success}}</div>
+        {{end}}
+        {{if .Document}}
+        <div class="page-header">
+            <div>
+                <nav class="breadcrumb">
+                    <a href="/admin/documents">Documentos</a> &rsaquo; {{.Document.Name}}
+                </nav>
+                <h1>{{.Document.Name}}</h1>
+            </div>
+            <a href="/admin/documents" class="btn btn-outline">Voltar</a>
+        </div>
+        <div class="detail-card">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <label>Nome</label>
+                    <span>{{.Document.Name}}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Tipo</label>
+                    <span class="badge badge-info">{{.Document.Type}}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Tamanho</label>
+                    <span>{{formatFileSize .Document.FileSize}}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Especialistas associados</label>
+                    <span>{{.Document.SpecialistCount}}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Enviado em</label>
+                    <span>{{.Document.CreatedAt.Format "02/01/2006 15:04"}}</span>
+                </div>
+                <div class="detail-item">
+                    <label>Atualizado em</label>
+                    <span>{{.Document.UpdatedAt.Format "02/01/2006 15:04"}}</span>
+                </div>
+            </div>
+            <div class="detail-actions" style="margin-top:1.5rem">
+                <button class="btn btn-danger"
+                        hx-delete="/admin/documents/{{.Document.ID}}"
+                        hx-confirm="Tem certeza que deseja excluir este documento? Ele sera desassociado de {{.Document.SpecialistCount}} especialista(s).">
+                    Excluir
+                </button>
+            </div>
+        </div>
+        {{end}}
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

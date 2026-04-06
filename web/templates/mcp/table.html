@@ -1,0 +1,46 @@
+{{define "mcp/table.html"}}
+{{if .McpServers}}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>URL</th>
+            <th>Especialistas</th>
+            <th>Criado em</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .McpServers}}
+        <tr onclick="window.location='/admin/mcps/{{.ID}}'" style="cursor:pointer">
+            <td><strong>{{.Name}}</strong></td>
+            <td class="text-truncate" style="max-width:250px">{{.URL}}</td>
+            <td>{{.SpecialistCount}} especialistas</td>
+            <td>{{.CreatedAt.Format "02/01/2006"}}</td>
+            <td>
+                <a href="/admin/mcps/{{.ID}}" class="btn btn-sm btn-outline" onclick="event.stopPropagation()">Ver</a>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+<div class="pagination">
+    <span class="pagination-info">Mostrando {{.StartItem}}-{{.EndItem}} de {{.Total}}</span>
+    <div class="pagination-buttons">
+        {{if .HasPrev}}
+        <button class="btn btn-sm btn-outline" hx-get="/admin/mcps?page={{.PrevPage}}&search={{.Search}}" hx-target="#mcps-table">Anterior</button>
+        {{end}}
+        {{if .HasNext}}
+        <button class="btn btn-sm btn-outline" hx-get="/admin/mcps?page={{.NextPage}}&search={{.Search}}" hx-target="#mcps-table">Proxima</button>
+        {{end}}
+    </div>
+</div>
+{{else}}
+<div class="empty-state" style="padding:3rem 1rem">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color:#cbd5e0;margin:0 auto 1rem;display:block">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.03a4.5 4.5 0 00-6.364-6.364L4.5 8.257"/>
+    </svg>
+    Nenhum MCP cadastrado
+</div>
+{{end}}
+{{end}}

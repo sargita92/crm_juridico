@@ -17,17 +17,16 @@ import (
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/document"
+	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
 	"github.com/sasrgita/crm-juridico/internal/shared/logger"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
+	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
-	specialistapp "github.com/sasrgita/crm-juridico/internal/specialist/application"
-	specialistinfra "github.com/sasrgita/crm-juridico/internal/specialist/infrastructure"
-	specialisthttp "github.com/sasrgita/crm-juridico/internal/specialist/interfaces/http"
-	tenantapp "github.com/sasrgita/crm-juridico/internal/tenant/application"
-	tenantinfra "github.com/sasrgita/crm-juridico/internal/tenant/infrastructure"
-	tenanthttp "github.com/sasrgita/crm-juridico/internal/tenant/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/specialist"
+	"github.com/sasrgita/crm-juridico/internal/tenant"
 )
 
 func main() {
@@ -66,67 +65,32 @@ func main() {
 
 	// --- Wire-up ---
 
-	// Tenant
-	tenantRepo := tenantinfra.NewGormTenantRepository(db)
+	// Modules
+	tenantMod := tenant.NewModule(db)
+	specialistMod := specialist.NewModule(db, tenantMod.TenantRepo())
+	documentMod := document.NewModule(db, specialistMod.SpecialistRepo())
+	mcpMod := mcp.NewModule(db, specialistMod.SpecialistRepo())
 
-	// Auth
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod}
+
+	// Auth (uses tenant repo from module)
 	userRepo := authinfra.NewGormUserRepository(db)
 	userTenantRepo := authinfra.NewGormUserTenantRepository(db)
 	passwordHasher := authinfra.NewBcryptHasher()
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
 
-	loginUC := authapp.NewLoginUseCase(userRepo, userTenantRepo, tenantRepo, passwordHasher, tokenProvider)
-	selectTenantUC := authapp.NewSelectTenantUseCase(userTenantRepo, tenantRepo, tokenProvider)
-	listTenantsUC := authapp.NewListUserTenantsUseCase(userTenantRepo, tenantRepo)
+	loginUC := authapp.NewLoginUseCase(userRepo, userTenantRepo, tenantMod.TenantRepo(), passwordHasher, tokenProvider)
+	selectTenantUC := authapp.NewSelectTenantUseCase(userTenantRepo, tenantMod.TenantRepo(), tokenProvider)
+	listTenantsUC := authapp.NewListUserTenantsUseCase(userTenantRepo, tenantMod.TenantRepo())
 
 	authHandler := authhttp.NewHandler(loginUC, selectTenantUC, listTenantsUC, cfg.Server.SecureCookie)
-
-	// Tenant CRUD (admin)
-	blockHistoryRepo := tenantinfra.NewGormBlockHistoryRepository(db)
-	createTenantUC := tenantapp.NewCreateTenantUseCase(tenantRepo)
-	listTenantsAdminUC := tenantapp.NewListTenantsUseCase(tenantRepo)
-	getTenantUC := tenantapp.NewGetTenantUseCase(tenantRepo)
-	updateTenantUC := tenantapp.NewUpdateTenantUseCase(tenantRepo)
-	deactivateTenantUC := tenantapp.NewDeactivateTenantUseCase(tenantRepo)
-	blockTenantUC := tenantapp.NewBlockTenantUseCase(tenantRepo, blockHistoryRepo)
-	unblockTenantUC := tenantapp.NewUnblockTenantUseCase(tenantRepo, blockHistoryRepo)
-	getBlockHistoryUC := tenantapp.NewGetBlockHistoryUseCase(tenantRepo, blockHistoryRepo)
-
-	tenantHandler := tenanthttp.NewHandler(
-		createTenantUC, listTenantsAdminUC, getTenantUC,
-		updateTenantUC, deactivateTenantUC,
-		blockTenantUC, unblockTenantUC,
-		getBlockHistoryUC,
-	)
-
-	// Specialist CRUD (admin)
-	specialistRepo := specialistinfra.NewGormSpecialistRepository(db)
-	specialistTenantRepo := specialistinfra.NewGormSpecialistTenantRepository(db)
-
-	createSpecialistUC := specialistapp.NewCreateSpecialistUseCase(specialistRepo)
-	listSpecialistsUC := specialistapp.NewListSpecialistsUseCase(specialistRepo, specialistTenantRepo)
-	getSpecialistUC := specialistapp.NewGetSpecialistUseCase(specialistRepo)
-	updateSpecialistUC := specialistapp.NewUpdateSpecialistUseCase(specialistRepo)
-	deactivateSpecialistUC := specialistapp.NewDeactivateSpecialistUseCase(specialistRepo)
-	activateSpecialistUC := specialistapp.NewActivateSpecialistUseCase(specialistRepo)
-	associateTenantUC := specialistapp.NewAssociateTenantUseCase(specialistRepo, tenantRepo, specialistTenantRepo)
-	dissociateTenantUC := specialistapp.NewDissociateTenantUseCase(specialistRepo, specialistTenantRepo)
-	listSpecialistTenantsUC := specialistapp.NewListSpecialistTenantsUseCase(specialistRepo, specialistTenantRepo, tenantRepo)
-	listAvailableTenantsUC := specialistapp.NewListAvailableTenantsUseCase(specialistTenantRepo, tenantRepo)
-
-	specialistHandler := specialisthttp.NewHandler(
-		createSpecialistUC, listSpecialistsUC, getSpecialistUC,
-		updateSpecialistUC, deactivateSpecialistUC, activateSpecialistUC,
-		associateTenantUC, dissociateTenantUC,
-		listSpecialistTenantsUC, listAvailableTenantsUC,
-	)
 
 	// Middlewares
 	authMw := middleware.Auth(tokenProvider)
 	tenantMw := middleware.RequireTenant()
 	adminMw := middleware.RequireAdmin()
 
-	router := setupRouter(log, authHandler, tenantHandler, specialistHandler, loginUC, authMw, tenantMw, adminMw, cfg.Server.SecureCookie)
+	router := setupRouter(log, authHandler, modules, loginUC, authMw, tenantMw, adminMw, cfg.Server.SecureCookie)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -166,7 +130,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, tenantHandler *tenanthttp.Handler, specialistHandler *specialisthttp.Handler, loginUC *authapp.LoginUseCase, authMw, tenantMw, adminMw gin.HandlerFunc, secureCookie bool) *gin.Engine {
+func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []module.Module, loginUC *authapp.LoginUseCase, authMw, tenantMw, adminMw gin.HandlerFunc, secureCookie bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -178,6 +142,20 @@ func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, tenantHandler *
 				m[key] = values[i+1]
 			}
 			return m
+		},
+		"formatFileSize": func(size int64) string {
+			const (
+				kb = 1024
+				mb = kb * 1024
+			)
+			switch {
+			case size >= mb:
+				return fmt.Sprintf("%.1f MB", float64(size)/float64(mb))
+			case size >= kb:
+				return fmt.Sprintf("%.1f KB", float64(size)/float64(kb))
+			default:
+				return fmt.Sprintf("%d B", size)
+			}
 		},
 	}
 	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("web/templates/**/*.html"))
@@ -256,8 +234,9 @@ func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, tenantHandler *
 		c.HTML(http.StatusOK, "admin/dashboard.html", gin.H{})
 	})
 
-	tenantHandler.RegisterRoutes(router, authMw, adminMw)
-	specialistHandler.RegisterRoutes(router, authMw, adminMw)
+	for _, mod := range modules {
+		mod.RegisterRoutes(router, authMw, adminMw)
+	}
 
 	return router
 }

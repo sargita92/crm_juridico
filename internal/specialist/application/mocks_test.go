@@ -210,3 +210,171 @@ func (m *mockTenantRepo) FindByDocument(_ context.Context, document string) (*te
 func (m *mockTenantRepo) addTenant(t *tenantdomain.Tenant) {
 	m.tenants[t.ID] = t
 }
+
+// --- mockGuardrailRepo ---
+
+type mockGuardrailRepo struct {
+	guardrails map[string]*domain.Guardrail
+}
+
+func newMockGuardrailRepo() *mockGuardrailRepo {
+	return &mockGuardrailRepo{guardrails: make(map[string]*domain.Guardrail)}
+}
+
+func (m *mockGuardrailRepo) Create(_ context.Context, g *domain.Guardrail) error {
+	m.guardrails[g.ID] = g
+	return nil
+}
+
+func (m *mockGuardrailRepo) FindByID(_ context.Context, id string) (*domain.Guardrail, error) {
+	if g, ok := m.guardrails[id]; ok {
+		return g, nil
+	}
+	return nil, domain.ErrGuardrailNotFound
+}
+
+func (m *mockGuardrailRepo) Update(_ context.Context, g *domain.Guardrail) error {
+	if _, ok := m.guardrails[g.ID]; !ok {
+		return domain.ErrGuardrailNotFound
+	}
+	m.guardrails[g.ID] = g
+	return nil
+}
+
+func (m *mockGuardrailRepo) Delete(_ context.Context, id string) error {
+	if _, ok := m.guardrails[id]; !ok {
+		return domain.ErrGuardrailNotFound
+	}
+	delete(m.guardrails, id)
+	return nil
+}
+
+func (m *mockGuardrailRepo) FindBySpecialistID(_ context.Context, specialistID string) ([]domain.Guardrail, error) {
+	var result []domain.Guardrail
+	for _, g := range m.guardrails {
+		if g.SpecialistID == specialistID {
+			result = append(result, *g)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockGuardrailRepo) addGuardrail(g *domain.Guardrail) {
+	m.guardrails[g.ID] = g
+}
+
+// --- mockStepRepo ---
+
+type mockStepRepo struct {
+	steps map[string]*domain.Step
+}
+
+func newMockStepRepo() *mockStepRepo {
+	return &mockStepRepo{steps: make(map[string]*domain.Step)}
+}
+
+func (m *mockStepRepo) Create(_ context.Context, s *domain.Step) error {
+	m.steps[s.ID] = s
+	return nil
+}
+
+func (m *mockStepRepo) FindByID(_ context.Context, id string) (*domain.Step, error) {
+	if s, ok := m.steps[id]; ok {
+		return s, nil
+	}
+	return nil, domain.ErrStepNotFound
+}
+
+func (m *mockStepRepo) Update(_ context.Context, s *domain.Step) error {
+	if _, ok := m.steps[s.ID]; !ok {
+		return domain.ErrStepNotFound
+	}
+	m.steps[s.ID] = s
+	return nil
+}
+
+func (m *mockStepRepo) Delete(_ context.Context, id string) error {
+	if _, ok := m.steps[id]; !ok {
+		return domain.ErrStepNotFound
+	}
+	delete(m.steps, id)
+	return nil
+}
+
+func (m *mockStepRepo) FindBySpecialistID(_ context.Context, specialistID string) ([]domain.Step, error) {
+	var result []domain.Step
+	for _, s := range m.steps {
+		if s.SpecialistID == specialistID {
+			result = append(result, *s)
+		}
+	}
+	// sort by OrderIndex to maintain consistent ordering
+	for i := 0; i < len(result)-1; i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[i].OrderIndex > result[j].OrderIndex {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+	return result, nil
+}
+
+func (m *mockStepRepo) GetMaxOrderIndex(_ context.Context, specialistID string) (int, error) {
+	max := 0
+	for _, s := range m.steps {
+		if s.SpecialistID == specialistID && s.OrderIndex > max {
+			max = s.OrderIndex
+		}
+	}
+	return max, nil
+}
+
+func (m *mockStepRepo) ReorderAfterDelete(_ context.Context, specialistID string, deletedOrder int) error {
+	for _, s := range m.steps {
+		if s.SpecialistID == specialistID && s.OrderIndex > deletedOrder {
+			s.OrderIndex--
+		}
+	}
+	return nil
+}
+
+func (m *mockStepRepo) SwapOrder(_ context.Context, step1ID string, order1 int, step2ID string, order2 int) error {
+	s1, ok1 := m.steps[step1ID]
+	s2, ok2 := m.steps[step2ID]
+	if !ok1 || !ok2 {
+		return domain.ErrStepNotFound
+	}
+	s1.OrderIndex = order2
+	s2.OrderIndex = order1
+	return nil
+}
+
+func (m *mockStepRepo) addStep(s *domain.Step) {
+	m.steps[s.ID] = s
+}
+
+// --- mockScoringConfigRepo ---
+
+type mockScoringConfigRepo struct {
+	configs map[string]*domain.ScoringConfig
+}
+
+func newMockScoringConfigRepo() *mockScoringConfigRepo {
+	return &mockScoringConfigRepo{configs: make(map[string]*domain.ScoringConfig)}
+}
+
+func (m *mockScoringConfigRepo) CreateOrUpdate(_ context.Context, config *domain.ScoringConfig) error {
+	m.configs[config.SpecialistID] = config
+	return nil
+}
+
+func (m *mockScoringConfigRepo) FindBySpecialistID(_ context.Context, specialistID string) (*domain.ScoringConfig, error) {
+	if c, ok := m.configs[specialistID]; ok {
+		return c, nil
+	}
+	return nil, domain.ErrScoringConfigNotFound
+}
+
+func (m *mockScoringConfigRepo) addScoringConfig(c *domain.ScoringConfig) {
+	m.configs[c.SpecialistID] = c
+}

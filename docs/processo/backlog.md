@@ -20,7 +20,7 @@
 |---|---------|--------|-------------|------------|
 | F03 | [CRUD de Tenants](../features/F03-crud-tenants-admin.md) | concluído | F02 | alta |
 | F04 | [CRUD de Especialistas](../features/F04-especialistas-crud.md) | concluído | F03 | alta |
-| F05 | [Treinamento de Especialistas](../features/F05-especialistas-treinamento.md) | backlog | F04 | alta |
+| F05 | [Treinamento de Especialistas](../features/F05-especialistas-treinamento.md) | em andamento | F04 | alta |
 
 ## Épico 3: WhatsApp e Funil de Vendas
 

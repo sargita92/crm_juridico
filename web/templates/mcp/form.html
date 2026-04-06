@@ -1,0 +1,63 @@
+{{define "mcp/form.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .IsEdit}}Editar MCP{{else}}Novo MCP{{end}} — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "mcps")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <nav class="breadcrumb">
+                    <a href="/admin/mcps">MCPs</a> &rsaquo; {{if .IsEdit}}Editar{{else}}Novo MCP{{end}}
+                </nav>
+                <h1>{{if .IsEdit}}Editar MCP{{else}}Novo MCP{{end}}</h1>
+            </div>
+        </div>
+        <div id="form-container" class="form-card" style="max-width:700px">
+            {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+            <form {{if .IsEdit}}hx-put="/admin/mcps/{{.Mcp.ID}}"{{else}}hx-post="/admin/mcps"{{end}}
+                  hx-target="#form-container" hx-swap="outerHTML">
+                <div class="form-group">
+                    <label for="name">Nome</label>
+                    <input type="text" id="name" name="name" placeholder="Nome do servidor MCP"
+                           value="{{if .Mcp}}{{.Mcp.Name}}{{end}}" required>
+                </div>
+                <div class="form-group">
+                    <label for="url">URL</label>
+                    <input type="url" id="url" name="url" placeholder="https://exemplo.com/mcp"
+                           value="{{if .Mcp}}{{.Mcp.URL}}{{end}}" required>
+                </div>
+                <div class="form-group">
+                    <label for="config">Configuracao (JSON, opcional)</label>
+                    <textarea id="config" name="config" placeholder='{"key": "value"}'
+                              style="font-family:monospace;min-height:150px">{{if .Mcp}}{{.Mcp.Config}}{{end}}</textarea>
+                    <small class="form-hint">JSON de configuracao do servidor (opcional)</small>
+                </div>
+                <div class="form-group">
+                    <label for="headers">Headers (JSON, opcional)</label>
+                    <textarea id="headers" name="headers" placeholder='{"Authorization": "Bearer ..."}'
+                              style="font-family:monospace;min-height:100px">{{if .Mcp}}{{.Mcp.Headers}}{{end}}</textarea>
+                    <small class="form-hint">Headers HTTP adicionais em formato JSON (opcional)</small>
+                </div>
+                <div class="form-actions">
+                    <a href="/admin/mcps" class="btn btn-outline">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="htmx-indicator spinner"></span>
+                        Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

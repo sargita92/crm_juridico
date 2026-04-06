@@ -1,0 +1,44 @@
+{{define "specialist/scoring_section.html"}}
+<div id="scoring-section">
+    {{if .Scoring}}
+    {{if gt .Scoring.TotalPossible 0}}
+    <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem">
+            <span><strong>Total possivel:</strong> {{.Scoring.TotalPossible}} pontos</span>
+            {{if gt .Scoring.Threshold 0}}
+            <span><strong>Threshold:</strong> {{.Scoring.Threshold}} pontos ({{printf "%.0f" .Scoring.Percentage}}%)</span>
+            {{end}}
+        </div>
+        {{if gt .Scoring.Threshold 0}}
+        <div class="progress-bar" style="height:24px;background:#e2e8f0;border-radius:12px;overflow:hidden">
+            <div style="width:{{printf "%.0f" .Scoring.Percentage}}%;height:100%;background:#48bb78;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:0.8rem;font-weight:bold">
+                {{.Scoring.Threshold}}/{{.Scoring.TotalPossible}}
+            </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#718096;margin-top:0.25rem">
+            <span>qualificado</span>
+            <span>desqualificado</span>
+        </div>
+        {{end}}
+    </div>
+    {{if .Scoring.Steps}}
+    <div style="margin-top:1rem">
+        <strong>Steps com pontuacao:</strong>
+        <ul style="margin:0.5rem 0;padding-left:1.5rem">
+            {{range .Scoring.Steps}}
+            <li>{{.Text}} — <strong>{{.Score}} pts</strong></li>
+            {{end}}
+        </ul>
+    </div>
+    {{end}}
+    <div style="margin-top:1rem">
+        <button class="btn btn-sm btn-primary" onclick="openModal('scoring-modal')">Configurar Threshold</button>
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding:1.5rem">
+        Configure pontuacoes nos steps acima para habilitar a qualificacao
+    </div>
+    {{end}}
+    {{end}}
+</div>
+{{end}}

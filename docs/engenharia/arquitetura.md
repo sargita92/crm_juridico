@@ -58,7 +58,57 @@ docs/                           # documentação do projeto
 - evitar frameworks pesados de injeção
 - agrupar providers por feature
 - facilitar substituição de dependências em testes
-- composition root em `cmd/api/main.go` ou módulo dedicado
+- composition root em `cmd/api/main.go` usando módulos
+
+## Modularização do main.go
+
+O main.go deve permanecer **estável e enxuto**. Cada feature encapsula seu próprio wire-up em um `Module` que sabe criar seus repositórios, use cases e handler.
+
+### Interface Module
+
+```go
+// internal/shared/module/module.go
+
+type Module interface {
+    Name() string
+    RegisterRoutes(router *gin.Engine, authMw, adminMw gin.HandlerFunc)
+}
+```
+
+### Padrão por feature
+
+Cada feature expõe uma função `NewModule(deps)` que recebe apenas dependências externas (db, repos de outros módulos) e retorna um `Module`:
+
+```go
+// internal/document/module.go
+
+func NewModule(db *gorm.DB) Module {
+    // cria repos, use cases, handler internamente
+    // retorna struct que implementa Module
+}
+```
+
+### main.go enxuto
+
+```go
+modules := []module.Module{
+    tenant.NewModule(db),
+    specialist.NewModule(db, tenantRepo),
+    document.NewModule(db, specialistRepo),
+    mcp.NewModule(db, specialistRepo),
+}
+
+for _, mod := range modules {
+    mod.RegisterRoutes(router, authMw, adminMw)
+}
+```
+
+### Regras
+
+- O main.go **não conhece** use cases nem repositórios individuais — só módulos
+- Dependências entre módulos são explícitas via parâmetros do `NewModule`
+- Adicionar nova feature = criar módulo + adicionar uma linha no main.go
+- Cada módulo é responsável por seu wire-up interno
 
 ## Multitenancy
 

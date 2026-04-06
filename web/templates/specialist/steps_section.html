@@ -1,0 +1,46 @@
+{{define "specialist/steps_section.html"}}
+<div id="steps-section">
+    {{if .Steps}}
+    <div class="association-list">
+        {{range .Steps}}
+        <div class="association-item" style="flex-wrap:wrap">
+            <div class="association-info" style="flex:1">
+                <strong>#{{.OrderIndex}}</strong>
+                <span style="margin-left:0.5rem">{{.Text}}</span>
+            </div>
+            <div style="display:flex;gap:0.25rem;align-items:center;flex-wrap:wrap">
+                <span class="badge badge-info">{{.DataType}}</span>
+                {{if .Required}}<span class="badge badge-warning">Obrigatorio</span>{{else}}<span class="badge badge-outline">Opcional</span>{{end}}
+                {{if gt .Score 0}}<span class="badge badge-active">{{.Score}} pts</span>{{end}}
+                {{if gt .OrderIndex 1}}
+                <button class="btn btn-sm btn-outline"
+                        hx-post="/admin/specialists/{{$.SpecialistID}}/steps/{{.ID}}/move-up"
+                        hx-target="#steps-section"
+                        hx-swap="outerHTML"
+                        title="Mover para cima">&#9650;</button>
+                {{end}}
+                {{if lt .OrderIndex $.StepCount}}
+                <button class="btn btn-sm btn-outline"
+                        hx-post="/admin/specialists/{{$.SpecialistID}}/steps/{{.ID}}/move-down"
+                        hx-target="#steps-section"
+                        hx-swap="outerHTML"
+                        title="Mover para baixo">&#9660;</button>
+                {{end}}
+                <button class="btn btn-sm btn-danger"
+                        hx-delete="/admin/specialists/{{$.SpecialistID}}/steps/{{.ID}}"
+                        hx-target="#steps-section"
+                        hx-swap="outerHTML"
+                        hx-confirm="Excluir este step?">
+                    &times;
+                </button>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding:1.5rem">
+        Nenhum step configurado
+    </div>
+    {{end}}
+</div>
+{{end}}

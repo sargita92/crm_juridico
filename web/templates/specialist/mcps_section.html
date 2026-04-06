@@ -1,0 +1,27 @@
+{{define "specialist/mcps_section.html"}}
+<div id="mcps-section">
+    {{if .Mcps}}
+    <div class="association-list">
+        {{range .Mcps}}
+        <div class="association-item">
+            <div class="association-info">
+                <strong>{{.Name}}</strong>
+                <span class="text-muted" style="margin-left:0.5rem">{{.URL}}</span>
+            </div>
+            <button class="btn btn-sm btn-danger"
+                    hx-delete="/admin/specialists/{{$.SpecialistID}}/mcps/{{.ID}}"
+                    hx-target="#mcps-section"
+                    hx-swap="outerHTML"
+                    hx-confirm="Desassociar este MCP?">
+                &times;
+            </button>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding:1.5rem">
+        Nenhum MCP associado
+    </div>
+    {{end}}
+</div>
+{{end}}

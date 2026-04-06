@@ -1,127 +1,280 @@
-### Upload documento RAG
-POST {{base_url}}/api/admin/documents
-Authorization: Bearer {{token}}
+### --- Variaveis ---
+@base_url = http://localhost:8080
+@token = SEU_TOKEN_ADMIN_AQUI
+@specialist_id = SEU_SPECIALIST_ID_AQUI
+@document_id = SEU_DOCUMENT_ID_AQUI
+@mcp_id = SEU_MCP_ID_AQUI
+@guardrail_id = SEU_GUARDRAIL_ID_AQUI
+@step_id = SEU_STEP_ID_AQUI
+
+### =============================================
+### Documentos RAG
+### =============================================
+
+### Listar documentos
+GET {{base_url}}/admin/documents
+Cookie: token={{token}}
+
+### Listar documentos — busca
+GET {{base_url}}/admin/documents?search=Legislacao
+Cookie: token={{token}}
+
+### Listar documentos — HTMX (fragmento tabela)
+GET {{base_url}}/admin/documents?search=Legislacao
+Cookie: token={{token}}
+HX-Request: true
+
+### Upload de documento (multipart)
+POST {{base_url}}/admin/documents
+Cookie: token={{token}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
-Content-Disposition: form-data; name="nome"
+Content-Disposition: form-data; name="name"
 
-Tabela de honorários trabalhistas
+Legislacao Trabalhista
 --boundary
-Content-Disposition: form-data; name="file"; filename="honorarios.pdf"
+Content-Disposition: form-data; name="file"; filename="legislacao.pdf"
 Content-Type: application/pdf
 
-< ./fixtures/honorarios.pdf
+< ./fixtures/legislacao.pdf
 --boundary--
 
-> {%
-    client.global.set("document_id", response.body.id);
-%}
+### Detalhe do documento
+GET {{base_url}}/admin/documents/{{document_id}}
+Cookie: token={{token}}
 
-### Listar documentos RAG
-GET {{base_url}}/api/admin/documents?page=1&per_page=20
-Authorization: Bearer {{token}}
+### Excluir documento
+DELETE {{base_url}}/admin/documents/{{document_id}}
+Cookie: token={{token}}
 
-### Associar documento a especialista
-POST {{base_url}}/api/admin/specialists/{{specialist_id}}/documents
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### =============================================
+### Associacao Documentos ↔ Especialistas
+### =============================================
 
-{
-  "document_id": "{{document_id}}"
-}
+### Listar documentos do especialista
+GET {{base_url}}/admin/specialists/{{specialist_id}}/documents
+Cookie: token={{token}}
 
-### Listar documentos de um especialista
-GET {{base_url}}/api/admin/specialists/{{specialist_id}}/documents
-Authorization: Bearer {{token}}
+### Listar documentos disponiveis para associacao
+GET {{base_url}}/admin/specialists/{{specialist_id}}/documents/available
+Cookie: token={{token}}
 
-### Desassociar documento
-DELETE {{base_url}}/api/admin/specialists/{{specialist_id}}/documents/{{document_id}}
-Authorization: Bearer {{token}}
+### Listar documentos disponiveis — com busca
+GET {{base_url}}/admin/specialists/{{specialist_id}}/documents/available?search=Legislacao
+Cookie: token={{token}}
 
-###
+### Associar documento(s) ao especialista
+POST {{base_url}}/admin/specialists/{{specialist_id}}/documents
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
 
-### Criar MCP server
-POST {{base_url}}/api/admin/mcps
-Authorization: Bearer {{token}}
-Content-Type: application/json
+document_ids[]={{document_id}}
 
-{
-  "nome": "Consulta processual",
-  "url": "http://mcp-consulta:3000",
-  "config": {}
-}
+### Desassociar documento do especialista
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/documents/{{document_id}}
+Cookie: token={{token}}
 
-> {%
-    client.global.set("mcp_id", response.body.id);
-%}
+### =============================================
+### MCPs
+### =============================================
 
-### Associar MCP a especialista
-POST {{base_url}}/api/admin/specialists/{{specialist_id}}/mcps
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Listar MCPs
+GET {{base_url}}/admin/mcps
+Cookie: token={{token}}
 
-{
-  "mcp_id": "{{mcp_id}}"
-}
+### Listar MCPs — busca
+GET {{base_url}}/admin/mcps?search=API
+Cookie: token={{token}}
 
-###
+### Formulario de criacao
+GET {{base_url}}/admin/mcps/new
+Cookie: token={{token}}
 
-### Criar guardrail
-POST {{base_url}}/api/admin/specialists/{{specialist_id}}/guardrails
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Criar MCP
+POST {{base_url}}/admin/mcps
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "tipo": "topico_proibido",
-  "regra": "Nunca dar conselho médico",
-  "mensagem": "Desculpe, não posso ajudar com questões médicas. Posso ajudar com questões jurídicas."
-}
+name=API Processos&url=https://api.processos.com/mcp&config={"timeout": 30}&headers={"Authorization": "Bearer token123"}
+
+### Detalhe do MCP
+GET {{base_url}}/admin/mcps/{{mcp_id}}
+Cookie: token={{token}}
+
+### Formulario de edicao
+GET {{base_url}}/admin/mcps/{{mcp_id}}/edit
+Cookie: token={{token}}
+
+### Editar MCP
+PUT {{base_url}}/admin/mcps/{{mcp_id}}
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=API Processos v2&url=https://api.processos.com/v2/mcp&config={"timeout": 60}
+
+### Excluir MCP
+DELETE {{base_url}}/admin/mcps/{{mcp_id}}
+Cookie: token={{token}}
+
+### =============================================
+### Associacao MCPs ↔ Especialistas
+### =============================================
+
+### Listar MCPs do especialista
+GET {{base_url}}/admin/specialists/{{specialist_id}}/mcps
+Cookie: token={{token}}
+
+### Listar MCPs disponiveis
+GET {{base_url}}/admin/specialists/{{specialist_id}}/mcps/available
+Cookie: token={{token}}
+
+### Associar MCP(s) ao especialista
+POST {{base_url}}/admin/specialists/{{specialist_id}}/mcps
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+mcp_ids[]={{mcp_id}}
+
+### Desassociar MCP do especialista
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/mcps/{{mcp_id}}
+Cookie: token={{token}}
+
+### =============================================
+### Guardrails
+### =============================================
 
 ### Listar guardrails do especialista
-GET {{base_url}}/api/admin/specialists/{{specialist_id}}/guardrails
-Authorization: Bearer {{token}}
+GET {{base_url}}/admin/specialists/{{specialist_id}}/guardrails
+Cookie: token={{token}}
 
-###
+### Criar guardrail
+POST {{base_url}}/admin/specialists/{{specialist_id}}/guardrails
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
 
-### Criar step do script de atendimento
-POST {{base_url}}/api/admin/specialists/{{specialist_id}}/steps
-Authorization: Bearer {{token}}
-Content-Type: application/json
+type=forbidden_topics&rule=Nao falar sobre precos nem descontos&message=Nao posso informar valores
 
-{
-  "ordem": 1,
-  "texto": "Qual é o seu nome completo?",
-  "tipo_dado_esperado": "texto",
-  "obrigatorio": true,
-  "pontuacao": 2
-}
+### Editar guardrail
+PUT {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/{{guardrail_id}}
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+type=scope_limit&rule=Atender apenas direito trabalhista&message=Especializado em direito trabalhista
+
+### Toggle guardrail (ativar/desativar)
+POST {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/{{guardrail_id}}/toggle
+Cookie: token={{token}}
+
+### Excluir guardrail
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/{{guardrail_id}}
+Cookie: token={{token}}
+
+### =============================================
+### Passo a Passo (Steps)
+### =============================================
 
 ### Listar steps do especialista
-GET {{base_url}}/api/admin/specialists/{{specialist_id}}/steps
-Authorization: Bearer {{token}}
+GET {{base_url}}/admin/specialists/{{specialist_id}}/steps
+Cookie: token={{token}}
 
-### Reordenar steps
-PUT {{base_url}}/api/admin/specialists/{{specialist_id}}/steps/reorder
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Criar step
+POST {{base_url}}/admin/specialists/{{specialist_id}}/steps
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
 
-{
-  "order": ["step_id_1", "step_id_2", "step_id_3"]
-}
+text=Qual o seu nome completo?&data_type=free_text&required=on&score=10
 
-###
+### Criar segundo step
+POST {{base_url}}/admin/specialists/{{specialist_id}}/steps
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
 
-### Configurar scoring
-PUT {{base_url}}/api/admin/specialists/{{specialist_id}}/scoring
-Authorization: Bearer {{token}}
-Content-Type: application/json
+text=Qual o numero do processo?&data_type=free_text&required=on&score=20
 
-{
-  "total_pontos": 10,
-  "threshold_qualificacao": 6
-}
+### Editar step
+PUT {{base_url}}/admin/specialists/{{specialist_id}}/steps/{{step_id}}
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
 
-### Consultar scoring
-GET {{base_url}}/api/admin/specialists/{{specialist_id}}/scoring
-Authorization: Bearer {{token}}
+text=Qual o seu nome completo e CPF?&data_type=free_text&required=on&score=15
+
+### Mover step para cima
+POST {{base_url}}/admin/specialists/{{specialist_id}}/steps/{{step_id}}/move-up
+Cookie: token={{token}}
+
+### Mover step para baixo
+POST {{base_url}}/admin/specialists/{{specialist_id}}/steps/{{step_id}}/move-down
+Cookie: token={{token}}
+
+### Excluir step
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/steps/{{step_id}}
+Cookie: token={{token}}
+
+### =============================================
+### Qualificacao por Pontuacao (Scoring)
+### =============================================
+
+### Consultar scoring do especialista
+GET {{base_url}}/admin/specialists/{{specialist_id}}/scoring
+Cookie: token={{token}}
+
+### Configurar threshold
+PUT {{base_url}}/admin/specialists/{{specialist_id}}/scoring
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+threshold=70
+
+### =============================================
+### Testes OWASP
+### =============================================
+
+### A01 — Documentos sem token (401)
+GET {{base_url}}/admin/documents
+
+### A01 — MCPs sem token (401)
+GET {{base_url}}/admin/mcps
+
+### A01 — Token de usuario comum nos documentos (403)
+GET {{base_url}}/admin/documents
+Cookie: token=TOKEN_USER_AQUI
+
+### A01 — Token de usuario comum nos MCPs (403)
+GET {{base_url}}/admin/mcps
+Cookie: token=TOKEN_USER_AQUI
+
+### A03 — SQL Injection na busca de documentos
+GET {{base_url}}/admin/documents?search='+OR+1=1+--
+Cookie: token={{token}}
+
+### A03 — SQL Injection na busca de MCPs
+GET {{base_url}}/admin/mcps?search='+OR+1=1+--
+Cookie: token={{token}}
+
+### A03 — XSS no nome do documento (upload)
+POST {{base_url}}/admin/documents
+Cookie: token={{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="name"
+
+<script>alert('xss')</script>
+--boundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+conteudo de teste
+--boundary--
+
+### A03 — XSS no nome do MCP
+POST {{base_url}}/admin/mcps
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=<script>alert('xss')</script>&url=https://example.com
+
+### A07 — Token invalido (401)
+GET {{base_url}}/admin/documents
+Cookie: token=invalid.token.here

@@ -1,0 +1,17 @@
+{{define "specialist/mcps_modal.html"}}
+<div id="available-mcps">
+    {{if .AvailableMcps}}
+    {{range .AvailableMcps}}
+    <label class="checkbox-item">
+        <input type="checkbox" name="mcp_ids[]" value="{{.ID}}">
+        <strong>{{.Name}}</strong>
+        <span class="text-muted" style="margin-left:0.5rem">{{.URL}}</span>
+    </label>
+    {{end}}
+    {{else}}
+    <div class="empty-state" style="padding:1rem">
+        Nenhum MCP disponivel
+    </div>
+    {{end}}
+</div>
+{{end}}

@@ -1,0 +1,38 @@
+{{define "specialist/guardrails_section.html"}}
+<div id="guardrails-section">
+    {{if .Guardrails}}
+    <div class="association-list">
+        {{range .Guardrails}}
+        <div class="association-item">
+            <div class="association-info" style="flex:1">
+                <span class="badge {{if eq .Type "forbidden_topics"}}badge-danger{{else if eq .Type "scope_limit"}}badge-warning{{else}}badge-info{{end}}">
+                    {{if eq .Type "forbidden_topics"}}Topicos proibidos{{else if eq .Type "scope_limit"}}Limite de escopo{{else}}Tom de resposta{{end}}
+                </span>
+                <span style="margin-left:0.5rem">{{.Rule}}</span>
+            </div>
+            <div class="association-actions" style="display:flex;gap:0.5rem;align-items:center">
+                <button class="btn btn-sm {{if .Active}}btn-success{{else}}btn-outline{{end}}"
+                        hx-post="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}/toggle"
+                        hx-target="#guardrails-section"
+                        hx-swap="outerHTML"
+                        title="{{if .Active}}Desativar{{else}}Ativar{{end}}">
+                    {{if .Active}}Ativo{{else}}Inativo{{end}}
+                </button>
+                <button class="btn btn-sm btn-danger"
+                        hx-delete="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}"
+                        hx-target="#guardrails-section"
+                        hx-swap="outerHTML"
+                        hx-confirm="Excluir este guardrail?">
+                    &times;
+                </button>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding:1.5rem">
+        Nenhum guardrail configurado
+    </div>
+    {{end}}
+</div>
+{{end}}

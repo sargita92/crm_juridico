@@ -1,0 +1,27 @@
+{{define "specialist/documents_section.html"}}
+<div id="documents-section">
+    {{if .Documents}}
+    <div class="association-list">
+        {{range .Documents}}
+        <div class="association-item">
+            <div class="association-info">
+                <strong>{{.Name}}</strong>
+                <span class="badge badge-info" style="margin-left:0.5rem">{{.Type}}</span>
+            </div>
+            <button class="btn btn-sm btn-danger"
+                    hx-delete="/admin/specialists/{{$.SpecialistID}}/documents/{{.ID}}"
+                    hx-target="#documents-section"
+                    hx-swap="outerHTML"
+                    hx-confirm="Desassociar este documento?">
+                &times;
+            </button>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding:1.5rem">
+        Nenhum documento associado
+    </div>
+    {{end}}
+</div>
+{{end}}

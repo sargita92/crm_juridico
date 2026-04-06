@@ -26,6 +26,26 @@ var (
 	ErrSpecialistInactive        = errors.New("specialist is inactive")
 	ErrTenantAlreadyAssociated   = errors.New("tenant is already associated")
 	ErrTenantNotAssociated       = errors.New("tenant is not associated")
+
+	// Guardrail errors
+	ErrSpecialistIDRequired    = errors.New("specialist ID is required")
+	ErrGuardrailNotFound       = errors.New("guardrail not found")
+	ErrGuardrailRuleRequired   = errors.New("guardrail rule is required")
+	ErrGuardrailRuleTooLong    = errors.New("guardrail rule exceeds maximum length")
+	ErrGuardrailMessageTooLong = errors.New("guardrail message exceeds maximum length")
+	ErrGuardrailTypeInvalid    = errors.New("guardrail type is invalid")
+
+	// Step errors
+	ErrStepNotFound        = errors.New("step not found")
+	ErrStepTextRequired    = errors.New("step text is required")
+	ErrStepTextTooLong     = errors.New("step text exceeds maximum length")
+	ErrStepDataTypeInvalid = errors.New("step data type is invalid")
+	ErrStepScoreNegative   = errors.New("step score cannot be negative")
+
+	// Scoring errors
+	ErrScoringConfigNotFound        = errors.New("scoring config not found")
+	ErrScoringThresholdInvalid      = errors.New("scoring threshold must be greater than zero")
+	ErrScoringThresholdExceedsTotal = errors.New("scoring threshold exceeds total possible score")
 )
 
 type Specialist struct {

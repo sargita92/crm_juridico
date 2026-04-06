@@ -73,6 +73,13 @@ func setupTestEnv(t *testing.T) *testEnv {
 	err := database.RunMigrations(db, log, "file://"+testhelper.MigrationsPath())
 	require.NoError(t, err)
 
+	db.Exec("DELETE FROM scoring_configs")
+	db.Exec("DELETE FROM steps")
+	db.Exec("DELETE FROM guardrails")
+	db.Exec("DELETE FROM specialist_mcps")
+	db.Exec("DELETE FROM mcp_servers")
+	db.Exec("DELETE FROM specialist_documents")
+	db.Exec("DELETE FROM documents")
 	db.Exec("DELETE FROM specialist_tenants")
 	db.Exec("DELETE FROM specialists")
 	db.Exec("DELETE FROM tenant_block_history")
@@ -103,6 +110,30 @@ func setupTestEnv(t *testing.T) *testEnv {
 		listTenantsUC, listAvailableUC,
 	)
 
+	// Guardrail use cases
+	guardrailRepo := specialistinfra.NewGormGuardrailRepository(db)
+	createGuardrailUC := application.NewCreateGuardrailUseCase(specialistRepo, guardrailRepo)
+	updateGuardrailUC := application.NewUpdateGuardrailUseCase(guardrailRepo)
+	toggleGuardrailUC := application.NewToggleGuardrailUseCase(guardrailRepo)
+	deleteGuardrailUC := application.NewDeleteGuardrailUseCase(guardrailRepo)
+	listGuardrailsUC := application.NewListGuardrailsUseCase(guardrailRepo)
+	guardrailHandler := NewGuardrailHandler(createGuardrailUC, updateGuardrailUC, toggleGuardrailUC, deleteGuardrailUC, listGuardrailsUC)
+
+	// Step use cases
+	stepRepo := specialistinfra.NewGormStepRepository(db)
+	createStepUC := application.NewCreateStepUseCase(specialistRepo, stepRepo)
+	updateStepUC := application.NewUpdateStepUseCase(stepRepo)
+	deleteStepUC := application.NewDeleteStepUseCase(stepRepo)
+	moveStepUC := application.NewMoveStepUseCase(stepRepo)
+	listStepsUC := application.NewListStepsUseCase(stepRepo)
+	stepHandler := NewStepHandler(createStepUC, updateStepUC, deleteStepUC, moveStepUC, listStepsUC)
+
+	// Scoring use cases
+	scoringRepo := specialistinfra.NewGormScoringConfigRepository(db)
+	getScoringUC := application.NewGetScoringUseCase(stepRepo, scoringRepo)
+	updateScoringUC := application.NewUpdateScoringUseCase(stepRepo, scoringRepo)
+	scoringHandler := NewScoringHandler(getScoringUC, updateScoringUC)
+
 	router := gin.New()
 	tmpl := testhelper.ParseTemplates()
 	router.SetHTMLTemplate(tmpl)
@@ -110,6 +141,9 @@ func setupTestEnv(t *testing.T) *testEnv {
 	authMw := middleware.Auth(jwtProvider)
 	adminMw := middleware.RequireAdmin()
 	handler.RegisterRoutes(router, authMw, adminMw)
+	guardrailHandler.RegisterRoutes(router, authMw, adminMw)
+	stepHandler.RegisterRoutes(router, authMw, adminMw)
+	scoringHandler.RegisterRoutes(router, authMw, adminMw)
 
 	return &testEnv{
 		router:         router,
@@ -656,6 +690,22 @@ func TestAdminRoutes_NoToken_Returns401(t *testing.T) {
 		{http.MethodGet, "/admin/specialists/some-id/tenants/available"},
 		{http.MethodPost, "/admin/specialists/some-id/tenants"},
 		{http.MethodDelete, "/admin/specialists/some-id/tenants/tid"},
+		// Guardrail routes
+		{http.MethodGet, "/admin/specialists/some-id/guardrails"},
+		{http.MethodPost, "/admin/specialists/some-id/guardrails"},
+		{http.MethodPut, "/admin/specialists/some-id/guardrails/gid"},
+		{http.MethodPost, "/admin/specialists/some-id/guardrails/gid/toggle"},
+		{http.MethodDelete, "/admin/specialists/some-id/guardrails/gid"},
+		// Step routes
+		{http.MethodGet, "/admin/specialists/some-id/steps"},
+		{http.MethodPost, "/admin/specialists/some-id/steps"},
+		{http.MethodPut, "/admin/specialists/some-id/steps/sid"},
+		{http.MethodPost, "/admin/specialists/some-id/steps/sid/move-up"},
+		{http.MethodPost, "/admin/specialists/some-id/steps/sid/move-down"},
+		{http.MethodDelete, "/admin/specialists/some-id/steps/sid"},
+		// Scoring routes
+		{http.MethodGet, "/admin/specialists/some-id/scoring"},
+		{http.MethodPut, "/admin/specialists/some-id/scoring"},
 	}
 
 	for _, route := range routes {
@@ -688,6 +738,22 @@ func TestAdminRoutes_UserRole_Returns403(t *testing.T) {
 		{http.MethodGet, "/admin/specialists/some-id/tenants/available"},
 		{http.MethodPost, "/admin/specialists/some-id/tenants"},
 		{http.MethodDelete, "/admin/specialists/some-id/tenants/tid"},
+		// Guardrail routes
+		{http.MethodGet, "/admin/specialists/some-id/guardrails"},
+		{http.MethodPost, "/admin/specialists/some-id/guardrails"},
+		{http.MethodPut, "/admin/specialists/some-id/guardrails/gid"},
+		{http.MethodPost, "/admin/specialists/some-id/guardrails/gid/toggle"},
+		{http.MethodDelete, "/admin/specialists/some-id/guardrails/gid"},
+		// Step routes
+		{http.MethodGet, "/admin/specialists/some-id/steps"},
+		{http.MethodPost, "/admin/specialists/some-id/steps"},
+		{http.MethodPut, "/admin/specialists/some-id/steps/sid"},
+		{http.MethodPost, "/admin/specialists/some-id/steps/sid/move-up"},
+		{http.MethodPost, "/admin/specialists/some-id/steps/sid/move-down"},
+		{http.MethodDelete, "/admin/specialists/some-id/steps/sid"},
+		// Scoring routes
+		{http.MethodGet, "/admin/specialists/some-id/scoring"},
+		{http.MethodPut, "/admin/specialists/some-id/scoring"},
 	}
 
 	for _, route := range routes {
@@ -748,4 +814,174 @@ func TestAdminRoutes_InvalidToken_Returns401(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+// --- Guardrail functional tests ---
+
+func TestGuardrail_CreateAndList(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista G", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create guardrail
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/guardrails", url.Values{
+		"type": {"forbidden_topics"}, "rule": {"Nao falar sobre precos"}, "message": {"Nao posso informar"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// List guardrails
+	w2 := httptest.NewRecorder()
+	req2 := getReq("/admin/specialists/"+spec.ID+"/guardrails", tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Contains(t, w2.Body.String(), "Nao falar sobre precos")
+}
+
+func TestGuardrail_Toggle(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista GT", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/guardrails", url.Values{
+		"type": {"scope_limit"}, "rule": {"Limite de escopo"}, "message": {""},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Find the guardrail ID from DB
+	guardrailRepo := specialistinfra.NewGormGuardrailRepository(env.db)
+	guardrails, _ := guardrailRepo.FindBySpecialistID(ctx, spec.ID)
+	require.Len(t, guardrails, 1)
+
+	// Toggle
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest(http.MethodPost, "/admin/specialists/"+spec.ID+"/guardrails/"+guardrails[0].ID+"/toggle", nil)
+	req2.AddCookie(tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+}
+
+func TestGuardrail_Delete(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista GD", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/guardrails", url.Values{
+		"type": {"response_tone"}, "rule": {"Ser formal"}, "message": {""},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	guardrailRepo := specialistinfra.NewGormGuardrailRepository(env.db)
+	guardrails, _ := guardrailRepo.FindBySpecialistID(ctx, spec.ID)
+	require.Len(t, guardrails, 1)
+
+	w2 := httptest.NewRecorder()
+	req2 := deleteReq("/admin/specialists/"+spec.ID+"/guardrails/"+guardrails[0].ID, tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+}
+
+// --- Step functional tests ---
+
+func TestStep_CreateAndList(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista S", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Qual seu nome?"}, "data_type": {"free_text"}, "required": {"on"}, "score": {"10"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w2 := httptest.NewRecorder()
+	req2 := getReq("/admin/specialists/"+spec.ID+"/steps", tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Contains(t, w2.Body.String(), "Qual seu nome?")
+}
+
+func TestStep_MoveAndDelete(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista SM", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create 2 steps
+	for _, text := range []string{"Step 1", "Step 2"} {
+		w := httptest.NewRecorder()
+		req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+			"text": {text}, "data_type": {"free_text"}, "required": {"on"}, "score": {"5"},
+		}, tokenCookie(token))
+		env.router.ServeHTTP(w, req)
+	}
+
+	stepRepo := specialistinfra.NewGormStepRepository(env.db)
+	steps, _ := stepRepo.FindBySpecialistID(ctx, spec.ID)
+	require.Len(t, steps, 2)
+
+	// Move down
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/admin/specialists/"+spec.ID+"/steps/"+steps[0].ID+"/move-down", nil)
+	req.AddCookie(tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Delete
+	w2 := httptest.NewRecorder()
+	req2 := deleteReq("/admin/specialists/"+spec.ID+"/steps/"+steps[1].ID, tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+}
+
+// --- Scoring functional tests ---
+
+func TestScoring_GetAndUpdate(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista SC", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create step with score
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Pergunta"}, "data_type": {"free_text"}, "required": {"on"}, "score": {"50"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	// Get scoring
+	w2 := httptest.NewRecorder()
+	req2 := getReq("/admin/specialists/"+spec.ID+"/scoring", tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	// Update threshold
+	w3 := httptest.NewRecorder()
+	req3 := putForm("/admin/specialists/"+spec.ID+"/scoring", url.Values{
+		"threshold": {"30"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w3, req3)
+	assert.Equal(t, http.StatusOK, w3.Code)
 }

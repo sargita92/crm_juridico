@@ -1,0 +1,17 @@
+{{define "specialist/documents_modal.html"}}
+<div id="available-documents">
+    {{if .AvailableDocuments}}
+    {{range .AvailableDocuments}}
+    <label class="checkbox-item">
+        <input type="checkbox" name="document_ids[]" value="{{.ID}}">
+        <strong>{{.Name}}</strong>
+        <span class="badge badge-info" style="margin-left:0.5rem">{{.Type}}</span>
+    </label>
+    {{end}}
+    {{else}}
+    <div class="empty-state" style="padding:1rem">
+        Nenhum documento disponivel
+    </div>
+    {{end}}
+</div>
+{{end}}

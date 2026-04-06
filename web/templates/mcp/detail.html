@@ -1,0 +1,59 @@
+{{define "mcp/detail.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{if .Mcp}}{{.Mcp.Name}}{{else}}MCP{{end}} — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "mcps")}}
+    <main class="admin-content">
+        {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
+        {{if .Mcp}}
+        <div class="page-header">
+            <div>
+                <nav class="breadcrumb"><a href="/admin/mcps">MCPs</a> &rsaquo; {{.Mcp.Name}}</nav>
+                <h1>{{.Mcp.Name}}</h1>
+            </div>
+            <a href="/admin/mcps" class="btn btn-outline">Voltar</a>
+        </div>
+        <div class="detail-card">
+            <div class="detail-grid">
+                <div class="detail-item"><label>Nome</label><span>{{.Mcp.Name}}</span></div>
+                <div class="detail-item"><label>URL</label><span><a href="{{.Mcp.URL}}" target="_blank" rel="noopener">{{.Mcp.URL}}</a></span></div>
+                <div class="detail-item"><label>Especialistas associados</label><span>{{.Mcp.SpecialistCount}}</span></div>
+                <div class="detail-item"><label>Criado em</label><span>{{.Mcp.CreatedAt.Format "02/01/2006 15:04"}}</span></div>
+                <div class="detail-item"><label>Atualizado em</label><span>{{.Mcp.UpdatedAt.Format "02/01/2006 15:04"}}</span></div>
+            </div>
+            {{if .Mcp.Config}}
+            <div style="margin-top:1.5rem">
+                <label><strong>Configuracao</strong></label>
+                <pre class="prompt-display">{{.Mcp.Config}}</pre>
+            </div>
+            {{end}}
+            {{if .Mcp.Headers}}
+            <div style="margin-top:1rem">
+                <label><strong>Headers</strong></label>
+                <pre class="prompt-display">{{.Mcp.Headers}}</pre>
+            </div>
+            {{end}}
+            <div class="detail-actions" style="margin-top:1.5rem">
+                <a href="/admin/mcps/{{.Mcp.ID}}/edit" class="btn btn-primary">Editar</a>
+                <button class="btn btn-danger"
+                        hx-delete="/admin/mcps/{{.Mcp.ID}}"
+                        hx-confirm="Tem certeza que deseja excluir este MCP? Ele sera desassociado de {{.Mcp.SpecialistCount}} especialista(s).">
+                    Excluir
+                </button>
+            </div>
+        </div>
+        {{end}}
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

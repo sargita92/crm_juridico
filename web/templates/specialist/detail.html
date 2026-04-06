@@ -90,6 +90,224 @@
                 </div>
             </div>
 
+            <!-- Documentos RAG (lazy-load) -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3>Documentos RAG</h3>
+                    <button class="btn btn-sm btn-primary" onclick="openModal('documents-modal')">Gerenciar Documentos</button>
+                </div>
+                <div id="documents-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/documents"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p class="text-muted">Carregando documentos...</p>
+                </div>
+            </div>
+
+            <!-- MCPs (lazy-load) -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3>MCPs</h3>
+                    <button class="btn btn-sm btn-primary" onclick="openModal('mcps-modal')">Gerenciar MCPs</button>
+                </div>
+                <div id="mcps-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/mcps"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p class="text-muted">Carregando MCPs...</p>
+                </div>
+            </div>
+
+            <!-- Modal: Gerenciar MCPs -->
+            <div id="mcps-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('mcps-modal')">
+                <div class="modal-card modal-card-lg">
+                    <h2>Associar MCPs</h2>
+                    <input type="search" placeholder="Buscar MCP por nome..."
+                           hx-get="/admin/specialists/{{.Specialist.ID}}/mcps/available"
+                           hx-trigger="input changed delay:300ms, search"
+                           hx-target="#available-mcps"
+                           name="search">
+                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/mcps"
+                          hx-target="#mcps-section"
+                          hx-swap="innerHTML">
+                        <div id="available-mcps"
+                             hx-get="/admin/specialists/{{.Specialist.ID}}/mcps/available"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <p class="text-muted">Carregando MCPs disponiveis...</p>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('mcps-modal')">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" onclick="closeModal('mcps-modal')">
+                                <span class="btn-text">Associar Selecionados</span>
+                                <span class="btn-loading-text">Associando...</span>
+                                <span class="spinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Modal: Gerenciar Documentos -->
+            <div id="documents-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('documents-modal')">
+                <div class="modal-card modal-card-lg">
+                    <h2>Associar Documentos</h2>
+                    <input type="search" placeholder="Buscar documento por nome..."
+                           hx-get="/admin/specialists/{{.Specialist.ID}}/documents/available"
+                           hx-trigger="input changed delay:300ms, search"
+                           hx-target="#available-documents"
+                           name="search">
+                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/documents"
+                          hx-target="#documents-section"
+                          hx-swap="innerHTML">
+                        <div id="available-documents"
+                             hx-get="/admin/specialists/{{.Specialist.ID}}/documents/available"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <p class="text-muted">Carregando documentos disponiveis...</p>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('documents-modal')">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" onclick="closeModal('documents-modal')">
+                                <span class="btn-text">Associar Selecionados</span>
+                                <span class="btn-loading-text">Associando...</span>
+                                <span class="spinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Guardrails (lazy-load) -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3>Guardrails</h3>
+                    <button class="btn btn-sm btn-primary" onclick="openModal('guardrail-modal')">Adicionar Guardrail</button>
+                </div>
+                <div id="guardrails-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/guardrails"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p class="text-muted">Carregando guardrails...</p>
+                </div>
+            </div>
+
+            <!-- Modal: Adicionar Guardrail -->
+            <div id="guardrail-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('guardrail-modal')">
+                <div class="modal-card" style="max-width:550px">
+                    <h2>Novo Guardrail</h2>
+                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/guardrails"
+                          hx-target="#guardrails-section"
+                          hx-swap="innerHTML">
+                        <div class="form-group">
+                            <label for="guardrail-type">Tipo</label>
+                            <select id="guardrail-type" name="type" required>
+                                <option value="forbidden_topics">Topicos proibidos</option>
+                                <option value="scope_limit">Limite de escopo</option>
+                                <option value="response_tone">Tom de resposta</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="guardrail-rule">Regra</label>
+                            <textarea id="guardrail-rule" name="rule" placeholder="Ex: Nao falar sobre precos, nao recomendar concorrentes..." required style="min-height:120px"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="guardrail-message">Mensagem padrao (opcional)</label>
+                            <textarea id="guardrail-message" name="message" placeholder="Mensagem que o especialista usa quando o guardrail e acionado" style="min-height:80px"></textarea>
+                            <small class="form-hint">Se vazio, o especialista usara uma resposta generica</small>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('guardrail-modal')">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" onclick="closeModal('guardrail-modal')">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Passo a Passo (lazy-load) -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3>Passo a Passo</h3>
+                    <button class="btn btn-sm btn-primary" onclick="openModal('step-modal')">Adicionar Step</button>
+                </div>
+                <div id="steps-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/steps"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p class="text-muted">Carregando steps...</p>
+                </div>
+            </div>
+
+            <!-- Modal: Adicionar Step -->
+            <div id="step-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('step-modal')">
+                <div class="modal-card" style="max-width:550px">
+                    <h2>Novo Step</h2>
+                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/steps"
+                          hx-target="#steps-section"
+                          hx-swap="innerHTML">
+                        <div class="form-group">
+                            <label for="step-text">Texto</label>
+                            <textarea id="step-text" name="text" placeholder="Qual pergunta ou instrucao o especialista deve fazer?" required style="min-height:100px"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="step-data-type">Tipo de dado esperado</label>
+                            <select id="step-data-type" name="data_type" required>
+                                <option value="free_text">Texto livre</option>
+                                <option value="number">Numero</option>
+                                <option value="date">Data</option>
+                                <option value="document">Documento</option>
+                                <option value="selection">Selecao</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" name="required" checked> Obrigatorio</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="step-score">Pontuacao</label>
+                            <input type="number" id="step-score" name="score" value="0" min="0" placeholder="0">
+                            <small class="form-hint">Pontuacao para qualificacao do lead (0 = sem pontuacao)</small>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('step-modal')">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" onclick="closeModal('step-modal')">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Qualificacao por Pontuacao (lazy-load) -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3>Qualificacao por Pontuacao</h3>
+                </div>
+                <div id="scoring-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/scoring"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p class="text-muted">Carregando scoring...</p>
+                </div>
+            </div>
+
+            <!-- Modal: Configurar Threshold -->
+            <div id="scoring-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('scoring-modal')">
+                <div class="modal-card" style="max-width:450px">
+                    <h2>Configurar Qualificacao</h2>
+                    <form hx-put="/admin/specialists/{{.Specialist.ID}}/scoring"
+                          hx-target="#scoring-section"
+                          hx-swap="innerHTML">
+                        <div class="form-group">
+                            <label for="threshold">Threshold (pontuacao minima)</label>
+                            <input type="number" id="threshold" name="threshold" min="1" required placeholder="Pontuacao minima para qualificacao">
+                            <small class="form-hint">Leads que atingirem este valor serao qualificados</small>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal('scoring-modal')">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" onclick="closeModal('scoring-modal')">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Modal: Desativar -->
             <div id="deactivate-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('deactivate-modal')">
                 <div class="modal-card">
