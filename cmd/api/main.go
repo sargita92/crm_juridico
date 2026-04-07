@@ -18,6 +18,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/auth"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
+	"github.com/sasrgita/crm-juridico/internal/automation"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
@@ -135,10 +136,23 @@ func main() {
 	// Notification module
 	notificationMod := notification.NewModule(db, sharedEventBus, log)
 
+	// Automation module
+	automationMod := automation.NewModule(db, automation.ModuleDeps{
+		MoveLeadUC:    funnelMod.MoveLeadUC(),
+		LeadRepo:      funnelMod.LeadRepo(),
+		ColumnRepo:    funnelMod.ColumnRepo(),
+		NoteRepo:      funnelMod.NoteRepo(),
+		NotifyService: notificationMod.NotifyService(),
+		DB:            db,
+	}, log)
+
+	// Set automation trigger on funnel module
+	funnelMod.SetAutomationTrigger(automationMod.Engine())
+
 	// Auth module (login, tenant selection, invites, user management)
 	authMod := auth.NewModule(db, tenantMod.TenantRepo(), cfg.JWT.Secret, cfg.JWT.Expiration, cfg.Server.SecureCookie)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod}
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod, automationMod}
 
 	// Token provider is used for the auth middleware and admin login route
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
