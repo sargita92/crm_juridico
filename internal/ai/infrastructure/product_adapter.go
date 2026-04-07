@@ -39,6 +39,9 @@ func (a *PhoneNumberFinderAdapter) FindProductIDByPhone(ctx context.Context, pho
 	if err != nil {
 		return "", fmt.Errorf("phone_number_finder_adapter: find by phone: %w", err)
 	}
+	if pn == nil {
+		return "", fmt.Errorf("phone_number_finder_adapter: no product for phone %s", phone)
+	}
 	return pn.ProductID, nil
 }
 
