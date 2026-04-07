@@ -43,11 +43,12 @@ func (uc *ManagePermissionsUseCase) SetGroupPermissions(ctx context.Context, ten
 	// Track which resources we've already cleared to avoid duplicate deletions.
 	cleared := make(map[string]bool)
 	for _, inp := range inputs {
-		if !cleared[inp.Resource] {
-			if err := uc.permissions.DeleteByGroupAndResource(ctx, groupID, inp.Resource); err != nil {
+		key := inp.Resource + "|" + inp.Action
+		if !cleared[key] {
+			if err := uc.permissions.DeleteByGroupAndResource(ctx, groupID, inp.Resource, inp.Action); err != nil {
 				return err
 			}
-			cleared[inp.Resource] = true
+			cleared[key] = true
 		}
 	}
 	for _, inp := range inputs {
@@ -69,11 +70,12 @@ func (uc *ManagePermissionsUseCase) SetUserPermissions(ctx context.Context, tena
 	}
 	cleared := make(map[string]bool)
 	for _, inp := range inputs {
-		if !cleared[inp.Resource] {
-			if err := uc.permissions.DeleteByUserAndResource(ctx, userID, inp.Resource); err != nil {
+		key := inp.Resource + "|" + inp.Action
+		if !cleared[key] {
+			if err := uc.permissions.DeleteByUserAndResource(ctx, tenantID, userID, inp.Resource, inp.Action); err != nil {
 				return err
 			}
-			cleared[inp.Resource] = true
+			cleared[key] = true
 		}
 	}
 	for _, inp := range inputs {
@@ -97,18 +99,11 @@ func (uc *ManagePermissionsUseCase) GetGroupPermissions(ctx context.Context, gro
 // GetUserPermissions returns all individual permissions assigned to a user
 // within a tenant.
 func (uc *ManagePermissionsUseCase) GetUserPermissions(ctx context.Context, tenantID, userID string) ([]PermissionOutput, error) {
-	list, err := uc.permissions.FindByUserID(ctx, userID)
+	list, err := uc.permissions.FindByUserID(ctx, tenantID, userID)
 	if err != nil {
 		return nil, err
 	}
-	// Filter to the requested tenant.
-	var filtered []domain.Permission
-	for _, p := range list {
-		if p.TenantID == tenantID {
-			filtered = append(filtered, p)
-		}
-	}
-	return toPermissionOutputs(filtered), nil
+	return toPermissionOutputs(list), nil
 }
 
 func toPermissionOutputs(perms []domain.Permission) []PermissionOutput {

@@ -34,6 +34,7 @@ func NewModule(db *gorm.DB, log *zap.Logger) *Module {
 	// Use cases
 	resolverUC := application.NewResolvePermissionUseCase(permRepo, ugRepo, ownerChecker, adminChecker)
 	createGroupUC := application.NewCreateGroupUseCase(groupRepo)
+	getGroupUC := application.NewGetGroupUseCase(groupRepo)
 	updateGroupUC := application.NewUpdateGroupUseCase(groupRepo)
 	listGroupsUC := application.NewListGroupsUseCase(groupRepo)
 	deleteGroupUC := application.NewDeleteGroupUseCase(groupRepo)
@@ -44,6 +45,7 @@ func NewModule(db *gorm.DB, log *zap.Logger) *Module {
 
 	handler := permhttp.NewHandler(
 		createGroupUC,
+		getGroupUC,
 		updateGroupUC,
 		listGroupsUC,
 		deleteGroupUC,

@@ -66,10 +66,10 @@ func (m *mockPermissionRepo) FindByGroupID(_ context.Context, groupID string) ([
 	return result, nil
 }
 
-func (m *mockPermissionRepo) FindByUserID(_ context.Context, userID string) ([]domain.Permission, error) {
+func (m *mockPermissionRepo) FindByUserID(_ context.Context, tenantID, userID string) ([]domain.Permission, error) {
 	var result []domain.Permission
 	for _, p := range m.perms {
-		if p.UserID == userID {
+		if p.TenantID == tenantID && p.UserID == userID {
 			result = append(result, p)
 		}
 	}
@@ -93,10 +93,10 @@ func (m *mockPermissionRepo) FindByGroupIDs(_ context.Context, groupIDs []string
 	return result, nil
 }
 
-func (m *mockPermissionRepo) DeleteByGroupAndResource(_ context.Context, groupID, resource string) error {
+func (m *mockPermissionRepo) DeleteByGroupAndResource(_ context.Context, groupID, resource, action string) error {
 	var remaining []domain.Permission
 	for _, p := range m.perms {
-		if !(p.GroupID == groupID && p.Resource == resource) {
+		if !(p.GroupID == groupID && p.Resource == resource && p.Action == action) {
 			remaining = append(remaining, p)
 		}
 	}
@@ -104,10 +104,10 @@ func (m *mockPermissionRepo) DeleteByGroupAndResource(_ context.Context, groupID
 	return nil
 }
 
-func (m *mockPermissionRepo) DeleteByUserAndResource(_ context.Context, userID, resource string) error {
+func (m *mockPermissionRepo) DeleteByUserAndResource(_ context.Context, tenantID, userID, resource, action string) error {
 	var remaining []domain.Permission
 	for _, p := range m.perms {
-		if !(p.UserID == userID && p.Resource == resource) {
+		if !(p.TenantID == tenantID && p.UserID == userID && p.Resource == resource && p.Action == action) {
 			remaining = append(remaining, p)
 		}
 	}
@@ -193,6 +193,15 @@ func (m *mockGroupRepo) FindByID(_ context.Context, id string) (*domain.Permissi
 	return nil, domain.ErrGroupNotFound
 }
 
+func (m *mockGroupRepo) FindByIDAndTenantID(_ context.Context, id, tenantID string) (*domain.PermissionGroup, error) {
+	for i, g := range m.groups {
+		if g.ID == id && g.TenantID == tenantID {
+			return &m.groups[i], nil
+		}
+	}
+	return nil, domain.ErrGroupNotFound
+}
+
 func (m *mockGroupRepo) Update(_ context.Context, g *domain.PermissionGroup) error {
 	for i, existing := range m.groups {
 		if existing.ID == g.ID {
@@ -263,23 +272,23 @@ func (m *mockViewProfileRepo) FindByGroupAndFunnel(_ context.Context, groupID, f
 	return nil, domain.ErrViewProfileNotFound
 }
 
-func (m *mockViewProfileRepo) FindByGroupIDs(_ context.Context, groupIDs []string) ([]domain.ViewProfile, error) {
+func (m *mockViewProfileRepo) FindByGroupIDs(_ context.Context, groupIDs []string, funnelID string) ([]domain.ViewProfile, error) {
 	idSet := make(map[string]bool, len(groupIDs))
 	for _, id := range groupIDs {
 		idSet[id] = true
 	}
 	var result []domain.ViewProfile
 	for _, vp := range m.profiles {
-		if idSet[vp.GroupID] {
+		if idSet[vp.GroupID] && vp.FunnelID == funnelID {
 			result = append(result, vp)
 		}
 	}
 	return result, nil
 }
 
-func (m *mockViewProfileRepo) Delete(_ context.Context, id string) error {
+func (m *mockViewProfileRepo) Delete(_ context.Context, groupID, funnelID string) error {
 	for i, vp := range m.profiles {
-		if vp.ID == id {
+		if vp.GroupID == groupID && vp.FunnelID == funnelID {
 			m.profiles = append(m.profiles[:i], m.profiles[i+1:]...)
 			return nil
 		}
@@ -338,9 +347,9 @@ func (m *mockGroupFunnelRepo) FindByFunnelAndColumn(_ context.Context, funnelID,
 	return result, nil
 }
 
-func (m *mockGroupFunnelRepo) Delete(_ context.Context, id string) error {
+func (m *mockGroupFunnelRepo) Delete(_ context.Context, groupID, funnelID string) error {
 	for i, gf := range m.funnels {
-		if gf.ID == id {
+		if gf.GroupID == groupID && gf.FunnelID == funnelID {
 			m.funnels = append(m.funnels[:i], m.funnels[i+1:]...)
 			return nil
 		}

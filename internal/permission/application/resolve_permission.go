@@ -55,12 +55,12 @@ func (uc *ResolvePermissionUseCase) HasPermission(ctx context.Context, userID, t
 	}
 
 	// 3. Individual permissions
-	individualPerms, err := uc.permissions.FindByUserID(ctx, userID)
+	individualPerms, err := uc.permissions.FindByUserID(ctx, tenantID, userID)
 	if err != nil {
 		return false, err
 	}
 	for _, p := range individualPerms {
-		if p.TenantID == tenantID && p.Resource == resource && p.Action == action {
+		if p.Resource == resource && p.Action == action {
 			return true, nil
 		}
 	}

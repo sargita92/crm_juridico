@@ -49,13 +49,13 @@ func (r *GormViewProfileRepository) FindByGroupAndFunnel(ctx context.Context, gr
 	return viewProfileToDomain(&model), nil
 }
 
-func (r *GormViewProfileRepository) FindByGroupIDs(ctx context.Context, groupIDs []string) ([]domain.ViewProfile, error) {
+func (r *GormViewProfileRepository) FindByGroupIDs(ctx context.Context, groupIDs []string, funnelID string) ([]domain.ViewProfile, error) {
 	if len(groupIDs) == 0 {
 		return []domain.ViewProfile{}, nil
 	}
 	var models []viewProfileModel
 	if err := r.db.WithContext(ctx).
-		Where("group_id IN ?", groupIDs).
+		Where("group_id IN ? AND funnel_id = ?", groupIDs, funnelID).
 		Find(&models).Error; err != nil {
 		return nil, err
 	}
@@ -66,8 +66,10 @@ func (r *GormViewProfileRepository) FindByGroupIDs(ctx context.Context, groupIDs
 	return result, nil
 }
 
-func (r *GormViewProfileRepository) Delete(ctx context.Context, id string) error {
-	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&viewProfileModel{})
+func (r *GormViewProfileRepository) Delete(ctx context.Context, groupID, funnelID string) error {
+	result := r.db.WithContext(ctx).
+		Where("group_id = ? AND funnel_id = ?", groupID, funnelID).
+		Delete(&viewProfileModel{})
 	if result.Error != nil {
 		return result.Error
 	}

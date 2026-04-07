@@ -80,17 +80,9 @@ func (uc *ManageViewProfilesUseCase) ResolveVisibleColumns(ctx context.Context, 
 		return nil, nil
 	}
 
-	all, err := uc.profiles.FindByGroupIDs(ctx, groupIDs)
+	relevant, err := uc.profiles.FindByGroupIDs(ctx, groupIDs, funnelID)
 	if err != nil {
 		return nil, err
-	}
-
-	// Filter to the requested funnel.
-	var relevant []domain.ViewProfile
-	for _, vp := range all {
-		if vp.FunnelID == funnelID {
-			relevant = append(relevant, vp)
-		}
 	}
 
 	// No profiles configured: no column restrictions (show all).
@@ -99,8 +91,10 @@ func (uc *ManageViewProfilesUseCase) ResolveVisibleColumns(ctx context.Context, 
 	}
 
 	// Build the union of visible columns across all matching profiles.
+	// Use a non-nil empty slice to distinguish "restricted to zero columns"
+	// from "no restriction" (nil).
 	seen := make(map[string]bool)
-	var union []string
+	union := make([]string, 0)
 	for _, vp := range relevant {
 		for _, col := range vp.VisibleColumns {
 			if !seen[col] {

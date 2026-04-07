@@ -13,6 +13,7 @@ import (
 // Handler holds all permission-related use cases and provides HTTP handlers.
 type Handler struct {
 	createGroupUC   *application.CreateGroupUseCase
+	getGroupUC      *application.GetGroupUseCase
 	updateGroupUC   *application.UpdateGroupUseCase
 	listGroupsUC    *application.ListGroupsUseCase
 	deleteGroupUC   *application.DeleteGroupUseCase
@@ -26,6 +27,7 @@ type Handler struct {
 // NewHandler constructs a Handler with all required use cases.
 func NewHandler(
 	createGroupUC *application.CreateGroupUseCase,
+	getGroupUC *application.GetGroupUseCase,
 	updateGroupUC *application.UpdateGroupUseCase,
 	listGroupsUC *application.ListGroupsUseCase,
 	deleteGroupUC *application.DeleteGroupUseCase,
@@ -37,6 +39,7 @@ func NewHandler(
 ) *Handler {
 	return &Handler{
 		createGroupUC:   createGroupUC,
+		getGroupUC:      getGroupUC,
 		updateGroupUC:   updateGroupUC,
 		listGroupsUC:    listGroupsUC,
 		deleteGroupUC:   deleteGroupUC,
@@ -62,6 +65,21 @@ func (h *Handler) ListGroups(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, groups)
+}
+
+// GetGroup returns a single permission group by ID, scoped to the current tenant.
+func (h *Handler) GetGroup(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	id := c.Param("id")
+
+	out, err := h.getGroupUC.Execute(c.Request.Context(), tenantID, id)
+	if err != nil {
+		h.log.Error("failed to get group", zap.String("id", id), zap.Error(err))
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
 }
 
 // CreateGroup creates a new permission group for the current tenant.
@@ -93,6 +111,7 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 
 // UpdateGroup updates an existing permission group.
 func (h *Handler) UpdateGroup(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
 
 	var req struct {
@@ -105,13 +124,14 @@ func (h *Handler) UpdateGroup(c *gin.Context) {
 	}
 
 	out, err := h.updateGroupUC.Execute(c.Request.Context(), application.UpdateGroupInput{
+		TenantID:    tenantID,
 		ID:          id,
 		Name:        req.Name,
 		Description: req.Description,
 	})
 	if err != nil {
 		h.log.Error("failed to update group", zap.String("id", id), zap.Error(err))
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
 		return
 	}
 
@@ -120,11 +140,12 @@ func (h *Handler) UpdateGroup(c *gin.Context) {
 
 // DeleteGroup deletes a permission group by ID.
 func (h *Handler) DeleteGroup(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
 
-	if err := h.deleteGroupUC.Execute(c.Request.Context(), id); err != nil {
+	if err := h.deleteGroupUC.Execute(c.Request.Context(), tenantID, id); err != nil {
 		h.log.Error("failed to delete group", zap.String("id", id), zap.Error(err))
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
 		return
 	}
 

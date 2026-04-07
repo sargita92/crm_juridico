@@ -66,8 +66,10 @@ func (r *GormGroupFunnelRepository) FindByFunnelAndColumn(ctx context.Context, f
 	return result, nil
 }
 
-func (r *GormGroupFunnelRepository) Delete(ctx context.Context, id string) error {
-	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&groupFunnelModel{})
+func (r *GormGroupFunnelRepository) Delete(ctx context.Context, groupID, funnelID string) error {
+	result := r.db.WithContext(ctx).
+		Where("group_id = ? AND funnel_id = ?", groupID, funnelID).
+		Delete(&groupFunnelModel{})
 	if result.Error != nil {
 		return result.Error
 	}

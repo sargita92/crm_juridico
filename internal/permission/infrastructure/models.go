@@ -13,7 +13,7 @@ type permissionGroupModel struct {
 	ID          string    `gorm:"primaryKey;column:id;type:char(36)"`
 	TenantID    string    `gorm:"column:tenant_id;type:char(36);not null"`
 	Name        string    `gorm:"column:name;type:varchar(100);not null"`
-	Description string    `gorm:"column:description;type:text"`
+	Description string    `gorm:"column:description;type:varchar(500);not null;default:''"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -130,7 +130,7 @@ type viewProfileModel struct {
 	ID             string    `gorm:"primaryKey;column:id;type:char(36)"`
 	GroupID        string    `gorm:"column:group_id;type:char(36);not null"`
 	FunnelID       string    `gorm:"column:funnel_id;type:char(36);not null"`
-	VisibleColumns string    `gorm:"column:visible_columns;type:text"`
+	VisibleColumns string    `gorm:"column:visible_columns;type:json;not null"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -173,7 +173,7 @@ type groupFunnelModel struct {
 	ID        string    `gorm:"primaryKey;column:id;type:char(36)"`
 	GroupID   string    `gorm:"column:group_id;type:char(36);not null"`
 	FunnelID  string    `gorm:"column:funnel_id;type:char(36);not null"`
-	ColumnIDs string    `gorm:"column:column_ids;type:text"`
+	ColumnIDs string    `gorm:"column:column_ids;type:json;not null"`
 	CreatedAt time.Time
 }
 

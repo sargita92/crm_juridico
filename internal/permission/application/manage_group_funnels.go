@@ -59,16 +59,7 @@ func (uc *ManageGroupFunnelsUseCase) ListByGroup(ctx context.Context, groupID st
 	return out, nil
 }
 
-// RemoveGroupFunnel deletes a group-funnel association by looking up its ID.
+// RemoveGroupFunnel deletes a group-funnel association by groupID and funnelID.
 func (uc *ManageGroupFunnelsUseCase) RemoveGroupFunnel(ctx context.Context, groupID, funnelID string) error {
-	list, err := uc.funnels.FindByGroupID(ctx, groupID)
-	if err != nil {
-		return err
-	}
-	for _, gf := range list {
-		if gf.FunnelID == funnelID {
-			return uc.funnels.Delete(ctx, gf.ID)
-		}
-	}
-	return domain.ErrGroupFunnelNotFound
+	return uc.funnels.Delete(ctx, groupID, funnelID)
 }

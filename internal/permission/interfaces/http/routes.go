@@ -13,6 +13,7 @@ func (h *Handler) RegisterRoutes(
 	{
 		groups.GET("", requirePerm("groups", "manage"), h.ListGroups)
 		groups.POST("", requirePerm("groups", "manage"), h.CreateGroup)
+		groups.GET("/:id", requirePerm("groups", "manage"), h.GetGroup)
 		groups.PUT("/:id", requirePerm("groups", "manage"), h.UpdateGroup)
 		groups.DELETE("/:id", requirePerm("groups", "manage"), h.DeleteGroup)
 		groups.GET("/:id/members", requirePerm("groups", "manage"), h.ListMembers)

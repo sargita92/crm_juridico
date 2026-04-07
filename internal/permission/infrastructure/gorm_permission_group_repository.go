@@ -33,6 +33,17 @@ func (r *GormPermissionGroupRepository) FindByID(ctx context.Context, id string)
 	return permissionGroupToDomain(&model), nil
 }
 
+func (r *GormPermissionGroupRepository) FindByIDAndTenantID(ctx context.Context, id, tenantID string) (*domain.PermissionGroup, error) {
+	var model permissionGroupModel
+	if err := r.db.WithContext(ctx).Where("id = ? AND tenant_id = ?", id, tenantID).First(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrGroupNotFound
+		}
+		return nil, err
+	}
+	return permissionGroupToDomain(&model), nil
+}
+
 func (r *GormPermissionGroupRepository) Update(ctx context.Context, group *domain.PermissionGroup) error {
 	model := permissionGroupToModel(group)
 	result := r.db.WithContext(ctx).Save(model)

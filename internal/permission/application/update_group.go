@@ -8,6 +8,7 @@ import (
 
 // UpdateGroupInput holds the data required to update an existing group.
 type UpdateGroupInput struct {
+	TenantID    string
 	ID          string
 	Name        string
 	Description string
@@ -23,7 +24,7 @@ func NewUpdateGroupUseCase(groups domain.PermissionGroupRepository) *UpdateGroup
 }
 
 func (uc *UpdateGroupUseCase) Execute(ctx context.Context, input UpdateGroupInput) (*GroupOutput, error) {
-	group, err := uc.groups.FindByID(ctx, input.ID)
+	group, err := uc.groups.FindByIDAndTenantID(ctx, input.ID, input.TenantID)
 	if err != nil {
 		return nil, err
 	}

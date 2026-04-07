@@ -46,10 +46,10 @@ func (r *GormPermissionRepository) FindByGroupID(ctx context.Context, groupID st
 	return result, nil
 }
 
-func (r *GormPermissionRepository) FindByUserID(ctx context.Context, userID string) ([]domain.Permission, error) {
+func (r *GormPermissionRepository) FindByUserID(ctx context.Context, tenantID, userID string) ([]domain.Permission, error) {
 	var models []permissionModel
 	if err := r.db.WithContext(ctx).
-		Where("user_id = ?", userID).
+		Where("tenant_id = ? AND user_id = ?", tenantID, userID).
 		Find(&models).Error; err != nil {
 		return nil, err
 	}
@@ -77,14 +77,14 @@ func (r *GormPermissionRepository) FindByGroupIDs(ctx context.Context, groupIDs 
 	return result, nil
 }
 
-func (r *GormPermissionRepository) DeleteByGroupAndResource(ctx context.Context, groupID, resource string) error {
+func (r *GormPermissionRepository) DeleteByGroupAndResource(ctx context.Context, groupID, resource, action string) error {
 	return r.db.WithContext(ctx).
-		Where("group_id = ? AND resource = ?", groupID, resource).
+		Where("group_id = ? AND resource = ? AND action = ?", groupID, resource, action).
 		Delete(&permissionModel{}).Error
 }
 
-func (r *GormPermissionRepository) DeleteByUserAndResource(ctx context.Context, userID, resource string) error {
+func (r *GormPermissionRepository) DeleteByUserAndResource(ctx context.Context, tenantID, userID, resource, action string) error {
 	return r.db.WithContext(ctx).
-		Where("user_id = ? AND resource = ?", userID, resource).
+		Where("tenant_id = ? AND user_id = ? AND resource = ? AND action = ?", tenantID, userID, resource, action).
 		Delete(&permissionModel{}).Error
 }
