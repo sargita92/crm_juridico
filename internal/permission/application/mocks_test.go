@@ -169,6 +169,185 @@ func (m *mockUserGroupRepo) Exists(_ context.Context, userID, groupID string) (b
 	return false, nil
 }
 
+// --- Mock PermissionGroupRepository ---
+
+type mockGroupRepo struct {
+	groups []domain.PermissionGroup
+}
+
+func newMockGroupRepo(groups ...domain.PermissionGroup) *mockGroupRepo {
+	return &mockGroupRepo{groups: groups}
+}
+
+func (m *mockGroupRepo) Create(_ context.Context, g *domain.PermissionGroup) error {
+	m.groups = append(m.groups, *g)
+	return nil
+}
+
+func (m *mockGroupRepo) FindByID(_ context.Context, id string) (*domain.PermissionGroup, error) {
+	for i, g := range m.groups {
+		if g.ID == id {
+			return &m.groups[i], nil
+		}
+	}
+	return nil, domain.ErrGroupNotFound
+}
+
+func (m *mockGroupRepo) Update(_ context.Context, g *domain.PermissionGroup) error {
+	for i, existing := range m.groups {
+		if existing.ID == g.ID {
+			m.groups[i] = *g
+			return nil
+		}
+	}
+	return domain.ErrGroupNotFound
+}
+
+func (m *mockGroupRepo) Delete(_ context.Context, id string) error {
+	for i, g := range m.groups {
+		if g.ID == id {
+			m.groups = append(m.groups[:i], m.groups[i+1:]...)
+			return nil
+		}
+	}
+	return domain.ErrGroupNotFound
+}
+
+func (m *mockGroupRepo) FindByTenantID(_ context.Context, tenantID string) ([]domain.PermissionGroup, error) {
+	var result []domain.PermissionGroup
+	for _, g := range m.groups {
+		if g.TenantID == tenantID {
+			result = append(result, g)
+		}
+	}
+	return result, nil
+}
+
+// --- Mock ViewProfileRepository ---
+
+type mockViewProfileRepo struct {
+	profiles []domain.ViewProfile
+}
+
+func newMockViewProfileRepo(profiles ...domain.ViewProfile) *mockViewProfileRepo {
+	return &mockViewProfileRepo{profiles: profiles}
+}
+
+func (m *mockViewProfileRepo) CreateOrUpdate(_ context.Context, vp *domain.ViewProfile) error {
+	for i, existing := range m.profiles {
+		if existing.GroupID == vp.GroupID && existing.FunnelID == vp.FunnelID {
+			m.profiles[i] = *vp
+			return nil
+		}
+	}
+	m.profiles = append(m.profiles, *vp)
+	return nil
+}
+
+func (m *mockViewProfileRepo) FindByGroupID(_ context.Context, groupID string) ([]domain.ViewProfile, error) {
+	var result []domain.ViewProfile
+	for _, vp := range m.profiles {
+		if vp.GroupID == groupID {
+			result = append(result, vp)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockViewProfileRepo) FindByGroupAndFunnel(_ context.Context, groupID, funnelID string) (*domain.ViewProfile, error) {
+	for i, vp := range m.profiles {
+		if vp.GroupID == groupID && vp.FunnelID == funnelID {
+			return &m.profiles[i], nil
+		}
+	}
+	return nil, domain.ErrViewProfileNotFound
+}
+
+func (m *mockViewProfileRepo) FindByGroupIDs(_ context.Context, groupIDs []string) ([]domain.ViewProfile, error) {
+	idSet := make(map[string]bool, len(groupIDs))
+	for _, id := range groupIDs {
+		idSet[id] = true
+	}
+	var result []domain.ViewProfile
+	for _, vp := range m.profiles {
+		if idSet[vp.GroupID] {
+			result = append(result, vp)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockViewProfileRepo) Delete(_ context.Context, id string) error {
+	for i, vp := range m.profiles {
+		if vp.ID == id {
+			m.profiles = append(m.profiles[:i], m.profiles[i+1:]...)
+			return nil
+		}
+	}
+	return domain.ErrViewProfileNotFound
+}
+
+// --- Mock GroupFunnelRepository ---
+
+type mockGroupFunnelRepo struct {
+	funnels []domain.GroupFunnel
+}
+
+func newMockGroupFunnelRepo(funnels ...domain.GroupFunnel) *mockGroupFunnelRepo {
+	return &mockGroupFunnelRepo{funnels: funnels}
+}
+
+func (m *mockGroupFunnelRepo) CreateOrUpdate(_ context.Context, gf *domain.GroupFunnel) error {
+	for i, existing := range m.funnels {
+		if existing.GroupID == gf.GroupID && existing.FunnelID == gf.FunnelID {
+			m.funnels[i] = *gf
+			return nil
+		}
+	}
+	m.funnels = append(m.funnels, *gf)
+	return nil
+}
+
+func (m *mockGroupFunnelRepo) FindByGroupID(_ context.Context, groupID string) ([]domain.GroupFunnel, error) {
+	var result []domain.GroupFunnel
+	for _, gf := range m.funnels {
+		if gf.GroupID == groupID {
+			result = append(result, gf)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockGroupFunnelRepo) FindByFunnelID(_ context.Context, funnelID string) ([]domain.GroupFunnel, error) {
+	var result []domain.GroupFunnel
+	for _, gf := range m.funnels {
+		if gf.FunnelID == funnelID {
+			result = append(result, gf)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockGroupFunnelRepo) FindByFunnelAndColumn(_ context.Context, funnelID, columnID string) ([]domain.GroupFunnel, error) {
+	var result []domain.GroupFunnel
+	for _, gf := range m.funnels {
+		if gf.FunnelID == funnelID && gf.CoversColumn(columnID) {
+			result = append(result, gf)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockGroupFunnelRepo) Delete(_ context.Context, id string) error {
+	for i, gf := range m.funnels {
+		if gf.ID == id {
+			m.funnels = append(m.funnels[:i], m.funnels[i+1:]...)
+			return nil
+		}
+	}
+	return domain.ErrGroupFunnelNotFound
+}
+
 // --- Mock OwnerChecker ---
 
 type mockOwnerChecker struct {
