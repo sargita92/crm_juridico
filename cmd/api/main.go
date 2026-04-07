@@ -16,6 +16,7 @@ import (
 
 	"github.com/sasrgita/crm-juridico/internal/ai"
 	"github.com/sasrgita/crm-juridico/internal/auth"
+	landinghttp "github.com/sasrgita/crm-juridico/internal/landing/interfaces/http"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/automation"
@@ -250,10 +251,9 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 	router.Use(middleware.Prometheus())
 	router.Use(middleware.Logger(log))
 
-	// Health routes
-	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "health/index.html", nil)
-	})
+	// Landing page
+	landingHandler := landinghttp.NewHandler()
+	landingHandler.RegisterRoutes(router)
 
 	router.GET("/health", func(c *gin.Context) {
 		if c.GetHeader("HX-Request") == "true" {
