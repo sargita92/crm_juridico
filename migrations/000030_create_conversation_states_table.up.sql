@@ -11,6 +11,6 @@ CREATE TABLE conversation_states (
     created_at DATETIME(3) NOT NULL,
     updated_at DATETIME(3) NOT NULL,
     UNIQUE INDEX idx_conv_states_conversation (conversation_id),
-    CONSTRAINT fk_conv_states_conversation FOREIGN KEY (conversation_id) REFERENCES whatsapp_conversations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_conv_states_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
     CONSTRAINT fk_conv_states_specialist FOREIGN KEY (specialist_id) REFERENCES specialists(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

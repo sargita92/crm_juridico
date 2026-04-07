@@ -10,4 +10,4 @@ CREATE TABLE ai_configs (
     updated_at DATETIME(3) NOT NULL,
     UNIQUE INDEX idx_ai_configs_specialist (specialist_id),
     CONSTRAINT fk_ai_configs_specialist FOREIGN KEY (specialist_id) REFERENCES specialists(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

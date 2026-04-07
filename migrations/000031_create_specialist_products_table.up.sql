@@ -6,4 +6,4 @@ CREATE TABLE specialist_products (
     UNIQUE INDEX idx_specialist_products_unique (specialist_id, product_id),
     CONSTRAINT fk_sp_specialist FOREIGN KEY (specialist_id) REFERENCES specialists(id) ON DELETE CASCADE,
     CONSTRAINT fk_sp_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
