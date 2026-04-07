@@ -14,6 +14,16 @@ type Config struct {
 	Database DatabaseConfig
 	Log      LogConfig
 	JWT      JWTConfig
+	AI       AIConfigEnv
+}
+
+type AIConfigEnv struct {
+	OpenAIAPIKey       string
+	DefaultProvider    string
+	DefaultModel       string
+	DefaultMaxTokens   int
+	DefaultTemperature float64
+	DefaultDebounce    int
 }
 
 type ServerConfig struct {
@@ -63,6 +73,11 @@ func Load() (*Config, error) {
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("jwt.secret", "change-me-in-production")
 	viper.SetDefault("jwt.expiration", "24h")
+	viper.SetDefault("ai.defaultprovider", "openai")
+	viper.SetDefault("ai.defaultmodel", "gpt-5.4-nano")
+	viper.SetDefault("ai.defaultmaxtokens", 1024)
+	viper.SetDefault("ai.defaulttemperature", 0.7)
+	viper.SetDefault("ai.defaultdebounce", 8)
 
 	_ = viper.ReadInConfig()
 
@@ -86,6 +101,14 @@ func Load() (*Config, error) {
 		JWT: JWTConfig{
 			Secret:     viper.GetString("jwt.secret"),
 			Expiration: viper.GetDuration("jwt.expiration"),
+		},
+		AI: AIConfigEnv{
+			OpenAIAPIKey:       viper.GetString("openai.apikey"),
+			DefaultProvider:    viper.GetString("ai.defaultprovider"),
+			DefaultModel:       viper.GetString("ai.defaultmodel"),
+			DefaultMaxTokens:   viper.GetInt("ai.defaultmaxtokens"),
+			DefaultTemperature: viper.GetFloat64("ai.defaulttemperature"),
+			DefaultDebounce:    viper.GetInt("ai.defaultdebounce"),
 		},
 	}
 
