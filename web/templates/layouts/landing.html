@@ -1,0 +1,21 @@
+{{define "layouts/landing.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}CRM Jurídico — Gerencie leads pelo WhatsApp{{end}}</title>
+    <meta name="description" content="CRM jurídico integrado com WhatsApp. Gerencie leads, automatize atendimentos com IA e acompanhe cada oportunidade no funil de vendas.">
+    <meta name="keywords" content="CRM jurídico, WhatsApp, gestão de leads, funil de vendas, advocacia, escritório de advocacia, automação, IA">
+    <meta property="og:title" content="CRM Jurídico — Gerencie leads pelo WhatsApp">
+    <meta property="og:description" content="CRM integrado com WhatsApp para escritórios de advocacia. Funil visual, IA especialista e automação de atendimento.">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <link rel="stylesheet" href="/static/css/landing.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+    {{block "content" .}}{{end}}
+</body>
+</html>
+{{end}}
