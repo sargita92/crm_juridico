@@ -231,6 +231,59 @@ body {
     background: rgba(245, 158, 11, 0.12);
 }
 
+/* ---- Pain points ---- */
+
+.pain-points {
+    padding: 3rem 1.5rem;
+    background: #fff;
+}
+
+.pain-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.pain-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #fef8f6;
+    border-radius: 10px;
+    border-left: 3px solid #e07050;
+}
+
+.pain-icon {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.pain-icon svg {
+    width: 22px;
+    height: 22px;
+    color: #e07050;
+}
+
+.pain-card h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 0.2rem;
+}
+
+.pain-card p {
+    font-size: 0.85rem;
+    color: #718096;
+    line-height: 1.5;
+}
+
 /* ---- Features ---- */
 
 .features {
@@ -299,57 +352,6 @@ body {
     font-size: 0.85rem;
     color: #718096;
     line-height: 1.5;
-}
-
-/* ---- How it works ---- */
-
-.how-it-works {
-    padding: 3rem 1.5rem;
-    background: #fff;
-}
-
-.steps {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.step {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-}
-
-.step-number {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid #4a90d9;
-    color: #4a90d9;
-    font-weight: 700;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.step-content h3 {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 0.2rem;
-}
-
-.step-content p {
-    font-size: 0.85rem;
-    color: #718096;
-}
-
-.step-arrow {
-    display: none;
 }
 
 /* ---- CTA / Contact form ---- */
@@ -450,14 +452,58 @@ body {
 /* ---- Footer ---- */
 
 .landing-footer {
-    padding: 1.5rem;
     background: #1a1a2e;
+    padding: 0;
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 2.5rem 1.5rem 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.footer-brand strong {
+    font-size: 1rem;
+    color: #fff;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.footer-brand p {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    line-height: 1.5;
+    max-width: 320px;
+}
+
+.footer-links {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.footer-links a {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer-links a:hover {
+    color: #fff;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1rem 1.5rem;
     text-align: center;
 }
 
-.landing-footer p {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
+.footer-bottom p {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
 }
 
 /* ============================================
@@ -494,34 +540,34 @@ body {
         padding: 4rem 3rem;
     }
 
-    .features-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .how-it-works {
+    .pain-points {
         padding: 4rem 3rem;
     }
 
-    .steps {
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 1rem;
-        max-width: 800px;
+    .pain-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 
-    .step {
+    .pain-card {
         flex-direction: column;
-        align-items: center;
         text-align: center;
-        flex: 1;
+        border-left: none;
+        border-top: 3px solid #e07050;
     }
 
-    .step-arrow {
-        display: flex;
-        align-items: center;
-        color: #cbd5e0;
-        font-size: 1.2rem;
-        padding-top: 0.5rem;
+    .pain-icon {
+        margin: 0 auto;
+    }
+
+    .features-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .footer-content {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 2.5rem 3rem 1.5rem;
     }
 
     .cta-section {
@@ -567,11 +613,7 @@ body {
     }
 
     .features-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-
-    .how-it-works {
-        padding: 5rem;
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .cta-section {
