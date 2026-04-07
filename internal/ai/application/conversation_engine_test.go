@@ -1,0 +1,295 @@
+package application
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
+	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
+
+// --- mock implementations for ConversationEngine ---
+
+type mockConvStateRepo struct {
+	state     *domain.ConversationState
+	findErr   error
+	createErr error
+	updateErr error
+	updated   *domain.ConversationState
+}
+
+func (m *mockConvStateRepo) Create(_ context.Context, s *domain.ConversationState) error {
+	if m.createErr != nil {
+		return m.createErr
+	}
+	m.state = s
+	return nil
+}
+
+func (m *mockConvStateRepo) FindByConversationID(_ context.Context, _ string) (*domain.ConversationState, error) {
+	return m.state, m.findErr
+}
+
+func (m *mockConvStateRepo) Update(_ context.Context, s *domain.ConversationState) error {
+	m.updated = s
+	return m.updateErr
+}
+
+type mockConfigResolver struct {
+	cfg *domain.AIConfig
+}
+
+func (m *mockConfigResolver) Resolve(_ context.Context, _ string) *domain.AIConfig {
+	return m.cfg
+}
+
+type mockAIProvider struct {
+	name string
+	resp *domain.AIResponse
+	err  error
+}
+
+func (m *mockAIProvider) GenerateResponse(_ context.Context, _ *domain.AIRequest) (*domain.AIResponse, error) {
+	return m.resp, m.err
+}
+
+func (m *mockAIProvider) Name() string {
+	return m.name
+}
+
+type mockMessageSender struct {
+	sent    bool
+	content string
+	err     error
+}
+
+func (m *mockMessageSender) SendAIResponse(_ context.Context, _, _, content string) error {
+	m.sent = true
+	m.content = content
+	return m.err
+}
+
+type mockLeadUpdater struct {
+	scoreUpdated bool
+	movedColumn  string
+}
+
+func (m *mockLeadUpdater) UpdateLeadScore(_ context.Context, _ string, _ int) error {
+	m.scoreUpdated = true
+	return nil
+}
+
+func (m *mockLeadUpdater) MoveLeadToColumn(_ context.Context, _, columnID string) error {
+	m.movedColumn = columnID
+	return nil
+}
+
+// --- helpers ---
+
+func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr error) (
+	*ConversationEngine,
+	*mockConvStateRepo,
+	*mockMessageSender,
+) {
+	t.Helper()
+
+	registry := domain.NewProviderRegistry()
+	provider := &mockAIProvider{
+		name: "openai",
+		resp: &domain.AIResponse{Content: "Olá, como posso ajudar?", PromptTokens: 10, CompletionTokens: 5},
+	}
+	registry.Register(provider)
+
+	cfg, _ := domain.NewAIConfig("cfg-1", "spec-1", "openai", "gpt-4", 0.7, 1024, 0)
+
+	stateRepo := &mockConvStateRepo{state: state, findErr: findErr}
+	configResolver := &mockConfigResolver{cfg: cfg}
+	sender := &mockMessageSender{}
+	leadUpdater := &mockLeadUpdater{}
+	log := zap.NewNop()
+
+	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
+	contextBuilder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: specialist},
+		&mockStepFinder{},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+	)
+
+	engine := NewConversationEngine(
+		registry,
+		configResolver,
+		stateRepo,
+		contextBuilder,
+		NewStepEvaluator(),
+		NewGuardrailChecker(),
+		sender,
+		leadUpdater,
+		log,
+	)
+
+	return engine, stateRepo, sender
+}
+
+// --- tests ---
+
+func TestConversationEngine_BasicFlow(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	engine, stateRepo, sender := buildEngineFixtures(t, state, nil)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"olá"})
+
+	require.NoError(t, err)
+	assert.True(t, sender.sent, "message should have been sent")
+	assert.Equal(t, "Olá, como posso ajudar?", sender.content)
+	assert.NotNil(t, stateRepo.updated, "state should have been updated")
+}
+
+func TestConversationEngine_HandoffActive_NoMessageSent(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	state.ActivateHandoff()
+
+	engine, _, sender := buildEngineFixtures(t, state, nil)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"olá"})
+
+	require.NoError(t, err)
+	assert.False(t, sender.sent, "message should NOT be sent when handoff is active")
+}
+
+func TestConversationEngine_StateNotFound_CreatesNew(t *testing.T) {
+	engine, stateRepo, sender := buildEngineFixtures(t, nil, domain.ErrConversationStateNotFound)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-new", "spec-1", "", []string{"nova conversa"})
+
+	require.NoError(t, err)
+	assert.True(t, sender.sent, "message should have been sent for new state")
+	assert.NotNil(t, stateRepo.state, "state should have been created")
+}
+
+func TestConversationEngine_GuardrailViolation_UsesFallback(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+
+	registry := domain.NewProviderRegistry()
+	provider := &mockAIProvider{
+		name: "openai",
+		resp: &domain.AIResponse{Content: "Vamos falar sobre politica..."},
+	}
+	registry.Register(provider)
+
+	cfg, _ := domain.NewAIConfig("cfg-1", "spec-1", "openai", "gpt-4", 0.7, 1024, 0)
+	stateRepo := &mockConvStateRepo{state: state}
+	configResolver := &mockConfigResolver{cfg: cfg}
+	sender := &mockMessageSender{}
+	log := zap.NewNop()
+
+	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
+	contextBuilder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: specialist},
+		&mockStepFinder{},
+		&mockGuardrailFinder{guardrails: []specDomain.Guardrail{
+			{ID: "g1", Type: specDomain.GuardrailTypeForbiddenTopics, Rule: "politica", Message: "Fora do escopo.", Active: true},
+		}},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+	)
+
+	engine := NewConversationEngine(
+		registry, configResolver, stateRepo, contextBuilder,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, log,
+	)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
+
+	require.NoError(t, err)
+	assert.True(t, sender.sent)
+	assert.Equal(t, "Fora do escopo.", sender.content)
+}
+
+func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+
+	registry := domain.NewProviderRegistry()
+	provider := &mockAIProvider{
+		name: "openai",
+		resp: &domain.AIResponse{Content: "Obrigado pelo número!"},
+	}
+	registry.Register(provider)
+
+	cfg, _ := domain.NewAIConfig("cfg-1", "spec-1", "openai", "gpt-4", 0.7, 1024, 0)
+	stateRepo := &mockConvStateRepo{state: state}
+	configResolver := &mockConfigResolver{cfg: cfg}
+	sender := &mockMessageSender{}
+	leadUpdater := &mockLeadUpdater{}
+	log := zap.NewNop()
+
+	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
+	contextBuilder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: specialist},
+		&mockStepFinder{steps: []specDomain.Step{
+			{ID: "step-1", Text: "Informe seu CPF.", DataType: specDomain.StepDataTypeNumber, Score: 10, TargetColumnID: "col-2"},
+		}},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+	)
+
+	engine := NewConversationEngine(
+		registry, configResolver, stateRepo, contextBuilder,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, log,
+	)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"42"})
+
+	require.NoError(t, err)
+	assert.True(t, sender.sent)
+	assert.Equal(t, 1, state.CurrentStepIndex, "step index should have advanced")
+	assert.Equal(t, 10, state.AccumulatedScore)
+	assert.True(t, leadUpdater.scoreUpdated)
+	assert.Equal(t, "col-2", leadUpdater.movedColumn)
+}
+
+func TestConversationEngine_ProviderError(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+
+	registry := domain.NewProviderRegistry()
+	provider := &mockAIProvider{
+		name: "openai",
+		err:  errors.New("provider unavailable"),
+	}
+	registry.Register(provider)
+
+	cfg, _ := domain.NewAIConfig("cfg-1", "spec-1", "openai", "gpt-4", 0.7, 1024, 0)
+	stateRepo := &mockConvStateRepo{state: state}
+	configResolver := &mockConfigResolver{cfg: cfg}
+	sender := &mockMessageSender{}
+	log := zap.NewNop()
+
+	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
+	contextBuilder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: specialist},
+		&mockStepFinder{},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+	)
+
+	engine := NewConversationEngine(
+		registry, configResolver, stateRepo, contextBuilder,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, log,
+	)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
+
+	require.Error(t, err)
+	assert.False(t, sender.sent)
+}
