@@ -5,13 +5,16 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/sasrgita/crm-juridico/internal/document/application"
+	"github.com/sasrgita/crm-juridico/internal/document/domain"
 	"github.com/sasrgita/crm-juridico/internal/document/infrastructure"
 	documenthttp "github.com/sasrgita/crm-juridico/internal/document/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
 
 type Module struct {
-	handler *documenthttp.Handler
+	handler     *documenthttp.Handler
+	docRepo     domain.DocumentRepository
+	specDocRepo domain.SpecialistDocumentRepository
 }
 
 func NewModule(db *gorm.DB, specialistFinder application.SpecialistFinder) *Module {
@@ -32,11 +35,19 @@ func NewModule(db *gorm.DB, specialistFinder application.SpecialistFinder) *Modu
 		associateUC, dissociateUC, listSpecDocsUC, listAvailableUC,
 	)
 
-	return &Module{handler: handler}
+	return &Module{handler: handler, docRepo: docRepo, specDocRepo: specDocRepo}
 }
 
 func (m *Module) Name() string { return "document" }
 
 func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.handler.RegisterRoutes(router, mw.Auth, mw.Admin)
+}
+
+func (m *Module) DocRepo() domain.DocumentRepository {
+	return m.docRepo
+}
+
+func (m *Module) SpecDocRepo() domain.SpecialistDocumentRepository {
+	return m.specDocRepo
 }

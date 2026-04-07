@@ -16,6 +16,7 @@ type Module struct {
 	handler       *funnelhttp.Handler
 	leadCreator   *application.CreateLeadUseCase
 	listFunnelsUC *application.ListFunnelsUseCase
+	moveLeadUC    *application.MoveLeadUseCase
 	leadRepo      domain.LeadRepository
 }
 
@@ -64,6 +65,7 @@ func NewModule(
 		handler:       handler,
 		leadCreator:   createLeadUC,
 		listFunnelsUC: listFunnelsUC,
+		moveLeadUC:    moveLeadUC,
 		leadRepo:      leadRepo,
 	}
 }
@@ -84,4 +86,8 @@ func (m *Module) ListFunnelsUC() *application.ListFunnelsUseCase {
 
 func (m *Module) LeadRepo() domain.LeadRepository {
 	return m.leadRepo
+}
+
+func (m *Module) MoveLeadUC() *application.MoveLeadUseCase {
+	return m.moveLeadUC
 }

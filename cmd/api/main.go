@@ -14,15 +14,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
+	"github.com/sasrgita/crm-juridico/internal/ai"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
-	"github.com/sasrgita/crm-juridico/internal/product"
-	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
+	"github.com/sasrgita/crm-juridico/internal/product"
+	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
 	"github.com/sasrgita/crm-juridico/internal/shared/logger"
@@ -106,7 +107,25 @@ func main() {
 	tenantListerAdapter := productinfra.NewTenantListerAdapter(tenantMod.TenantRepo())
 	productMod.Handler().SetTenantLister(tenantListerAdapter)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod}
+	// AI module
+	aiMod := ai.NewModule(db, cfg.AI, log, ai.ModuleDeps{
+		SpecialistRepo:  specialistMod.SpecialistRepo(),
+		StepRepo:        specialistMod.StepRepo(),
+		GuardrailRepo:   specialistMod.GuardrailRepo(),
+		SpecTenantRepo:  specialistMod.SpecTenantRepo(),
+		DocRepo:         documentMod.DocRepo(),
+		SpecDocRepo:     documentMod.SpecDocRepo(),
+		ProductRepo:     productMod.ProductRepo(),
+		PhoneNumberRepo: productMod.PhoneNumberRepo(),
+		DetectProductUC: productMod.DetectUseCase(),
+		MessageRepo:     whatsappMod.MessageRepo(),
+		SendMessageUC:   whatsappMod.SendMessageUC(),
+		LeadRepo:        funnelMod.LeadRepo(),
+		MoveLeadUC:      funnelMod.MoveLeadUC(),
+	})
+	whatsappMod.SetAIHandler(aiMod)
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod}
 
 	// Auth (uses tenant repo from module)
 	userRepo := authinfra.NewGormUserRepository(db)

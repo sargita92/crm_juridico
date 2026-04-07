@@ -16,6 +16,7 @@ type ReceiveMessageUseCase struct {
 	messageRepo      domain.MessageRepository
 	eventBus         domain.EventBus
 	leadCreator      domain.LeadCreator
+	aiHandler        domain.AIHandler
 }
 
 func NewReceiveMessageUseCase(
@@ -34,6 +35,10 @@ func NewReceiveMessageUseCase(
 
 func (uc *ReceiveMessageUseCase) SetLeadCreator(lc domain.LeadCreator) {
 	uc.leadCreator = lc
+}
+
+func (uc *ReceiveMessageUseCase) SetAIHandler(handler domain.AIHandler) {
+	uc.aiHandler = handler
 }
 
 func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.IncomingMessage) error {
@@ -130,6 +135,11 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 	// Create lead in funnel if this is a new conversation
 	if newConversation && uc.leadCreator != nil {
 		_ = uc.leadCreator.CreateFromConversation(ctx, event.TenantID, contact.ID, conv.ID, event.Content)
+	}
+
+	// Trigger AI handler for all incoming messages
+	if uc.aiHandler != nil {
+		go uc.aiHandler.HandleIncomingMessage(ctx, event.TenantID, conv.ID, event.SenderPhone, event.Content)
 	}
 
 	return nil

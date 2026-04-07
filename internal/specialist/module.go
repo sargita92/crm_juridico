@@ -13,11 +13,14 @@ import (
 )
 
 type Module struct {
-	specialistRepo   domain.SpecialistRepository
-	handler          *specialisthttp.Handler
-	guardrailHandler *specialisthttp.GuardrailHandler
-	stepHandler      *specialisthttp.StepHandler
-	scoringHandler   *specialisthttp.ScoringHandler
+	specialistRepo       domain.SpecialistRepository
+	stepRepo             domain.StepRepository
+	guardrailRepo        domain.GuardrailRepository
+	specialistTenantRepo domain.SpecialistTenantRepository
+	handler              *specialisthttp.Handler
+	guardrailHandler     *specialisthttp.GuardrailHandler
+	stepHandler          *specialisthttp.StepHandler
+	scoringHandler       *specialisthttp.ScoringHandler
 }
 
 func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
@@ -76,11 +79,14 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
 	scoringHandler := specialisthttp.NewScoringHandler(getScoringUC, updateScoringUC)
 
 	return &Module{
-		specialistRepo:   specialistRepo,
-		handler:          handler,
-		guardrailHandler: guardrailHandler,
-		stepHandler:      stepHandler,
-		scoringHandler:   scoringHandler,
+		specialistRepo:       specialistRepo,
+		stepRepo:             stepRepo,
+		guardrailRepo:        guardrailRepo,
+		specialistTenantRepo: specialistTenantRepo,
+		handler:              handler,
+		guardrailHandler:     guardrailHandler,
+		stepHandler:          stepHandler,
+		scoringHandler:       scoringHandler,
 	}
 }
 
@@ -95,4 +101,16 @@ func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 
 func (m *Module) SpecialistRepo() domain.SpecialistRepository {
 	return m.specialistRepo
+}
+
+func (m *Module) StepRepo() domain.StepRepository {
+	return m.stepRepo
+}
+
+func (m *Module) GuardrailRepo() domain.GuardrailRepository {
+	return m.guardrailRepo
+}
+
+func (m *Module) SpecTenantRepo() domain.SpecialistTenantRepository {
+	return m.specialistTenantRepo
 }

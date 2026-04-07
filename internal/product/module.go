@@ -12,17 +12,19 @@ import (
 )
 
 type Module struct {
-	handler     *producthttp.Handler
-	detectUC    *application.DetectProductUseCase
-	productRepo *infrastructure.GormProductRepository
-	fpRepo      *infrastructure.GormFunnelProductRepository
-	tpRepo      *infrastructure.GormTenantProductRepository
+	handler       *producthttp.Handler
+	detectUC      *application.DetectProductUseCase
+	productRepo   *infrastructure.GormProductRepository
+	fpRepo        *infrastructure.GormFunnelProductRepository
+	tpRepo        *infrastructure.GormTenantProductRepository
+	phoneNumRepo  *infrastructure.GormPhoneNumberRepository
 }
 
 func NewModule(db *gorm.DB, log *zap.Logger) *Module {
 	productRepo := infrastructure.NewGormProductRepository(db)
 	fpRepo := infrastructure.NewGormFunnelProductRepository(db)
 	tpRepo := infrastructure.NewGormTenantProductRepository(db)
+	phoneNumRepo := infrastructure.NewGormPhoneNumberRepository(db)
 
 	createProductUC := application.NewCreateProductUseCase(productRepo)
 	updateProductUC := application.NewUpdateProductUseCase(productRepo)
@@ -41,11 +43,12 @@ func NewModule(db *gorm.DB, log *zap.Logger) *Module {
 	)
 
 	return &Module{
-		handler:     handler,
-		detectUC:    detectProductUC,
-		productRepo: productRepo,
-		fpRepo:      fpRepo,
-		tpRepo:      tpRepo,
+		handler:      handler,
+		detectUC:     detectProductUC,
+		productRepo:  productRepo,
+		fpRepo:       fpRepo,
+		tpRepo:       tpRepo,
+		phoneNumRepo: phoneNumRepo,
 	}
 }
 
@@ -73,4 +76,8 @@ func (m *Module) TenantProductRepo() *infrastructure.GormTenantProductRepository
 
 func (m *Module) Handler() *producthttp.Handler {
 	return m.handler
+}
+
+func (m *Module) PhoneNumberRepo() *infrastructure.GormPhoneNumberRepository {
+	return m.phoneNumRepo
 }
