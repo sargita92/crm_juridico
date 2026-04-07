@@ -1,0 +1,2 @@
+ALTER TABLE user_tenants ADD COLUMN is_owner TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE user_tenants ADD COLUMN whatsapp_id VARCHAR(100) NULL;
