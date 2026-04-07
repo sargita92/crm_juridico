@@ -53,6 +53,19 @@ func (r *GormLeadRepository) Update(ctx context.Context, lead *domain.Lead) erro
 	return nil
 }
 
+func (r *GormLeadRepository) FindByConversationID(ctx context.Context, conversationID string) (*domain.Lead, error) {
+	var model leadModel
+	if err := r.db.WithContext(ctx).
+		Where("conversation_id = ?", conversationID).
+		First(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrLeadNotFound
+		}
+		return nil, err
+	}
+	return leadToDomain(&model), nil
+}
+
 func (r *GormLeadRepository) FindByContactAndTenant(ctx context.Context, tenantID, contactID string) (*domain.Lead, error) {
 	var model leadModel
 	if err := r.db.WithContext(ctx).

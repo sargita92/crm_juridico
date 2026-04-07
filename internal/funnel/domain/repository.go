@@ -27,6 +27,7 @@ type LeadRepository interface {
 	FindByID(ctx context.Context, id string) (*Lead, error)
 	Update(ctx context.Context, lead *Lead) error
 	FindByContactAndTenant(ctx context.Context, tenantID, contactID string) (*Lead, error)
+	FindByConversationID(ctx context.Context, conversationID string) (*Lead, error)
 	FindByFunnelID(ctx context.Context, funnelID string, filter LeadFilter) (*LeadList, error)
 	CountByColumnID(ctx context.Context, columnID string) (int, error)
 }
