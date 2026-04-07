@@ -1,0 +1,9 @@
+{{define "automation/fields_auto_message.html"}}
+<div class="form-group">
+    <label for="config_template">Template da mensagem</label>
+    <textarea id="config_template" name="config_template" rows="4"
+              style="font-family:monospace" required
+              placeholder="Olá {{"{{"}}nome{{"}}"}}, recebemos sua mensagem...">{{.ConfigTemplate}}</textarea>
+    <small class="text-muted">Variáveis disponíveis: {{"{{"}}nome{{"}}"}}, {{"{{"}}produto{{"}}"}}, {{"{{"}}especialista{{"}}"}}</small>
+</div>
+{{end}}

@@ -1,0 +1,17 @@
+{{define "automation/fields_move_funnel.html"}}
+<div class="form-group">
+    <label for="config_target_funnel_id">Funil destino</label>
+    <select id="config_target_funnel_id" name="config_target_funnel_id" required>
+        <option value="">Selecione...</option>
+        {{range .Funnels}}
+        <option value="{{.ID}}" {{if eq .ID $.ConfigTargetFunnelID}}selected{{end}}>{{.Name}}</option>
+        {{end}}
+    </select>
+</div>
+<div class="form-group">
+    <label for="config_target_column_id">Coluna destino</label>
+    <input type="text" id="config_target_column_id" name="config_target_column_id"
+           value="{{.ConfigTargetColumnID}}" placeholder="ID da coluna (deixe vazio para coluna de entrada)">
+    <small class="text-muted">Deixe vazio para usar a coluna de entrada do funil destino</small>
+</div>
+{{end}}

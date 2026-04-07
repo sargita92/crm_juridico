@@ -1,3 +1,68 @@
 {{define "automation/modal_form.html"}}
-<p class="text-muted">Formulário será carregado aqui...</p>
+{{if .FormError}}
+<div class="alert alert-danger" style="margin-bottom:12px">{{.FormError}}</div>
+{{end}}
+<form {{if .IsEdit}}
+          hx-put="/tenant/automations/{{.Automation.ID}}"
+      {{else}}
+          hx-post="/tenant/automations?funnel_id={{.CurrentFunnelID}}"
+      {{end}}
+      hx-target="#modal-body"
+      hx-swap="innerHTML"
+      hx-disabled-elt="button[type='submit']">
+
+    <input type="hidden" name="funnel_id" value="{{.CurrentFunnelID}}">
+
+    <div class="form-group">
+        <label for="column_id">Coluna</label>
+        <select id="column_id" name="column_id">
+            <option value="">— Nenhuma (global) —</option>
+            {{range .Columns}}
+            <option value="{{.ID}}" {{if eq .ID $.SelectedColumnID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="type">Tipo</label>
+        <select id="type" name="type"
+                hx-get="/tenant/automations/fields"
+                hx-trigger="change"
+                hx-target="#dynamic-fields"
+                hx-swap="innerHTML"
+                hx-include="[name='funnel_id']"
+                {{if .IsEdit}}disabled{{end}}>
+            <option value="expiration" {{if eq .SelectedType "expiration"}}selected{{end}}>⏰ Exclusão por tempo</option>
+            <option value="move_funnel" {{if eq .SelectedType "move_funnel"}}selected{{end}}>🔀 Mover para funil</option>
+            <option value="auto_message" {{if eq .SelectedType "auto_message"}}selected{{end}}>💬 Mensagem automática</option>
+            <option value="auto_note" {{if eq .SelectedType "auto_note"}}selected{{end}}>📋 Anotação automática</option>
+            <option value="switch_specialist" {{if eq .SelectedType "switch_specialist"}}selected{{end}}>👤 Trocar especialista</option>
+            <option value="rate_limit" {{if eq .SelectedType "rate_limit"}}selected{{end}}>🚫 Limite de mensagens</option>
+            <option value="detect_product" {{if eq .SelectedType "detect_product"}}selected{{end}}>🔍 Detectar produto</option>
+        </select>
+        {{if .IsEdit}}<input type="hidden" name="type" value="{{.SelectedType}}">{{end}}
+    </div>
+
+    <div id="dynamic-fields"
+         hx-get="/tenant/automations/fields?type={{if .SelectedType}}{{.SelectedType}}{{else}}expiration{{end}}&funnel_id={{.CurrentFunnelID}}{{if .IsEdit}}&automation_id={{.Automation.ID}}{{end}}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <p class="text-muted">Carregando campos...</p>
+    </div>
+
+    <div class="form-group">
+        <label for="priority">Prioridade</label>
+        <input type="number" id="priority" name="priority" value="{{.SelectedPriority}}" min="0">
+        <small class="text-muted">Menor número = executa primeiro</small>
+    </div>
+
+    <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('automation-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="btn-text">{{if .IsEdit}}Salvar{{else}}Criar{{end}}</span>
+            <span class="btn-loading-text">Salvando...</span>
+            <span class="spinner"></span>
+        </button>
+    </div>
+</form>
 {{end}}

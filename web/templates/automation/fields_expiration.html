@@ -1,0 +1,14 @@
+{{define "automation/fields_expiration.html"}}
+<div class="form-group">
+    <label for="config_action">Ação</label>
+    <select id="config_action" name="config_action" required>
+        <option value="archive" {{if eq .ConfigAction "archive"}}selected{{end}}>Arquivar (mover para coluna perdidos)</option>
+        <option value="delete" {{if eq .ConfigAction "delete"}}selected{{end}}>Excluir definitivamente</option>
+    </select>
+</div>
+<div class="form-group">
+    <label for="config_duration_hours">Tempo (horas)</label>
+    <input type="number" id="config_duration_hours" name="config_duration_hours"
+           value="{{if .ConfigDurationHours}}{{.ConfigDurationHours}}{{else}}48{{end}}" min="1" step="1" required>
+</div>
+{{end}}

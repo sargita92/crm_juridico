@@ -1,0 +1,11 @@
+{{define "automation/fields_switch_specialist.html"}}
+<div class="form-group">
+    <label for="config_specialist_id">Especialista</label>
+    <select id="config_specialist_id" name="config_specialist_id" required>
+        <option value="">Selecione...</option>
+        {{range .Specialists}}
+        <option value="{{.ID}}" {{if eq .ID $.ConfigSpecialistID}}selected{{end}}>{{.Name}}</option>
+        {{end}}
+    </select>
+</div>
+{{end}}

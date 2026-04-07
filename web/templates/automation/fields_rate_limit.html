@@ -1,0 +1,13 @@
+{{define "automation/fields_rate_limit.html"}}
+<div class="form-group">
+    <label for="config_max_messages">Limite de mensagens</label>
+    <input type="number" id="config_max_messages" name="config_max_messages"
+           value="{{if .ConfigMaxMessages}}{{.ConfigMaxMessages}}{{else}}50{{end}}" min="1" required>
+</div>
+<div class="form-group">
+    <label for="config_period_hours">Período (horas)</label>
+    <input type="number" id="config_period_hours" name="config_period_hours"
+           value="{{if .ConfigPeriodHours}}{{.ConfigPeriodHours}}{{else}}24{{end}}" min="1" required>
+    <small class="text-muted">Ex: 50 mensagens a cada 24 horas</small>
+</div>
+{{end}}

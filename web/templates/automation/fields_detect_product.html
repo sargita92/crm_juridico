@@ -1,0 +1,10 @@
+{{define "automation/fields_detect_product.html"}}
+<div class="form-group">
+    <label>
+        <input type="checkbox" name="config_switch_specialist" value="true"
+               {{if .ConfigSwitchSpecialist}}checked{{end}}>
+        Trocar especialista automaticamente ao detectar produto
+    </label>
+    <small class="text-muted">Se ativado, o lead será redirecionado para o especialista do produto detectado</small>
+</div>
+{{end}}

@@ -230,8 +230,129 @@ func (h *PageHandler) enrichAutomations(automations []application.AutomationOutp
 	}
 	return views
 }
-func (h *PageHandler) RenderFields(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) RenderEditForm(c *gin.Context) { c.Status(http.StatusNotImplemented) }
+// RenderFields handles GET /tenant/automations/fields — returns dynamic fields partial.
+func (h *PageHandler) RenderFields(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	automationType := c.Query("type")
+	automationID := c.Query("automation_id")
+
+	data := gin.H{}
+
+	// Pre-populate config values when editing an existing automation
+	if automationID != "" {
+		auto, err := h.crudUC.GetByID(c.Request.Context(), automationID)
+		if err == nil {
+			h.addConfigData(data, automationType, auto.Config, c, tenantID)
+		}
+	}
+
+	// Add type-specific dropdown data (funnels, specialists)
+	switch automationType {
+	case "move_funnel":
+		if _, ok := data["Funnels"]; !ok {
+			funnels, _ := h.listFunnelsUC.Execute(c.Request.Context(), tenantID)
+			data["Funnels"] = funnels
+		}
+	case "switch_specialist":
+		if _, ok := data["Specialists"]; !ok {
+			data["Specialists"] = h.loadSpecialists(c, tenantID)
+		}
+	}
+
+	templateName := "automation/fields_" + automationType + ".html"
+	c.HTML(http.StatusOK, templateName, data)
+}
+
+// specialistOption is a simplified specialist view for select dropdowns.
+type specialistOption struct {
+	ID   string
+	Name string
+}
+
+// loadSpecialists returns specialists available for the tenant.
+func (h *PageHandler) loadSpecialists(c *gin.Context, tenantID string) []specialistOption {
+	specIDs, err := h.specTenantRepo.FindSpecialistIDsByTenantID(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to load specialist IDs", zap.Error(err))
+		return nil
+	}
+
+	var options []specialistOption
+	for _, id := range specIDs {
+		spec, err := h.specialistRepo.FindByID(c.Request.Context(), id)
+		if err != nil {
+			continue
+		}
+		options = append(options, specialistOption{ID: spec.ID, Name: spec.Name})
+	}
+	return options
+}
+
+// RenderEditForm handles GET /tenant/automations/:id/form — returns modal pre-filled for editing.
+func (h *PageHandler) RenderEditForm(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	id := c.Param("id")
+
+	auto, err := h.crudUC.GetByID(c.Request.Context(), id)
+	if err != nil {
+		h.log.Error("failed to get automation", zap.String("id", id), zap.Error(err))
+		c.String(http.StatusNotFound, "Automação não encontrada")
+		return
+	}
+
+	columns, _ := h.columnRepo.FindByFunnelID(c.Request.Context(), auto.FunnelID)
+
+	data := gin.H{
+		"IsEdit":           true,
+		"Automation":       auto,
+		"CurrentFunnelID":  auto.FunnelID,
+		"Columns":          columns,
+		"SelectedColumnID": auto.ColumnID,
+		"SelectedType":     auto.Type,
+		"SelectedPriority": auto.Priority,
+	}
+
+	h.addConfigData(data, auto.Type, auto.Config, c, tenantID)
+
+	c.HTML(http.StatusOK, "automation/modal_form.html", data)
+}
+
+// addConfigData adds type-specific config values to the template data.
+func (h *PageHandler) addConfigData(data gin.H, automationType string, config map[string]interface{}, c *gin.Context, tenantID string) {
+	str := func(key string) string {
+		v, _ := config[key].(string)
+		return v
+	}
+	num := func(key string) float64 {
+		v, _ := config[key].(float64)
+		return v
+	}
+	boolean := func(key string) bool {
+		v, _ := config[key].(bool)
+		return v
+	}
+
+	switch automationType {
+	case "expiration":
+		data["ConfigAction"] = str("action")
+		data["ConfigDurationHours"] = num("duration_hours")
+	case "move_funnel":
+		data["ConfigTargetFunnelID"] = str("target_funnel_id")
+		data["ConfigTargetColumnID"] = str("target_column_id")
+		funnels, _ := h.listFunnelsUC.Execute(c.Request.Context(), tenantID)
+		data["Funnels"] = funnels
+	case "auto_message", "auto_note":
+		data["ConfigTemplate"] = str("template")
+	case "switch_specialist":
+		data["ConfigSpecialistID"] = str("specialist_id")
+		data["Specialists"] = h.loadSpecialists(c, tenantID)
+	case "rate_limit":
+		data["ConfigMaxMessages"] = num("max_messages")
+		data["ConfigPeriodHours"] = num("period_hours")
+	case "detect_product":
+		data["ConfigSwitchSpecialist"] = boolean("switch_specialist")
+	}
+}
 func (h *PageHandler) HandleCreate(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) HandleUpdate(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
 // HandleDelete handles DELETE /tenant/automations/:id — deletes and returns table.
