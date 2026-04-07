@@ -20,6 +20,8 @@ type Module struct {
 	moveLeadUC    *application.MoveLeadUseCase
 	assignLeadUC  *application.AssignLeadUseCase
 	leadRepo      domain.LeadRepository
+	noteRepo      domain.LeadNoteRepository
+	columnRepo    domain.ColumnRepository
 }
 
 func NewModule(
@@ -72,6 +74,8 @@ func NewModule(
 		moveLeadUC:    moveLeadUC,
 		assignLeadUC:  assignLeadUC,
 		leadRepo:      leadRepo,
+		noteRepo:      noteRepo,
+		columnRepo:    columnRepo,
 	}
 }
 
@@ -99,4 +103,19 @@ func (m *Module) MoveLeadUC() *application.MoveLeadUseCase {
 
 func (m *Module) AssignLeadUC() *application.AssignLeadUseCase {
 	return m.assignLeadUC
+}
+
+func (m *Module) NoteRepo() domain.LeadNoteRepository {
+	return m.noteRepo
+}
+
+func (m *Module) ColumnRepo() domain.ColumnRepository {
+	return m.columnRepo
+}
+
+// SetAutomationTrigger wires an AutomationTrigger into both CreateLead and MoveLead
+// use cases so that automation rules are fired on lead events.
+func (m *Module) SetAutomationTrigger(t domain.AutomationTrigger) {
+	m.leadCreator.SetAutomationTrigger(t)
+	m.moveLeadUC.SetAutomationTrigger(t)
 }

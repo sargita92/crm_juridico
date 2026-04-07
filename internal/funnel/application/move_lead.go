@@ -17,11 +17,12 @@ type MoveLeadInput struct {
 }
 
 type MoveLeadUseCase struct {
-	funnelRepo   domain.FunnelRepository
-	columnRepo   domain.ColumnRepository
-	leadRepo     domain.LeadRepository
-	movementRepo domain.LeadMovementRepository
-	eventBus     events.EventBus
+	funnelRepo        domain.FunnelRepository
+	columnRepo        domain.ColumnRepository
+	leadRepo          domain.LeadRepository
+	movementRepo      domain.LeadMovementRepository
+	eventBus          events.EventBus
+	automationTrigger domain.AutomationTrigger
 }
 
 func NewMoveLeadUseCase(
@@ -38,6 +39,12 @@ func NewMoveLeadUseCase(
 		movementRepo: movementRepo,
 		eventBus:     eventBus,
 	}
+}
+
+// SetAutomationTrigger sets an optional automation trigger that will be called
+// after a lead is moved successfully.
+func (uc *MoveLeadUseCase) SetAutomationTrigger(t domain.AutomationTrigger) {
+	uc.automationTrigger = t
 }
 
 func (uc *MoveLeadUseCase) Execute(ctx context.Context, input MoveLeadInput) error {
@@ -90,6 +97,10 @@ func (uc *MoveLeadUseCase) Execute(ctx context.Context, input MoveLeadInput) err
 				"to_column_id":   input.ColumnID,
 			},
 		})
+	}
+
+	if uc.automationTrigger != nil {
+		_ = uc.automationTrigger.OnLeadEvent(ctx, lead.TenantID, lead.ID, lead.ColumnID)
 	}
 
 	return nil
