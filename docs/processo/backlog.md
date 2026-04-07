@@ -61,7 +61,7 @@
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
-| F13 | [Landing Page](../features/F13-landing-page.md) | backlog | — | baixa |
+| F13 | [Landing Page](../features/F13-landing-page.md) | concluído | — | baixa |
 
 ---
 
