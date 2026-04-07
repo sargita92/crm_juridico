@@ -16,6 +16,7 @@ type Event struct {
 	Payload  interface{}
 }
 
+// EventBus distributes events to subscribers scoped by tenant.
 type EventBus interface {
 	Publish(event Event)
 	Subscribe(tenantID string) (<-chan Event, func())
