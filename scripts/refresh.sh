@@ -10,10 +10,13 @@ set -euo pipefail
 #   ./scripts/refresh.sh --no-restart   # sem restart da app
 # ============================================================
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Carrega variáveis do .env se existir
-if [ -f .env ]; then
+if [ -f "$PROJECT_ROOT/.env" ]; then
     set -a
-    source .env
+    source "$PROJECT_ROOT/.env"
     set +a
 fi
 
@@ -23,7 +26,7 @@ DB_USER="${DATABASE_USER:-crm}"
 DB_PASS="${DATABASE_PASSWORD:-crm_secret}"
 DB_NAME="${DATABASE_NAME:-crm_juridico}"
 DB_ROOT_PASS="${DATABASE_ROOT_PASSWORD:-root_secret}"
-COMPOSE_FILE="docker-compose.dev.yml"
+COMPOSE_FILE="$PROJECT_ROOT/docker-compose.dev.yml"
 
 LOAD_FIXTURES=true
 RESTART_APP=true
@@ -86,9 +89,9 @@ echo "==> Rodando migrations via golang-migrate..."
 MIGRATE_URL="mysql://${DB_USER}:${DB_PASS}@tcp(127.0.0.1:${DB_DOCKER_PORT})/${DB_NAME}?multiStatements=true"
 
 if command -v migrate &>/dev/null; then
-    migrate -path migrations -database "${MIGRATE_URL}" up
+    migrate -path "$PROJECT_ROOT/migrations" -database "${MIGRATE_URL}" up
 elif [ -f "$(go env GOPATH)/bin/migrate" ]; then
-    "$(go env GOPATH)/bin/migrate" -path migrations -database "${MIGRATE_URL}" up
+    "$(go env GOPATH)/bin/migrate" -path "$PROJECT_ROOT/migrations" -database "${MIGRATE_URL}" up
 else
     echo "    ERRO: golang-migrate CLI não encontrado."
     echo "    Instale com: go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest"
@@ -97,7 +100,7 @@ fi
 
 if [ "$LOAD_FIXTURES" = true ]; then
     echo "==> Carregando fixtures..."
-    mysql_user < fixture/fixtures.sql
+    mysql_user < "$PROJECT_ROOT/fixture/fixtures.sql"
 fi
 
 if [ "$RESTART_APP" = true ]; then
