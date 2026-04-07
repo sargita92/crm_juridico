@@ -234,6 +234,29 @@ func (h *PageHandler) RenderFields(c *gin.Context)   { c.Status(http.StatusNotIm
 func (h *PageHandler) RenderEditForm(c *gin.Context) { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) HandleCreate(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) HandleUpdate(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) HandleDelete(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) HandleToggle(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
+// HandleDelete handles DELETE /tenant/automations/:id — deletes and returns table.
+func (h *PageHandler) HandleDelete(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.crudUC.Delete(c.Request.Context(), id); err != nil {
+		h.log.Error("failed to delete automation", zap.String("id", id), zap.Error(err))
+		c.String(http.StatusNotFound, "Automação não encontrada")
+		return
+	}
+
+	h.RenderTable(c)
+}
+
+// HandleToggle handles POST /tenant/automations/:id/toggle — toggles and returns table.
+func (h *PageHandler) HandleToggle(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.crudUC.Toggle(c.Request.Context(), id); err != nil {
+		h.log.Error("failed to toggle automation", zap.String("id", id), zap.Error(err))
+		c.String(http.StatusNotFound, "Automação não encontrada")
+		return
+	}
+
+	h.RenderTable(c)
+}
 func (h *PageHandler) RenderLogs(c *gin.Context)     { c.Status(http.StatusNotImplemented) }
