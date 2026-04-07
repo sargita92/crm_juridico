@@ -140,6 +140,8 @@ func TemplatesPath() string {
 
 func TemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
+		"add": func(a, b int) int { return a + b },
+		"sub": func(a, b int) int { return a - b },
 		"dict": func(values ...interface{}) map[string]interface{} {
 			m := make(map[string]interface{})
 			for i := 0; i+1 < len(values); i += 2 {
