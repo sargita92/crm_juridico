@@ -63,5 +63,5 @@ func TestLandingPageContainsExpectedSections(t *testing.T) {
 	assert.Contains(t, body, "pain-points")
 	assert.Contains(t, body, "features")
 	assert.Contains(t, body, "contato")
-	assert.Contains(t, body, "/auth/login")
+	assert.Contains(t, body, "/login")
 }
