@@ -268,6 +268,10 @@ func (m *mockLeadRepo) CountByColumnID(_ context.Context, columnID string) (int,
 	return m.byColumn[columnID], nil
 }
 
+func (m *mockLeadRepo) FindByConversationID(_ context.Context, conversationID string) (*domain.Lead, error) {
+	return nil, domain.ErrLeadNotFound
+}
+
 // --- Mock LeadMovementRepository ---
 
 type mockLeadMovementRepo struct {

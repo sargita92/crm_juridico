@@ -106,6 +106,10 @@ func (m *owaspMockLeadRepo) CountByColumnID(_ context.Context, columnID string) 
 	return 0, nil
 }
 
+func (m *owaspMockLeadRepo) FindByConversationID(_ context.Context, conversationID string) (*domain.Lead, error) {
+	return nil, domain.ErrLeadNotFound
+}
+
 type owaspMockMovementRepo struct{}
 
 func (m *owaspMockMovementRepo) Create(_ context.Context, mv *domain.LeadMovement) error { return nil }
