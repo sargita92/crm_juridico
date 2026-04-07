@@ -74,3 +74,20 @@ func TestBuildConfig_DetectProduct_Unchecked(t *testing.T) {
 	cfg := buildConfig("detect_product", form)
 	assert.Equal(t, false, cfg["switch_specialist"])
 }
+
+func TestBuildConfig_Expiration_InvalidNumber(t *testing.T) {
+	form := url.Values{
+		"config_action":         {"archive"},
+		"config_duration_hours": {"not-a-number"},
+	}
+	cfg := buildConfig("expiration", form)
+	assert.Equal(t, "archive", cfg["action"])
+	_, hasDuration := cfg["duration_hours"]
+	assert.False(t, hasDuration, "should not set duration_hours for invalid number")
+}
+
+func TestBuildConfig_UnknownType(t *testing.T) {
+	form := url.Values{"config_foo": {"bar"}}
+	cfg := buildConfig("unknown_type", form)
+	assert.Empty(t, cfg)
+}

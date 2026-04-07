@@ -353,8 +353,85 @@ func (h *PageHandler) addConfigData(data gin.H, automationType string, config ma
 		data["ConfigSwitchSpecialist"] = boolean("switch_specialist")
 	}
 }
-func (h *PageHandler) HandleCreate(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) HandleUpdate(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
+// HandleCreate handles POST /tenant/automations — creates automation and triggers table refresh.
+func (h *PageHandler) HandleCreate(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	funnelID := c.Query("funnel_id")
+	if funnelID == "" {
+		funnelID = c.PostForm("funnel_id")
+	}
+
+	automationType := c.PostForm("type")
+	columnID := c.PostForm("column_id")
+	priority, _ := strconv.Atoi(c.PostForm("priority"))
+	config := buildConfig(automationType, c.Request.PostForm)
+
+	_, err := h.crudUC.Create(c.Request.Context(), application.CreateAutomationInput{
+		TenantID: tenantID,
+		FunnelID: funnelID,
+		ColumnID: columnID,
+		Type:     automationType,
+		Config:   config,
+		Priority: priority,
+	})
+	if err != nil {
+		h.log.Error("failed to create automation", zap.Error(err))
+		columns, _ := h.columnRepo.FindByFunnelID(c.Request.Context(), funnelID)
+		data := gin.H{
+			"FormError":        err.Error(),
+			"CurrentFunnelID":  funnelID,
+			"Columns":          columns,
+			"SelectedColumnID": columnID,
+			"SelectedType":     automationType,
+			"SelectedPriority": priority,
+		}
+		h.addConfigData(data, automationType, config, c, tenantID)
+		c.HTML(http.StatusOK, "automation/modal_form.html", data)
+		return
+	}
+
+	c.Header("HX-Trigger", "refreshTable")
+	c.String(http.StatusOK, "")
+}
+
+// HandleUpdate handles PUT /tenant/automations/:id — updates automation and triggers table refresh.
+func (h *PageHandler) HandleUpdate(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	id := c.Param("id")
+
+	automationType := c.PostForm("type")
+	columnID := c.PostForm("column_id")
+	funnelID := c.PostForm("funnel_id")
+	priority, _ := strconv.Atoi(c.PostForm("priority"))
+	config := buildConfig(automationType, c.Request.PostForm)
+
+	_, err := h.crudUC.Update(c.Request.Context(), id, application.CreateAutomationInput{
+		ColumnID: columnID,
+		Config:   config,
+		Priority: priority,
+	})
+	if err != nil {
+		h.log.Error("failed to update automation", zap.String("id", id), zap.Error(err))
+		auto, _ := h.crudUC.GetByID(c.Request.Context(), id)
+		columns, _ := h.columnRepo.FindByFunnelID(c.Request.Context(), funnelID)
+		data := gin.H{
+			"FormError":        err.Error(),
+			"IsEdit":           true,
+			"Automation":       auto,
+			"CurrentFunnelID":  funnelID,
+			"Columns":          columns,
+			"SelectedColumnID": columnID,
+			"SelectedType":     automationType,
+			"SelectedPriority": priority,
+		}
+		h.addConfigData(data, automationType, config, c, tenantID)
+		c.HTML(http.StatusOK, "automation/modal_form.html", data)
+		return
+	}
+
+	c.Header("HX-Trigger", "refreshTable")
+	c.String(http.StatusOK, "")
+}
 // HandleDelete handles DELETE /tenant/automations/:id — deletes and returns table.
 func (h *PageHandler) HandleDelete(c *gin.Context) {
 	id := c.Param("id")
