@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/application"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
@@ -175,14 +176,14 @@ func (m *mockProvider) SendMessage(_ context.Context, _, _, _ string) (string, e
 
 func (m *mockProvider) SetMessageHandler(_ domain.IncomingMessageHandler) {}
 
-type mockEventBus struct{ events []domain.Event }
+type mockEventBus struct{ published []events.Event }
 
 func newMockEventBus() *mockEventBus { return &mockEventBus{} }
 
-func (m *mockEventBus) Publish(e domain.Event) { m.events = append(m.events, e) }
+func (m *mockEventBus) Publish(e events.Event) { m.published = append(m.published, e) }
 
-func (m *mockEventBus) Subscribe(_ string) (<-chan domain.Event, func()) {
-	ch := make(chan domain.Event, 100)
+func (m *mockEventBus) Subscribe(_ string) (<-chan events.Event, func()) {
+	ch := make(chan events.Event, 100)
 	return ch, func() { close(ch) }
 }
 

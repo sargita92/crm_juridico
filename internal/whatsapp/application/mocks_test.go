@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -236,25 +237,25 @@ func (m *mockProvider) SetMessageHandler(handler domain.IncomingMessageHandler) 
 
 type mockEventBus struct {
 	mu     sync.Mutex
-	events []domain.Event
+	events []events.Event
 }
 
 func newMockEventBus() *mockEventBus {
 	return &mockEventBus{}
 }
 
-func (m *mockEventBus) Publish(event domain.Event) {
+func (m *mockEventBus) Publish(event events.Event) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.events = append(m.events, event)
 }
 
-func (m *mockEventBus) Subscribe(tenantID string) (<-chan domain.Event, func()) {
-	ch := make(chan domain.Event, 100)
+func (m *mockEventBus) Subscribe(tenantID string) (<-chan events.Event, func()) {
+	ch := make(chan events.Event, 100)
 	return ch, func() { close(ch) }
 }
 
-func (m *mockEventBus) lastEvent() *domain.Event {
+func (m *mockEventBus) lastEvent() *events.Event {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if len(m.events) == 0 {
