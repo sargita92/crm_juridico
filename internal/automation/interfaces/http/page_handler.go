@@ -76,16 +76,11 @@ func configSummary(automationType string, config map[string]interface{}) string 
 		return fmt.Sprintf("Arquivar após %.0fh", hours)
 	case "move_funnel":
 		return "→ " + str("target_funnel_id")
-	case "auto_message":
+	case "auto_message", "auto_note":
 		tmpl := str("template")
-		if len(tmpl) > 40 {
-			tmpl = tmpl[:40] + "..."
-		}
-		return tmpl
-	case "auto_note":
-		tmpl := str("template")
-		if len(tmpl) > 40 {
-			tmpl = tmpl[:40] + "..."
+		runes := []rune(tmpl)
+		if len(runes) > 40 {
+			tmpl = string(runes[:40]) + "..."
 		}
 		return tmpl
 	case "switch_specialist":
