@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 )
 
 type MoveLeadInput struct {
@@ -20,6 +21,7 @@ type MoveLeadUseCase struct {
 	columnRepo   domain.ColumnRepository
 	leadRepo     domain.LeadRepository
 	movementRepo domain.LeadMovementRepository
+	eventBus     events.EventBus
 }
 
 func NewMoveLeadUseCase(
@@ -27,12 +29,14 @@ func NewMoveLeadUseCase(
 	columnRepo domain.ColumnRepository,
 	leadRepo domain.LeadRepository,
 	movementRepo domain.LeadMovementRepository,
+	eventBus events.EventBus,
 ) *MoveLeadUseCase {
 	return &MoveLeadUseCase{
 		funnelRepo:   funnelRepo,
 		columnRepo:   columnRepo,
 		leadRepo:     leadRepo,
 		movementRepo: movementRepo,
+		eventBus:     eventBus,
 	}
 }
 
@@ -71,5 +75,22 @@ func (uc *MoveLeadUseCase) Execute(ctx context.Context, input MoveLeadInput) err
 	}
 
 	movement := domain.NewLeadMovement(uuid.New().String(), lead.ID, fromColumnID, col.ID)
-	return uc.movementRepo.Create(ctx, movement)
+	if err := uc.movementRepo.Create(ctx, movement); err != nil {
+		return err
+	}
+
+	if uc.eventBus != nil {
+		uc.eventBus.Publish(events.Event{
+			Type:     events.EventLeadMoved,
+			TenantID: lead.TenantID,
+			Payload: map[string]string{
+				"lead_id":        lead.ID,
+				"funnel_id":      lead.FunnelID,
+				"from_column_id": fromColumnID,
+				"to_column_id":   input.ColumnID,
+			},
+		})
+	}
+
+	return nil
 }

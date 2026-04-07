@@ -17,7 +17,7 @@ func setupCreateLeadTest(t *testing.T) (*CreateLeadUseCase, *mockFunnelRepo, *mo
 	columnRepo := newMockColumnRepo()
 	leadRepo := newMockLeadRepo()
 	movementRepo := newMockLeadMovementRepo()
-	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil)
+	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil, nil)
 
 	f, _ := domain.NewFunnel(uuid.New().String(), "tenant-1", "Pipeline", "")
 	f.SetDefault()
@@ -69,7 +69,7 @@ func TestCreateLead_NoDefaultFunnel(t *testing.T) {
 	columnRepo := newMockColumnRepo()
 	leadRepo := newMockLeadRepo()
 	movementRepo := newMockLeadMovementRepo()
-	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil)
+	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil, nil)
 
 	err := uc.Execute(context.Background(), CreateLeadInput{
 		TenantID: "tenant-1", ContactID: "contact-1", ConversationID: "conv-1",
@@ -111,7 +111,7 @@ func TestCreateLead_ProductDetected_RoutesToCorrectFunnel(t *testing.T) {
 	router := newMockFunnelProductRouter()
 	router.routes["product-1"] = productFunnel.ID
 
-	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, detector, router)
+	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, detector, router, nil)
 
 	err := uc.Execute(context.Background(), CreateLeadInput{
 		TenantID:       "tenant-1",
@@ -146,7 +146,7 @@ func TestCreateLead_NoProductDetected_DefaultFunnel(t *testing.T) {
 	detector := newMockProductDetector()
 	router := newMockFunnelProductRouter()
 
-	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, detector, router)
+	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, detector, router, nil)
 
 	err := uc.Execute(context.Background(), CreateLeadInput{
 		TenantID:       "tenant-1",
@@ -178,7 +178,7 @@ func TestCreateLead_NilDetector_DefaultFunnel(t *testing.T) {
 	_ = columnRepo.Create(context.Background(), defaultEntry)
 
 	// nil detector and router (backward compatible)
-	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil)
+	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil, nil)
 
 	err := uc.Execute(context.Background(), CreateLeadInput{
 		TenantID:       "tenant-1",
@@ -219,7 +219,7 @@ func TestCreateLead_ProductDetected_InactiveFunnel_FallsBack(t *testing.T) {
 	router := newMockFunnelProductRouter()
 	router.routes["product-1"] = productFunnel.ID
 
-	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, detector, router)
+	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, detector, router, nil)
 
 	err := uc.Execute(context.Background(), CreateLeadInput{
 		TenantID:       "tenant-1",

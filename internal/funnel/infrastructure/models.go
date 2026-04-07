@@ -33,18 +33,19 @@ type columnModel struct {
 func (columnModel) TableName() string { return "funnel_columns" }
 
 type leadModel struct {
-	ID              string `gorm:"primaryKey;column:id;type:char(36)"`
-	TenantID        string `gorm:"column:tenant_id;type:char(36);not null"`
-	FunnelID        string `gorm:"column:funnel_id;type:char(36);not null"`
-	ColumnID        string `gorm:"column:column_id;type:char(36);not null"`
-	ContactID       string `gorm:"column:contact_id;type:char(36);not null"`
-	ConversationID  string `gorm:"column:conversation_id;type:char(36);not null"`
-	ProductID       string `gorm:"column:product_id;type:char(36)"`
-	Score           int    `gorm:"column:score;type:int;not null;default:0"`
-	Status          string `gorm:"column:status;type:varchar(20);not null;default:'open'"`
-	ColumnEnteredAt time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID                string `gorm:"primaryKey;column:id;type:char(36)"`
+	TenantID          string `gorm:"column:tenant_id;type:char(36);not null"`
+	FunnelID          string `gorm:"column:funnel_id;type:char(36);not null"`
+	ColumnID          string `gorm:"column:column_id;type:char(36);not null"`
+	ContactID         string `gorm:"column:contact_id;type:char(36);not null"`
+	ConversationID    string `gorm:"column:conversation_id;type:char(36);not null"`
+	ProductID         string `gorm:"column:product_id;type:char(36)"`
+	ResponsibleUserID string `gorm:"column:responsible_user_id;type:char(36)"`
+	Score             int    `gorm:"column:score;type:int;not null;default:0"`
+	Status            string `gorm:"column:status;type:varchar(20);not null;default:'open'"`
+	ColumnEnteredAt   time.Time
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 func (leadModel) TableName() string { return "leads" }
@@ -119,35 +120,37 @@ func columnToDomain(m *columnModel) *domain.Column {
 
 func leadToModel(l *domain.Lead) *leadModel {
 	return &leadModel{
-		ID:              l.ID,
-		TenantID:        l.TenantID,
-		FunnelID:        l.FunnelID,
-		ColumnID:        l.ColumnID,
-		ContactID:       l.ContactID,
-		ConversationID:  l.ConversationID,
-		ProductID:       l.ProductID,
-		Score:           l.Score,
-		Status:          string(l.Status),
-		ColumnEnteredAt: l.ColumnEnteredAt,
-		CreatedAt:       l.CreatedAt,
-		UpdatedAt:       l.UpdatedAt,
+		ID:                l.ID,
+		TenantID:          l.TenantID,
+		FunnelID:          l.FunnelID,
+		ColumnID:          l.ColumnID,
+		ContactID:         l.ContactID,
+		ConversationID:    l.ConversationID,
+		ProductID:         l.ProductID,
+		ResponsibleUserID: l.ResponsibleUserID,
+		Score:             l.Score,
+		Status:            string(l.Status),
+		ColumnEnteredAt:   l.ColumnEnteredAt,
+		CreatedAt:         l.CreatedAt,
+		UpdatedAt:         l.UpdatedAt,
 	}
 }
 
 func leadToDomain(m *leadModel) *domain.Lead {
 	return &domain.Lead{
-		ID:              m.ID,
-		TenantID:        m.TenantID,
-		FunnelID:        m.FunnelID,
-		ColumnID:        m.ColumnID,
-		ContactID:       m.ContactID,
-		ConversationID:  m.ConversationID,
-		ProductID:       m.ProductID,
-		Score:           m.Score,
-		Status:          domain.LeadStatus(m.Status),
-		ColumnEnteredAt: m.ColumnEnteredAt,
-		CreatedAt:       m.CreatedAt,
-		UpdatedAt:       m.UpdatedAt,
+		ID:                m.ID,
+		TenantID:          m.TenantID,
+		FunnelID:          m.FunnelID,
+		ColumnID:          m.ColumnID,
+		ContactID:         m.ContactID,
+		ConversationID:    m.ConversationID,
+		ProductID:         m.ProductID,
+		ResponsibleUserID: m.ResponsibleUserID,
+		Score:             m.Score,
+		Status:            domain.LeadStatus(m.Status),
+		ColumnEnteredAt:   m.ColumnEnteredAt,
+		CreatedAt:         m.CreatedAt,
+		UpdatedAt:         m.UpdatedAt,
 	}
 }
 

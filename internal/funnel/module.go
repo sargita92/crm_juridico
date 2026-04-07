@@ -9,6 +9,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	funnelhttp "github.com/sasrgita/crm-juridico/internal/funnel/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
 
@@ -17,6 +18,7 @@ type Module struct {
 	leadCreator   *application.CreateLeadUseCase
 	listFunnelsUC *application.ListFunnelsUseCase
 	moveLeadUC    *application.MoveLeadUseCase
+	assignLeadUC  *application.AssignLeadUseCase
 	leadRepo      domain.LeadRepository
 }
 
@@ -29,6 +31,7 @@ func NewModule(
 	productProvider domain.ProductProvider,
 	funnelProductRouter domain.FunnelProductRouter,
 	productLister domain.ProductLister,
+	eventBus events.EventBus,
 	log *zap.Logger,
 ) *Module {
 	funnelRepo := infrastructure.NewGormFunnelRepository(db)
@@ -47,17 +50,18 @@ func NewModule(
 	createColumnUC := application.NewCreateColumnUseCase(funnelRepo, columnRepo)
 	deleteColumnUC := application.NewDeleteColumnUseCase(funnelRepo, columnRepo, leadRepo)
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
-	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, productDetector, funnelProductRouter)
-	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
+	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, productDetector, funnelProductRouter, eventBus)
+	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, eventBus)
 	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider, productProvider)
 	createLeadNoteUC := application.NewCreateLeadNoteUseCase(leadRepo, noteRepo)
+	assignLeadUC := application.NewAssignLeadUseCase(leadRepo)
 
 	handler := funnelhttp.NewHandler(
 		getKanbanUC, listFunnelsUC, getFunnelUC,
 		createFunnelUC, updateFunnelUC, toggleFunnelUC,
 		createColumnUC, deleteColumnUC, moveColumnUC,
 		createLeadUC, moveLeadUC, getLeadDetailUC,
-		createLeadNoteUC,
+		createLeadNoteUC, assignLeadUC,
 		leadRepo, productLister, productProvider, log,
 	)
 
@@ -66,6 +70,7 @@ func NewModule(
 		leadCreator:   createLeadUC,
 		listFunnelsUC: listFunnelsUC,
 		moveLeadUC:    moveLeadUC,
+		assignLeadUC:  assignLeadUC,
 		leadRepo:      leadRepo,
 	}
 }
@@ -90,4 +95,8 @@ func (m *Module) LeadRepo() domain.LeadRepository {
 
 func (m *Module) MoveLeadUC() *application.MoveLeadUseCase {
 	return m.moveLeadUC
+}
+
+func (m *Module) AssignLeadUC() *application.AssignLeadUseCase {
+	return m.assignLeadUC
 }

@@ -17,7 +17,7 @@ func setupMoveLeadTest(t *testing.T) (*MoveLeadUseCase, *mockFunnelRepo, *mockCo
 	columnRepo := newMockColumnRepo()
 	leadRepo := newMockLeadRepo()
 	movementRepo := newMockLeadMovementRepo()
-	uc := NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
+	uc := NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil)
 
 	f, _ := domain.NewFunnel(uuid.New().String(), "tenant-1", "Pipeline", "")
 	_ = funnelRepo.Create(context.Background(), f)
@@ -58,7 +58,7 @@ func TestMoveLead_ToWonColumn(t *testing.T) {
 	columnRepo := newMockColumnRepo()
 	leadRepo := newMockLeadRepo()
 	movementRepo := newMockLeadMovementRepo()
-	uc := NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
+	uc := NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil)
 
 	f, _ := domain.NewFunnel(uuid.New().String(), "tenant-1", "Pipeline", "")
 	_ = funnelRepo.Create(context.Background(), f)
@@ -82,7 +82,7 @@ func TestMoveLead_NotFound(t *testing.T) {
 	columnRepo := newMockColumnRepo()
 	leadRepo := newMockLeadRepo()
 	movementRepo := newMockLeadMovementRepo()
-	uc := NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
+	uc := NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil)
 
 	err := uc.Execute(context.Background(), MoveLeadInput{
 		TenantID: "tenant-1", LeadID: "nope", ColumnID: "col",
