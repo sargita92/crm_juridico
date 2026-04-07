@@ -26,6 +26,7 @@ import (
 	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/logger"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
@@ -82,7 +83,8 @@ func main() {
 	whatsmeowProvider := whatsappinfra.NewWhatsmeowProvider("storage/whatsmeow", log)
 	defer whatsmeowProvider.Shutdown()
 
-	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
+	sharedEventBus := events.NewMemoryEventBus()
+	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, sharedEventBus, log)
 
 	// Product module (must be created before funnel module for adapter wiring)
 	productMod := product.NewModule(db, log)
