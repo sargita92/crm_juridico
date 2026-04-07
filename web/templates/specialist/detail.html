@@ -275,6 +275,26 @@
                 </div>
             </div>
 
+            <!-- Configuracao de IA (lazy-load) -->
+            <div class="detail-card">
+                <div id="ai-config-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/ai-config"
+                     hx-trigger="load"
+                     hx-swap="outerHTML">
+                    <p class="text-muted">Carregando configuracao de IA...</p>
+                </div>
+            </div>
+
+            <!-- Produtos Vinculados (lazy-load) -->
+            <div class="detail-card">
+                <div id="specialist-products-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/products"
+                     hx-trigger="load"
+                     hx-swap="outerHTML">
+                    <p class="text-muted">Carregando produtos...</p>
+                </div>
+            </div>
+
             <!-- Qualificacao por Pontuacao (lazy-load) -->
             <div class="detail-card">
                 <div class="card-header">
