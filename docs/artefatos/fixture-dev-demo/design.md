@@ -44,6 +44,17 @@ Escritório **"Mendes & Costa Advocacia Previdenciária"** — um tenant ativo q
 | Advogados | Ricardo, Ana | Acesso total ao funil/leads |
 | Atendimento | Juliana | Acesso a contatos e conversas, sem editar funil |
 
+### Permissões Detalhadas
+
+| Grupo | Resource | Actions |
+|-------|----------|---------|
+| Advogados | leads | create, read, update, delete |
+| Advogados | funnels | read, update |
+| Advogados | contacts | create, read, update |
+| Atendimento | contacts | read, update |
+| Atendimento | conversations | read, update |
+| Atendimento | leads | read |
+
 ---
 
 ## Seção 2 — Produtos e Especialista IA
