@@ -1,25 +1,23 @@
-package infrastructure
+package events
 
 import (
 	"sync"
-
-	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
 const eventBufferSize = 100
 
 type MemoryEventBus struct {
 	mu          sync.RWMutex
-	subscribers map[string][]chan domain.Event
+	subscribers map[string][]chan Event
 }
 
 func NewMemoryEventBus() *MemoryEventBus {
 	return &MemoryEventBus{
-		subscribers: make(map[string][]chan domain.Event),
+		subscribers: make(map[string][]chan Event),
 	}
 }
 
-func (b *MemoryEventBus) Publish(event domain.Event) {
+func (b *MemoryEventBus) Publish(event Event) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -37,8 +35,8 @@ func (b *MemoryEventBus) Publish(event domain.Event) {
 	}
 }
 
-func (b *MemoryEventBus) Subscribe(tenantID string) (<-chan domain.Event, func()) {
-	ch := make(chan domain.Event, eventBufferSize)
+func (b *MemoryEventBus) Subscribe(tenantID string) (<-chan Event, func()) {
+	ch := make(chan Event, eventBufferSize)
 
 	b.mu.Lock()
 	b.subscribers[tenantID] = append(b.subscribers[tenantID], ch)

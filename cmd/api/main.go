@@ -15,17 +15,20 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/ai"
+	"github.com/sasrgita/crm-juridico/internal/auth"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
-	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
+	"github.com/sasrgita/crm-juridico/internal/notification"
+	"github.com/sasrgita/crm-juridico/internal/permission"
 	"github.com/sasrgita/crm-juridico/internal/product"
 	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/logger"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
@@ -82,7 +85,8 @@ func main() {
 	whatsmeowProvider := whatsappinfra.NewWhatsmeowProvider("storage/whatsmeow", log)
 	defer whatsmeowProvider.Shutdown()
 
-	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, log)
+	sharedEventBus := events.NewMemoryEventBus()
+	whatsappMod := whatsapp.NewModule(db, whatsmeowProvider, sharedEventBus, log)
 
 	// Product module (must be created before funnel module for adapter wiring)
 	productMod := product.NewModule(db, log)
@@ -96,7 +100,7 @@ func main() {
 	funnelProductRouterAdapter := funnelinfra.NewFunnelProductRouterAdapter(productMod.FunnelProductRepo())
 
 	productListerAdapter := funnelinfra.NewProductListerAdapter(productMod.ProductRepo(), productMod.TenantProductRepo())
-	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, log)
+	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, sharedEventBus, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
 	// Cross-module: product handler needs funnel lister for link form
@@ -125,32 +129,35 @@ func main() {
 	})
 	whatsappMod.SetAIHandler(aiMod)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod}
+	// Permission module
+	permissionMod := permission.NewModule(db, log)
 
-	// Auth (uses tenant repo from module)
-	userRepo := authinfra.NewGormUserRepository(db)
-	userTenantRepo := authinfra.NewGormUserTenantRepository(db)
-	passwordHasher := authinfra.NewBcryptHasher()
+	// Notification module
+	notificationMod := notification.NewModule(db, sharedEventBus, log)
+
+	// Auth module (login, tenant selection, invites, user management)
+	authMod := auth.NewModule(db, tenantMod.TenantRepo(), cfg.JWT.Secret, cfg.JWT.Expiration, cfg.Server.SecureCookie)
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod}
+
+	// Token provider is used for the auth middleware and admin login route
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
-
-	loginUC := authapp.NewLoginUseCase(userRepo, userTenantRepo, tenantMod.TenantRepo(), passwordHasher, tokenProvider)
-	selectTenantUC := authapp.NewSelectTenantUseCase(userTenantRepo, tenantMod.TenantRepo(), tokenProvider)
-	listTenantsUC := authapp.NewListUserTenantsUseCase(userTenantRepo, tenantMod.TenantRepo())
-
-	authHandler := authhttp.NewHandler(loginUC, selectTenantUC, listTenantsUC, cfg.Server.SecureCookie)
+	loginUC := authMod.LoginUseCase()
 
 	// Middlewares
 	authMw := middleware.Auth(tokenProvider)
 	tenantMw := middleware.RequireTenant()
 	adminMw := middleware.RequireAdmin()
+	requirePermMw := middleware.RequirePermission(permissionMod.Resolver())
 
 	mw := module.Middlewares{
-		Auth:   authMw,
-		Tenant: tenantMw,
-		Admin:  adminMw,
+		Auth:              authMw,
+		Tenant:            tenantMw,
+		Admin:             adminMw,
+		RequirePermission: requirePermMw,
 	}
 
-	router := setupRouter(log, authHandler, modules, loginUC, mw, cfg.Server.SecureCookie)
+	router := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -190,7 +197,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool) *gin.Engine {
+func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -250,8 +257,8 @@ func setupRouter(log *zap.Logger, authHandler *authhttp.Handler, modules []modul
 
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	// Auth routes
-	authHandler.RegisterRoutes(router, mw.Auth, mw.Tenant)
+	// Auth routes (login, logout, select-tenant, dashboard, invites, user management)
+	authMod.RegisterRoutes(router, mw)
 
 	// Admin public routes
 	router.GET("/admin/login", func(c *gin.Context) {

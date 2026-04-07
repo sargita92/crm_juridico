@@ -28,6 +28,13 @@ var (
 	ErrUserNameRequired = errors.New("user name is required")
 	ErrPasswordRequired = errors.New("password is required")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+
+	ErrInviteTokenNotFound = errors.New("invite token not found")
+	ErrInviteTokenExpired  = errors.New("invite token has expired")
+	ErrInviteTokenUsed     = errors.New("invite token has already been used")
+	ErrTenantIDRequired    = errors.New("tenant id is required")
+	ErrUserIDRequired      = errors.New("user id is required")
+	ErrGroupIDRequired     = errors.New("group id is required")
 )
 
 type User struct {
@@ -42,8 +49,10 @@ type User struct {
 }
 
 type UserTenant struct {
-	UserID   string
-	TenantID string
+	UserID      string
+	TenantID    string
+	IsOwner     bool
+	WhatsAppID  string
 }
 
 func NewUser(id, name, email, passwordHash string, role UserRole) (*User, error) {

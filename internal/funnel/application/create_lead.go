@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 )
 
 type CreateLeadInput struct {
@@ -23,6 +24,7 @@ type CreateLeadUseCase struct {
 	movementRepo        domain.LeadMovementRepository
 	productDetector     domain.ProductDetector
 	funnelProductRouter domain.FunnelProductRouter
+	eventBus            events.EventBus
 }
 
 func NewCreateLeadUseCase(
@@ -32,6 +34,7 @@ func NewCreateLeadUseCase(
 	movementRepo domain.LeadMovementRepository,
 	productDetector domain.ProductDetector,
 	funnelProductRouter domain.FunnelProductRouter,
+	eventBus events.EventBus,
 ) *CreateLeadUseCase {
 	return &CreateLeadUseCase{
 		funnelRepo:          funnelRepo,
@@ -40,6 +43,7 @@ func NewCreateLeadUseCase(
 		movementRepo:        movementRepo,
 		productDetector:     productDetector,
 		funnelProductRouter: funnelProductRouter,
+		eventBus:            eventBus,
 	}
 }
 
@@ -101,7 +105,24 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 
 	// Create initial movement
 	movement := domain.NewLeadMovement(uuid.New().String(), lead.ID, "", entryCol.ID)
-	return uc.movementRepo.Create(ctx, movement)
+	if err := uc.movementRepo.Create(ctx, movement); err != nil {
+		return err
+	}
+
+	if uc.eventBus != nil {
+		uc.eventBus.Publish(events.Event{
+			Type:     events.EventLeadCreated,
+			TenantID: lead.TenantID,
+			Payload: map[string]string{
+				"lead_id":    lead.ID,
+				"funnel_id":  lead.FunnelID,
+				"column_id":  lead.ColumnID,
+				"contact_id": lead.ContactID,
+			},
+		})
+	}
+
+	return nil
 }
 
 // CreateFromConversation implements the whatsapp domain.LeadCreator interface.

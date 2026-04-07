@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -14,7 +15,7 @@ type ReceiveMessageUseCase struct {
 	contactRepo      domain.ContactRepository
 	conversationRepo domain.ConversationRepository
 	messageRepo      domain.MessageRepository
-	eventBus         domain.EventBus
+	eventBus         events.EventBus
 	leadCreator      domain.LeadCreator
 	aiHandler        domain.AIHandler
 }
@@ -23,7 +24,7 @@ func NewReceiveMessageUseCase(
 	contactRepo domain.ContactRepository,
 	conversationRepo domain.ConversationRepository,
 	messageRepo domain.MessageRepository,
-	eventBus domain.EventBus,
+	eventBus events.EventBus,
 ) *ReceiveMessageUseCase {
 	return &ReceiveMessageUseCase{
 		contactRepo:      contactRepo,
@@ -121,13 +122,13 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 	messagesReceivedTotal.WithLabelValues(event.TenantID).Inc()
 
 	// Publish SSE events
-	uc.eventBus.Publish(domain.Event{
-		Type:     domain.EventNewMessage,
+	uc.eventBus.Publish(events.Event{
+		Type:     events.EventNewMessage,
 		TenantID: event.TenantID,
 		Payload:  msg,
 	})
-	uc.eventBus.Publish(domain.Event{
-		Type:     domain.EventConversationUpdate,
+	uc.eventBus.Publish(events.Event{
+		Type:     events.EventConversationUpdate,
 		TenantID: event.TenantID,
 		Payload:  conv,
 	})

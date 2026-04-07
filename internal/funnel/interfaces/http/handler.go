@@ -30,6 +30,7 @@ type Handler struct {
 	moveLeadUC       *application.MoveLeadUseCase
 	getLeadDetailUC  *application.GetLeadDetailUseCase
 	createLeadNoteUC *application.CreateLeadNoteUseCase
+	assignLeadUC     *application.AssignLeadUseCase
 	leadRepo         domain.LeadRepository
 	productLister    domain.ProductLister
 	productProvider  domain.ProductProvider
@@ -50,6 +51,7 @@ func NewHandler(
 	moveLeadUC *application.MoveLeadUseCase,
 	getLeadDetailUC *application.GetLeadDetailUseCase,
 	createLeadNoteUC *application.CreateLeadNoteUseCase,
+	assignLeadUC *application.AssignLeadUseCase,
 	leadRepo domain.LeadRepository,
 	productLister domain.ProductLister,
 	productProvider domain.ProductProvider,
@@ -69,6 +71,7 @@ func NewHandler(
 		moveLeadUC:       moveLeadUC,
 		getLeadDetailUC:  getLeadDetailUC,
 		createLeadNoteUC: createLeadNoteUC,
+		assignLeadUC:     assignLeadUC,
 		leadRepo:         leadRepo,
 		productLister:    productLister,
 		productProvider:  productProvider,
@@ -594,6 +597,33 @@ func (h *Handler) HandleMoveLead(c *gin.Context) {
 	}
 
 	c.Header("HX-Redirect", "/tenant/leads")
+	c.Status(http.StatusOK)
+}
+
+func (h *Handler) HandleAssignLead(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	leadID := c.Param("id")
+
+	var req struct {
+		UserID string `json:"user_id" form:"user_id"`
+	}
+	if err := c.ShouldBind(&req); err != nil {
+		h.log.Error("invalid assign lead request", zap.Error(err))
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	err := h.assignLeadUC.Execute(c.Request.Context(), application.AssignLeadInput{
+		LeadID:   leadID,
+		UserID:   req.UserID,
+		TenantID: tenantID,
+	})
+	if err != nil {
+		h.log.Error("failed to assign lead", zap.Error(err))
+		c.Status(http.StatusUnprocessableEntity)
+		return
+	}
+
 	c.Status(http.StatusOK)
 }
 

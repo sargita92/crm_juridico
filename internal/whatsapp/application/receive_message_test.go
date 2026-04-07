@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -38,8 +39,8 @@ func TestReceiveMessage_NewContact_CreatesContactConversationMessage(t *testing.
 	assert.Len(t, convRepo.conversations, 1)
 	assert.Len(t, msgRepo.messages, 1)
 	assert.Len(t, eventBus.events, 2) // new-message + conversation-update
-	assert.Equal(t, domain.EventNewMessage, eventBus.events[0].Type)
-	assert.Equal(t, domain.EventConversationUpdate, eventBus.events[1].Type)
+	assert.Equal(t, events.EventNewMessage, eventBus.events[0].Type)
+	assert.Equal(t, events.EventConversationUpdate, eventBus.events[1].Type)
 }
 
 func TestReceiveMessage_ExistingContact_ReusesContact(t *testing.T) {

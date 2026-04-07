@@ -11,18 +11,19 @@ const (
 )
 
 type Lead struct {
-	ID              string
-	TenantID        string
-	FunnelID        string
-	ColumnID        string
-	ContactID       string
-	ConversationID  string
-	ProductID       string
-	Score           int
-	Status          LeadStatus
-	ColumnEnteredAt time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID                string
+	TenantID          string
+	FunnelID          string
+	ColumnID          string
+	ContactID         string
+	ConversationID    string
+	ProductID         string
+	ResponsibleUserID string
+	Score             int
+	Status            LeadStatus
+	ColumnEnteredAt   time.Time
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 func NewLead(id, tenantID, funnelID, columnID, contactID, conversationID string) (*Lead, error) {
@@ -74,5 +75,10 @@ func (l *Lead) SetProduct(productID string) {
 
 func (l *Lead) UpdateScore(score int) {
 	l.Score = score
+	l.UpdatedAt = time.Now()
+}
+
+func (l *Lead) AssignResponsible(userID string) {
+	l.ResponsibleUserID = userID
 	l.UpdatedAt = time.Now()
 }

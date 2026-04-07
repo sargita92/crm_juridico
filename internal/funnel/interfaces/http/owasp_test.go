@@ -165,11 +165,12 @@ func setupOwaspEnv() *owaspEnv {
 	createColumnUC := application.NewCreateColumnUseCase(funnelRepo, columnRepo)
 	deleteColumnUC := application.NewDeleteColumnUseCase(funnelRepo, columnRepo, leadRepo)
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
-	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil)
-	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo)
+	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil, nil)
+	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil)
 	userNameProvider := &owaspMockUserNameProvider{}
 	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider, nil)
 	createLeadNoteUC := application.NewCreateLeadNoteUseCase(leadRepo, noteRepo)
+	assignLeadUC := application.NewAssignLeadUseCase(leadRepo)
 
 	testLog, _ := zap.NewDevelopment()
 	handler := NewHandler(
@@ -177,7 +178,7 @@ func setupOwaspEnv() *owaspEnv {
 		createFunnelUC, updateFunnelUC, toggleFunnelUC,
 		createColumnUC, deleteColumnUC, moveColumnUC,
 		createLeadUC, moveLeadUC, getLeadDetailUC,
-		createLeadNoteUC,
+		createLeadNoteUC, assignLeadUC,
 		leadRepo, nil, nil, testLog,
 	)
 

@@ -46,20 +46,130 @@ func (m *mockUserRepo) ExistsByEmail(_ context.Context, email string) (bool, err
 // --- Mock UserTenantRepository ---
 
 type mockUserTenantRepo struct {
-	associations map[string][]string // userID -> []tenantID
+	associations map[string][]string          // userID -> []tenantID
+	userTenants  map[string]*domain.UserTenant // "userID:tenantID" -> UserTenant
+	owners       map[string]bool               // "userID:tenantID" -> isOwner
+	removed      map[string]bool               // "userID:tenantID" -> removed
 }
 
 func newMockUserTenantRepo() *mockUserTenantRepo {
-	return &mockUserTenantRepo{associations: make(map[string][]string)}
+	return &mockUserTenantRepo{
+		associations: make(map[string][]string),
+		userTenants:  make(map[string]*domain.UserTenant),
+		owners:       make(map[string]bool),
+		removed:      make(map[string]bool),
+	}
 }
+
+func utKey(userID, tenantID string) string { return userID + ":" + tenantID }
 
 func (m *mockUserTenantRepo) Associate(_ context.Context, userID, tenantID string) error {
 	m.associations[userID] = append(m.associations[userID], tenantID)
+	key := utKey(userID, tenantID)
+	m.userTenants[key] = &domain.UserTenant{UserID: userID, TenantID: tenantID}
 	return nil
 }
 
 func (m *mockUserTenantRepo) FindTenantIDsByUserID(_ context.Context, userID string) ([]string, error) {
 	return m.associations[userID], nil
+}
+
+func (m *mockUserTenantRepo) FindByTenantID(_ context.Context, tenantID string) ([]*domain.UserTenant, error) {
+	var result []*domain.UserTenant
+	for _, ut := range m.userTenants {
+		if ut.TenantID == tenantID {
+			result = append(result, ut)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockUserTenantRepo) FindByUserAndTenant(_ context.Context, userID, tenantID string) (*domain.UserTenant, error) {
+	key := utKey(userID, tenantID)
+	if ut, ok := m.userTenants[key]; ok {
+		return ut, nil
+	}
+	return nil, domain.ErrUserNotFound
+}
+
+func (m *mockUserTenantRepo) UpdateIsOwner(_ context.Context, userID, tenantID string, isOwner bool) error {
+	key := utKey(userID, tenantID)
+	m.owners[key] = isOwner
+	if ut, ok := m.userTenants[key]; ok {
+		ut.IsOwner = isOwner
+	}
+	return nil
+}
+
+func (m *mockUserTenantRepo) UpdateWhatsAppID(_ context.Context, userID, tenantID string, whatsAppID string) error {
+	key := utKey(userID, tenantID)
+	if ut, ok := m.userTenants[key]; ok {
+		ut.WhatsAppID = whatsAppID
+	}
+	return nil
+}
+
+func (m *mockUserTenantRepo) RemoveFromTenant(_ context.Context, userID, tenantID string) error {
+	key := utKey(userID, tenantID)
+	m.removed[key] = true
+	delete(m.userTenants, key)
+	return nil
+}
+
+func (m *mockUserTenantRepo) IsOwner(_ context.Context, userID, tenantID string) (bool, error) {
+	key := utKey(userID, tenantID)
+	return m.owners[key], nil
+}
+
+// --- Mock InviteTokenRepository ---
+
+type mockInviteTokenRepo struct {
+	tokens  map[string]*domain.InviteToken // id -> token
+	byToken map[string]*domain.InviteToken // token string -> token
+}
+
+func newMockInviteTokenRepo() *mockInviteTokenRepo {
+	return &mockInviteTokenRepo{
+		tokens:  make(map[string]*domain.InviteToken),
+		byToken: make(map[string]*domain.InviteToken),
+	}
+}
+
+func (m *mockInviteTokenRepo) Create(_ context.Context, token *domain.InviteToken) error {
+	m.tokens[token.ID] = token
+	m.byToken[token.Token] = token
+	return nil
+}
+
+func (m *mockInviteTokenRepo) FindByToken(_ context.Context, token string) (*domain.InviteToken, error) {
+	if t, ok := m.byToken[token]; ok {
+		return t, nil
+	}
+	return nil, domain.ErrInviteTokenNotFound
+}
+
+func (m *mockInviteTokenRepo) FindByTenantID(_ context.Context, tenantID string) ([]*domain.InviteToken, error) {
+	var result []*domain.InviteToken
+	for _, t := range m.tokens {
+		if t.TenantID == tenantID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockInviteTokenRepo) Update(_ context.Context, token *domain.InviteToken) error {
+	m.tokens[token.ID] = token
+	m.byToken[token.Token] = token
+	return nil
+}
+
+func (m *mockInviteTokenRepo) Delete(_ context.Context, id string) error {
+	if t, ok := m.tokens[id]; ok {
+		delete(m.byToken, t.Token)
+		delete(m.tokens, id)
+	}
+	return nil
 }
 
 // --- Mock TenantRepository ---

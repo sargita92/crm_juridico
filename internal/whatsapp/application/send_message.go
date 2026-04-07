@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -27,7 +28,7 @@ type SendMessageUseCase struct {
 	messageRepo      domain.MessageRepository
 	contactRepo      domain.ContactRepository
 	provider         domain.WhatsAppProvider
-	eventBus         domain.EventBus
+	eventBus         events.EventBus
 }
 
 func NewSendMessageUseCase(
@@ -35,7 +36,7 @@ func NewSendMessageUseCase(
 	messageRepo domain.MessageRepository,
 	contactRepo domain.ContactRepository,
 	provider domain.WhatsAppProvider,
-	eventBus domain.EventBus,
+	eventBus events.EventBus,
 ) *SendMessageUseCase {
 	return &SendMessageUseCase{
 		conversationRepo: conversationRepo,
@@ -101,8 +102,8 @@ func (uc *SendMessageUseCase) Execute(ctx context.Context, input SendMessageInpu
 	_ = uc.conversationRepo.Update(ctx, conv)
 
 	// Publish events
-	uc.eventBus.Publish(domain.Event{
-		Type:     domain.EventNewMessage,
+	uc.eventBus.Publish(events.Event{
+		Type:     events.EventNewMessage,
 		TenantID: input.TenantID,
 		Payload:  msg,
 	})

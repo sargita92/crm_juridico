@@ -1,4 +1,4 @@
-package infrastructure
+package events
 
 import (
 	"sync"
@@ -7,8 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
 func TestMemoryEventBus_PublishAndSubscribe(t *testing.T) {
@@ -16,8 +14,8 @@ func TestMemoryEventBus_PublishAndSubscribe(t *testing.T) {
 	ch, cleanup := bus.Subscribe("tenant-1")
 	defer cleanup()
 
-	event := domain.Event{
-		Type:     domain.EventNewMessage,
+	event := Event{
+		Type:     EventNewMessage,
 		TenantID: "tenant-1",
 		Payload:  "hello",
 	}
@@ -26,7 +24,7 @@ func TestMemoryEventBus_PublishAndSubscribe(t *testing.T) {
 
 	select {
 	case received := <-ch:
-		assert.Equal(t, domain.EventNewMessage, received.Type)
+		assert.Equal(t, EventNewMessage, received.Type)
 		assert.Equal(t, "tenant-1", received.TenantID)
 		assert.Equal(t, "hello", received.Payload)
 	case <-time.After(time.Second):
@@ -41,8 +39,8 @@ func TestMemoryEventBus_IsolatedByTenant(t *testing.T) {
 	chB, cleanupB := bus.Subscribe("tenant-b")
 	defer cleanupB()
 
-	bus.Publish(domain.Event{
-		Type:     domain.EventNewMessage,
+	bus.Publish(Event{
+		Type:     EventNewMessage,
 		TenantID: "tenant-a",
 		Payload:  "for A",
 	})
@@ -69,13 +67,13 @@ func TestMemoryEventBus_MultipleSubscribers(t *testing.T) {
 	ch2, cleanup2 := bus.Subscribe("tenant-1")
 	defer cleanup2()
 
-	bus.Publish(domain.Event{
-		Type:     domain.EventNewMessage,
+	bus.Publish(Event{
+		Type:     EventNewMessage,
 		TenantID: "tenant-1",
 		Payload:  "broadcast",
 	})
 
-	for _, ch := range []<-chan domain.Event{ch1, ch2} {
+	for _, ch := range []<-chan Event{ch1, ch2} {
 		select {
 		case received := <-ch:
 			assert.Equal(t, "broadcast", received.Payload)
@@ -90,8 +88,8 @@ func TestMemoryEventBus_Cleanup_RemovesSubscriber(t *testing.T) {
 	ch, cleanup := bus.Subscribe("tenant-1")
 	cleanup()
 
-	bus.Publish(domain.Event{
-		Type:     domain.EventNewMessage,
+	bus.Publish(Event{
+		Type:     EventNewMessage,
 		TenantID: "tenant-1",
 		Payload:  "after cleanup",
 	})
@@ -117,8 +115,8 @@ func TestMemoryEventBus_PublishNoSubscribers_NoPanic(t *testing.T) {
 	bus := NewMemoryEventBus()
 
 	assert.NotPanics(t, func() {
-		bus.Publish(domain.Event{
-			Type:     domain.EventNewMessage,
+		bus.Publish(Event{
+			Type:     EventNewMessage,
 			TenantID: "no-one",
 			Payload:  "void",
 		})
@@ -132,8 +130,8 @@ func TestMemoryEventBus_FullBuffer_DropsEvent(t *testing.T) {
 
 	// Fill the buffer
 	for i := 0; i < eventBufferSize; i++ {
-		bus.Publish(domain.Event{
-			Type:     domain.EventNewMessage,
+		bus.Publish(Event{
+			Type:     EventNewMessage,
 			TenantID: "tenant-1",
 			Payload:  i,
 		})
@@ -142,8 +140,8 @@ func TestMemoryEventBus_FullBuffer_DropsEvent(t *testing.T) {
 	// This should not block (event dropped)
 	done := make(chan struct{})
 	go func() {
-		bus.Publish(domain.Event{
-			Type:     domain.EventNewMessage,
+		bus.Publish(Event{
+			Type:     EventNewMessage,
 			TenantID: "tenant-1",
 			Payload:  "overflow",
 		})
@@ -173,7 +171,7 @@ func TestMemoryEventBus_ConcurrentPublishAndSubscribe(t *testing.T) {
 	var wg sync.WaitGroup
 
 	// Concurrent subscribers
-	channels := make([]<-chan domain.Event, 5)
+	channels := make([]<-chan Event, 5)
 	cleanups := make([]func(), 5)
 	for i := 0; i < 5; i++ {
 		channels[i], cleanups[i] = bus.Subscribe("tenant-1")
@@ -186,8 +184,8 @@ func TestMemoryEventBus_ConcurrentPublishAndSubscribe(t *testing.T) {
 	for i := 0; i < eventCount; i++ {
 		go func(n int) {
 			defer wg.Done()
-			bus.Publish(domain.Event{
-				Type:     domain.EventNewMessage,
+			bus.Publish(Event{
+				Type:     EventNewMessage,
 				TenantID: "tenant-1",
 				Payload:  n,
 			})
@@ -221,14 +219,14 @@ func TestMemoryEventBus_EventTypes(t *testing.T) {
 	ch, cleanup := bus.Subscribe("tenant-1")
 	defer cleanup()
 
-	bus.Publish(domain.Event{Type: domain.EventNewMessage, TenantID: "tenant-1"})
-	bus.Publish(domain.Event{Type: domain.EventConversationUpdate, TenantID: "tenant-1"})
+	bus.Publish(Event{Type: EventNewMessage, TenantID: "tenant-1"})
+	bus.Publish(Event{Type: EventConversationUpdate, TenantID: "tenant-1"})
 
 	ev1 := <-ch
-	assert.Equal(t, domain.EventNewMessage, ev1.Type)
+	assert.Equal(t, EventNewMessage, ev1.Type)
 
 	ev2 := <-ch
-	assert.Equal(t, domain.EventConversationUpdate, ev2.Type)
+	assert.Equal(t, EventConversationUpdate, ev2.Type)
 }
 
 func TestMemoryEventBus_CleanupOneOfMany(t *testing.T) {
@@ -241,8 +239,8 @@ func TestMemoryEventBus_CleanupOneOfMany(t *testing.T) {
 	cleanup1()
 
 	// Second subscriber should still work
-	bus.Publish(domain.Event{
-		Type:     domain.EventNewMessage,
+	bus.Publish(Event{
+		Type:     EventNewMessage,
 		TenantID: "tenant-1",
 		Payload:  "still here",
 	})

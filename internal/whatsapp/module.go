@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/application"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
@@ -23,11 +24,10 @@ type Module struct {
 	messageRepo      domain.MessageRepository
 }
 
-func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, log *zap.Logger) *Module {
+func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, eventBus events.EventBus, log *zap.Logger) *Module {
 	contactRepo := infrastructure.NewGormContactRepository(db)
 	conversationRepo := infrastructure.NewGormConversationRepository(db)
 	messageRepo := infrastructure.NewGormMessageRepository(db)
-	eventBus := infrastructure.NewMemoryEventBus()
 
 	receiveMessageUC := application.NewReceiveMessageUseCase(contactRepo, conversationRepo, messageRepo, eventBus)
 	sendMessageUC := application.NewSendMessageUseCase(conversationRepo, messageRepo, contactRepo, provider, eventBus)

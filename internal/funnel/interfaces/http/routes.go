@@ -34,4 +34,5 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.Handle
 	tenant.POST("/:id/notes", h.HandleCreateNote)
 	tenant.GET("/:id/product-form", h.RenderLeadProductForm)
 	tenant.PUT("/:id/product", h.HandleSetLeadProduct)
+	tenant.PUT("/:id/assign", h.HandleAssignLead)
 }

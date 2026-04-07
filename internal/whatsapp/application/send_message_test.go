@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -52,7 +53,7 @@ func TestSendMessage_Success(t *testing.T) {
 	assert.Equal(t, "Ola Maria!", provider.lastSentMsg)
 	assert.Len(t, msgRepo.messages, 1)
 	assert.Len(t, eventBus.events, 1)
-	assert.Equal(t, domain.EventNewMessage, eventBus.events[0].Type)
+	assert.Equal(t, events.EventNewMessage, eventBus.events[0].Type)
 }
 
 func TestSendMessage_ProviderFails_MessageMarkedFailed(t *testing.T) {
