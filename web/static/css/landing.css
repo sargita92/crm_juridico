@@ -39,6 +39,18 @@ body {
     letter-spacing: -0.02em;
 }
 
+.landing-nav .nav-login {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.landing-nav .nav-login:hover {
+    color: #fff;
+}
+
 .landing-nav .nav-cta {
     padding: 0.45rem 1rem;
     background: #4a90d9;
