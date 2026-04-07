@@ -36,6 +36,17 @@ Implementar o sistema de usuários, grupos de permissão, perfis de visualizaç�
 - [ ] caso de uso: reatribuir lead manualmente
 - [ ] testes
 
+### Step 4.1: Responsável do lead e notificações
+- [ ] todo lead deve ter um humano responsável associado (campo responsible_user_id no Lead)
+- [ ] ao criar lead (via IA/WhatsApp ou manual), atribuir responsável via load balance ou manualmente
+- [ ] notificar responsável quando:
+  - lead é criado e atribuído a ele
+  - lead é movido de coluna (pela IA ou manualmente)
+  - IA faz handoff para humano
+  - lead é qualificado/desqualificado pelo motor de IA (F16)
+- [ ] canal de notificação: na interface (badge/toast) + WhatsApp (opcional, configurável)
+- [ ] testes
+
 ### Step 5: Gestão de usuários do tenant
 - [ ] caso de uso: convidar usuário ao tenant
 - [ ] caso de uso: listar usuários do tenant
@@ -54,5 +65,7 @@ Implementar o sistema de usuários, grupos de permissão, perfis de visualizaç�
 - grupos de permissão funcionam e controlam acesso
 - perfis filtram colunas visíveis no kanban
 - load balance distribui leads automaticamente
+- todo lead tem um responsável humano associado
+- responsável é notificado em eventos relevantes (criação, movimentação, handoff, qualificação)
 - owner tem permissão máxima no tenant
 - cobertura >= 80%

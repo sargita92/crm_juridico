@@ -55,7 +55,7 @@
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F15 | [MCP Interno para Especialistas](../features/F15-mcp-interno-especialistas.md) | backlog | F05 | média |
-| F16 | [Motor de IA dos Especialistas](../features/F16-motor-ia-especialistas.md) | backlog | F05, F06, F07, F10 | alta |
+| F16 | [Motor de IA dos Especialistas](../features/F16-motor-ia-especialistas.md) | em andamento | F05, F06, F07, F10 | alta |
 
 ## Épico 8: Marketing
 
