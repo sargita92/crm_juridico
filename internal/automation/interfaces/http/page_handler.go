@@ -12,6 +12,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/automation/application"
 	funnelapp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	specialistdomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 )
 
@@ -127,9 +128,108 @@ func buildConfig(automationType string, form url.Values) map[string]interface{} 
 	return cfg
 }
 
-// Stub handlers — will be replaced in subsequent tasks.
-func (h *PageHandler) ListPage(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) RenderTable(c *gin.Context)    { c.Status(http.StatusNotImplemented) }
+// ListPage handles GET /tenant/automations — renders the full page.
+func (h *PageHandler) ListPage(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+
+	funnels, err := h.listFunnelsUC.Execute(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to list funnels", zap.Error(err))
+		c.HTML(http.StatusInternalServerError, "automation/list.html", gin.H{
+			"ActiveNav": "automations",
+			"Error":     "Erro ao carregar funis",
+		})
+		return
+	}
+
+	var currentFunnelID string
+	if qf := c.Query("funnel_id"); qf != "" {
+		currentFunnelID = qf
+	} else if len(funnels) > 0 {
+		currentFunnelID = funnels[0].ID
+	}
+
+	automations, columns := h.loadTableData(c, tenantID, currentFunnelID)
+
+	c.HTML(http.StatusOK, "automation/list.html", gin.H{
+		"ActiveNav":       "automations",
+		"Funnels":         funnels,
+		"CurrentFunnelID": currentFunnelID,
+		"Automations":     h.enrichAutomations(automations, columns),
+		"Columns":         columns,
+	})
+}
+
+// RenderTable handles GET /tenant/automations/table — returns table fragment.
+func (h *PageHandler) RenderTable(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	funnelID := c.Query("funnel_id")
+
+	automations, columns := h.loadTableData(c, tenantID, funnelID)
+
+	c.HTML(http.StatusOK, "automation/table.html", gin.H{
+		"Automations": h.enrichAutomations(automations, columns),
+	})
+}
+
+// loadTableData fetches automations and columns for a funnel.
+func (h *PageHandler) loadTableData(c *gin.Context, tenantID, funnelID string) ([]application.AutomationOutput, []funneldomain.Column) {
+	var automations []application.AutomationOutput
+	var columns []funneldomain.Column
+
+	if funnelID != "" {
+		var err error
+		automations, err = h.crudUC.ListByFunnel(c.Request.Context(), tenantID, funnelID)
+		if err != nil {
+			h.log.Error("failed to list automations", zap.Error(err))
+		}
+		columns, err = h.columnRepo.FindByFunnelID(c.Request.Context(), funnelID)
+		if err != nil {
+			h.log.Error("failed to list columns", zap.Error(err))
+		}
+	}
+
+	return automations, columns
+}
+
+// automationView holds enriched data for template rendering.
+type automationView struct {
+	ID            string
+	FunnelID      string
+	ColumnID      string
+	Type          string
+	TypeLabel     string
+	ColumnName    string
+	Config        map[string]interface{}
+	ConfigSummary string
+	Active        bool
+	Priority      int
+}
+
+// enrichAutomations builds template-ready views from AutomationOutput + columns.
+func (h *PageHandler) enrichAutomations(automations []application.AutomationOutput, columns []funneldomain.Column) []automationView {
+	colMap := make(map[string]string, len(columns))
+	for _, col := range columns {
+		colMap[col.ID] = col.Name
+	}
+
+	views := make([]automationView, len(automations))
+	for i, a := range automations {
+		views[i] = automationView{
+			ID:            a.ID,
+			FunnelID:      a.FunnelID,
+			ColumnID:      a.ColumnID,
+			Type:          a.Type,
+			TypeLabel:     typeLabel[a.Type],
+			ColumnName:    colMap[a.ColumnID],
+			Config:        a.Config,
+			ConfigSummary: configSummary(a.Type, a.Config),
+			Active:        a.Active,
+			Priority:      a.Priority,
+		}
+	}
+	return views
+}
 func (h *PageHandler) RenderFields(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) RenderEditForm(c *gin.Context) { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) HandleCreate(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
