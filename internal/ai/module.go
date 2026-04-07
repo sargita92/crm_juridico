@@ -12,6 +12,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/ai/application"
 	"github.com/sasrgita/crm-juridico/internal/ai/domain"
 	"github.com/sasrgita/crm-juridico/internal/ai/infrastructure"
+	aihttp "github.com/sasrgita/crm-juridico/internal/ai/interfaces/http"
 	docDomain "github.com/sasrgita/crm-juridico/internal/document/domain"
 	funnelApp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funnelDomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
@@ -58,6 +59,7 @@ type Module struct {
 	aiConfigRepo      domain.AIConfigRepository
 	spProductRepo     domain.SpecialistProductRepository
 	stateRepo         domain.ConversationStateRepository
+	handler           *aihttp.Handler
 	log               *zap.Logger
 
 	contexts   map[string]conversationContext
@@ -131,6 +133,18 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	activateHandoff := application.NewActivateHandoffUseCase(convStateRepo, log)
 	deactivateHandoff := application.NewDeactivateHandoffUseCase(convStateRepo, log)
 
+	// 10. Create ProductListerAdapter and HTTP handler.
+	productListerAdapter := infrastructure.NewProductListerAdapter(deps.ProductRepo)
+	handler := aihttp.NewHandler(
+		aiConfigRepo,
+		spProductRepo,
+		convStateRepo,
+		activateHandoff,
+		deactivateHandoff,
+		productListerAdapter,
+		log,
+	)
+
 	m := &Module{
 		engine:            engine,
 		router:            specialistRouter,
@@ -139,11 +153,12 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		aiConfigRepo:      aiConfigRepo,
 		spProductRepo:     spProductRepo,
 		stateRepo:         convStateRepo,
+		handler:           handler,
 		log:               log,
 		contexts:          make(map[string]conversationContext),
 	}
 
-	// 10. Create Debouncer with callback that retrieves stored context and calls the engine.
+	// 11. Create Debouncer with callback that retrieves stored context and calls the engine.
 	debouncer := application.NewDebouncer(
 		time.Duration(cfg.DefaultDebounce)*time.Second,
 		func(conversationID string, messages []string) {
@@ -216,8 +231,8 @@ func (m *Module) HandleIncomingMessage(ctx context.Context, tenantID, conversati
 
 func (m *Module) Name() string { return "ai" }
 
-func (m *Module) RegisterRoutes(_ *gin.Engine, _ module.Middlewares) {
-	// HTTP handler will be added in Task 20.
+func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
+	m.handler.RegisterRoutes(router, mw)
 }
 
 // --- accessor methods for main.go wiring ---

@@ -1,0 +1,65 @@
+{{define "specialist/specialist_products_section.html"}}
+<div id="specialist-products-section">
+    {{if .Error}}
+    <div class="alert alert-danger">{{.Error}}</div>
+    {{end}}
+    {{if .Success}}
+    <div class="alert alert-success">{{.Success}}</div>
+    {{end}}
+
+    {{if .LinkedProducts}}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Produto ID</th>
+                <th>Vinculado em</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .LinkedProducts}}
+            <tr>
+                <td><strong>{{.ProductID}}</strong></td>
+                <td>{{.CreatedAt.Format "02/01/2006 15:04"}}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger"
+                            hx-delete="/admin/specialists/{{$.SpecialistID}}/products/{{.ProductID}}"
+                            hx-target="#specialist-products-section"
+                            hx-swap="outerHTML"
+                            hx-confirm="Desvincular este produto?">
+                        Remover
+                    </button>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <div class="empty-state" style="padding:2rem 1rem">
+        <p class="text-muted">Nenhum produto vinculado</p>
+    </div>
+    {{end}}
+
+    {{if .AvailableProducts}}
+    <div class="mt-4">
+        <h4 class="text-sm font-semibold mb-2">Vincular produto</h4>
+        <form hx-post="/admin/specialists/{{.SpecialistID}}/products"
+              hx-target="#specialist-products-section"
+              hx-swap="outerHTML"
+              class="flex gap-2 items-center">
+            <select name="product_id" class="block rounded border-gray-300 flex-1" required>
+                <option value="">Selecione um produto...</option>
+                {{range .AvailableProducts}}
+                <option value="{{.ID}}">{{.Name}}</option>
+                {{end}}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Vincular</button>
+        </form>
+    </div>
+    {{else}}
+    <div class="mt-4">
+        <p class="text-muted text-sm">Todos os produtos disponiveis ja estao vinculados.</p>
+    </div>
+    {{end}}
+</div>
+{{end}}
