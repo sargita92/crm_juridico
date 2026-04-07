@@ -25,6 +25,7 @@ type CreateLeadUseCase struct {
 	productDetector     domain.ProductDetector
 	funnelProductRouter domain.FunnelProductRouter
 	eventBus            events.EventBus
+	automationTrigger   domain.AutomationTrigger
 }
 
 func NewCreateLeadUseCase(
@@ -45,6 +46,12 @@ func NewCreateLeadUseCase(
 		funnelProductRouter: funnelProductRouter,
 		eventBus:            eventBus,
 	}
+}
+
+// SetAutomationTrigger sets an optional automation trigger that will be called
+// after a lead is created successfully.
+func (uc *CreateLeadUseCase) SetAutomationTrigger(t domain.AutomationTrigger) {
+	uc.automationTrigger = t
 }
 
 func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput) error {
@@ -120,6 +127,10 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 				"contact_id": lead.ContactID,
 			},
 		})
+	}
+
+	if uc.automationTrigger != nil {
+		_ = uc.automationTrigger.OnLeadEvent(ctx, lead.TenantID, lead.ID, lead.ColumnID)
 	}
 
 	return nil
