@@ -125,6 +125,22 @@ func (m *mockSpecialistTenantRepo) Exists(_ context.Context, specialistID, tenan
 	return m.associations[specialistID][tenantID], nil
 }
 
+func (m *mockSpecialistTenantRepo) FindDefaultByTenantID(_ context.Context, tenantID string) (string, error) {
+	for specID, tenants := range m.associations {
+		if tenants[tenantID] {
+			return specID, nil
+		}
+	}
+	return "", domain.ErrSpecialistNotFound
+}
+
+func (m *mockSpecialistTenantRepo) SetDefault(_ context.Context, specialistID, tenantID string) error {
+	if m.associations[specialistID] == nil || !m.associations[specialistID][tenantID] {
+		return domain.ErrTenantNotAssociated
+	}
+	return nil
+}
+
 // --- mockTenantRepo ---
 
 type mockTenantRepo struct {

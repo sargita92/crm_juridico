@@ -11,11 +11,13 @@ import (
 )
 
 type scoringConfigModel struct {
-	ID           string `gorm:"primaryKey;column:id;type:char(36)"`
-	SpecialistID string `gorm:"column:specialist_id;type:char(36);not null;uniqueIndex"`
-	Threshold    int    `gorm:"column:threshold;not null"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                   string `gorm:"primaryKey;column:id;type:char(36)"`
+	SpecialistID         string `gorm:"column:specialist_id;type:char(36);not null;uniqueIndex"`
+	Threshold            int    `gorm:"column:threshold;not null"`
+	QualifiedColumnID    string `gorm:"column:qualified_column_id;type:char(36)"`
+	DisqualifiedColumnID string `gorm:"column:disqualified_column_id;type:char(36)"`
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 func (scoringConfigModel) TableName() string { return "scoring_configs" }
@@ -23,6 +25,7 @@ func (scoringConfigModel) TableName() string { return "scoring_configs" }
 func scoringToModel(sc *domain.ScoringConfig) *scoringConfigModel {
 	return &scoringConfigModel{
 		ID: sc.ID, SpecialistID: sc.SpecialistID, Threshold: sc.Threshold,
+		QualifiedColumnID: sc.QualifiedColumnID, DisqualifiedColumnID: sc.DisqualifiedColumnID,
 		CreatedAt: sc.CreatedAt, UpdatedAt: sc.UpdatedAt,
 	}
 }
@@ -30,6 +33,7 @@ func scoringToModel(sc *domain.ScoringConfig) *scoringConfigModel {
 func scoringToDomain(m *scoringConfigModel) *domain.ScoringConfig {
 	return &domain.ScoringConfig{
 		ID: m.ID, SpecialistID: m.SpecialistID, Threshold: m.Threshold,
+		QualifiedColumnID: m.QualifiedColumnID, DisqualifiedColumnID: m.DisqualifiedColumnID,
 		CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
 	}
 }

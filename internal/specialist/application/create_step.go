@@ -10,23 +10,25 @@ import (
 )
 
 type CreateStepInput struct {
-	SpecialistID string
-	Text         string
-	DataType     string
-	Required     bool
-	Score        int
+	SpecialistID   string
+	Text           string
+	DataType       string
+	Required       bool
+	Score          int
+	TargetColumnID string
 }
 
 type StepOutput struct {
-	ID           string
-	SpecialistID string
-	OrderIndex   int
-	Text         string
-	DataType     string
-	Required     bool
-	Score        int
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID             string
+	SpecialistID   string
+	OrderIndex     int
+	Text           string
+	DataType       string
+	Required       bool
+	Score          int
+	TargetColumnID string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 type CreateStepUseCase struct {
@@ -52,7 +54,7 @@ func (uc *CreateStepUseCase) Execute(ctx context.Context, input CreateStepInput)
 		return nil, err
 	}
 
-	s, err := domain.NewStep(uuid.New().String(), input.SpecialistID, maxOrder+1, input.Text, domain.StepDataType(input.DataType), input.Required, input.Score)
+	s, err := domain.NewStep(uuid.New().String(), input.SpecialistID, maxOrder+1, input.Text, domain.StepDataType(input.DataType), input.Required, input.Score, input.TargetColumnID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,14 +68,15 @@ func (uc *CreateStepUseCase) Execute(ctx context.Context, input CreateStepInput)
 
 func stepToOutput(s *domain.Step) *StepOutput {
 	return &StepOutput{
-		ID:           s.ID,
-		SpecialistID: s.SpecialistID,
-		OrderIndex:   s.OrderIndex,
-		Text:         s.Text,
-		DataType:     string(s.DataType),
-		Required:     s.Required,
-		Score:        s.Score,
-		CreatedAt:    s.CreatedAt,
-		UpdatedAt:    s.UpdatedAt,
+		ID:             s.ID,
+		SpecialistID:   s.SpecialistID,
+		OrderIndex:     s.OrderIndex,
+		Text:           s.Text,
+		DataType:       string(s.DataType),
+		Required:       s.Required,
+		Score:          s.Score,
+		TargetColumnID: s.TargetColumnID,
+		CreatedAt:      s.CreatedAt,
+		UpdatedAt:      s.UpdatedAt,
 	}
 }

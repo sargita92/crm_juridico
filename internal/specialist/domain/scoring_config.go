@@ -3,11 +3,13 @@ package domain
 import "time"
 
 type ScoringConfig struct {
-	ID           string
-	SpecialistID string
-	Threshold    int
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID                   string
+	SpecialistID         string
+	Threshold            int
+	QualifiedColumnID    string
+	DisqualifiedColumnID string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 func NewScoringConfig(id, specialistID string, threshold int) (*ScoringConfig, error) {

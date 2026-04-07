@@ -14,6 +14,7 @@ import (
 type specialistTenantModel struct {
 	SpecialistID string    `gorm:"primaryKey;column:specialist_id;type:char(36)"`
 	TenantID     string    `gorm:"primaryKey;column:tenant_id;type:char(36)"`
+	IsDefault    bool      `gorm:"column:is_default;not null;default:false"`
 	CreatedAt    time.Time `gorm:"column:created_at"`
 }
 
@@ -81,4 +82,38 @@ func (r *GormSpecialistTenantRepository) Exists(ctx context.Context, specialistI
 		Where("specialist_id = ? AND tenant_id = ?", specialistID, tenantID).
 		Count(&count).Error
 	return count > 0, err
+}
+
+func (r *GormSpecialistTenantRepository) FindDefaultByTenantID(ctx context.Context, tenantID string) (string, error) {
+	var model specialistTenantModel
+	err := r.db.WithContext(ctx).
+		Where("tenant_id = ? AND is_default = ?", tenantID, true).
+		First(&model).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", domain.ErrSpecialistNotFound
+		}
+		return "", err
+	}
+	return model.SpecialistID, nil
+}
+
+func (r *GormSpecialistTenantRepository) SetDefault(ctx context.Context, specialistID, tenantID string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&specialistTenantModel{}).
+			Where("tenant_id = ? AND is_default = ?", tenantID, true).
+			Update("is_default", false).Error; err != nil {
+			return err
+		}
+		result := tx.Model(&specialistTenantModel{}).
+			Where("specialist_id = ? AND tenant_id = ?", specialistID, tenantID).
+			Update("is_default", true)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return domain.ErrTenantNotAssociated
+		}
+		return nil
+	})
 }

@@ -86,7 +86,7 @@ func TestGormStepRepository_Create_And_FindByID(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForStep(t, db)
 
-	step, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Qual o nome do cliente?", domain.StepDataTypeFreeText, true, 10)
+	step, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Qual o nome do cliente?", domain.StepDataTypeFreeText, true, 10, "")
 	require.NoError(t, err)
 
 	err = repo.Create(ctx, step)
@@ -116,11 +116,11 @@ func TestGormStepRepository_Update_Success(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForStep(t, db)
 
-	step, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta original", domain.StepDataTypeFreeText, true, 5)
+	step, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta original", domain.StepDataTypeFreeText, true, 5, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step))
 
-	require.NoError(t, step.Update("Pergunta atualizada", domain.StepDataTypeNumber, false, 20))
+	require.NoError(t, step.Update("Pergunta atualizada", domain.StepDataTypeNumber, false, 20, ""))
 	err = repo.Update(ctx, step)
 	require.NoError(t, err)
 
@@ -138,7 +138,7 @@ func TestGormStepRepository_Delete_Success(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForStep(t, db)
 
-	step, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta para deletar", domain.StepDataTypeFreeText, true, 0)
+	step, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta para deletar", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step))
 
@@ -155,15 +155,15 @@ func TestGormStepRepository_FindBySpecialistID_OrderedByIndex(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForStep(t, db)
 
-	step3, err := domain.NewStep(uuid.New().String(), specialistID, 3, "Pergunta 3", domain.StepDataTypeFreeText, true, 0)
+	step3, err := domain.NewStep(uuid.New().String(), specialistID, 3, "Pergunta 3", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step3))
 
-	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0)
+	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step1))
 
-	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeNumber, false, 10)
+	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeNumber, false, 10, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step2))
 
@@ -187,15 +187,15 @@ func TestGormStepRepository_GetMaxOrderIndex(t *testing.T) {
 	assert.Equal(t, 0, maxOrder)
 
 	// After creating steps, should return the highest order index
-	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0)
+	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step1))
 
-	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeFreeText, true, 0)
+	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step2))
 
-	step5, err := domain.NewStep(uuid.New().String(), specialistID, 5, "Pergunta 5", domain.StepDataTypeFreeText, true, 0)
+	step5, err := domain.NewStep(uuid.New().String(), specialistID, 5, "Pergunta 5", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step5))
 
@@ -210,15 +210,15 @@ func TestGormStepRepository_ReorderAfterDelete(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForStep(t, db)
 
-	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0)
+	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step1))
 
-	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeFreeText, true, 0)
+	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step2))
 
-	step3, err := domain.NewStep(uuid.New().String(), specialistID, 3, "Pergunta 3", domain.StepDataTypeFreeText, true, 0)
+	step3, err := domain.NewStep(uuid.New().String(), specialistID, 3, "Pergunta 3", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step3))
 
@@ -244,11 +244,11 @@ func TestGormStepRepository_SwapOrder(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForStep(t, db)
 
-	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0)
+	step1, err := domain.NewStep(uuid.New().String(), specialistID, 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step1))
 
-	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeFreeText, true, 0)
+	step2, err := domain.NewStep(uuid.New().String(), specialistID, 2, "Pergunta 2", domain.StepDataTypeFreeText, true, 0, "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, step2))
 

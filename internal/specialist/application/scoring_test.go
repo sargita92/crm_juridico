@@ -17,8 +17,8 @@ func TestGetScoringUseCase_WithStepsAndConfig(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewGetScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 30)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Pergunta 2", domain.StepDataTypeNumber, false, 20)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 30, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Pergunta 2", domain.StepDataTypeNumber, false, 20, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -39,8 +39,8 @@ func TestGetScoringUseCase_WithStepsNoConfig(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewGetScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 10)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Pergunta 2", domain.StepDataTypeDate, false, 15)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 10, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Pergunta 2", domain.StepDataTypeDate, false, 15, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -72,7 +72,7 @@ func TestGetScoringUseCase_ZeroScoreSteps(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewGetScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta sem pontuacao", domain.StepDataTypeFreeText, true, 0)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta sem pontuacao", domain.StepDataTypeFreeText, true, 0, "")
 	stepRepo.addStep(s1)
 
 	config, _ := domain.NewScoringConfig("cfg-1", "spec-1", 1)
@@ -92,7 +92,7 @@ func TestGetScoringUseCase_StepItemsContent(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewGetScoringUseCase(stepRepo, scoringRepo)
 
-	s, _ := domain.NewStep("step-1", "spec-1", 1, "Qual a area?", domain.StepDataTypeSelection, true, 15)
+	s, _ := domain.NewStep("step-1", "spec-1", 1, "Qual a area?", domain.StepDataTypeSelection, true, 15, "")
 	stepRepo.addStep(s)
 
 	output, err := uc.Execute(context.Background(), "spec-1")
@@ -111,8 +111,8 @@ func TestUpdateScoringUseCase_Success_NewConfig(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewUpdateScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 50)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Pergunta 2", domain.StepDataTypeNumber, false, 50)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 50, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Pergunta 2", domain.StepDataTypeNumber, false, 50, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -133,7 +133,7 @@ func TestUpdateScoringUseCase_Success_UpdateExisting(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewUpdateScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 100)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 100, "")
 	stepRepo.addStep(s1)
 
 	config, _ := domain.NewScoringConfig("cfg-1", "spec-1", 50)
@@ -155,7 +155,7 @@ func TestUpdateScoringUseCase_ThresholdExceedsTotal(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewUpdateScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 30)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 30, "")
 	stepRepo.addStep(s1)
 
 	config, _ := domain.NewScoringConfig("cfg-1", "spec-1", 20)
@@ -174,7 +174,7 @@ func TestUpdateScoringUseCase_ZeroThreshold(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewUpdateScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 50)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 50, "")
 	stepRepo.addStep(s1)
 
 	_, err := uc.Execute(context.Background(), UpdateScoringInput{
@@ -190,7 +190,7 @@ func TestUpdateScoringUseCase_NegativeThreshold(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewUpdateScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 50)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 50, "")
 	stepRepo.addStep(s1)
 
 	_, err := uc.Execute(context.Background(), UpdateScoringInput{
@@ -206,7 +206,7 @@ func TestUpdateScoringUseCase_PersistsConfig(t *testing.T) {
 	scoringRepo := newMockScoringConfigRepo()
 	uc := NewUpdateScoringUseCase(stepRepo, scoringRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 100)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Pergunta 1", domain.StepDataTypeFreeText, true, 100, "")
 	stepRepo.addStep(s1)
 
 	_, err := uc.Execute(context.Background(), UpdateScoringInput{

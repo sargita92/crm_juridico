@@ -46,7 +46,7 @@ func TestCreateStepUseCase_OrderIncrementsCorrectly(t *testing.T) {
 	spec, _ := domain.NewSpecialist("spec-1", "Especialista", "desc", "prompt")
 	specRepo.addSpecialist(spec)
 
-	existing, _ := domain.NewStep("step-existing", "spec-1", 1, "Primeiro passo", domain.StepDataTypeFreeText, false, 5)
+	existing, _ := domain.NewStep("step-existing", "spec-1", 1, "Primeiro passo", domain.StepDataTypeFreeText, false, 5, "")
 	stepRepo.addStep(existing)
 
 	output, err := uc.Execute(context.Background(), CreateStepInput{
@@ -134,7 +134,7 @@ func TestUpdateStepUseCase_Success(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewUpdateStepUseCase(stepRepo)
 
-	s, _ := domain.NewStep("step-1", "spec-1", 1, "Texto antigo", domain.StepDataTypeFreeText, false, 5)
+	s, _ := domain.NewStep("step-1", "spec-1", 1, "Texto antigo", domain.StepDataTypeFreeText, false, 5, "")
 	stepRepo.addStep(s)
 
 	output, err := uc.Execute(context.Background(), UpdateStepInput{
@@ -170,7 +170,7 @@ func TestUpdateStepUseCase_EmptyText(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewUpdateStepUseCase(stepRepo)
 
-	s, _ := domain.NewStep("step-1", "spec-1", 1, "Texto original", domain.StepDataTypeFreeText, false, 0)
+	s, _ := domain.NewStep("step-1", "spec-1", 1, "Texto original", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s)
 
 	_, err := uc.Execute(context.Background(), UpdateStepInput{
@@ -188,9 +188,9 @@ func TestDeleteStepUseCase_Success(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewDeleteStepUseCase(stepRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0)
-	s3, _ := domain.NewStep("step-3", "spec-1", 3, "Passo 3", domain.StepDataTypeFreeText, false, 0)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0, "")
+	s3, _ := domain.NewStep("step-3", "spec-1", 3, "Passo 3", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 	stepRepo.addStep(s3)
@@ -218,7 +218,7 @@ func TestDeleteStepUseCase_SingleStep(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewDeleteStepUseCase(stepRepo)
 
-	s, _ := domain.NewStep("step-1", "spec-1", 1, "Unico passo", domain.StepDataTypeFreeText, false, 0)
+	s, _ := domain.NewStep("step-1", "spec-1", 1, "Unico passo", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s)
 
 	err := uc.Execute(context.Background(), "step-1")
@@ -233,8 +233,8 @@ func TestMoveStepUseCase_MoveDown(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewMoveStepUseCase(stepRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -249,8 +249,8 @@ func TestMoveStepUseCase_MoveUp(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewMoveStepUseCase(stepRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -265,8 +265,8 @@ func TestMoveStepUseCase_AlreadyFirst(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewMoveStepUseCase(stepRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -279,8 +279,8 @@ func TestMoveStepUseCase_AlreadyLast(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewMoveStepUseCase(stepRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, false, 0, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -313,8 +313,8 @@ func TestListStepsUseCase_Success(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewListStepsUseCase(stepRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, true, 10)
-	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeNumber, false, 5)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo 1", domain.StepDataTypeFreeText, true, 10, "")
+	s2, _ := domain.NewStep("step-2", "spec-1", 2, "Passo 2", domain.StepDataTypeNumber, false, 5, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 
@@ -343,8 +343,8 @@ func TestListStepsUseCase_FiltersBySpecialist(t *testing.T) {
 	stepRepo := newMockStepRepo()
 	uc := NewListStepsUseCase(stepRepo)
 
-	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo de spec-1", domain.StepDataTypeFreeText, false, 0)
-	s2, _ := domain.NewStep("step-2", "spec-2", 1, "Passo de spec-2", domain.StepDataTypeFreeText, false, 0)
+	s1, _ := domain.NewStep("step-1", "spec-1", 1, "Passo de spec-1", domain.StepDataTypeFreeText, false, 0, "")
+	s2, _ := domain.NewStep("step-2", "spec-2", 1, "Passo de spec-2", domain.StepDataTypeFreeText, false, 0, "")
 	stepRepo.addStep(s1)
 	stepRepo.addStep(s2)
 

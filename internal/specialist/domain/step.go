@@ -15,18 +15,19 @@ const (
 const MaxStepTextLength = 1000
 
 type Step struct {
-	ID           string
-	SpecialistID string
-	OrderIndex   int
-	Text         string
-	DataType     StepDataType
-	Required     bool
-	Score        int
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID             string
+	SpecialistID   string
+	OrderIndex     int
+	Text           string
+	DataType       StepDataType
+	Required       bool
+	Score          int
+	TargetColumnID string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
-func NewStep(id, specialistID string, orderIndex int, text string, dataType StepDataType, required bool, score int) (*Step, error) {
+func NewStep(id, specialistID string, orderIndex int, text string, dataType StepDataType, required bool, score int, targetColumnID string) (*Step, error) {
 	if specialistID == "" {
 		return nil, ErrSpecialistIDRequired
 	}
@@ -47,11 +48,12 @@ func NewStep(id, specialistID string, orderIndex int, text string, dataType Step
 	return &Step{
 		ID: id, SpecialistID: specialistID, OrderIndex: orderIndex,
 		Text: text, DataType: dataType, Required: required, Score: score,
+		TargetColumnID: targetColumnID,
 		CreatedAt: now, UpdatedAt: now,
 	}, nil
 }
 
-func (s *Step) Update(text string, dataType StepDataType, required bool, score int) error {
+func (s *Step) Update(text string, dataType StepDataType, required bool, score int, targetColumnID string) error {
 	if text == "" {
 		return ErrStepTextRequired
 	}
@@ -68,6 +70,7 @@ func (s *Step) Update(text string, dataType StepDataType, required bool, score i
 	s.DataType = dataType
 	s.Required = required
 	s.Score = score
+	s.TargetColumnID = targetColumnID
 	s.UpdatedAt = time.Now()
 	return nil
 }

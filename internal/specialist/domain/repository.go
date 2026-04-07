@@ -29,4 +29,6 @@ type SpecialistTenantRepository interface {
 	FindTenantIDsBySpecialistID(ctx context.Context, specialistID string) ([]string, error)
 	FindSpecialistIDsByTenantID(ctx context.Context, tenantID string) ([]string, error)
 	Exists(ctx context.Context, specialistID, tenantID string) (bool, error)
+	FindDefaultByTenantID(ctx context.Context, tenantID string) (string, error)
+	SetDefault(ctx context.Context, specialistID, tenantID string) error
 }

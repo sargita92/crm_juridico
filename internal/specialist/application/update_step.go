@@ -7,11 +7,12 @@ import (
 )
 
 type UpdateStepInput struct {
-	ID       string
-	Text     string
-	DataType string
-	Required bool
-	Score    int
+	ID             string
+	Text           string
+	DataType       string
+	Required       bool
+	Score          int
+	TargetColumnID string
 }
 
 type UpdateStepUseCase struct {
@@ -28,7 +29,7 @@ func (uc *UpdateStepUseCase) Execute(ctx context.Context, input UpdateStepInput)
 		return nil, err
 	}
 
-	if err := s.Update(input.Text, domain.StepDataType(input.DataType), input.Required, input.Score); err != nil {
+	if err := s.Update(input.Text, domain.StepDataType(input.DataType), input.Required, input.Score, input.TargetColumnID); err != nil {
 		return nil, err
 	}
 

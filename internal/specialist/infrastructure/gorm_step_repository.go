@@ -11,15 +11,16 @@ import (
 )
 
 type stepModel struct {
-	ID           string `gorm:"primaryKey;column:id;type:char(36)"`
-	SpecialistID string `gorm:"column:specialist_id;type:char(36);not null"`
-	OrderIndex   int    `gorm:"column:order_index;not null"`
-	Text         string `gorm:"column:text;type:text;not null"`
-	DataType     string `gorm:"column:data_type;not null;default:free_text"`
-	Required     bool   `gorm:"column:required;not null;default:true"`
-	Score        int    `gorm:"column:score;not null;default:0"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID             string `gorm:"primaryKey;column:id;type:char(36)"`
+	SpecialistID   string `gorm:"column:specialist_id;type:char(36);not null"`
+	OrderIndex     int    `gorm:"column:order_index;not null"`
+	Text           string `gorm:"column:text;type:text;not null"`
+	DataType       string `gorm:"column:data_type;not null;default:free_text"`
+	Required       bool   `gorm:"column:required;not null;default:true"`
+	Score          int    `gorm:"column:score;not null;default:0"`
+	TargetColumnID string `gorm:"column:target_column_id;type:char(36)"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 func (stepModel) TableName() string { return "steps" }
@@ -28,6 +29,7 @@ func stepToModel(s *domain.Step) *stepModel {
 	return &stepModel{
 		ID: s.ID, SpecialistID: s.SpecialistID, OrderIndex: s.OrderIndex,
 		Text: s.Text, DataType: string(s.DataType), Required: s.Required, Score: s.Score,
+		TargetColumnID: s.TargetColumnID,
 		CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt,
 	}
 }
@@ -36,6 +38,7 @@ func stepToDomain(m *stepModel) *domain.Step {
 	return &domain.Step{
 		ID: m.ID, SpecialistID: m.SpecialistID, OrderIndex: m.OrderIndex,
 		Text: m.Text, DataType: domain.StepDataType(m.DataType), Required: m.Required, Score: m.Score,
+		TargetColumnID: m.TargetColumnID,
 		CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
 	}
 }
