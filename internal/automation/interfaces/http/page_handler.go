@@ -161,9 +161,14 @@ func (h *PageHandler) ListPage(c *gin.Context) {
 }
 
 // RenderTable handles GET /tenant/automations/table — returns table fragment.
+// Also called by HandleToggle (POST) and HandleDelete (DELETE) — reads funnel_id
+// from both query params and form data since hx-include sends as body on POST.
 func (h *PageHandler) RenderTable(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Query("funnel_id")
+	if funnelID == "" {
+		funnelID = c.PostForm("funnel_id")
+	}
 
 	automations, columns := h.loadTableData(c, tenantID, funnelID)
 
@@ -230,10 +235,21 @@ func (h *PageHandler) enrichAutomations(automations []application.AutomationOutp
 	}
 	return views
 }
+// validFieldTypes restricts which automation types can be used in field templates.
+var validFieldTypes = map[string]bool{
+	"expiration": true, "move_funnel": true, "auto_message": true,
+	"auto_note": true, "switch_specialist": true, "rate_limit": true,
+	"detect_product": true,
+}
+
 // RenderFields handles GET /tenant/automations/fields — returns dynamic fields partial.
 func (h *PageHandler) RenderFields(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	automationType := c.Query("type")
+	if !validFieldTypes[automationType] {
+		c.String(http.StatusBadRequest, "Tipo inválido")
+		return
+	}
 	automationID := c.Query("automation_id")
 
 	data := gin.H{}

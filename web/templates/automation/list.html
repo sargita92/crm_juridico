@@ -65,6 +65,17 @@
     </div>
 </div>
 
+<script>
+// Intercept htmx:afterSwap BEFORE admin.js loads — admin.js closes all modals
+// on every swap, which breaks our modal-internal content loading.
+// This listener must be registered first so stopImmediatePropagation works.
+document.addEventListener("htmx:afterSwap", function(e) {
+    var tid = e.detail.target.id;
+    if (tid === 'modal-body' || tid === 'logs-body' || tid === 'dynamic-fields') {
+        e.stopImmediatePropagation();
+    }
+});
+</script>
 <script src="/static/js/admin.js"></script>
 <script>
 document.body.addEventListener("refreshTable", function() {
@@ -73,9 +84,6 @@ document.body.addEventListener("refreshTable", function() {
     var table = document.getElementById('automations-table');
     table.setAttribute('hx-get', '/tenant/automations/table?funnel_id=' + funnelId);
     htmx.process(table);
-});
-document.body.addEventListener("showLogs", function() {
-    openModal('logs-modal');
 });
 </script>
 </body>
