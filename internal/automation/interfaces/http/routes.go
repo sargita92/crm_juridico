@@ -34,6 +34,7 @@ func (h *PageHandler) RegisterPageRoutes(
 	pages.Use(authMw, tenantMw, requirePerm("automations", "manage"))
 	pages.GET("", h.ListPage)
 	pages.GET("/table", h.RenderTable)
+	pages.GET("/new/form", h.RenderCreateForm)
 	pages.GET("/fields", h.RenderFields)
 	pages.GET("/:id/form", h.RenderEditForm)
 	pages.POST("", h.HandleCreate)

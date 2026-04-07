@@ -145,8 +145,9 @@ func main() {
 		NoteRepo:       funnelMod.NoteRepo(),
 		NotifyService:  notificationMod.NotifyService(),
 		DB:             db,
-		ListFunnelsUC:  funnelMod.ListFunnelsUC(),
-		SpecialistRepo: specialistMod.SpecialistRepo(),
+		ListFunnelsUC:   funnelMod.ListFunnelsUC(),
+		ContactProvider: contactAdapter,
+		SpecialistRepo:  specialistMod.SpecialistRepo(),
 		SpecTenantRepo: specialistMod.SpecTenantRepo(),
 	}, log)
 

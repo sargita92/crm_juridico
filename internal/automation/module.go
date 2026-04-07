@@ -26,6 +26,7 @@ type ModuleDeps struct {
 	NotifyService  *notifapp.NotifyService
 	DB             *gorm.DB
 	ListFunnelsUC  *funnelapp.ListFunnelsUseCase
+	ContactProvider funneldomain.ContactProvider
 	SpecialistRepo specialistdomain.SpecialistRepository
 	SpecTenantRepo specialistdomain.SpecialistTenantRepository
 }
@@ -84,7 +85,7 @@ func NewModule(db *gorm.DB, deps ModuleDeps, log *zap.Logger) *Module {
 	// CRUD + handler
 	crudUC := application.NewCRUDUseCase(autoRepo, logRepo)
 	handler := autohttp.NewHandler(crudUC, log)
-	pageHandler := autohttp.NewPageHandler(crudUC, deps.ListFunnelsUC, deps.ColumnRepo, deps.SpecialistRepo, deps.SpecTenantRepo, log)
+	pageHandler := autohttp.NewPageHandler(crudUC, deps.ListFunnelsUC, deps.ColumnRepo, deps.LeadRepo, deps.ContactProvider, deps.SpecialistRepo, deps.SpecTenantRepo, log)
 
 	return &Module{handler: handler, pageHandler: pageHandler, engine: engine, ticker: ticker}
 }

@@ -18,12 +18,14 @@ import (
 
 // PageHandler serves HTML pages for the automation management screens.
 type PageHandler struct {
-	crudUC         *application.CRUDUseCase
-	listFunnelsUC  *funnelapp.ListFunnelsUseCase
-	columnRepo     funneldomain.ColumnRepository
-	specialistRepo specialistdomain.SpecialistRepository
-	specTenantRepo specialistdomain.SpecialistTenantRepository
-	log            *zap.Logger
+	crudUC          *application.CRUDUseCase
+	listFunnelsUC   *funnelapp.ListFunnelsUseCase
+	columnRepo      funneldomain.ColumnRepository
+	leadRepo        funneldomain.LeadRepository
+	contactProvider funneldomain.ContactProvider
+	specialistRepo  specialistdomain.SpecialistRepository
+	specTenantRepo  specialistdomain.SpecialistTenantRepository
+	log             *zap.Logger
 }
 
 // NewPageHandler constructs a PageHandler.
@@ -31,17 +33,21 @@ func NewPageHandler(
 	crudUC *application.CRUDUseCase,
 	listFunnelsUC *funnelapp.ListFunnelsUseCase,
 	columnRepo funneldomain.ColumnRepository,
+	leadRepo funneldomain.LeadRepository,
+	contactProvider funneldomain.ContactProvider,
 	specialistRepo specialistdomain.SpecialistRepository,
 	specTenantRepo specialistdomain.SpecialistTenantRepository,
 	log *zap.Logger,
 ) *PageHandler {
 	return &PageHandler{
-		crudUC:         crudUC,
-		listFunnelsUC:  listFunnelsUC,
-		columnRepo:     columnRepo,
-		specialistRepo: specialistRepo,
-		specTenantRepo: specTenantRepo,
-		log:            log,
+		crudUC:          crudUC,
+		listFunnelsUC:   listFunnelsUC,
+		columnRepo:      columnRepo,
+		leadRepo:        leadRepo,
+		contactProvider: contactProvider,
+		specialistRepo:  specialistRepo,
+		specTenantRepo:  specTenantRepo,
+		log:             log,
 	}
 }
 
@@ -128,6 +134,8 @@ func buildConfig(automationType string, form url.Values) map[string]interface{} 
 	return cfg
 }
 
+// --- Page Handlers ---
+
 // ListPage handles GET /tenant/automations — renders the full page.
 func (h *PageHandler) ListPage(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
@@ -152,20 +160,14 @@ func (h *PageHandler) ListPage(c *gin.Context) {
 	automations, columns := h.loadTableData(c, tenantID, currentFunnelID)
 
 	c.HTML(http.StatusOK, "automation/list.html", gin.H{
-		"ActiveNav":        "automations",
-		"Funnels":          funnels,
-		"CurrentFunnelID":  currentFunnelID,
-		"Automations":      h.enrichAutomations(automations, columns),
-		"Columns":          columns,
-		"SelectedType":     "expiration",
-		"SelectedColumnID": "",
-		"SelectedPriority": 0,
+		"ActiveNav":       "automations",
+		"Funnels":         funnels,
+		"CurrentFunnelID": currentFunnelID,
+		"Automations":     h.enrichAutomations(automations, columns),
 	})
 }
 
 // RenderTable handles GET /tenant/automations/table — returns table fragment.
-// Also called by HandleToggle (POST) and HandleDelete (DELETE) — reads funnel_id
-// from both query params and form data since hx-include sends as body on POST.
 func (h *PageHandler) RenderTable(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Query("funnel_id")
@@ -180,7 +182,35 @@ func (h *PageHandler) RenderTable(c *gin.Context) {
 	})
 }
 
-// loadTableData fetches automations and columns for a funnel.
+// RenderCreateForm handles GET /tenant/automations/new/form — returns modal form for creation.
+func (h *PageHandler) RenderCreateForm(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	funnelID := c.Query("funnel_id")
+	if funnelID == "" {
+		funnelID = c.PostForm("funnel_id")
+	}
+
+	// Load funnels to get the funnel_id from the page if not provided
+	if funnelID == "" {
+		funnels, _ := h.listFunnelsUC.Execute(c.Request.Context(), tenantID)
+		if len(funnels) > 0 {
+			funnelID = funnels[0].ID
+		}
+	}
+
+	columns, _ := h.columnRepo.FindByFunnelID(c.Request.Context(), funnelID)
+
+	c.HTML(http.StatusOK, "automation/modal_form.html", gin.H{
+		"CurrentFunnelID":  funnelID,
+		"Columns":          columns,
+		"SelectedType":     "expiration",
+		"SelectedColumnID": "",
+		"SelectedPriority": 0,
+	})
+}
+
+// --- Table helpers ---
+
 func (h *PageHandler) loadTableData(c *gin.Context, tenantID, funnelID string) ([]application.AutomationOutput, []funneldomain.Column) {
 	var automations []application.AutomationOutput
 	var columns []funneldomain.Column
@@ -200,7 +230,6 @@ func (h *PageHandler) loadTableData(c *gin.Context, tenantID, funnelID string) (
 	return automations, columns
 }
 
-// automationView holds enriched data for template rendering.
 type automationView struct {
 	ID            string
 	FunnelID      string
@@ -214,7 +243,6 @@ type automationView struct {
 	Priority      int
 }
 
-// enrichAutomations builds template-ready views from AutomationOutput + columns.
 func (h *PageHandler) enrichAutomations(automations []application.AutomationOutput, columns []funneldomain.Column) []automationView {
 	colMap := make(map[string]string, len(columns))
 	for _, col := range columns {
@@ -238,14 +266,15 @@ func (h *PageHandler) enrichAutomations(automations []application.AutomationOutp
 	}
 	return views
 }
-// validFieldTypes restricts which automation types can be used in field templates.
+
+// --- Dynamic Fields ---
+
 var validFieldTypes = map[string]bool{
 	"expiration": true, "move_funnel": true, "auto_message": true,
 	"auto_note": true, "switch_specialist": true, "rate_limit": true,
 	"detect_product": true,
 }
 
-// RenderFields handles GET /tenant/automations/fields — returns dynamic fields partial.
 func (h *PageHandler) RenderFields(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	automationType := c.Query("type")
@@ -257,7 +286,6 @@ func (h *PageHandler) RenderFields(c *gin.Context) {
 
 	data := gin.H{}
 
-	// Pre-populate config values when editing an existing automation
 	if automationID != "" {
 		auto, err := h.crudUC.GetByID(c.Request.Context(), automationID)
 		if err == nil {
@@ -265,7 +293,6 @@ func (h *PageHandler) RenderFields(c *gin.Context) {
 		}
 	}
 
-	// Add type-specific dropdown data (funnels, specialists)
 	switch automationType {
 	case "move_funnel":
 		if _, ok := data["Funnels"]; !ok {
@@ -278,17 +305,14 @@ func (h *PageHandler) RenderFields(c *gin.Context) {
 		}
 	}
 
-	templateName := "automation/fields_" + automationType + ".html"
-	c.HTML(http.StatusOK, templateName, data)
+	c.HTML(http.StatusOK, "automation/fields_"+automationType+".html", data)
 }
 
-// specialistOption is a simplified specialist view for select dropdowns.
 type specialistOption struct {
 	ID   string
 	Name string
 }
 
-// loadSpecialists returns specialists available for the tenant.
 func (h *PageHandler) loadSpecialists(c *gin.Context, tenantID string) []specialistOption {
 	specIDs, err := h.specTenantRepo.FindSpecialistIDsByTenantID(c.Request.Context(), tenantID)
 	if err != nil {
@@ -307,7 +331,8 @@ func (h *PageHandler) loadSpecialists(c *gin.Context, tenantID string) []special
 	return options
 }
 
-// RenderEditForm handles GET /tenant/automations/:id/form — returns modal pre-filled for editing.
+// --- Edit Form ---
+
 func (h *PageHandler) RenderEditForm(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
@@ -336,7 +361,6 @@ func (h *PageHandler) RenderEditForm(c *gin.Context) {
 	c.HTML(http.StatusOK, "automation/modal_form.html", data)
 }
 
-// addConfigData adds type-specific config values to the template data.
 func (h *PageHandler) addConfigData(data gin.H, automationType string, config map[string]interface{}, c *gin.Context, tenantID string) {
 	str := func(key string) string {
 		v, _ := config[key].(string)
@@ -372,7 +396,9 @@ func (h *PageHandler) addConfigData(data gin.H, automationType string, config ma
 		data["ConfigSwitchSpecialist"] = boolean("switch_specialist")
 	}
 }
-// HandleCreate handles POST /tenant/automations — creates automation and triggers table refresh.
+
+// --- Create / Update ---
+
 func (h *PageHandler) HandleCreate(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Query("funnel_id")
@@ -413,7 +439,6 @@ func (h *PageHandler) HandleCreate(c *gin.Context) {
 	c.String(http.StatusOK, "")
 }
 
-// HandleUpdate handles PUT /tenant/automations/:id — updates automation and triggers table refresh.
 func (h *PageHandler) HandleUpdate(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
@@ -451,7 +476,9 @@ func (h *PageHandler) HandleUpdate(c *gin.Context) {
 	c.Header("HX-Trigger", "refreshTable")
 	c.String(http.StatusOK, "")
 }
-// HandleDelete handles DELETE /tenant/automations/:id — deletes and returns table.
+
+// --- Delete / Toggle ---
+
 func (h *PageHandler) HandleDelete(c *gin.Context) {
 	id := c.Param("id")
 
@@ -464,7 +491,6 @@ func (h *PageHandler) HandleDelete(c *gin.Context) {
 	h.RenderTable(c)
 }
 
-// HandleToggle handles POST /tenant/automations/:id/toggle — toggles and returns table.
 func (h *PageHandler) HandleToggle(c *gin.Context) {
 	id := c.Param("id")
 
@@ -476,7 +502,17 @@ func (h *PageHandler) HandleToggle(c *gin.Context) {
 
 	h.RenderTable(c)
 }
-// RenderLogs handles GET /tenant/automations/:id/logs — returns logs table fragment.
+
+// --- Logs ---
+
+// logView enriches LogOutput with the contact name for display.
+type logView struct {
+	LeadName     string
+	Status       string
+	ErrorMessage string
+	ExecutedAt   interface{} // time.Time — passed through for template .Format
+}
+
 func (h *PageHandler) RenderLogs(c *gin.Context) {
 	id := c.Param("id")
 
@@ -505,15 +541,44 @@ func (h *PageHandler) RenderLogs(c *gin.Context) {
 		logs = logs[:limit]
 	}
 
+	// Enrich logs with contact names
+	views := make([]logView, len(logs))
+	for i, l := range logs {
+		name := h.resolveLeadName(c, l.LeadID)
+		views[i] = logView{
+			LeadName:     name,
+			Status:       l.Status,
+			ErrorMessage: l.ErrorMessage,
+			ExecutedAt:   l.ExecutedAt,
+		}
+	}
+
 	c.HTML(http.StatusOK, "automation/modal_logs.html", gin.H{
-		"Logs":         logs,
+		"Logs":         views,
 		"AutomationID": id,
 		"Limit":        limit,
 		"StartItem":    offset + 1,
-		"EndItem":      offset + len(logs),
+		"EndItem":      offset + len(views),
 		"HasPrev":      offset > 0,
 		"HasNext":      hasNext,
 		"PrevOffset":   offset - limit,
 		"NextOffset":   offset + limit,
 	})
+}
+
+// resolveLeadName looks up Lead → Contact to get the contact name.
+func (h *PageHandler) resolveLeadName(c *gin.Context, leadID string) string {
+	lead, err := h.leadRepo.FindByID(c.Request.Context(), leadID)
+	if err != nil {
+		return leadID[:8] + "…"
+	}
+
+	if lead.ContactID != "" && h.contactProvider != nil {
+		info, err := h.contactProvider.FindByID(c.Request.Context(), lead.ContactID)
+		if err == nil && info.Name != "" {
+			return info.Name
+		}
+	}
+
+	return leadID[:8] + "…"
 }
