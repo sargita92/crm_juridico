@@ -20,6 +20,7 @@ storage/
 
 # Superpowers (plugin Claude Code)
 docs/superpowers/
+.superpowers/
 
 # IDE
 .idea/
