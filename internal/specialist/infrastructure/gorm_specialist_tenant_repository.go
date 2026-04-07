@@ -66,6 +66,23 @@ func (r *GormSpecialistTenantRepository) FindTenantIDsBySpecialistID(ctx context
 	return ids, err
 }
 
+func (r *GormSpecialistTenantRepository) FindBySpecialistID(ctx context.Context, specialistID string) ([]domain.SpecialistTenant, error) {
+	var models []specialistTenantModel
+	if err := r.db.WithContext(ctx).Where("specialist_id = ?", specialistID).Find(&models).Error; err != nil {
+		return nil, err
+	}
+	result := make([]domain.SpecialistTenant, len(models))
+	for i, m := range models {
+		result[i] = domain.SpecialistTenant{
+			SpecialistID: m.SpecialistID,
+			TenantID:     m.TenantID,
+			IsDefault:    m.IsDefault,
+			CreatedAt:    m.CreatedAt,
+		}
+	}
+	return result, nil
+}
+
 func (r *GormSpecialistTenantRepository) FindSpecialistIDsByTenantID(ctx context.Context, tenantID string) ([]string, error) {
 	var ids []string
 	err := r.db.WithContext(ctx).

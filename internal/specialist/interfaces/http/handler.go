@@ -29,6 +29,7 @@ type Handler struct {
 	dissociateUC      *application.DissociateTenantUseCase
 	listTenantsUC     *application.ListSpecialistTenantsUseCase
 	listAvailableUC   *application.ListAvailableTenantsUseCase
+	specTenantRepo    domain.SpecialistTenantRepository
 }
 
 func NewHandler(
@@ -42,6 +43,7 @@ func NewHandler(
 	dissociateUC *application.DissociateTenantUseCase,
 	listTenantsUC *application.ListSpecialistTenantsUseCase,
 	listAvailableUC *application.ListAvailableTenantsUseCase,
+	specTenantRepo domain.SpecialistTenantRepository,
 ) *Handler {
 	return &Handler{
 		createUC:        createUC,
@@ -54,6 +56,7 @@ func NewHandler(
 		dissociateUC:    dissociateUC,
 		listTenantsUC:   listTenantsUC,
 		listAvailableUC: listAvailableUC,
+		specTenantRepo:  specTenantRepo,
 	}
 }
 
@@ -73,6 +76,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.Handler
 	admin.GET("/:id/tenants/available", h.HandleListAvailable)
 	admin.POST("/:id/tenants", h.HandleAssociateTenants)
 	admin.DELETE("/:id/tenants/:tenant_id", h.HandleDissociateTenant)
+	admin.POST("/:id/tenants/:tenant_id/default", h.HandleSetDefault)
 }
 
 func (h *Handler) RenderList(c *gin.Context) {
@@ -330,6 +334,23 @@ func (h *Handler) HandleDissociateTenant(c *gin.Context) {
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao desassociar tenant"})
+		return
+	}
+
+	// Re-render tenants section
+	h.HandleListTenants(c)
+}
+
+func (h *Handler) HandleSetDefault(c *gin.Context) {
+	id := c.Param("id")
+	tenantID := c.Param("tenant_id")
+
+	if err := h.specTenantRepo.SetDefault(c.Request.Context(), id, tenantID); err != nil {
+		if errors.Is(err, domain.ErrTenantNotAssociated) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Tenant não está associado"})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao definir default"})
 		return
 	}
 

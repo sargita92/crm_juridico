@@ -6,6 +6,7 @@
             <th>Nome</th>
             <th>Tipo</th>
             <th>Status</th>
+            <th>IA Default</th>
             <th></th>
         </tr>
     </thead>
@@ -18,6 +19,19 @@
                 <span class="badge {{if eq .Status "active"}}badge-active{{else if eq .Status "blocked"}}badge-blocked{{else}}badge-inactive{{end}}">
                     {{if eq .Status "active"}}Ativo{{else if eq .Status "blocked"}}Bloqueado{{else}}Inativo{{end}}
                 </span>
+            </td>
+            <td>
+                {{if .IsDefault}}
+                <span class="badge badge-active">Default</span>
+                {{else}}
+                <button class="btn btn-sm btn-outline"
+                        hx-post="/admin/specialists/{{$.SpecialistID}}/tenants/{{.TenantID}}/default"
+                        hx-target="#tenants-section"
+                        hx-swap="innerHTML"
+                        title="Tornar este especialista o default para este tenant">
+                    Tornar Default
+                </button>
+                {{end}}
             </td>
             <td>
                 <button class="btn btn-sm btn-danger"

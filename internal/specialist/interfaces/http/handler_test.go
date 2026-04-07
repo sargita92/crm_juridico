@@ -108,6 +108,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 		deactivateUC, activateUC,
 		associateUC, dissociateUC,
 		listTenantsUC, listAvailableUC,
+		stRepo,
 	)
 
 	// Guardrail use cases

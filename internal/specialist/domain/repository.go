@@ -27,6 +27,7 @@ type SpecialistTenantRepository interface {
 	Associate(ctx context.Context, specialistID, tenantID string) error
 	Dissociate(ctx context.Context, specialistID, tenantID string) error
 	FindTenantIDsBySpecialistID(ctx context.Context, specialistID string) ([]string, error)
+	FindBySpecialistID(ctx context.Context, specialistID string) ([]SpecialistTenant, error)
 	FindSpecialistIDsByTenantID(ctx context.Context, tenantID string) ([]string, error)
 	Exists(ctx context.Context, specialistID, tenantID string) (bool, error)
 	FindDefaultByTenantID(ctx context.Context, tenantID string) (string, error)

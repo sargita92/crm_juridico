@@ -44,6 +44,7 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
 		updateUC, deactivateUC, activateUC,
 		associateUC, dissociateUC,
 		listTenantsUC, listAvailableUC,
+		specialistTenantRepo,
 	)
 
 	// Guardrail use cases

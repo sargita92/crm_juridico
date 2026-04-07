@@ -108,6 +108,17 @@ func (m *mockSpecialistTenantRepo) FindTenantIDsBySpecialistID(_ context.Context
 	return ids, nil
 }
 
+func (m *mockSpecialistTenantRepo) FindBySpecialistID(_ context.Context, specialistID string) ([]domain.SpecialistTenant, error) {
+	var result []domain.SpecialistTenant
+	for tenantID := range m.associations[specialistID] {
+		result = append(result, domain.SpecialistTenant{
+			SpecialistID: specialistID,
+			TenantID:     tenantID,
+		})
+	}
+	return result, nil
+}
+
 func (m *mockSpecialistTenantRepo) FindSpecialistIDsByTenantID(_ context.Context, tenantID string) ([]string, error) {
 	var ids []string
 	for specID, tenants := range m.associations {

@@ -8,10 +8,11 @@ import (
 )
 
 type SpecialistTenantItem struct {
-	TenantID string
-	Name     string
-	Type     string
-	Status   string
+	TenantID  string
+	Name      string
+	Type      string
+	Status    string
+	IsDefault bool
 }
 
 type ListSpecialistTenantsUseCase struct {
@@ -37,13 +38,20 @@ func (uc *ListSpecialistTenantsUseCase) Execute(ctx context.Context, specialistI
 		return nil, err
 	}
 
-	tenantIDs, err := uc.stRepo.FindTenantIDsBySpecialistID(ctx, specialistID)
+	associations, err := uc.stRepo.FindBySpecialistID(ctx, specialistID)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(tenantIDs) == 0 {
+	if len(associations) == 0 {
 		return nil, nil
+	}
+
+	tenantIDs := make([]string, len(associations))
+	defaultMap := make(map[string]bool, len(associations))
+	for i, a := range associations {
+		tenantIDs[i] = a.TenantID
+		defaultMap[a.TenantID] = a.IsDefault
 	}
 
 	tenants, err := uc.tenantRepo.FindByIDs(ctx, tenantIDs)
@@ -54,10 +62,11 @@ func (uc *ListSpecialistTenantsUseCase) Execute(ctx context.Context, specialistI
 	items := make([]SpecialistTenantItem, len(tenants))
 	for i, t := range tenants {
 		items[i] = SpecialistTenantItem{
-			TenantID: t.ID,
-			Name:     t.Name,
-			Type:     string(t.Type),
-			Status:   string(t.Status),
+			TenantID:  t.ID,
+			Name:      t.Name,
+			Type:      string(t.Type),
+			Status:    string(t.Status),
+			IsDefault: defaultMap[t.ID],
 		}
 	}
 
