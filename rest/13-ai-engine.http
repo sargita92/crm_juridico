@@ -1,0 +1,51 @@
+### F16 — Motor de IA dos Especialistas
+
+## =============================================
+## AI Config por Especialista
+## =============================================
+
+### Obter config de IA do especialista
+GET {{host}}/admin/specialists/{{specialist_id}}/ai-config
+Cookie: token={{token}}
+
+### Salvar config de IA do especialista
+POST {{host}}/admin/specialists/{{specialist_id}}/ai-config
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+provider=openai&model=gpt-5.4-nano&temperature=0.7&max_tokens=1024&debounce_seconds=8
+
+## =============================================
+## Vinculacao Especialista <-> Produto
+## =============================================
+
+### Listar produtos vinculados ao especialista
+GET {{host}}/admin/specialists/{{specialist_id}}/products
+Cookie: token={{token}}
+
+### Vincular produto ao especialista
+POST {{host}}/admin/specialists/{{specialist_id}}/products
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+product_id={{product_id}}
+
+### Desvincular produto do especialista
+DELETE {{host}}/admin/specialists/{{specialist_id}}/products/{{product_id}}
+Cookie: token={{token}}
+
+## =============================================
+## Handoff (Assumir/Devolver conversa)
+## =============================================
+
+### Ver status do handoff
+GET {{host}}/tenant/conversations/{{conversation_id}}/handoff/status
+Cookie: token={{token}}
+
+### Assumir conversa (humano)
+POST {{host}}/tenant/conversations/{{conversation_id}}/handoff
+Cookie: token={{token}}
+
+### Devolver conversa para IA
+POST {{host}}/tenant/conversations/{{conversation_id}}/handoff/release
+Cookie: token={{token}}
