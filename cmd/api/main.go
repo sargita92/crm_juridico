@@ -22,6 +22,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/funnel"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
+	"github.com/sasrgita/crm-juridico/internal/permission"
 	"github.com/sasrgita/crm-juridico/internal/product"
 	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
@@ -127,7 +128,10 @@ func main() {
 	})
 	whatsappMod.SetAIHandler(aiMod)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod}
+	// Permission module
+	permissionMod := permission.NewModule(db, log)
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod}
 
 	// Auth (uses tenant repo from module)
 	userRepo := authinfra.NewGormUserRepository(db)
@@ -145,11 +149,13 @@ func main() {
 	authMw := middleware.Auth(tokenProvider)
 	tenantMw := middleware.RequireTenant()
 	adminMw := middleware.RequireAdmin()
+	requirePermMw := middleware.RequirePermission(permissionMod.Resolver())
 
 	mw := module.Middlewares{
-		Auth:   authMw,
-		Tenant: tenantMw,
-		Admin:  adminMw,
+		Auth:              authMw,
+		Tenant:            tenantMw,
+		Admin:             adminMw,
+		RequirePermission: requirePermMw,
 	}
 
 	router := setupRouter(log, authHandler, modules, loginUC, mw, cfg.Server.SecureCookie)
