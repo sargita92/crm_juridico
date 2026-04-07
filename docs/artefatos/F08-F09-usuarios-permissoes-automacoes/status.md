@@ -41,7 +41,7 @@
 - [ ] Telas HTMX para gestão de grupos e permissões
 - [ ] Telas HTMX para convites e gestão de usuários
 - [ ] Telas HTMX para notificações (badge, toast, painel)
-- [ ] Telas HTMX para automações
+- [x] Telas HTMX para automações (list, CRUD modal, toggle, logs, 7 tipos de campos dinâmicos)
 - [ ] Testes OWASP nos novos endpoints (401/403, isolamento de tenant)
 - [ ] Observabilidade: métricas Prometheus + traces nos novos endpoints
 - [ ] Arquivos .http em rest/ para os novos endpoints

@@ -63,12 +63,12 @@ Implementar o sistema de automações configuráveis por funil e coluna, com int
 - [x] testes
 
 ### Step 7: Telas (HTMX)
-- [ ] aba dedicada de automações
-- [ ] listagem de automações por funil
-- [ ] formulário de criação/edição (simples e intuitivo)
-- [ ] seleção de tipo com formulário dinâmico por tipo
-- [ ] ativar/desativar automação
-- [ ] permissionamento: visível apenas para quem tem permissão
+- [x] aba dedicada de automações
+- [x] listagem de automações por funil
+- [x] formulário de criação/edição (simples e intuitivo)
+- [x] seleção de tipo com formulário dinâmico por tipo
+- [x] ativar/desativar automação
+- [x] permissionamento: visível apenas para quem tem permissão
 - [ ] configurável se só admin ou tenant pode criar automações
 
 ## Critérios de aceite
