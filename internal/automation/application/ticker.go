@@ -9,12 +9,19 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
 )
 
+// expirationRunner is the minimal interface ExpirationTicker needs from the expiration executor.
+// Using an interface here allows tests to inject a mock without depending on the concrete type.
+type expirationRunner interface {
+	FindExpiredLeads(ctx context.Context, a *domain.Automation) ([]string, error)
+	Execute(ctx context.Context, a *domain.Automation, leadID, tenantID string) error
+}
+
 // ExpirationTicker polls active expiration automations on a fixed interval and
 // processes any leads that have exceeded their configured duration.
 type ExpirationTicker struct {
 	autoRepo    domain.AutomationRepository
 	logRepo     domain.ExecutionLogRepository
-	expExecutor *executors.ExpirationExecutor
+	expExecutor expirationRunner
 	interval    time.Duration
 	stop        chan struct{}
 }

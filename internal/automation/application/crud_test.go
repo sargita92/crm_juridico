@@ -125,6 +125,70 @@ func TestDelete(t *testing.T) {
 	assert.ErrorIs(t, err, domain.ErrAutomationNotFound)
 }
 
+func TestUpdate_Success(t *testing.T) {
+	autoRepo := &mockAutoRepo{}
+	logRepo := &mockLogRepo{}
+	uc := NewCRUDUseCase(autoRepo, logRepo)
+
+	created, err := uc.Create(context.Background(), CreateAutomationInput{
+		TenantID: "t1", FunnelID: "f1", ColumnID: "col-old", Type: string(domain.TypeAutoNote), Priority: 1,
+	})
+	require.NoError(t, err)
+
+	updated, err := uc.Update(context.Background(), created.ID, CreateAutomationInput{
+		TenantID: "t1", FunnelID: "f1", ColumnID: "col-new", Type: string(domain.TypeAutoNote),
+		Config:   map[string]interface{}{"key": "val"},
+		Priority: 5,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, updated)
+	assert.Equal(t, "col-new", updated.ColumnID)
+	assert.Equal(t, 5, updated.Priority)
+	assert.Equal(t, "val", updated.Config["key"])
+}
+
+func TestUpdate_NotFound(t *testing.T) {
+	autoRepo := &mockAutoRepo{}
+	logRepo := &mockLogRepo{}
+	uc := NewCRUDUseCase(autoRepo, logRepo)
+
+	out, err := uc.Update(context.Background(), "nonexistent-id", CreateAutomationInput{
+		TenantID: "t1", FunnelID: "f1", Type: string(domain.TypeAutoNote),
+	})
+
+	assert.Nil(t, out)
+	assert.ErrorIs(t, err, domain.ErrAutomationNotFound)
+}
+
+func TestGetByID_Success(t *testing.T) {
+	autoRepo := &mockAutoRepo{}
+	logRepo := &mockLogRepo{}
+	uc := NewCRUDUseCase(autoRepo, logRepo)
+
+	created, err := uc.Create(context.Background(), CreateAutomationInput{
+		TenantID: "t1", FunnelID: "f1", ColumnID: "col-1", Type: string(domain.TypeAutoNote), Priority: 3,
+	})
+	require.NoError(t, err)
+
+	fetched, err := uc.GetByID(context.Background(), created.ID)
+	require.NoError(t, err)
+	require.NotNil(t, fetched)
+	assert.Equal(t, created.ID, fetched.ID)
+	assert.Equal(t, "col-1", fetched.ColumnID)
+	assert.Equal(t, 3, fetched.Priority)
+}
+
+func TestGetByID_NotFound(t *testing.T) {
+	autoRepo := &mockAutoRepo{}
+	logRepo := &mockLogRepo{}
+	uc := NewCRUDUseCase(autoRepo, logRepo)
+
+	out, err := uc.GetByID(context.Background(), "does-not-exist")
+
+	assert.Nil(t, out)
+	assert.ErrorIs(t, err, domain.ErrAutomationNotFound)
+}
+
 func TestGetLogs(t *testing.T) {
 	autoRepo := &mockAutoRepo{}
 	logRepo := &mockLogRepo{}
