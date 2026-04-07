@@ -139,12 +139,15 @@ func main() {
 
 	// Automation module
 	automationMod := automation.NewModule(db, automation.ModuleDeps{
-		MoveLeadUC:    funnelMod.MoveLeadUC(),
-		LeadRepo:      funnelMod.LeadRepo(),
-		ColumnRepo:    funnelMod.ColumnRepo(),
-		NoteRepo:      funnelMod.NoteRepo(),
-		NotifyService: notificationMod.NotifyService(),
-		DB:            db,
+		MoveLeadUC:     funnelMod.MoveLeadUC(),
+		LeadRepo:       funnelMod.LeadRepo(),
+		ColumnRepo:     funnelMod.ColumnRepo(),
+		NoteRepo:       funnelMod.NoteRepo(),
+		NotifyService:  notificationMod.NotifyService(),
+		DB:             db,
+		ListFunnelsUC:  funnelMod.ListFunnelsUC(),
+		SpecialistRepo: specialistMod.SpecialistRepo(),
+		SpecTenantRepo: specialistMod.SpecTenantRepo(),
 	}, log)
 
 	// Set automation trigger on funnel module

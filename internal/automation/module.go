@@ -14,23 +14,28 @@ import (
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	notifapp "github.com/sasrgita/crm-juridico/internal/notification/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
+	specialistdomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 )
 
 // ModuleDeps holds all cross-module dependencies for the automation module.
 type ModuleDeps struct {
-	MoveLeadUC    *funnelapp.MoveLeadUseCase
-	LeadRepo      funneldomain.LeadRepository
-	ColumnRepo    funneldomain.ColumnRepository
-	NoteRepo      funneldomain.LeadNoteRepository
-	NotifyService *notifapp.NotifyService
-	DB            *gorm.DB
+	MoveLeadUC     *funnelapp.MoveLeadUseCase
+	LeadRepo       funneldomain.LeadRepository
+	ColumnRepo     funneldomain.ColumnRepository
+	NoteRepo       funneldomain.LeadNoteRepository
+	NotifyService  *notifapp.NotifyService
+	DB             *gorm.DB
+	ListFunnelsUC  *funnelapp.ListFunnelsUseCase
+	SpecialistRepo specialistdomain.SpecialistRepository
+	SpecTenantRepo specialistdomain.SpecialistTenantRepository
 }
 
 // Module is the automation bounded-context root.
 type Module struct {
-	handler *autohttp.Handler
-	engine  *application.AutomationEngine
-	ticker  *application.ExpirationTicker
+	handler     *autohttp.Handler
+	pageHandler *autohttp.PageHandler
+	engine      *application.AutomationEngine
+	ticker      *application.ExpirationTicker
 }
 
 // NewModule wires all automation dependencies and returns a ready Module.
@@ -79,8 +84,9 @@ func NewModule(db *gorm.DB, deps ModuleDeps, log *zap.Logger) *Module {
 	// CRUD + handler
 	crudUC := application.NewCRUDUseCase(autoRepo, logRepo)
 	handler := autohttp.NewHandler(crudUC, log)
+	pageHandler := autohttp.NewPageHandler(crudUC, deps.ListFunnelsUC, deps.ColumnRepo, deps.SpecialistRepo, deps.SpecTenantRepo, log)
 
-	return &Module{handler: handler, engine: engine, ticker: ticker}
+	return &Module{handler: handler, pageHandler: pageHandler, engine: engine, ticker: ticker}
 }
 
 // Name implements module.Module.
@@ -89,6 +95,7 @@ func (m *Module) Name() string { return "automation" }
 // RegisterRoutes implements module.Module.
 func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.handler.RegisterRoutes(router, mw.Auth, mw.Tenant, mw.RequirePermission)
+	m.pageHandler.RegisterPageRoutes(router, mw.Auth, mw.Tenant, mw.RequirePermission)
 }
 
 // Engine exposes the AutomationEngine so the funnel module can call OnLeadEvent.
