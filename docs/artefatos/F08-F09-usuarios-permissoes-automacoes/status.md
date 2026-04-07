@@ -1,6 +1,6 @@
 # F08 + F09 — Status
 
-## Status: Em andamento
+## Status: Backend concluído (faltam telas HTMX e itens complementares)
 
 ## Planos concluídos
 
@@ -25,13 +25,16 @@
 
 ## Pendente
 
-### Plan 3: Automation Module (a fazer)
-- [ ] Entidade Automation (7 tipos)
-- [ ] AutomationEngine (event-driven, sync/async híbrido)
-- [ ] ExpirationTicker (goroutine, 5min)
-- [ ] ExecutionLog + RateLimitCounter
-- [ ] 7 endpoints HTTP
-- [ ] Telas HTMX (automações, permissões, notificações)
+### Plan 3: Automation Module (concluído)
+- [x] Entidade Automation (7 tipos)
+- [x] AutomationEngine (event-driven, sync/async híbrido)
+- [x] ExpirationTicker (goroutine, 5min)
+- [x] ExecutionLog + RateLimitCounter
+- [x] 6 executors (move_funnel, auto_note, switch_specialist, detect_product, auto_message, expiration)
+- [x] 7 endpoints HTTP
+- [x] AutomationTrigger integrado no funnel (create_lead + move_lead)
+- [x] 3 migrations (000046-000048)
+- [x] 21 tests, 91.3% coverage
 
 ### Itens complementares (a fazer)
 - [ ] Load balance integration (conectar à criação de leads)
