@@ -55,7 +55,7 @@ mysql_root() {
 }
 
 mysql_user() {
-    docker compose -f "$COMPOSE_FILE" exec -T mysql mysql -u "${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" 2>/dev/null
+    docker compose -f "$COMPOSE_FILE" exec -T mysql mysql --default-character-set=utf8mb4 -u "${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" 2>/dev/null
 }
 
 echo "==> Verificando se MySQL está rodando..."
