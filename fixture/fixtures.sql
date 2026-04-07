@@ -352,16 +352,16 @@ VALUES
      'text', 'sent', 'wamid.maria01', DATE_SUB(NOW(), INTERVAL 2 HOUR), DATE_SUB(NOW(), INTERVAL 2 HOUR)),
     ('550e8400-e29b-41d4-a716-4466554400d1', @CONV_MARIA, 'outgoing',
      'Olá Maria! Sou a Dra. Clara, assistente virtual do escritório Mendes & Costa. Como posso ajudá-la? Primeiro, qual seu nome completo?',
-     'text', 'sent', 'wamid.maria02', DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 55 MINUTE), DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 55 MINUTE)),
+     'text', 'sent', 'wamid.maria02', DATE_SUB(NOW(), INTERVAL 115 MINUTE), DATE_SUB(NOW(), INTERVAL 115 MINUTE)),
     ('550e8400-e29b-41d4-a716-4466554400d2', @CONV_MARIA, 'incoming',
      'Maria da Silva',
-     'text', 'sent', 'wamid.maria03', DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 50 MINUTE), DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 50 MINUTE)),
+     'text', 'sent', 'wamid.maria03', DATE_SUB(NOW(), INTERVAL 110 MINUTE), DATE_SUB(NOW(), INTERVAL 110 MINUTE)),
     ('550e8400-e29b-41d4-a716-4466554400d3', @CONV_MARIA, 'outgoing',
      'Obrigada, Maria! Qual tipo de benefício você busca? Aposentadoria por Idade, Aposentadoria por Tempo de Contribuição, BPC/LOAS, Auxílio-Doença ou Revisão de Benefício?',
-     'text', 'sent', 'wamid.maria04', DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 49 MINUTE), DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 49 MINUTE)),
+     'text', 'sent', 'wamid.maria04', DATE_SUB(NOW(), INTERVAL 109 MINUTE), DATE_SUB(NOW(), INTERVAL 109 MINUTE)),
     ('550e8400-e29b-41d4-a716-4466554400d4', @CONV_MARIA, 'incoming',
      'Aposentadoria, tenho 63 anos',
-     'text', 'sent', 'wamid.maria05', DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 45 MINUTE), DATE_SUB(NOW(), INTERVAL 1 HOUR - INTERVAL 45 MINUTE))
+     'text', 'sent', 'wamid.maria05', DATE_SUB(NOW(), INTERVAL 105 MINUTE), DATE_SUB(NOW(), INTERVAL 105 MINUTE))
 ON DUPLICATE KEY UPDATE content = VALUES(content);
 
 -- Conversa: José Santos (documentos pendentes — 7 msgs)
