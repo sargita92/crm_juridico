@@ -152,11 +152,14 @@ func (h *PageHandler) ListPage(c *gin.Context) {
 	automations, columns := h.loadTableData(c, tenantID, currentFunnelID)
 
 	c.HTML(http.StatusOK, "automation/list.html", gin.H{
-		"ActiveNav":       "automations",
-		"Funnels":         funnels,
-		"CurrentFunnelID": currentFunnelID,
-		"Automations":     h.enrichAutomations(automations, columns),
-		"Columns":         columns,
+		"ActiveNav":        "automations",
+		"Funnels":          funnels,
+		"CurrentFunnelID":  currentFunnelID,
+		"Automations":      h.enrichAutomations(automations, columns),
+		"Columns":          columns,
+		"SelectedType":     "expiration",
+		"SelectedColumnID": "",
+		"SelectedPriority": 0,
 	})
 }
 
