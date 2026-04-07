@@ -17,9 +17,16 @@ func NewOwnerCheckerAdapter(db *gorm.DB) *OwnerCheckerAdapter {
 	return &OwnerCheckerAdapter{db: db}
 }
 
-// IsOwner returns false for all users until the is_owner column is added in Plan 2.
-func (a *OwnerCheckerAdapter) IsOwner(_ context.Context, _, _ string) (bool, error) {
-	return false, nil
+// IsOwner returns true when the user_tenants row has is_owner = true.
+func (a *OwnerCheckerAdapter) IsOwner(ctx context.Context, userID, tenantID string) (bool, error) {
+	var count int64
+	err := a.db.WithContext(ctx).Table("user_tenants").
+		Where("user_id = ? AND tenant_id = ? AND is_owner = ?", userID, tenantID, true).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 // AdminCheckerAdapter checks whether a user holds the "admin" role.
