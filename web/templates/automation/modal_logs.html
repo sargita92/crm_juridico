@@ -1,0 +1,55 @@
+{{define "automation/modal_logs.html"}}
+{{if .Logs}}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Lead</th>
+            <th>Status</th>
+            <th>Erro</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Logs}}
+        <tr>
+            <td>{{.ExecutedAt.Format "02/01/2006 15:04"}}</td>
+            <td style="font-family:monospace;font-size:12px">{{.LeadID}}</td>
+            <td>
+                {{if eq .Status "success"}}
+                <span class="badge badge-active">success</span>
+                {{else}}
+                <span class="badge badge-inactive">{{.Status}}</span>
+                {{end}}
+            </td>
+            <td>{{if .ErrorMessage}}<span style="color:#e74c3c;font-size:12px">{{.ErrorMessage}}</span>{{else}}<span class="text-muted">—</span>{{end}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+<div class="pagination">
+    <span class="pagination-info">Mostrando {{.StartItem}}-{{.EndItem}}</span>
+    <div class="pagination-buttons">
+        {{if .HasPrev}}
+        <button class="btn btn-sm btn-outline"
+                hx-get="/tenant/automations/{{.AutomationID}}/logs?limit={{.Limit}}&offset={{.PrevOffset}}"
+                hx-target="#logs-body"
+                hx-swap="innerHTML">
+            Anterior
+        </button>
+        {{end}}
+        {{if .HasNext}}
+        <button class="btn btn-sm btn-outline"
+                hx-get="/tenant/automations/{{.AutomationID}}/logs?limit={{.Limit}}&offset={{.NextOffset}}"
+                hx-target="#logs-body"
+                hx-swap="innerHTML">
+            Próximo
+        </button>
+        {{end}}
+    </div>
+</div>
+{{else}}
+<div class="empty-state" style="padding:2rem 1rem">
+    <p class="text-muted">Nenhum log de execução encontrado</p>
+</div>
+{{end}}
+{{end}}

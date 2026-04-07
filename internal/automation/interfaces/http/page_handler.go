@@ -457,4 +457,44 @@ func (h *PageHandler) HandleToggle(c *gin.Context) {
 
 	h.RenderTable(c)
 }
-func (h *PageHandler) RenderLogs(c *gin.Context)     { c.Status(http.StatusNotImplemented) }
+// RenderLogs handles GET /tenant/automations/:id/logs — returns logs table fragment.
+func (h *PageHandler) RenderLogs(c *gin.Context) {
+	id := c.Param("id")
+
+	limit := 20
+	offset := 0
+	if v := c.Query("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			limit = n
+		}
+	}
+	if v := c.Query("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+
+	logs, err := h.crudUC.GetLogs(c.Request.Context(), id, limit+1, offset)
+	if err != nil {
+		h.log.Error("failed to get logs", zap.String("id", id), zap.Error(err))
+		c.String(http.StatusInternalServerError, "Erro ao carregar logs")
+		return
+	}
+
+	hasNext := len(logs) > limit
+	if hasNext {
+		logs = logs[:limit]
+	}
+
+	c.HTML(http.StatusOK, "automation/modal_logs.html", gin.H{
+		"Logs":         logs,
+		"AutomationID": id,
+		"Limit":        limit,
+		"StartItem":    offset + 1,
+		"EndItem":      offset + len(logs),
+		"HasPrev":      offset > 0,
+		"HasNext":      hasNext,
+		"PrevOffset":   offset - limit,
+		"NextOffset":   offset + limit,
+	})
+}
