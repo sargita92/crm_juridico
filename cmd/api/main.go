@@ -55,6 +55,10 @@ func main() {
 	}
 	defer log.Sync()
 
+	if cfg.Env == "production" && cfg.AI.PlaygroundEnabled {
+		log.Warn("AI playground is ENABLED in production — disable AI_PLAYGROUND_ENABLED")
+	}
+
 	tp, err := observability.InitTracer("crm-juridico")
 	if err != nil {
 		log.Fatal("failed to initialize tracer", zap.Error(err))
