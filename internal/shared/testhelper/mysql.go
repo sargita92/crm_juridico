@@ -44,6 +44,10 @@ func NewMySQLContainer(ctx context.Context, t *testing.T) *MySQLContainer {
 			"MYSQL_USER":         dbUser,
 			"MYSQL_PASSWORD":     dbPassword,
 		},
+		Cmd: []string{
+			"--character-set-server=utf8mb4",
+			"--collation-server=utf8mb4_unicode_ci",
+		},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("ready for connections").
 				WithOccurrence(2).
@@ -74,7 +78,7 @@ func NewMySQLContainer(ctx context.Context, t *testing.T) *MySQLContainer {
 		t.Fatalf("failed to get mapped port: %v", err)
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=true",
 		dbUser, dbPassword, host, mappedPort.Port(), dbName,
 	)
 
@@ -181,6 +185,10 @@ func NewMySQLContainerForMain(ctx context.Context) *MySQLContainer {
 			"MYSQL_USER":         dbUser,
 			"MYSQL_PASSWORD":     dbPassword,
 		},
+		Cmd: []string{
+			"--character-set-server=utf8mb4",
+			"--collation-server=utf8mb4_unicode_ci",
+		},
 		WaitingFor: wait.ForAll(
 			wait.ForLog("ready for connections").
 				WithOccurrence(2).
@@ -211,7 +219,7 @@ func NewMySQLContainerForMain(ctx context.Context) *MySQLContainer {
 		panic(fmt.Sprintf("failed to get mapped port: %v", err))
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&multiStatements=true",
 		dbUser, dbPassword, host, mappedPort.Port(), dbName,
 	)
 
