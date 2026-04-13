@@ -46,6 +46,18 @@ func TestProduct_Update_EmptyName(t *testing.T) {
 	assert.ErrorIs(t, p.Update("", "", nil), ErrProductNameRequired)
 }
 
+func TestProduct_Update_NameTooLong(t *testing.T) {
+	p, _ := NewProduct("id-1", "Old", "", nil)
+	err := p.Update(strings.Repeat("x", MaxProductNameLength+1), "", nil)
+	assert.ErrorIs(t, err, ErrProductNameTooLong)
+}
+
+func TestProduct_Update_NilKeywordsBecomeEmpty(t *testing.T) {
+	p, _ := NewProduct("id-1", "Old", "", []string{"existing"})
+	require.NoError(t, p.Update("New", "desc", nil))
+	assert.Empty(t, p.Keywords)
+}
+
 func TestProduct_ActivateDeactivate(t *testing.T) {
 	p, _ := NewProduct("id-1", "Test", "", nil)
 	p.Deactivate()
