@@ -13,6 +13,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/ai/domain"
 	"github.com/sasrgita/crm-juridico/internal/ai/infrastructure"
 	aihttp "github.com/sasrgita/crm-juridico/internal/ai/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/ai/interfaces/http/playground"
 	docDomain "github.com/sasrgita/crm-juridico/internal/document/domain"
 	funnelApp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funnelDomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
@@ -36,12 +37,14 @@ type ModuleDeps struct {
 	ProductRepo     productDomain.ProductRepository
 	PhoneNumberRepo productDomain.PhoneNumberRepository
 	DetectProductUC *productApp.DetectProductUseCase
-	MessageRepo     whatsappDomain.MessageRepository
-	SendMessageUC   *whatsappApp.SendMessageUseCase
-	LeadRepo        funnelDomain.LeadRepository
-	MoveLeadUC      *funnelApp.MoveLeadUseCase
-	FunnelRepo      funnelDomain.FunnelRepository
-	ColumnRepo      funnelDomain.ColumnRepository
+	MessageRepo      whatsappDomain.MessageRepository
+	ConversationRepo whatsappDomain.ConversationRepository
+	SendMessageUC    *whatsappApp.SendMessageUseCase
+	ReceiveMessageUC *whatsappApp.ReceiveMessageUseCase
+	LeadRepo         funnelDomain.LeadRepository
+	MoveLeadUC       *funnelApp.MoveLeadUseCase
+	FunnelRepo       funnelDomain.FunnelRepository
+	ColumnRepo       funnelDomain.ColumnRepository
 }
 
 // conversationContext holds routing context stored between routing and debounce callback.
@@ -63,6 +66,7 @@ type Module struct {
 	stateRepo         domain.ConversationStateRepository
 	resetUC           *application.ResetConversationUseCase
 	handler           *aihttp.Handler
+	playgroundHandler *playground.Handler
 	log               *zap.Logger
 
 	contexts   map[string]conversationContext
@@ -162,6 +166,21 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		log,
 	)
 
+	// 10b. Conditionally wire the AI playground dev routes.
+	var playgroundHandler *playground.Handler
+	if cfg.PlaygroundEnabled {
+		contactAdapter := infrastructure.NewPlaygroundContactAdapter(deps.ConversationRepo)
+		messageAdapter := infrastructure.NewPlaygroundMessageAdapter(deps.MessageRepo)
+		playgroundHandler = playground.NewHandler(
+			contactAdapter,
+			messageAdapter,
+			deps.ReceiveMessageUC,
+			resetUC,
+			log,
+		)
+		log.Info("ai playground: ENABLED — dev routes registered at /tenant/ai/playground")
+	}
+
 	m := &Module{
 		engine:            engine,
 		router:            specialistRouter,
@@ -172,6 +191,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		stateRepo:         convStateRepo,
 		resetUC:           resetUC,
 		handler:           handler,
+		playgroundHandler: playgroundHandler,
 		log:               log,
 		contexts:          make(map[string]conversationContext),
 	}
@@ -251,6 +271,9 @@ func (m *Module) Name() string { return "ai" }
 
 func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.handler.RegisterRoutes(router, mw)
+	if m.playgroundHandler != nil {
+		m.playgroundHandler.RegisterRoutes(router, mw)
+	}
 }
 
 // --- accessor methods for main.go wiring ---

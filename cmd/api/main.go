@@ -128,12 +128,14 @@ func main() {
 		ProductRepo:     productMod.ProductRepo(),
 		PhoneNumberRepo: productMod.PhoneNumberRepo(),
 		DetectProductUC: productMod.DetectUseCase(),
-		MessageRepo:     whatsappMod.MessageRepo(),
-		SendMessageUC:   whatsappMod.SendMessageUC(),
-		LeadRepo:        funnelMod.LeadRepo(),
-		MoveLeadUC:      funnelMod.MoveLeadUC(),
-		FunnelRepo:      funnelMod.FunnelRepo(),
-		ColumnRepo:      funnelMod.ColumnRepo(),
+		MessageRepo:      whatsappMod.MessageRepo(),
+		ConversationRepo: whatsappMod.ConversationRepo(),
+		SendMessageUC:    whatsappMod.SendMessageUC(),
+		ReceiveMessageUC: whatsappMod.ReceiveMessageUC(),
+		LeadRepo:         funnelMod.LeadRepo(),
+		MoveLeadUC:       funnelMod.MoveLeadUC(),
+		FunnelRepo:       funnelMod.FunnelRepo(),
+		ColumnRepo:       funnelMod.ColumnRepo(),
 	})
 	whatsappMod.SetAIHandler(aiMod)
 

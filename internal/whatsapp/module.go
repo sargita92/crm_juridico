@@ -21,6 +21,7 @@ type Module struct {
 	receiveMessageUC *application.ReceiveMessageUseCase
 	sendMessageUC    *application.SendMessageUseCase
 	contactRepo      domain.ContactRepository
+	conversationRepo domain.ConversationRepository
 	messageRepo      domain.MessageRepository
 }
 
@@ -46,7 +47,15 @@ func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, eventBus events.Ev
 		connectUC, statusUC, disconnectUC, eventBus, log,
 	)
 
-	return &Module{handler: handler, provider: provider, receiveMessageUC: receiveMessageUC, sendMessageUC: sendMessageUC, contactRepo: contactRepo, messageRepo: messageRepo}
+	return &Module{
+		handler:          handler,
+		provider:         provider,
+		receiveMessageUC: receiveMessageUC,
+		sendMessageUC:    sendMessageUC,
+		contactRepo:      contactRepo,
+		conversationRepo: conversationRepo,
+		messageRepo:      messageRepo,
+	}
 }
 
 func (m *Module) Name() string { return "whatsapp" }
@@ -63,12 +72,20 @@ func (m *Module) ContactRepo() domain.ContactRepository {
 	return m.contactRepo
 }
 
+func (m *Module) ConversationRepo() domain.ConversationRepository {
+	return m.conversationRepo
+}
+
 func (m *Module) MessageRepo() domain.MessageRepository {
 	return m.messageRepo
 }
 
 func (m *Module) SendMessageUC() *application.SendMessageUseCase {
 	return m.sendMessageUC
+}
+
+func (m *Module) ReceiveMessageUC() *application.ReceiveMessageUseCase {
+	return m.receiveMessageUC
 }
 
 func (m *Module) SetAIHandler(handler domain.AIHandler) {
