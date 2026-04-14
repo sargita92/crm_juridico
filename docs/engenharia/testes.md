@@ -29,6 +29,28 @@
 - cada teste cria e destrói seu próprio container/estado
 - helper compartilhado para setup/teardown em `internal/shared/testhelper/`
 
+### Testes end-to-end (build tag `integration`)
+
+Testes que sobem o pipeline inteiro (HTTP → router → use case → DB real → fixture completa) são marcados com:
+
+```go
+//go:build integration
+```
+
+Rodam apenas quando o tag é passado explicitamente:
+
+```bash
+go test -tags=integration ./internal/ai/application/... -run TestE2E -v -timeout 5m
+```
+
+Não entram no `go test ./...` default — evita lentidão na suíte unitária e torna explícito quando estamos exercitando o fluxo completo. Use este padrão para qualquer cenário que precise de:
+
+- fixture carregada (`fixture/fixtures.sql`)
+- múltiplos módulos wired via `NewModule`
+- asserções sobre efeitos em cadeia (state → lead → coluna)
+
+Exemplo: `internal/ai/application/e2e_flow_test.go` exercita o fluxo "mensagem inbound → especialista → steps → qualificação" usando o `FakeProvider` registrado no `ProviderRegistry`.
+
 ## Testes de segurança (OWASP)
 
 Cada feature deve incluir testes automatizados que cubram os riscos relevantes do OWASP Top 10:

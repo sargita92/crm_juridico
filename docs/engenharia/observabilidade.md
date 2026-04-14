@@ -45,6 +45,8 @@ Métricas obrigatórias:
 | `automation_executions_total` | Counter | Automações executadas (por tipo, sucesso/erro) |
 | `specialist_responses_total` | Counter | Respostas de especialistas IA |
 | `specialist_response_duration_seconds` | Histogram | Latência de resposta do especialista |
+| `crm_ai_reset_commands_total` | Counter | Conversas reiniciadas via `/reset` (labels: tenant_id, specialist_id, source=command\|playground) |
+| `crm_ai_playground_messages_total` | Counter | Mensagens injetadas pelo playground dev (label: tenant_id) |
 | `active_whatsapp_sessions` | Gauge | Sessões WhatsApp ativas |
 | `db_query_duration_seconds` | Histogram | Latência de queries ao banco |
 

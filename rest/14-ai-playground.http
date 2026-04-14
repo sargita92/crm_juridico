@@ -1,0 +1,54 @@
+### F17 — AI Playground (dev-only)
+
+## =============================================
+## Pre-requisitos
+## =============================================
+## - AI_PLAYGROUND_ENABLED=true no .env
+## - Usuario logado (cookie token valido)
+## - Contato existente no tenant (fixture seeda 'Teste Playground' com
+##   id 550e8400-e29b-41d4-a716-4466554400fe)
+## =============================================
+
+@playground_contact_id = 550e8400-e29b-41d4-a716-4466554400fe
+
+### Abrir pagina do playground (lista de contatos)
+GET {{host}}/tenant/ai/playground
+Cookie: token={{token}}
+
+### Carregar fragmento da conversa para um contato (HTMX swap)
+GET {{host}}/tenant/ai/playground/conversation/{{playground_contact_id}}
+Cookie: token={{token}}
+
+### Enviar mensagem como se fosse o lead (injeta no pipeline real)
+POST {{host}}/tenant/ai/playground/conversation/{{playground_contact_id}}/send
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+content=Preciso de uma revisão na minha aposentadoria
+
+### Reiniciar a conversa (zera state, devolve lead a coluna inicial)
+POST {{host}}/tenant/ai/playground/conversation/{{playground_contact_id}}/reset
+Cookie: token={{token}}
+
+## =============================================
+## Comando /reset via mensagem (funciona em qualquer conversa,
+## desde que AI_RESET_COMMAND_ENABLED=true — default)
+## =============================================
+
+### Enviar "/reset" como mensagem normal do lead
+POST {{host}}/tenant/ai/playground/conversation/{{playground_contact_id}}/send
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+content=/reset
+
+## =============================================
+## Cenarios negativos (devem bater nos OWASP tests)
+## =============================================
+
+### Sem token — deve retornar 401/redirect
+GET {{host}}/tenant/ai/playground
+
+### Contato de outro tenant — deve retornar 404
+GET {{host}}/tenant/ai/playground/conversation/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+Cookie: token={{token}}
