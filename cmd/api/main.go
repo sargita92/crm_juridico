@@ -55,6 +55,10 @@ func main() {
 	}
 	defer log.Sync()
 
+	if cfg.Env == "production" && cfg.AI.PlaygroundEnabled {
+		log.Warn("AI playground is ENABLED in production — disable AI_PLAYGROUND_ENABLED")
+	}
+
 	tp, err := observability.InitTracer("crm-juridico")
 	if err != nil {
 		log.Fatal("failed to initialize tracer", zap.Error(err))
@@ -124,10 +128,14 @@ func main() {
 		ProductRepo:     productMod.ProductRepo(),
 		PhoneNumberRepo: productMod.PhoneNumberRepo(),
 		DetectProductUC: productMod.DetectUseCase(),
-		MessageRepo:     whatsappMod.MessageRepo(),
-		SendMessageUC:   whatsappMod.SendMessageUC(),
-		LeadRepo:        funnelMod.LeadRepo(),
-		MoveLeadUC:      funnelMod.MoveLeadUC(),
+		MessageRepo:      whatsappMod.MessageRepo(),
+		ConversationRepo: whatsappMod.ConversationRepo(),
+		SendMessageUC:    whatsappMod.SendMessageUC(),
+		ReceiveMessageUC: whatsappMod.ReceiveMessageUC(),
+		LeadRepo:         funnelMod.LeadRepo(),
+		MoveLeadUC:       funnelMod.MoveLeadUC(),
+		FunnelRepo:       funnelMod.FunnelRepo(),
+		ColumnRepo:       funnelMod.ColumnRepo(),
 	})
 	whatsappMod.SetAIHandler(aiMod)
 

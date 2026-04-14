@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
 	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 	"go.uber.org/zap"
@@ -29,15 +31,17 @@ type LeadUpdater interface {
 
 // ConversationEngine orchestrates the AI conversation flow for a lead.
 type ConversationEngine struct {
-	providerRegistry *domain.ProviderRegistry
-	configResolver   ConfigResolver
-	stateRepo        domain.ConversationStateRepository
-	contextBuilder   *ContextBuilder
-	stepEvaluator    *StepEvaluator
-	guardrailChecker *GuardrailChecker
-	messageSender    MessageSender
-	leadUpdater      LeadUpdater
-	log              *zap.Logger
+	providerRegistry    *domain.ProviderRegistry
+	configResolver      ConfigResolver
+	stateRepo           domain.ConversationStateRepository
+	contextBuilder      *ContextBuilder
+	stepEvaluator       *StepEvaluator
+	guardrailChecker    *GuardrailChecker
+	messageSender       MessageSender
+	leadUpdater         LeadUpdater
+	resetUC             *ResetConversationUseCase
+	resetCommandEnabled bool
+	log                 *zap.Logger
 }
 
 // NewConversationEngine creates a ConversationEngine with all required dependencies.
@@ -50,18 +54,22 @@ func NewConversationEngine(
 	guardrailChecker *GuardrailChecker,
 	messageSender MessageSender,
 	leadUpdater LeadUpdater,
+	resetUC *ResetConversationUseCase,
+	resetCommandEnabled bool,
 	log *zap.Logger,
 ) *ConversationEngine {
 	return &ConversationEngine{
-		providerRegistry: providerRegistry,
-		configResolver:   configResolver,
-		stateRepo:        stateRepo,
-		contextBuilder:   contextBuilder,
-		stepEvaluator:    stepEvaluator,
-		guardrailChecker: guardrailChecker,
-		messageSender:    messageSender,
-		leadUpdater:      leadUpdater,
-		log:              log,
+		providerRegistry:    providerRegistry,
+		configResolver:      configResolver,
+		stateRepo:           stateRepo,
+		contextBuilder:      contextBuilder,
+		stepEvaluator:       stepEvaluator,
+		guardrailChecker:    guardrailChecker,
+		messageSender:       messageSender,
+		leadUpdater:         leadUpdater,
+		resetUC:             resetUC,
+		resetCommandEnabled: resetCommandEnabled,
+		log:                 log,
 	}
 }
 
@@ -71,14 +79,21 @@ func (e *ConversationEngine) HandleMessages(
 	tenantID, conversationID, specialistID, productID string,
 	messages []string,
 ) error {
+	// 0. Intercept /reset command before any state loading.
+	if e.resetCommandEnabled && e.resetUC != nil && IsResetCommand(messages) {
+		return e.resetUC.Execute(ctx, tenantID, conversationID, "command")
+	}
+
 	// 1. Get or create ConversationState.
 	state, err := e.stateRepo.FindByConversationID(ctx, conversationID)
 	if err != nil {
 		if err != domain.ErrConversationStateNotFound {
 			return fmt.Errorf("conversation_engine: find state: %w", err)
 		}
-		// Create new state.
-		state, err = domain.NewConversationState("", conversationID, specialistID)
+		// Create new state. A fresh UUID is assigned as the primary key so
+		// GORM's Save on subsequent updates does an UPDATE (not a failing
+		// INSERT on the empty-string PK).
+		state, err = domain.NewConversationState(uuid.New().String(), conversationID, specialistID)
 		if err != nil {
 			return fmt.Errorf("conversation_engine: new state: %w", err)
 		}

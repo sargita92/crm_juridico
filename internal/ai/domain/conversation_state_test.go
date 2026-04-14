@@ -110,3 +110,23 @@ func TestConversationState_IsAfterResume_BeforeResumedAt_ReturnsFalse(t *testing
 
 	assert.False(t, result)
 }
+
+func TestConversationState_Reset(t *testing.T) {
+	s, err := NewConversationState("id-1", "conv-1", "spec-1")
+	require.NoError(t, err)
+
+	s.AdvanceStep("nome", "Maria", 10)
+	s.AdvanceStep("produto", "PROD_IDADE", 20)
+	s.ActivateHandoff()
+
+	before := s.UpdatedAt
+	time.Sleep(time.Millisecond)
+	s.Reset()
+
+	assert.Equal(t, 0, s.CurrentStepIndex)
+	assert.Equal(t, 0, s.AccumulatedScore)
+	assert.Empty(t, s.CollectedData)
+	assert.False(t, s.HandoffActive)
+	assert.Nil(t, s.HandoffAt)
+	assert.True(t, s.UpdatedAt.After(before))
+}

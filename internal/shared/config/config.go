@@ -15,15 +15,18 @@ type Config struct {
 	Log      LogConfig
 	JWT      JWTConfig
 	AI       AIConfigEnv
+	Env      string // "development", "test", "production"
 }
 
 type AIConfigEnv struct {
-	OpenAIAPIKey       string
-	DefaultProvider    string
-	DefaultModel       string
-	DefaultMaxTokens   int
-	DefaultTemperature float64
-	DefaultDebounce    int
+	OpenAIAPIKey        string
+	DefaultProvider     string
+	DefaultModel        string
+	DefaultMaxTokens    int
+	DefaultTemperature  float64
+	DefaultDebounce     int
+	PlaygroundEnabled   bool
+	ResetCommandEnabled bool
 }
 
 type ServerConfig struct {
@@ -78,6 +81,13 @@ func Load() (*Config, error) {
 	viper.SetDefault("ai.defaultmaxtokens", 1024)
 	viper.SetDefault("ai.defaulttemperature", 0.7)
 	viper.SetDefault("ai.defaultdebounce", 8)
+	viper.SetDefault("env", "development")
+	viper.SetDefault("ai.playgroundenabled", false)
+	viper.SetDefault("ai.resetcommandenabled", true)
+
+	_ = viper.BindEnv("env", "ENV")
+	_ = viper.BindEnv("ai.playgroundenabled", "AI_PLAYGROUND_ENABLED")
+	_ = viper.BindEnv("ai.resetcommandenabled", "AI_RESET_COMMAND_ENABLED")
 
 	_ = viper.ReadInConfig()
 
@@ -103,13 +113,16 @@ func Load() (*Config, error) {
 			Expiration: viper.GetDuration("jwt.expiration"),
 		},
 		AI: AIConfigEnv{
-			OpenAIAPIKey:       viper.GetString("openai.apikey"),
-			DefaultProvider:    viper.GetString("ai.defaultprovider"),
-			DefaultModel:       viper.GetString("ai.defaultmodel"),
-			DefaultMaxTokens:   viper.GetInt("ai.defaultmaxtokens"),
-			DefaultTemperature: viper.GetFloat64("ai.defaulttemperature"),
-			DefaultDebounce:    viper.GetInt("ai.defaultdebounce"),
+			OpenAIAPIKey:        viper.GetString("openai.apikey"),
+			DefaultProvider:     viper.GetString("ai.defaultprovider"),
+			DefaultModel:        viper.GetString("ai.defaultmodel"),
+			DefaultMaxTokens:    viper.GetInt("ai.defaultmaxtokens"),
+			DefaultTemperature:  viper.GetFloat64("ai.defaulttemperature"),
+			DefaultDebounce:     viper.GetInt("ai.defaultdebounce"),
+			PlaygroundEnabled:   viper.GetBool("ai.playgroundenabled"),
+			ResetCommandEnabled: viper.GetBool("ai.resetcommandenabled"),
 		},
+		Env: viper.GetString("env"),
 	}
 
 	if cfg.Server.Port == "" {

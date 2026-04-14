@@ -93,6 +93,26 @@ var (
 		},
 		[]string{"tenant_id", "direction"},
 	)
+
+	aiResetCommandsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "reset_commands_total",
+			Help:      "Total number of conversation resets, by source.",
+		},
+		[]string{"tenant_id", "specialist_id", "source"},
+	)
+
+	aiPlaygroundMessagesTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "playground_messages_total",
+			Help:      "Total number of messages injected via the dev playground.",
+		},
+		[]string{"tenant_id"},
+	)
 )
 
 func init() {
@@ -106,5 +126,7 @@ func init() {
 		aiLeadsQualifiedTotal,
 		aiLeadsDisqualifiedTotal,
 		aiHandoffsTotal,
+		aiResetCommandsTotal,
+		aiPlaygroundMessagesTotal,
 	)
 }

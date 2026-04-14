@@ -80,6 +80,20 @@ func (s *ConversationState) IsAfterResume(timestamp time.Time) bool {
 	return timestamp.After(*s.ResumedAt)
 }
 
+// Reset clears the state so the conversation starts from step 0.
+// CollectedData is emptied, score and step index are zeroed, and any active
+// handoff is cleared. HandoffAt and ResumedAt are cleared as well so a new
+// lifecycle can begin.
+func (s *ConversationState) Reset() {
+	s.CurrentStepIndex = 0
+	s.CollectedData = make(map[string]string)
+	s.AccumulatedScore = 0
+	s.HandoffActive = false
+	s.HandoffAt = nil
+	s.ResumedAt = nil
+	s.UpdatedAt = time.Now()
+}
+
 // ConversationStateRepository defines persistence operations for ConversationState.
 type ConversationStateRepository interface {
 	Create(ctx context.Context, state *ConversationState) error

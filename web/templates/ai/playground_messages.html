@@ -1,0 +1,54 @@
+{{define "ai/playground_messages.html"}}
+{{if .Error}}
+<div class="wa-chat-error">
+    <p>{{.Error}}</p>
+</div>
+{{else}}
+<div class="wa-chat-container">
+    <div class="wa-chat-header">
+        <div class="wa-chat-header-info">
+            <h3>{{if .Contact.Name}}{{.Contact.Name}}{{else}}{{.Contact.Phone}}{{end}}</h3>
+            <small>{{.Contact.Phone}}</small>
+        </div>
+        <form hx-post="/tenant/ai/playground/conversation/{{.Contact.ID}}/reset"
+              hx-confirm="Reiniciar a conversa? Tudo volta ao zero."
+              hx-target="#chat"
+              hx-swap="innerHTML"
+              style="margin-left:auto">
+            <button type="submit" class="wa-send-btn" title="Reiniciar conversa">Reset</button>
+        </form>
+    </div>
+    <div class="wa-messages" id="messages-area"
+         hx-get="/tenant/ai/playground/conversation/{{.Contact.ID}}"
+         hx-trigger="every 2s"
+         hx-target="#chat"
+         hx-swap="innerHTML">
+        {{if .Messages}}
+        {{range .Messages}}
+        <div class="wa-msg {{if eq .Direction "outgoing"}}wa-msg-out{{else}}wa-msg-in{{end}}">
+            <div class="wa-msg-bubble">
+                <span class="wa-msg-text">{{.Content}}</span>
+                <span class="wa-msg-meta">
+                    <span class="wa-msg-time">{{.Timestamp.Format "15:04"}}</span>
+                </span>
+            </div>
+        </div>
+        {{end}}
+        {{else}}
+        <div class="wa-messages-empty">
+            <p>Inicio da conversa</p>
+        </div>
+        {{end}}
+    </div>
+    <div class="wa-input-area">
+        <form hx-post="/tenant/ai/playground/conversation/{{.Contact.ID}}/send"
+              hx-swap="none"
+              hx-on::after-request="this.reset()">
+            <input type="text" name="content" placeholder="Digite como se fosse o lead..."
+                   autocomplete="off" required>
+            <button type="submit" class="wa-send-btn">Enviar como lead</button>
+        </form>
+    </div>
+</div>
+{{end}}
+{{end}}
