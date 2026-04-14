@@ -15,7 +15,7 @@
               hx-target="#chat"
               hx-swap="innerHTML"
               style="margin-left:auto">
-            <button type="submit" class="wa-send-btn" title="Reiniciar conversa">Reset</button>
+            <button type="submit" class="btn btn-danger btn-sm" title="Reiniciar conversa">Reset</button>
         </form>
     </div>
     <div class="wa-messages" id="messages-area"
@@ -46,7 +46,7 @@
               hx-on::after-request="this.reset()">
             <input type="text" name="content" placeholder="Digite como se fosse o lead..."
                    autocomplete="off" required>
-            <button type="submit" class="wa-send-btn">Enviar como lead</button>
+            <button type="submit" class="btn btn-primary">Enviar como lead</button>
         </form>
     </div>
 </div>
