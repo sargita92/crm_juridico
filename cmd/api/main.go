@@ -132,6 +132,8 @@ func main() {
 		SendMessageUC:   whatsappMod.SendMessageUC(),
 		LeadRepo:        funnelMod.LeadRepo(),
 		MoveLeadUC:      funnelMod.MoveLeadUC(),
+		FunnelRepo:      funnelMod.FunnelRepo(),
+		ColumnRepo:      funnelMod.ColumnRepo(),
 	})
 	whatsappMod.SetAIHandler(aiMod)
 

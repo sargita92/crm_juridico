@@ -40,6 +40,8 @@ type ModuleDeps struct {
 	SendMessageUC   *whatsappApp.SendMessageUseCase
 	LeadRepo        funnelDomain.LeadRepository
 	MoveLeadUC      *funnelApp.MoveLeadUseCase
+	FunnelRepo      funnelDomain.FunnelRepository
+	ColumnRepo      funnelDomain.ColumnRepository
 }
 
 // conversationContext holds routing context stored between routing and debounce callback.
@@ -59,6 +61,7 @@ type Module struct {
 	aiConfigRepo      domain.AIConfigRepository
 	spProductRepo     domain.SpecialistProductRepository
 	stateRepo         domain.ConversationStateRepository
+	resetUC           *application.ResetConversationUseCase
 	handler           *aihttp.Handler
 	log               *zap.Logger
 
@@ -86,10 +89,22 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	productDetectorAdapter := infrastructure.NewProductDetectorAdapter(deps.DetectProductUC)
 	defaultSpFinderAdapter := infrastructure.NewDefaultSpecialistFinderAdapter(deps.SpecTenantRepo)
 
+	// Reset conversation dependencies (F17 Task 9).
+	entryFinderAdapter := infrastructure.NewFunnelEntryAdapter(deps.FunnelRepo, deps.ColumnRepo)
+	leadResetterAdapter := infrastructure.NewLeadResetterAdapter(deps.LeadRepo)
+	resetUC := application.NewResetConversationUseCase(
+		convStateRepo,
+		entryFinderAdapter,
+		leadResetterAdapter,
+		messageSenderAdapter,
+		log,
+	)
+
 	// 3. Create ProviderRegistry and register providers.
 	providerRegistry := domain.NewProviderRegistry()
 	openaiProvider := infrastructure.NewOpenAIProvider(cfg.OpenAIAPIKey, "", log)
 	providerRegistry.Register(openaiProvider)
+	providerRegistry.Register(infrastructure.NewFakeProvider())
 
 	// 4. Create ConfigResolver.
 	configResolver := application.NewEnvConfigResolver(aiConfigRepo, cfg)
@@ -109,7 +124,6 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	guardrailChecker := application.NewGuardrailChecker()
 
 	// 7. Create ConversationEngine.
-	// TODO(F17 Task 9): wire real resetUC + flag
 	engine := application.NewConversationEngine(
 		providerRegistry,
 		configResolver,
@@ -119,8 +133,8 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		guardrailChecker,
 		messageSenderAdapter,
 		leadUpdaterAdapter,
-		nil,
-		false,
+		resetUC,
+		cfg.ResetCommandEnabled,
 		log,
 	)
 
@@ -156,6 +170,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		aiConfigRepo:      aiConfigRepo,
 		spProductRepo:     spProductRepo,
 		stateRepo:         convStateRepo,
+		resetUC:           resetUC,
 		handler:           handler,
 		log:               log,
 		contexts:          make(map[string]conversationContext),
@@ -258,4 +273,8 @@ func (m *Module) ActivateHandoffUC() *application.ActivateHandoffUseCase {
 
 func (m *Module) DeactivateHandoffUC() *application.DeactivateHandoffUseCase {
 	return m.deactivateHandoff
+}
+
+func (m *Module) ResetConversationUC() *application.ResetConversationUseCase {
+	return m.resetUC
 }

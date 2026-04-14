@@ -22,6 +22,7 @@ type Module struct {
 	leadRepo      domain.LeadRepository
 	noteRepo      domain.LeadNoteRepository
 	columnRepo    domain.ColumnRepository
+	funnelRepo    domain.FunnelRepository
 }
 
 func NewModule(
@@ -76,6 +77,7 @@ func NewModule(
 		leadRepo:      leadRepo,
 		noteRepo:      noteRepo,
 		columnRepo:    columnRepo,
+		funnelRepo:    funnelRepo,
 	}
 }
 
@@ -111,6 +113,10 @@ func (m *Module) NoteRepo() domain.LeadNoteRepository {
 
 func (m *Module) ColumnRepo() domain.ColumnRepository {
 	return m.columnRepo
+}
+
+func (m *Module) FunnelRepo() domain.FunnelRepository {
+	return m.funnelRepo
 }
 
 // SetAutomationTrigger wires an AutomationTrigger into both CreateLead and MoveLead
