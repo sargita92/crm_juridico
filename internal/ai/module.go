@@ -109,6 +109,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	guardrailChecker := application.NewGuardrailChecker()
 
 	// 7. Create ConversationEngine.
+	// TODO(F17 Task 9): wire real resetUC + flag
 	engine := application.NewConversationEngine(
 		providerRegistry,
 		configResolver,
@@ -118,6 +119,8 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		guardrailChecker,
 		messageSenderAdapter,
 		leadUpdaterAdapter,
+		nil,
+		false,
 		log,
 	)
 

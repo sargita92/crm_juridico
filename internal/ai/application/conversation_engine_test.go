@@ -131,6 +131,8 @@ func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr 
 		NewGuardrailChecker(),
 		sender,
 		leadUpdater,
+		nil,
+		false,
 		log,
 	)
 
@@ -203,7 +205,7 @@ func TestConversationEngine_GuardrailViolation_UsesFallback(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
@@ -244,7 +246,7 @@ func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, nil, false, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"42"})
@@ -255,6 +257,53 @@ func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
 	assert.Equal(t, 10, state.AccumulatedScore)
 	assert.True(t, leadUpdater.scoreUpdated)
 	assert.Equal(t, "col-2", leadUpdater.movedColumn)
+}
+
+func TestHandleMessages_ResetCommandEnabled_TriggersReset(t *testing.T) {
+	// Reuse stubs from reset_conversation_test.go (same package).
+	existing, err := domain.NewConversationState("id", "conv-1", "spec-1")
+	require.NoError(t, err)
+	existing.AdvanceStep("nome", "Maria", 10)
+	stateRepo := &stubStateRepo{state: existing}
+
+	sender := &stubSender{}
+	resetUC := NewResetConversationUseCase(
+		stateRepo,
+		stubEntryColumn{id: "col-entry"},
+		&stubLeadResetter{},
+		sender,
+		zap.NewNop(),
+	)
+
+	engine := NewConversationEngine(
+		nil, nil, stateRepo, nil, nil, nil, sender, nil,
+		resetUC, true, zap.NewNop(),
+	)
+
+	err = engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"/reset"})
+	require.NoError(t, err)
+	assert.Equal(t, 0, stateRepo.state.CurrentStepIndex, "state should be zeroed")
+	assert.Equal(t, 0, stateRepo.state.AccumulatedScore, "score should be zeroed")
+	assert.Contains(t, sender.lastContent, "reiniciada", "should send reset confirmation")
+}
+
+func TestHandleMessages_ResetCommandDisabled_SkipsResetInterception(t *testing.T) {
+	// When the flag is off, /reset should flow through the normal path: the
+	// engine calls the provider and sends the provider's AI response back —
+	// NOT the reset confirmation message. We prove this by using the full
+	// fixture stack and asserting the sender receives the provider's content.
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	engine, stateRepo, sender := buildEngineFixtures(t, state, nil)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"/reset"})
+	require.NoError(t, err)
+	assert.True(t, sender.sent, "normal path should have sent a message")
+	assert.Equal(t, "Olá, como posso ajudar?", sender.content,
+		"should be the provider's response, not the reset confirmation")
+	assert.NotContains(t, sender.content, "reiniciada",
+		"reset interception must NOT run when flag is disabled")
+	assert.NotNil(t, stateRepo.updated,
+		"normal engine flow should have updated state (proving the shortcut was skipped)")
 }
 
 func TestConversationEngine_ProviderError(t *testing.T) {
@@ -285,7 +334,7 @@ func TestConversationEngine_ProviderError(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
