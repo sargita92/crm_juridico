@@ -184,7 +184,7 @@ func main() {
 		RequirePermission: requirePermMw,
 	}
 
-	router := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie)
+	router := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -224,7 +224,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool) *gin.Engine {
+func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -237,8 +237,9 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 			}
 			return m
 		},
-		"add": func(a, b int) int { return a + b },
-		"sub": func(a, b int) int { return a - b },
+		"aiPlaygroundEnabled": func() bool { return aiPlaygroundEnabled },
+		"add":                 func(a, b int) int { return a + b },
+		"sub":                 func(a, b int) int { return a - b },
 		"formatFileSize": func(size int64) string {
 			const (
 				kb = 1024
