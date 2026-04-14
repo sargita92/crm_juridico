@@ -132,20 +132,20 @@ INSERT INTO products (id, name, description, keywords, active, created_at, updat
 VALUES
     (@PROD_IDADE, 'Aposentadoria por Idade',
      'Benefício para segurados que atingiram a idade mínima e carência de contribuição.',
-     '["aposentadoria", "idade", "65 anos", "60 anos"]', 1, NOW(), NOW()),
+     '["aposentadoria", "idade", "65 anos", "60 anos", "Quero me aposentar por idade"]', 1, NOW(), NOW()),
     (@PROD_TEMPO, 'Aposentadoria por Tempo de Contribuição',
      'Benefício para segurados com tempo mínimo de contribuição ao INSS.',
-     '["tempo de contribuição", "aposentadoria", "35 anos", "30 anos"]', 1, NOW(), NOW()),
+     '["tempo de contribuição", "aposentadoria", "35 anos", "30 anos", "Preciso me aposentar por tempo de contribuição"]', 1, NOW(), NOW()),
     (@PROD_BPC, 'BPC/LOAS',
      'Benefício assistencial para idosos e pessoas com deficiência de baixa renda.',
-     '["bpc", "loas", "benefício assistencial", "deficiência", "idoso"]', 1, NOW(), NOW()),
+     '["bpc", "loas", "benefício assistencial", "deficiência", "idoso", "Tenho direito ao BPC LOAS"]', 1, NOW(), NOW()),
     (@PROD_AUXILIO, 'Auxílio-Doença',
      'Benefício por incapacidade temporária para o trabalho.',
-     '["auxílio-doença", "incapacidade", "afastamento", "laudo médico"]', 1, NOW(), NOW()),
+     '["auxílio-doença", "incapacidade", "afastamento", "laudo médico", "Estou afastado e preciso de auxílio-doença"]', 1, NOW(), NOW()),
     (@PROD_REVISAO, 'Revisão de Benefício',
      'Revisão do valor ou tipo de benefício já concedido pelo INSS.',
-     '["revisão", "recálculo", "valor errado", "teto"]', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+     '["revisão", "recálculo", "valor errado", "teto", "Preciso de uma revisão na minha aposentadoria"]', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE name = VALUES(name), keywords = VALUES(keywords);
 
 -- =============================================================================
 -- 8. ASSOCIAÇÃO TENANT-PRODUTO
@@ -242,6 +242,25 @@ VALUES (@SPECIALIST, @TENANT, 1, NOW())
 ON DUPLICATE KEY UPDATE is_default = VALUES(is_default);
 
 -- =============================================================================
+-- 13.5 AI CONFIG
+-- Em dev/test usamos provider 'fake' para nao queimar tokens.
+-- Para testar com OpenAI real: troque provider='openai' e model=<modelo atual>.
+-- =============================================================================
+
+INSERT INTO ai_configs (id, specialist_id, provider, model, temperature, max_tokens, debounce_seconds, created_at, updated_at)
+VALUES (
+    '550e8400-e29b-41d4-a716-446655440041',
+    @SPECIALIST,
+    'fake',
+    'fake-v1',
+    0.70,
+    1024,
+    2,
+    NOW(),
+    NOW()
+) ON DUPLICATE KEY UPDATE provider = VALUES(provider);
+
+-- =============================================================================
 -- 14. STEPS DE TREINAMENTO
 -- =============================================================================
 
@@ -315,6 +334,13 @@ VALUES
     (@CONTACT_MARCOS,    @TENANT, 'Marcos Pereira',     '5511999008008', '5511999008008@s.whatsapp.net', NOW(), NOW())
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
+-- Contato limpo para o playground AI (sem mensagens, sem lead).
+SET @CONTACT_TESTE = '550e8400-e29b-41d4-a716-4466554400fe';
+
+INSERT INTO contacts (id, tenant_id, name, phone, whatsapp_id, created_at, updated_at)
+VALUES (@CONTACT_TESTE, @TENANT, 'Teste Playground', '5511900000000', '5511900000000@s.whatsapp.net', NOW(), NOW())
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+
 -- =============================================================================
 -- 18. CONVERSAS
 -- =============================================================================
@@ -338,6 +364,12 @@ VALUES
     (@CONV_ANAPAULA,  @TENANT, @CONTACT_ANAPAULA,  'open',   NOW(), 0, NOW(), NOW()),
     (@CONV_JOAO,      @TENANT, @CONTACT_JOAO,      'closed', NOW(), 0, NOW(), NOW()),
     (@CONV_MARCOS,    @TENANT, @CONTACT_MARCOS,    'closed', NOW(), 0, NOW(), NOW())
+ON DUPLICATE KEY UPDATE status = VALUES(status);
+
+SET @CONV_TESTE = '550e8400-e29b-41d4-a716-4466554400fd';
+
+INSERT INTO conversations (id, tenant_id, contact_id, status, last_message_at, unread_count, created_at, updated_at)
+VALUES (@CONV_TESTE, @TENANT, @CONTACT_TESTE, 'open', NOW(), 0, NOW(), NOW())
 ON DUPLICATE KEY UPDATE status = VALUES(status);
 
 -- =============================================================================
