@@ -34,8 +34,11 @@
                     </div>
                     <div class="form-group">
                         <label>Palavras-chave</label>
-                        <input type="text" name="keywords" value="{{.Keywords}}" placeholder="Separadas por virgula (ex: divorcio, pensao, guarda)">
-                        <small style="color:#9ca3af;font-size:0.75rem">Usadas para detectar automaticamente o produto nas mensagens</small>
+                        <input type="text" name="keywords" value="{{.Keywords}}" placeholder='Separadas por virgula (ex: aposentadoria, "preciso revisar, é urgente")'>
+                        <small style="color:#9ca3af;font-size:0.75rem">
+                            Separe por vírgula. Use aspas para frases com vírgula.
+                            Ex: <code>aposentadoria, "preciso revisar, é urgente"</code>
+                        </small>
                     </div>
                     <div class="form-actions">
                         <a href="/admin/products" class="btn btn-outline">Cancelar</a>

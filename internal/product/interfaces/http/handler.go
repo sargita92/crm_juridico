@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/csv"
 	"net/http"
 	"strconv"
 	"strings"
@@ -530,13 +531,81 @@ func (h *Handler) HandleTenantUpdatePriority(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// parseKeywords splits a comma-separated string into trimmed non-empty keywords.
+// parseKeywords splits a comma-separated input into trimmed keywords.
+// Supports quoting so phrases with commas can be passed through, e.g.
+//
+//	aposentadoria, "preciso revisar, é urgente"
+//
+// yields ["aposentadoria", "preciso revisar, é urgente"].
 func parseKeywords(s string) []string {
 	if strings.TrimSpace(s) == "" {
 		return []string{}
 	}
+	// Pre-normalize: collapse whitespace around quoted fields so that
+	// `a,  "x, y"  , b` becomes valid CSV `a, "x, y", b` for encoding/csv,
+	// which otherwise refuses bare text after a closing quote.
+	normalized := normalizeQuotedCSV(s)
+	r := csv.NewReader(strings.NewReader(normalized))
+	r.LazyQuotes = true
+	r.TrimLeadingSpace = true
+	record, err := r.Read()
+	if err != nil {
+		// Fallback to legacy simple split so we never reject valid-looking input.
+		return legacyParseKeywords(s)
+	}
+	result := make([]string, 0, len(record))
+	for _, p := range record {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
+}
+
+// normalizeQuotedCSV trims whitespace immediately after a closing quote (before
+// the next comma or end-of-string) so encoding/csv accepts inputs like
+// `a, "x, y"  , b` without erroring on "bare \" in non-quoted-field".
+func normalizeQuotedCSV(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	inQuotes := false
+	i := 0
+	for i < len(s) {
+		c := s[i]
+		switch {
+		case c == '"':
+			if inQuotes && i+1 < len(s) && s[i+1] == '"' {
+				// Escaped quote inside a quoted field.
+				b.WriteByte('"')
+				b.WriteByte('"')
+				i += 2
+				continue
+			}
+			b.WriteByte('"')
+			inQuotes = !inQuotes
+			if !inQuotes {
+				// Just closed a quoted field — skip any trailing whitespace
+				// up to the next comma (or end-of-string).
+				j := i + 1
+				for j < len(s) && (s[j] == ' ' || s[j] == '\t') {
+					j++
+				}
+				i = j
+				continue
+			}
+			i++
+		default:
+			b.WriteByte(c)
+			i++
+		}
+	}
+	return b.String()
+}
+
+func legacyParseKeywords(s string) []string {
 	parts := strings.Split(s, ",")
-	var result []string
+	result := make([]string, 0, len(parts))
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
 		if p != "" {
