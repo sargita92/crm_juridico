@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
 	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 	"go.uber.org/zap"
@@ -88,8 +90,10 @@ func (e *ConversationEngine) HandleMessages(
 		if err != domain.ErrConversationStateNotFound {
 			return fmt.Errorf("conversation_engine: find state: %w", err)
 		}
-		// Create new state.
-		state, err = domain.NewConversationState("", conversationID, specialistID)
+		// Create new state. A fresh UUID is assigned as the primary key so
+		// GORM's Save on subsequent updates does an UPDATE (not a failing
+		// INSERT on the empty-string PK).
+		state, err = domain.NewConversationState(uuid.New().String(), conversationID, specialistID)
 		if err != nil {
 			return fmt.Errorf("conversation_engine: new state: %w", err)
 		}
