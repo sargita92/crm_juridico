@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,4 +89,15 @@ func TestStep_Update_NegativeScore_ReturnsError(t *testing.T) {
 	err := s.Update("texto", StepDataTypeFreeText, true, -5, "")
 	assert.ErrorIs(t, err, ErrStepScoreNegative)
 	assert.Equal(t, 10, s.Score)
+}
+
+func TestStep_WithToolFields_PreservesFields(t *testing.T) {
+	s, err := NewStep(uuid.New().String(), uuid.New().String(), 0, "Collect name", StepDataTypeFreeText, true, 10, "")
+	require.NoError(t, err)
+
+	s.ForcedTools = []string{"search_leads"}
+	s.RestrictedTools = []string{"move_lead"}
+
+	assert.Equal(t, []string{"search_leads"}, s.ForcedTools)
+	assert.Equal(t, []string{"move_lead"}, s.RestrictedTools)
 }

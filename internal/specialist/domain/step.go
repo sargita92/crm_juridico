@@ -15,16 +15,18 @@ const (
 const MaxStepTextLength = 1000
 
 type Step struct {
-	ID             string
-	SpecialistID   string
-	OrderIndex     int
-	Text           string
-	DataType       StepDataType
-	Required       bool
-	Score          int
-	TargetColumnID string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID              string
+	SpecialistID    string
+	OrderIndex      int
+	Text            string
+	DataType        StepDataType
+	Required        bool
+	Score           int
+	TargetColumnID  string
+	ForcedTools     []string // tools that must be available in this step (empty = no constraint)
+	RestrictedTools []string // tools blocked in this step (empty = no constraint)
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func NewStep(id, specialistID string, orderIndex int, text string, dataType StepDataType, required bool, score int, targetColumnID string) (*Step, error) {
