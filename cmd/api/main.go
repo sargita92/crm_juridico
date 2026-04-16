@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/ai"
+	aiapp "github.com/sasrgita/crm-juridico/internal/ai/application"
 	"github.com/sasrgita/crm-juridico/internal/auth"
 	landinghttp "github.com/sasrgita/crm-juridico/internal/landing/interfaces/http"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
@@ -81,9 +82,13 @@ func main() {
 
 	// --- Wire-up ---
 
+	// Shared ToolRegistry — created here so both the specialist UI and AI module use the same
+	// instance without introducing a circular module dependency.
+	toolRegistry := aiapp.NewToolRegistry()
+
 	// Modules
 	tenantMod := tenant.NewModule(db)
-	specialistMod := specialist.NewModule(db, tenantMod.TenantRepo())
+	specialistMod := specialist.NewModule(db, tenantMod.TenantRepo(), toolRegistry)
 	documentMod := document.NewModule(db, specialistMod.SpecialistRepo())
 	mcpMod := mcp.NewModule(db, specialistMod.SpecialistRepo())
 
@@ -161,6 +166,7 @@ func main() {
 		TenantProductRepo:    productMod.TenantProductRepo(),
 		AutomationEngine:     automationMod.Engine(),
 		SpecialistToolFinder: specialistMod.SpecialistToolRepo(),
+		ToolRegistry:         toolRegistry,
 	})
 	whatsappMod.SetAIHandler(aiMod)
 

@@ -178,6 +178,19 @@
                 </div>
             </div>
 
+            <!-- Tools (lazy-load) -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3>Tools do Especialista</h3>
+                </div>
+                <div id="tools-section"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/tools"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p class="text-muted">Carregando tools...</p>
+                </div>
+            </div>
+
             <!-- Guardrails (lazy-load) -->
             <div class="detail-card">
                 <div class="card-header">

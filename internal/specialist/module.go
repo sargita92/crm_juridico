@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	aiapp "github.com/sasrgita/crm-juridico/internal/ai/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/specialist/application"
 	"github.com/sasrgita/crm-juridico/internal/specialist/domain"
@@ -22,9 +23,10 @@ type Module struct {
 	guardrailHandler     *specialisthttp.GuardrailHandler
 	stepHandler          *specialisthttp.StepHandler
 	scoringHandler       *specialisthttp.ScoringHandler
+	toolHandler          *specialisthttp.ToolHandler
 }
 
-func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
+func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegistry *aiapp.ToolRegistry) *Module {
 	specialistRepo := infrastructure.NewGormSpecialistRepository(db)
 	specialistTenantRepo := infrastructure.NewGormSpecialistTenantRepository(db)
 	specialistToolRepo := infrastructure.NewGormSpecialistToolRepository(db)
@@ -81,6 +83,9 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
 
 	scoringHandler := specialisthttp.NewScoringHandler(getScoringUC, updateScoringUC)
 
+	// Tool association handler — registry may be nil during early startup; handler guards internally.
+	toolHandler := specialisthttp.NewToolHandler(specialistToolRepo, toolRegistry)
+
 	return &Module{
 		specialistRepo:       specialistRepo,
 		stepRepo:             stepRepo,
@@ -91,6 +96,7 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
 		guardrailHandler:     guardrailHandler,
 		stepHandler:          stepHandler,
 		scoringHandler:       scoringHandler,
+		toolHandler:          toolHandler,
 	}
 }
 
@@ -101,6 +107,7 @@ func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.guardrailHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.stepHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.scoringHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
+	m.toolHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 }
 
 func (m *Module) SpecialistRepo() domain.SpecialistRepository {

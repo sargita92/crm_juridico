@@ -52,6 +52,9 @@ type ModuleDeps struct {
 	TenantProductRepo  productDomain.TenantProductRepository
 	AutomationEngine   *automationApp.AutomationEngine
 	SpecialistToolFinder application.SpecialistToolFinder
+	// ToolRegistry is an optional pre-created registry shared with the specialist UI (Task 17).
+	// When non-nil, tools are registered into it; when nil, a new private registry is created.
+	ToolRegistry *application.ToolRegistry
 }
 
 // conversationContext holds routing context stored between routing and debounce callback.
@@ -132,8 +135,13 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	automationTriggerToolAdapter := infrastructure.NewAutomationTriggerToolAdapter(deps.AutomationEngine)
 	specialistSwitcherToolAdapter := infrastructure.NewSpecialistSwitcherToolAdapter(convStateRepo)
 
-	// 5b. Register all 10 tools.
-	toolRegistry := application.NewToolRegistry()
+	// 5b. Register all 10 tools into a shared or private registry.
+	// When deps.ToolRegistry is provided (from main.go), tools are registered there so the
+	// specialist admin UI can list them without a circular dependency.
+	toolRegistry := deps.ToolRegistry
+	if toolRegistry == nil {
+		toolRegistry = application.NewToolRegistry()
+	}
 	toolRegistry.Register(tools.NewSearchLeadsTool(leadSearchAdapter))
 	toolRegistry.Register(tools.NewGetLeadDetailTool(leadDetailAdapter))
 	toolRegistry.Register(tools.NewGetConversationHistoryTool(convHistoryToolAdapter))

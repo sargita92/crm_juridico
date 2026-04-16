@@ -1,0 +1,45 @@
+{{define "specialist/tools_section.html"}}
+<div id="tools-section">
+    {{if .ToolsByCategory}}
+    {{range .ToolsByCategory}}
+    <div class="mb-section">
+        <h4 class="section-sub-title">{{.Label}}</h4>
+        <div class="association-list">
+            {{range .Tools}}
+            <div class="association-item">
+                <div class="association-info">
+                    <strong>{{.Name}}</strong>
+                    <span class="text-muted" style="margin-left:0.5rem">{{.Description}}</span>
+                </div>
+                <div class="association-actions">
+                    {{if index $.Associated .Name}}
+                    <span class="badge badge-active" style="margin-right:0.5rem">Associada</span>
+                    <button class="btn btn-sm btn-danger"
+                            hx-delete="/admin/specialists/{{$.SpecialistID}}/tools/{{.Name}}"
+                            hx-target="#tools-section"
+                            hx-swap="outerHTML"
+                            hx-confirm="Remover esta tool?">
+                        &times;
+                    </button>
+                    {{else}}
+                    <form hx-post="/admin/specialists/{{$.SpecialistID}}/tools"
+                          hx-target="#tools-section"
+                          hx-swap="outerHTML"
+                          style="display:inline">
+                        <input type="hidden" name="tool_name" value="{{.Name}}">
+                        <button type="submit" class="btn btn-sm btn-primary">Adicionar</button>
+                    </form>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+    {{else}}
+    <div class="empty-state" style="padding:1.5rem">
+        Nenhuma tool registrada no sistema
+    </div>
+    {{end}}
+</div>
+{{end}}
