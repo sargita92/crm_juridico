@@ -14,9 +14,9 @@ import (
 
 type specialistToolModel struct {
 	ID           string    `gorm:"column:id;primaryKey;type:char(36)"`
-	SpecialistID string    `gorm:"column:specialist_id;type:char(36)"`
-	ToolName     string    `gorm:"column:tool_name"`
-	CreatedAt    time.Time `gorm:"column:created_at"`
+	SpecialistID string    `gorm:"column:specialist_id;type:char(36);not null"`
+	ToolName     string    `gorm:"column:tool_name;type:varchar(100);not null"`
+	CreatedAt    time.Time `gorm:"column:created_at;not null"`
 }
 
 func (specialistToolModel) TableName() string { return "specialist_tools" }
