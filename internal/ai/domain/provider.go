@@ -48,6 +48,8 @@ type AIRequest struct {
 	Model        string
 	Temperature  float64
 	MaxTokens    int
+	Tools        []ToolDefinition // optional: tools the LLM may call
+	ToolResults  []ToolResult     // optional: results from previous tool calls
 }
 
 // NewAIRequest constructs an AIRequest with validation.
@@ -77,6 +79,7 @@ type AIResponse struct {
 	FinishReason     string
 	PromptTokens     int
 	CompletionTokens int
+	ToolCalls        []ToolCall // populated when the LLM requests tool invocations
 }
 
 // AIProvider is the interface that AI provider implementations must satisfy.

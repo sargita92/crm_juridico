@@ -141,3 +141,39 @@ func TestProviderRegistry_RegisterMultiple_ReturnsCorrectProvider(t *testing.T) 
 	require.NoError(t, err)
 	assert.Equal(t, "anthropic", got.Name())
 }
+
+// --- AIRequest tool fields tests ---
+
+func TestAIRequest_WithTools_HasToolDefinitions(t *testing.T) {
+	td, _ := NewToolDefinition("test_tool", "A test tool", ToolCategoryDataQuery, nil)
+	msg, _ := NewAIMessage(RoleUser, "hello")
+	req, err := NewAIRequest("system", []AIMessage{msg}, "openai", "gpt-4", 0.7, 1024)
+	require.NoError(t, err)
+
+	req.Tools = []ToolDefinition{td}
+	assert.Len(t, req.Tools, 1)
+	assert.Equal(t, "test_tool", req.Tools[0].Name)
+}
+
+func TestAIRequest_WithToolResults_HasResults(t *testing.T) {
+	msg, _ := NewAIMessage(RoleUser, "hello")
+	req, err := NewAIRequest("system", []AIMessage{msg}, "openai", "gpt-4", 0.7, 1024)
+	require.NoError(t, err)
+
+	req.ToolResults = []ToolResult{NewToolResult("call-1", "data", false)}
+	assert.Len(t, req.ToolResults, 1)
+}
+
+// --- AIResponse tool fields tests ---
+
+func TestAIResponse_WithToolCalls_HasCalls(t *testing.T) {
+	resp := &AIResponse{
+		Content:      "",
+		FinishReason: "tool_calls",
+		ToolCalls: []ToolCall{
+			{ID: "call-1", ToolName: "search_leads", Arguments: map[string]interface{}{"query": "test"}},
+		},
+	}
+	assert.Len(t, resp.ToolCalls, 1)
+	assert.Equal(t, "search_leads", resp.ToolCalls[0].ToolName)
+}
