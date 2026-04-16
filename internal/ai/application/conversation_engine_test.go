@@ -133,6 +133,9 @@ func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr 
 		leadUpdater,
 		nil,
 		false,
+		nil,
+		0,
+		5,
 		log,
 	)
 
@@ -205,7 +208,7 @@ func TestConversationEngine_GuardrailViolation_UsesFallback(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
@@ -246,7 +249,7 @@ func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, nil, false, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, nil, false, nil, 0, 5, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"42"})
@@ -277,7 +280,7 @@ func TestHandleMessages_ResetCommandEnabled_TriggersReset(t *testing.T) {
 
 	engine := NewConversationEngine(
 		nil, nil, stateRepo, nil, nil, nil, sender, nil,
-		resetUC, true, zap.NewNop(),
+		resetUC, true, nil, 0, 5, zap.NewNop(),
 	)
 
 	err = engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"/reset"})
@@ -334,7 +337,7 @@ func TestConversationEngine_ProviderError(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})

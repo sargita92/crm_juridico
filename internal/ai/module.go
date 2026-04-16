@@ -139,6 +139,9 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		leadUpdaterAdapter,
 		resetUC,
 		cfg.ResetCommandEnabled,
+		nil, // toolRegistry: wired in Task 16
+		cfg.ToolResultMaxLength,
+		cfg.ToolLoopMaxIterations,
 		log,
 	)
 

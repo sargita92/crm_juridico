@@ -41,6 +41,9 @@ type ConversationEngine struct {
 	leadUpdater         LeadUpdater
 	resetUC             *ResetConversationUseCase
 	resetCommandEnabled bool
+	toolRegistry        *ToolRegistry
+	toolResultMaxLength int
+	toolLoopMaxIter     int
 	log                 *zap.Logger
 }
 
@@ -56,6 +59,9 @@ func NewConversationEngine(
 	leadUpdater LeadUpdater,
 	resetUC *ResetConversationUseCase,
 	resetCommandEnabled bool,
+	toolRegistry *ToolRegistry,
+	toolResultMaxLength int,
+	toolLoopMaxIter int,
 	log *zap.Logger,
 ) *ConversationEngine {
 	return &ConversationEngine{
@@ -69,6 +75,9 @@ func NewConversationEngine(
 		leadUpdater:         leadUpdater,
 		resetUC:             resetUC,
 		resetCommandEnabled: resetCommandEnabled,
+		toolRegistry:        toolRegistry,
+		toolResultMaxLength: toolResultMaxLength,
+		toolLoopMaxIter:     toolLoopMaxIter,
 		log:                 log,
 	}
 }
@@ -129,7 +138,7 @@ func (e *ConversationEngine) HandleMessages(
 	}
 
 	start := time.Now()
-	resp, err := provider.GenerateResponse(ctx, req)
+	resp, err := e.executeToolLoop(ctx, provider, req, tenantID, specialistID, e.toolLoopMaxIter, e.toolResultMaxLength)
 	elapsed := time.Since(start).Seconds()
 
 	status := "success"
@@ -234,4 +243,88 @@ func (e *ConversationEngine) HandleMessages(
 	}
 
 	return nil
+}
+
+// executeToolLoop runs the tool calling loop: send request → get tool calls → execute → repeat
+// until the response has no tool calls or maxIterations is reached.
+// If toolRegistry is nil, it falls back to a single direct provider call (no tool loop).
+func (e *ConversationEngine) executeToolLoop(
+	ctx context.Context,
+	provider domain.AIProvider,
+	req *domain.AIRequest,
+	tenantID, specialistID string,
+	maxIterations int,
+	resultMaxLength int,
+) (*domain.AIResponse, error) {
+	if e.toolRegistry == nil {
+		return provider.GenerateResponse(ctx, req)
+	}
+
+	for i := 0; i < maxIterations; i++ {
+		resp, err := provider.GenerateResponse(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(resp.ToolCalls) == 0 {
+			aiToolLoopIterations.WithLabelValues(tenantID, specialistID).Observe(float64(i + 1))
+			return resp, nil
+		}
+
+		var results []domain.ToolResult
+		for _, call := range resp.ToolCalls {
+			tool, tErr := e.toolRegistry.Get(call.ToolName)
+			if tErr != nil {
+				aiToolCallsTotal.WithLabelValues(tenantID, specialistID, call.ToolName, "not_found").Inc()
+				results = append(results, domain.NewToolResult(call.ID, "tool not found: "+call.ToolName, true))
+				continue
+			}
+
+			start := time.Now()
+			result, execErr := tool.Execute(ctx, tenantID, call.Arguments)
+			elapsed := time.Since(start)
+			aiToolCallDurationSeconds.WithLabelValues(tenantID, call.ToolName).Observe(elapsed.Seconds())
+
+			if execErr != nil {
+				aiToolCallsTotal.WithLabelValues(tenantID, specialistID, call.ToolName, "error").Inc()
+				e.log.Warn("tool_call_failed",
+					zap.String("tenant_id", tenantID),
+					zap.String("tool_name", call.ToolName),
+					zap.Error(execErr),
+				)
+				results = append(results, domain.NewToolResult(call.ID, "error: "+execErr.Error(), true))
+				continue
+			}
+
+			// Truncate if needed.
+			if resultMaxLength > 0 && len(result.Content) > resultMaxLength {
+				aiToolResultTruncatedTotal.WithLabelValues(tenantID, call.ToolName).Inc()
+				result.Content = result.Content[:resultMaxLength]
+			}
+
+			aiToolCallsTotal.WithLabelValues(tenantID, specialistID, call.ToolName, "success").Inc()
+			e.log.Info("tool_call_executed",
+				zap.String("tenant_id", tenantID),
+				zap.String("specialist_id", specialistID),
+				zap.String("tool_name", call.ToolName),
+				zap.Duration("duration", elapsed),
+			)
+			results = append(results, *result)
+		}
+
+		// Backfill ToolCallID on results that didn't set it (e.g. Execute returned result with empty ID).
+		for idx := range results {
+			if results[idx].ToolCallID == "" && idx < len(resp.ToolCalls) {
+				results[idx].ToolCallID = resp.ToolCalls[idx].ID
+			}
+		}
+
+		req.ToolResults = results
+	}
+
+	e.log.Warn("tool_loop_max_iterations",
+		zap.String("tenant_id", tenantID),
+		zap.Int("max_iterations", maxIterations),
+	)
+	return nil, fmt.Errorf("tool loop exceeded max iterations (%d)", maxIterations)
 }
