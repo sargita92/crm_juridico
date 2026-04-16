@@ -113,6 +113,48 @@ var (
 		},
 		[]string{"tenant_id"},
 	)
+
+	aiToolCallsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "tool_calls_total",
+			Help:      "Total number of tool calls executed",
+		},
+		[]string{"tenant_id", "specialist_id", "tool_name", "status"},
+	)
+
+	aiToolCallDurationSeconds = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "tool_call_duration_seconds",
+			Help:      "Duration of tool call execution",
+			Buckets:   prometheus.DefBuckets,
+		},
+		[]string{"tenant_id", "tool_name"},
+	)
+
+	aiToolLoopIterations = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "tool_loop_iterations",
+			Help:      "Number of iterations in the tool calling loop",
+			Buckets:   []float64{1, 2, 3, 4, 5},
+		},
+		[]string{"tenant_id", "specialist_id"},
+	)
+
+	aiToolResultTruncatedTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "tool_result_truncated_total",
+			Help:      "Total number of tool results that were truncated",
+		},
+		[]string{"tenant_id", "tool_name"},
+	)
 )
 
 func init() {
@@ -128,5 +170,9 @@ func init() {
 		aiHandoffsTotal,
 		aiResetCommandsTotal,
 		aiPlaygroundMessagesTotal,
+		aiToolCallsTotal,
+		aiToolCallDurationSeconds,
+		aiToolLoopIterations,
+		aiToolResultTruncatedTotal,
 	)
 }
