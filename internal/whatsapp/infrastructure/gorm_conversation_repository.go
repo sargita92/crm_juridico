@@ -102,13 +102,14 @@ func (r *GormConversationRepository) FindByTenantID(ctx context.Context, tenantI
 		UnreadCount   int       `gorm:"column:unread_count"`
 		CreatedAt     time.Time `gorm:"column:created_at"`
 		UpdatedAt     time.Time `gorm:"column:updated_at"`
-		ContactName   string    `gorm:"column:contact_name"`
-		ContactPhone  string    `gorm:"column:contact_phone"`
+		ContactName     string    `gorm:"column:contact_name"`
+		ContactPhone    string    `gorm:"column:contact_phone"`
+		ContactWhatsApp string    `gorm:"column:contact_whatsapp_id"`
 	}
 
 	dataQuery := r.db.WithContext(ctx).
 		Table("conversations").
-		Select("conversations.id, conversations.tenant_id, conversations.contact_id, conversations.status, conversations.last_message_at, conversations.unread_count, conversations.created_at, conversations.updated_at, contacts.name as contact_name, contacts.phone as contact_phone").
+		Select("conversations.id, conversations.tenant_id, conversations.contact_id, conversations.status, conversations.last_message_at, conversations.unread_count, conversations.created_at, conversations.updated_at, contacts.name as contact_name, contacts.phone as contact_phone, contacts.whatsapp_id as contact_whatsapp_id").
 		Joins("JOIN contacts ON contacts.id = conversations.contact_id").
 		Where("conversations.tenant_id = ?", tenantID)
 
@@ -164,10 +165,11 @@ func (r *GormConversationRepository) FindByTenantID(ctx context.Context, tenantI
 				UpdatedAt:     row.UpdatedAt,
 			},
 			Contact: domain.Contact{
-				ID:       row.ContactID,
-				TenantID: tenantID,
-				Name:     row.ContactName,
-				Phone:    row.ContactPhone,
+				ID:         row.ContactID,
+				TenantID:   tenantID,
+				Name:       row.ContactName,
+				Phone:      row.ContactPhone,
+				WhatsAppID: row.ContactWhatsApp,
 			},
 			LastMessage: lastMessages[row.ID],
 		}

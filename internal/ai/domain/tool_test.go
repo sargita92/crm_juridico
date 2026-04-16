@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewToolDefinition_Valid(t *testing.T) {
+func TestNewToolDefinition_WithValidData_ReturnsDefinition(t *testing.T) {
 	td, err := NewToolDefinition("search_leads", "Search leads by query", ToolCategoryDataQuery, map[string]ParameterDef{
 		"query": {Type: "string", Description: "Search term", Required: true},
 	})
@@ -17,34 +17,41 @@ func TestNewToolDefinition_Valid(t *testing.T) {
 	assert.Len(t, td.Parameters, 1)
 }
 
-func TestNewToolDefinition_EmptyName(t *testing.T) {
+func TestNewToolDefinition_EmptyName_ReturnsError(t *testing.T) {
 	_, err := NewToolDefinition("", "desc", ToolCategoryDataQuery, nil)
 	assert.ErrorIs(t, err, ErrToolNameRequired)
 }
 
-func TestNewToolDefinition_EmptyDescription(t *testing.T) {
+func TestNewToolDefinition_EmptyDescription_ReturnsError(t *testing.T) {
 	_, err := NewToolDefinition("name", "", ToolCategoryDataQuery, nil)
 	assert.ErrorIs(t, err, ErrToolDescriptionRequired)
 }
 
-func TestNewToolDefinition_InvalidCategory(t *testing.T) {
+func TestNewToolDefinition_InvalidCategory_ReturnsError(t *testing.T) {
 	_, err := NewToolDefinition("name", "desc", ToolCategory("invalid"), nil)
 	assert.ErrorIs(t, err, ErrToolCategoryInvalid)
 }
 
-func TestNewToolResult_Valid(t *testing.T) {
+func TestNewToolDefinition_NilParams_ReturnsDefinitionWithEmptyMap(t *testing.T) {
+	td, err := NewToolDefinition("tool", "desc", ToolCategoryDataQuery, nil)
+	require.NoError(t, err)
+	assert.NotNil(t, td.Parameters)
+	assert.Empty(t, td.Parameters)
+}
+
+func TestNewToolResult_WithValidData_ReturnsResult(t *testing.T) {
 	r := NewToolResult("call-1", "result text", false)
 	assert.Equal(t, "call-1", r.ToolCallID)
 	assert.Equal(t, "result text", r.Content)
 	assert.False(t, r.IsError)
 }
 
-func TestNewToolResult_Error(t *testing.T) {
+func TestNewToolResult_WithIsError_ReturnsErrorResult(t *testing.T) {
 	r := NewToolResult("call-1", "something failed", true)
 	assert.True(t, r.IsError)
 }
 
-func TestNewToolResult_Truncate(t *testing.T) {
+func TestNewToolResultWithLimit_ContentExceedsMax_TruncatesContent(t *testing.T) {
 	long := make([]byte, 5000)
 	for i := range long {
 		long[i] = 'a'

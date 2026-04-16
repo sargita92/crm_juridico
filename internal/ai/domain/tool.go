@@ -31,6 +31,7 @@ func isValidToolCategory(c ToolCategory) bool {
 
 // ParameterDef describes a single input parameter for a tool.
 type ParameterDef struct {
+	// Type is the JSON Schema primitive type. Allowed values: "string", "number", "boolean".
 	Type        string
 	Description string
 	Required    bool
@@ -67,7 +68,9 @@ func NewToolDefinition(name, description string, category ToolCategory, params m
 	}, nil
 }
 
-// ToolCall represents an AI-requested invocation of a specific tool.
+// ToolCall represents a tool invocation requested by the LLM.
+// Instances are constructed by provider adapters (e.g., OpenAIProvider.parseToolCalls),
+// not by application code.
 type ToolCall struct {
 	ID        string
 	ToolName  string

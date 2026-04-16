@@ -134,17 +134,28 @@ func (h *Handler) HandleSendAsLead(c *gin.Context) {
 	contactID := c.Param("contact_id")
 	content := c.PostForm("content")
 
+	h.log.Debug("playground send",
+		zap.String("tenant_id", tenantID),
+		zap.String("contact_id", contactID),
+		zap.String("content", content))
+
 	if content == "" {
+		h.log.Warn("playground send: empty content")
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	selected, err := h.findContact(c.Request.Context(), tenantID, contactID)
 	if err != nil {
+		h.log.Error("playground send: find contact failed",
+			zap.String("contact_id", contactID),
+			zap.Error(err))
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	if selected == nil {
+		h.log.Warn("playground send: contact not found",
+			zap.String("contact_id", contactID))
 		c.Status(http.StatusNotFound)
 		return
 	}
@@ -159,12 +170,17 @@ func (h *Handler) HandleSendAsLead(c *gin.Context) {
 		Timestamp:     time.Now(),
 	}
 	if err := h.receive.Execute(c.Request.Context(), event); err != nil {
-		h.log.Error("playground: receive failed", zap.Error(err))
+		h.log.Error("playground send: receive execute failed",
+			zap.String("contact_id", contactID),
+			zap.String("content", content),
+			zap.Error(err))
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	// 204 — the client's HTMX polling picks up the new messages from the
 	// /conversation endpoint.
+	h.log.Debug("playground send: success",
+		zap.String("contact_id", contactID))
 	c.Status(http.StatusNoContent)
 }
 
