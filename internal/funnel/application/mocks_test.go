@@ -272,6 +272,19 @@ func (m *mockLeadRepo) FindByConversationID(_ context.Context, conversationID st
 	return nil, domain.ErrLeadNotFound
 }
 
+func (m *mockLeadRepo) FindByTenantAndSearch(_ context.Context, tenantID, query string, limit int) ([]domain.Lead, error) {
+	var result []domain.Lead
+	for _, l := range m.leads {
+		if l.TenantID == tenantID {
+			result = append(result, *l)
+		}
+	}
+	if limit > 0 && len(result) > limit {
+		result = result[:limit]
+	}
+	return result, nil
+}
+
 // --- Mock LeadMovementRepository ---
 
 type mockLeadMovementRepo struct {

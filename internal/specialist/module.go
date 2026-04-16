@@ -17,6 +17,7 @@ type Module struct {
 	stepRepo             domain.StepRepository
 	guardrailRepo        domain.GuardrailRepository
 	specialistTenantRepo domain.SpecialistTenantRepository
+	specialistToolRepo   domain.SpecialistToolRepository
 	handler              *specialisthttp.Handler
 	guardrailHandler     *specialisthttp.GuardrailHandler
 	stepHandler          *specialisthttp.StepHandler
@@ -26,6 +27,7 @@ type Module struct {
 func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
 	specialistRepo := infrastructure.NewGormSpecialistRepository(db)
 	specialistTenantRepo := infrastructure.NewGormSpecialistTenantRepository(db)
+	specialistToolRepo := infrastructure.NewGormSpecialistToolRepository(db)
 
 	// Specialist CRUD use cases
 	createUC := application.NewCreateSpecialistUseCase(specialistRepo)
@@ -84,6 +86,7 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository) *Module {
 		stepRepo:             stepRepo,
 		guardrailRepo:        guardrailRepo,
 		specialistTenantRepo: specialistTenantRepo,
+		specialistToolRepo:   specialistToolRepo,
 		handler:              handler,
 		guardrailHandler:     guardrailHandler,
 		stepHandler:          stepHandler,
@@ -114,4 +117,8 @@ func (m *Module) GuardrailRepo() domain.GuardrailRepository {
 
 func (m *Module) SpecTenantRepo() domain.SpecialistTenantRepository {
 	return m.specialistTenantRepo
+}
+
+func (m *Module) SpecialistToolRepo() domain.SpecialistToolRepository {
+	return m.specialistToolRepo
 }

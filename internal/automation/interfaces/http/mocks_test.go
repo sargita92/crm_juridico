@@ -232,6 +232,10 @@ func (m *mockLeadRepo) FindByFunnelID(_ context.Context, _ string, _ funneldomai
 
 func (m *mockLeadRepo) CountByColumnID(_ context.Context, _ string) (int, error) { return 0, nil }
 
+func (m *mockLeadRepo) FindByTenantAndSearch(_ context.Context, _, _ string, _ int) ([]funneldomain.Lead, error) {
+	return nil, nil
+}
+
 type mockContactProvider struct {
 	contacts map[string]funneldomain.ContactInfo
 }

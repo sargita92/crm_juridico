@@ -12,8 +12,10 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/ai/application"
 	"github.com/sasrgita/crm-juridico/internal/ai/domain"
 	"github.com/sasrgita/crm-juridico/internal/ai/infrastructure"
+	"github.com/sasrgita/crm-juridico/internal/ai/infrastructure/tools"
 	aihttp "github.com/sasrgita/crm-juridico/internal/ai/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/ai/interfaces/http/playground"
+	automationApp "github.com/sasrgita/crm-juridico/internal/automation/application"
 	docDomain "github.com/sasrgita/crm-juridico/internal/document/domain"
 	funnelApp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funnelDomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
@@ -45,6 +47,11 @@ type ModuleDeps struct {
 	MoveLeadUC       *funnelApp.MoveLeadUseCase
 	FunnelRepo       funnelDomain.FunnelRepository
 	ColumnRepo       funnelDomain.ColumnRepository
+	// Tool wiring deps (Task 16)
+	NoteRepo           funnelDomain.LeadNoteRepository
+	TenantProductRepo  productDomain.TenantProductRepository
+	AutomationEngine   *automationApp.AutomationEngine
+	SpecialistToolFinder application.SpecialistToolFinder
 }
 
 // conversationContext holds routing context stored between routing and debounce callback.
@@ -113,7 +120,38 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	// 4. Create ConfigResolver.
 	configResolver := application.NewEnvConfigResolver(aiConfigRepo, cfg)
 
-	// 5. Create ContextBuilder.
+	// 5. Create tool adapters (Task 16).
+	leadSearchAdapter := infrastructure.NewLeadSearchAdapter(deps.LeadRepo)
+	leadDetailAdapter := infrastructure.NewLeadDetailAdapter(deps.LeadRepo, deps.NoteRepo)
+	convHistoryToolAdapter := infrastructure.NewConversationHistoryToolAdapter(deps.MessageRepo)
+	productListToolAdapter := infrastructure.NewProductListToolAdapter(deps.TenantProductRepo, deps.ProductRepo)
+	pipelineToolAdapter := infrastructure.NewPipelineToolAdapter(deps.FunnelRepo, deps.ColumnRepo, deps.LeadRepo)
+	leadMoveToolAdapter := infrastructure.NewLeadMoveToolAdapter(deps.LeadRepo, deps.MoveLeadUC)
+	noteCreatorToolAdapter := infrastructure.NewNoteCreatorToolAdapter(deps.LeadRepo, deps.NoteRepo)
+	scoreUpdaterToolAdapter := infrastructure.NewScoreUpdaterToolAdapter(deps.LeadRepo)
+	automationTriggerToolAdapter := infrastructure.NewAutomationTriggerToolAdapter(deps.AutomationEngine)
+	specialistSwitcherToolAdapter := infrastructure.NewSpecialistSwitcherToolAdapter(convStateRepo)
+
+	// 5b. Register all 10 tools.
+	toolRegistry := application.NewToolRegistry()
+	toolRegistry.Register(tools.NewSearchLeadsTool(leadSearchAdapter))
+	toolRegistry.Register(tools.NewGetLeadDetailTool(leadDetailAdapter))
+	toolRegistry.Register(tools.NewGetConversationHistoryTool(convHistoryToolAdapter))
+	toolRegistry.Register(tools.NewListProductsTool(productListToolAdapter))
+	toolRegistry.Register(tools.NewGetPipelineTool(pipelineToolAdapter))
+	toolRegistry.Register(tools.NewMoveLeadTool(leadMoveToolAdapter))
+	toolRegistry.Register(tools.NewCreateLeadNoteTool(noteCreatorToolAdapter))
+	toolRegistry.Register(tools.NewUpdateLeadScoreTool(scoreUpdaterToolAdapter))
+	toolRegistry.Register(tools.NewTriggerAutomationTool(automationTriggerToolAdapter))
+	toolRegistry.Register(tools.NewSwitchSpecialistTool(specialistSwitcherToolAdapter))
+
+	// 5c. Create ToolResolver.
+	var toolResolver *application.ToolResolver
+	if deps.SpecialistToolFinder != nil {
+		toolResolver = application.NewToolResolver(toolRegistry, deps.SpecialistToolFinder)
+	}
+
+	// 6. Create ContextBuilder.
 	contextBuilder := application.NewContextBuilder(
 		specialistFinderAdapter,
 		stepFinderAdapter,
@@ -121,14 +159,14 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		documentFetcherAdapter,
 		productInfoAdapter,
 		messageHistoryAdapter,
-		nil, // ToolResolver: wired in Task 16
+		toolResolver,
 	)
 
-	// 6. Create StepEvaluator and GuardrailChecker.
+	// 7. Create StepEvaluator and GuardrailChecker.
 	stepEvaluator := application.NewStepEvaluator()
 	guardrailChecker := application.NewGuardrailChecker()
 
-	// 7. Create ConversationEngine.
+	// 8. Create ConversationEngine.
 	engine := application.NewConversationEngine(
 		providerRegistry,
 		configResolver,
@@ -140,7 +178,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		leadUpdaterAdapter,
 		resetUC,
 		cfg.ResetCommandEnabled,
-		nil, // toolRegistry: wired in Task 16
+		toolRegistry,
 		cfg.ToolResultMaxLength,
 		cfg.ToolLoopMaxIterations,
 		log,

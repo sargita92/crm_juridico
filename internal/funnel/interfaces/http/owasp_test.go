@@ -110,6 +110,10 @@ func (m *owaspMockLeadRepo) FindByConversationID(_ context.Context, conversation
 	return nil, domain.ErrLeadNotFound
 }
 
+func (m *owaspMockLeadRepo) FindByTenantAndSearch(_ context.Context, tenantID, query string, limit int) ([]domain.Lead, error) {
+	return nil, nil
+}
+
 type owaspMockMovementRepo struct{}
 
 func (m *owaspMockMovementRepo) Create(_ context.Context, mv *domain.LeadMovement) error { return nil }

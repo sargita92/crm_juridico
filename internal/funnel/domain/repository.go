@@ -30,6 +30,9 @@ type LeadRepository interface {
 	FindByConversationID(ctx context.Context, conversationID string) (*Lead, error)
 	FindByFunnelID(ctx context.Context, funnelID string, filter LeadFilter) (*LeadList, error)
 	CountByColumnID(ctx context.Context, columnID string) (int, error)
+	// FindByTenantAndSearch returns up to limit leads in the tenant whose contact
+	// name or phone matches query. Used by the AI tool registry for cross-funnel search.
+	FindByTenantAndSearch(ctx context.Context, tenantID, query string, limit int) ([]Lead, error)
 }
 
 type LeadMovementRepository interface {

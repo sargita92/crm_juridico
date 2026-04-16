@@ -205,3 +205,35 @@ func (r *GormLeadRepository) CountByColumnID(ctx context.Context, columnID strin
 	}
 	return int(count), nil
 }
+
+// FindByTenantAndSearch returns up to limit leads for the tenant whose contact
+// name or phone matches the query string (case-insensitive, LIKE search).
+// If query is empty all leads for the tenant are returned (up to limit).
+func (r *GormLeadRepository) FindByTenantAndSearch(ctx context.Context, tenantID, query string, limit int) ([]domain.Lead, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+
+	q := r.db.WithContext(ctx).
+		Table("leads").
+		Select("leads.*").
+		Joins("LEFT JOIN contacts ON contacts.id = leads.contact_id").
+		Where("leads.tenant_id = ?", tenantID)
+
+	if query != "" {
+		escaped := escapeLike(query)
+		pattern := "%" + escaped + "%"
+		q = q.Where("contacts.name LIKE ? OR contacts.phone LIKE ? OR leads.status LIKE ?", pattern, pattern, pattern)
+	}
+
+	var models []leadModel
+	if err := q.Limit(limit).Find(&models).Error; err != nil {
+		return nil, err
+	}
+
+	leads := make([]domain.Lead, len(models))
+	for i, m := range models {
+		leads[i] = *leadToDomain(&m)
+	}
+	return leads, nil
+}

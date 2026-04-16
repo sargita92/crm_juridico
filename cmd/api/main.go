@@ -117,47 +117,52 @@ func main() {
 	tenantListerAdapter := productinfra.NewTenantListerAdapter(tenantMod.TenantRepo())
 	productMod.Handler().SetTenantLister(tenantListerAdapter)
 
-	// AI module
-	aiMod := ai.NewModule(db, cfg.AI, log, ai.ModuleDeps{
-		SpecialistRepo:  specialistMod.SpecialistRepo(),
-		StepRepo:        specialistMod.StepRepo(),
-		GuardrailRepo:   specialistMod.GuardrailRepo(),
-		SpecTenantRepo:  specialistMod.SpecTenantRepo(),
-		DocRepo:         documentMod.DocRepo(),
-		SpecDocRepo:     documentMod.SpecDocRepo(),
-		ProductRepo:     productMod.ProductRepo(),
-		PhoneNumberRepo: productMod.PhoneNumberRepo(),
-		DetectProductUC: productMod.DetectUseCase(),
-		MessageRepo:      whatsappMod.MessageRepo(),
-		ConversationRepo: whatsappMod.ConversationRepo(),
-		SendMessageUC:    whatsappMod.SendMessageUC(),
-		ReceiveMessageUC: whatsappMod.ReceiveMessageUC(),
-		LeadRepo:         funnelMod.LeadRepo(),
-		MoveLeadUC:       funnelMod.MoveLeadUC(),
-		FunnelRepo:       funnelMod.FunnelRepo(),
-		ColumnRepo:       funnelMod.ColumnRepo(),
-	})
-	whatsappMod.SetAIHandler(aiMod)
-
 	// Permission module
 	permissionMod := permission.NewModule(db, log)
 
-	// Notification module
+	// Notification module (must be before automation for NotifyService)
 	notificationMod := notification.NewModule(db, sharedEventBus, log)
 
-	// Automation module
+	// Automation module — must be created before AI module so we can pass the engine.
+	// (Moved up; the trigger wiring on funnelMod happens after both are created.)
 	automationMod := automation.NewModule(db, automation.ModuleDeps{
-		MoveLeadUC:     funnelMod.MoveLeadUC(),
-		LeadRepo:       funnelMod.LeadRepo(),
-		ColumnRepo:     funnelMod.ColumnRepo(),
-		NoteRepo:       funnelMod.NoteRepo(),
-		NotifyService:  notificationMod.NotifyService(),
-		DB:             db,
+		MoveLeadUC:      funnelMod.MoveLeadUC(),
+		LeadRepo:        funnelMod.LeadRepo(),
+		ColumnRepo:      funnelMod.ColumnRepo(),
+		NoteRepo:        funnelMod.NoteRepo(),
+		NotifyService:   notificationMod.NotifyService(),
+		DB:              db,
 		ListFunnelsUC:   funnelMod.ListFunnelsUC(),
 		ContactProvider: contactAdapter,
 		SpecialistRepo:  specialistMod.SpecialistRepo(),
-		SpecTenantRepo: specialistMod.SpecTenantRepo(),
+		SpecTenantRepo:  specialistMod.SpecTenantRepo(),
 	}, log)
+
+	// AI module
+	aiMod := ai.NewModule(db, cfg.AI, log, ai.ModuleDeps{
+		SpecialistRepo:       specialistMod.SpecialistRepo(),
+		StepRepo:             specialistMod.StepRepo(),
+		GuardrailRepo:        specialistMod.GuardrailRepo(),
+		SpecTenantRepo:       specialistMod.SpecTenantRepo(),
+		DocRepo:              documentMod.DocRepo(),
+		SpecDocRepo:          documentMod.SpecDocRepo(),
+		ProductRepo:          productMod.ProductRepo(),
+		PhoneNumberRepo:      productMod.PhoneNumberRepo(),
+		DetectProductUC:      productMod.DetectUseCase(),
+		MessageRepo:          whatsappMod.MessageRepo(),
+		ConversationRepo:     whatsappMod.ConversationRepo(),
+		SendMessageUC:        whatsappMod.SendMessageUC(),
+		ReceiveMessageUC:     whatsappMod.ReceiveMessageUC(),
+		LeadRepo:             funnelMod.LeadRepo(),
+		MoveLeadUC:           funnelMod.MoveLeadUC(),
+		FunnelRepo:           funnelMod.FunnelRepo(),
+		ColumnRepo:           funnelMod.ColumnRepo(),
+		NoteRepo:             funnelMod.NoteRepo(),
+		TenantProductRepo:    productMod.TenantProductRepo(),
+		AutomationEngine:     automationMod.Engine(),
+		SpecialistToolFinder: specialistMod.SpecialistToolRepo(),
+	})
+	whatsappMod.SetAIHandler(aiMod)
 
 	// Set automation trigger on funnel module
 	funnelMod.SetAutomationTrigger(automationMod.Engine())

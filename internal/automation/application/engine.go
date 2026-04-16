@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
@@ -53,6 +54,25 @@ func (e *AutomationEngine) OnLeadEvent(ctx context.Context, tenantID, leadID, co
 		}
 	}
 	return nil
+}
+
+// TriggerByID executes a single automation by its ID for the given lead.
+// It is intended for manual/AI-initiated triggers (e.g., via the trigger_automation tool).
+// Returns a human-readable summary or an error if the automation or its executor is missing.
+func (e *AutomationEngine) TriggerByID(ctx context.Context, tenantID, automationID, leadID string) (string, error) {
+	auto, err := e.autoRepo.FindByID(ctx, automationID)
+	if err != nil {
+		return "", fmt.Errorf("automation_engine: find automation %s: %w", automationID, err)
+	}
+	if auto.TenantID != tenantID {
+		return "", fmt.Errorf("automation_engine: automation %s not found for tenant", automationID)
+	}
+	exec, ok := e.executors[auto.Type]
+	if !ok {
+		return "", fmt.Errorf("automation_engine: no executor registered for type %s", auto.Type)
+	}
+	e.executeAndLog(ctx, exec, auto, leadID, tenantID)
+	return fmt.Sprintf("automacao %s executada com sucesso para lead %s", automationID, leadID), nil
 }
 
 // executeAndLog runs the executor and persists the execution result in the log.
