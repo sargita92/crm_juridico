@@ -1,0 +1,109 @@
+### --- Variaveis ---
+### Assumir que voce tem um token admin valido
+### e pelo menos um especialista criado (F04/F05)
+
+@base_url = http://localhost:8080
+@token = SEU_TOKEN_ADMIN_AQUI
+@specialist_id = SEU_SPECIALIST_ID_AQUI
+
+### =============================================
+### F15 — Tools do Especialista (Admin)
+### =============================================
+###
+### Cada especialista pode ter um subconjunto de tools
+### associadas. Os steps opcionalmente forcam ou
+### restringem tools por etapa do atendimento.
+###
+### Tools disponiveis (registradas no startup):
+###   data_query:
+###     - search_leads
+###     - get_lead_detail
+###     - get_conversation_history
+###     - list_products
+###     - get_pipeline
+###   crm_action:
+###     - move_lead
+###     - create_note
+###     - update_score
+###   automation:
+###     - trigger_automation
+###     - switch_specialist
+
+### Renderiza a secao de tools do especialista
+### (agrupadas por categoria, com estado associado/disponivel)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+
+### HTMX: retorna somente o fragmento para swap
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+HX-Request: true
+
+### Associar uma tool ao especialista
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tool_name=search_leads
+
+### Associar tool de acao no CRM
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tool_name=move_lead
+
+### Associar tool de automacao
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tool_name=trigger_automation
+
+### Tentar associar tool ja associada (deve retornar 400)
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tool_name=search_leads
+
+### Tentar associar sem tool_name (deve retornar 400)
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tool_name=
+
+### Desassociar uma tool
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/tools/search_leads
+Cookie: token={{token}}
+
+### Tentar desassociar tool nao associada (deve retornar 400)
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/tools/search_leads
+Cookie: token={{token}}
+
+### =============================================
+### Testes OWASP
+### =============================================
+
+### A01 — Sem token (deve retornar 401)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tools
+
+### A01 — Token de usuario comum (deve retornar 403)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token=TOKEN_USER_AQUI
+
+### A07 — Token invalido (deve retornar 401)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token=invalid.token.here
+
+### A03 — Tentar associar tool com nome malicioso
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tools
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tool_name='; DROP TABLE specialist_tools; --
+
+### A03 — Path traversal no nome da tool
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/tools/..%2F..%2Fadmin
+Cookie: token={{token}}
