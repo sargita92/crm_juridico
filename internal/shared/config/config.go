@@ -19,14 +19,18 @@ type Config struct {
 }
 
 type AIConfigEnv struct {
-	OpenAIAPIKey        string
-	DefaultProvider     string
-	DefaultModel        string
-	DefaultMaxTokens    int
-	DefaultTemperature  float64
-	DefaultDebounce     int
-	PlaygroundEnabled   bool
-	ResetCommandEnabled bool
+	OpenAIAPIKey            string
+	DefaultProvider         string
+	DefaultModel            string
+	DefaultMaxTokens        int
+	DefaultTemperature      float64
+	DefaultDebounce         int
+	PlaygroundEnabled       bool
+	ResetCommandEnabled     bool
+	ToolLoopMaxIterations   int
+	ToolCallMaxPerIteration int
+	ToolExecutionTimeout    int
+	ToolResultMaxLength     int
 }
 
 type ServerConfig struct {
@@ -84,10 +88,18 @@ func Load() (*Config, error) {
 	viper.SetDefault("env", "development")
 	viper.SetDefault("ai.playgroundenabled", false)
 	viper.SetDefault("ai.resetcommandenabled", true)
+	viper.SetDefault("ai.tool_loop_max_iterations", 5)
+	viper.SetDefault("ai.tool_call_max_per_iteration", 10)
+	viper.SetDefault("ai.tool_execution_timeout", 10)
+	viper.SetDefault("ai.tool_result_max_length", 4000)
 
 	_ = viper.BindEnv("env", "ENV")
 	_ = viper.BindEnv("ai.playgroundenabled", "AI_PLAYGROUND_ENABLED")
 	_ = viper.BindEnv("ai.resetcommandenabled", "AI_RESET_COMMAND_ENABLED")
+	_ = viper.BindEnv("ai.tool_loop_max_iterations", "AI_TOOL_LOOP_MAX_ITERATIONS")
+	_ = viper.BindEnv("ai.tool_call_max_per_iteration", "AI_TOOL_CALL_MAX_PER_ITERATION")
+	_ = viper.BindEnv("ai.tool_execution_timeout", "AI_TOOL_EXECUTION_TIMEOUT_SECONDS")
+	_ = viper.BindEnv("ai.tool_result_max_length", "AI_TOOL_RESULT_MAX_LENGTH")
 
 	_ = viper.ReadInConfig()
 
