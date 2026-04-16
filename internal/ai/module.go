@@ -121,6 +121,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		documentFetcherAdapter,
 		productInfoAdapter,
 		messageHistoryAdapter,
+		nil, // ToolResolver: wired in Task 16
 	)
 
 	// 6. Create StepEvaluator and GuardrailChecker.

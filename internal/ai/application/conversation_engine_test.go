@@ -120,6 +120,7 @@ func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr 
 		&mockDocumentFetcher{},
 		&mockProductInfoFinder{},
 		&mockMessageHistoryFinder{},
+		nil,
 	)
 
 	engine := NewConversationEngine(
@@ -204,6 +205,7 @@ func TestConversationEngine_GuardrailViolation_UsesFallback(t *testing.T) {
 		&mockDocumentFetcher{},
 		&mockProductInfoFinder{},
 		&mockMessageHistoryFinder{},
+		nil,
 	)
 
 	engine := NewConversationEngine(
@@ -245,6 +247,7 @@ func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
 		&mockDocumentFetcher{},
 		&mockProductInfoFinder{},
 		&mockMessageHistoryFinder{},
+		nil,
 	)
 
 	engine := NewConversationEngine(
@@ -333,6 +336,7 @@ func TestConversationEngine_ProviderError(t *testing.T) {
 		&mockDocumentFetcher{},
 		&mockProductInfoFinder{},
 		&mockMessageHistoryFinder{},
+		nil,
 	)
 
 	engine := NewConversationEngine(

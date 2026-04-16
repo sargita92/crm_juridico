@@ -55,6 +55,7 @@ type ContextBuilder struct {
 	DocumentFetcher      DocumentFetcher
 	ProductInfoFinder    ProductInfoFinder
 	MessageHistoryFinder MessageHistoryFinder
+	ToolResolver         *ToolResolver
 }
 
 // NewContextBuilder creates a ContextBuilder with all required dependencies.
@@ -65,6 +66,7 @@ func NewContextBuilder(
 	documentFetcher DocumentFetcher,
 	productInfoFinder ProductInfoFinder,
 	messageHistoryFinder MessageHistoryFinder,
+	toolResolver *ToolResolver,
 ) *ContextBuilder {
 	return &ContextBuilder{
 		SpecialistFinder:     specialistFinder,
@@ -73,6 +75,7 @@ func NewContextBuilder(
 		DocumentFetcher:      documentFetcher,
 		ProductInfoFinder:    productInfoFinder,
 		MessageHistoryFinder: messageHistoryFinder,
+		ToolResolver:         toolResolver,
 	}
 }
 
@@ -155,8 +158,19 @@ func (b *ContextBuilder) Build(ctx context.Context, state *domain.ConversationSt
 		messages = append(messages, fallback)
 	}
 
+	// 9. Resolve tools for this specialist and current step (if resolver is available).
+	var toolDefs []domain.ToolDefinition
+	if b.ToolResolver != nil {
+		var currentStep *specDomain.Step
+		if len(steps) > 0 && state.CurrentStepIndex < len(steps) {
+			currentStep = &steps[state.CurrentStepIndex]
+		}
+		toolDefs, _ = b.ToolResolver.ResolveDefinitions(ctx, state.SpecialistID, currentStep)
+	}
+
 	return &domain.AIRequest{
 		SystemPrompt: systemPrompt,
 		Messages:     messages,
+		Tools:        toolDefs,
 	}, nil
 }

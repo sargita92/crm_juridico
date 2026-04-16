@@ -95,6 +95,7 @@ func TestContextBuilder_FullBuild(t *testing.T) {
 		&mockMessageHistoryFinder{messages: []HistoryMessage{
 			{Role: domain.RoleUser, Content: "oi", Timestamp: now},
 		}},
+		nil,
 	)
 
 	req, err := builder.Build(context.Background(), state, "prod-1", 20)
@@ -124,6 +125,7 @@ func TestContextBuilder_BuildWithoutSteps(t *testing.T) {
 		&mockDocumentFetcher{},
 		&mockProductInfoFinder{},
 		&mockMessageHistoryFinder{},
+		nil,
 	)
 
 	req, err := builder.Build(context.Background(), state, "", 10)
@@ -155,6 +157,7 @@ func TestContextBuilder_FilterMessagesByResumedAt(t *testing.T) {
 			{Role: domain.RoleUser, Content: "mensagem antiga", Timestamp: before},
 			{Role: domain.RoleUser, Content: "mensagem nova", Timestamp: after},
 		}},
+		nil,
 	)
 
 	req, err := builder.Build(context.Background(), state, "", 10)
@@ -176,9 +179,40 @@ func TestContextBuilder_FreeTextStepAddsMetaInstruction(t *testing.T) {
 		&mockDocumentFetcher{},
 		&mockProductInfoFinder{},
 		&mockMessageHistoryFinder{},
+		nil,
 	)
 
 	req, err := builder.Build(context.Background(), state, "", 10)
 	require.NoError(t, err)
 	assert.Contains(t, req.SystemPrompt, "STEP_META")
+}
+
+func TestContextBuilder_Build_WithToolResolver_PopulatesTools(t *testing.T) {
+	state := buildTestState()
+
+	registry := NewToolRegistry()
+	registry.Register(newFakeTool("search_leads", domain.ToolCategoryDataQuery))
+
+	finder := &fakeSpecialistToolFinder{
+		toolNames: map[string][]string{
+			"spec-1": {"search_leads"},
+		},
+	}
+
+	resolver := NewToolResolver(registry, finder)
+
+	builder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: buildTestSpecialist()},
+		&mockStepFinder{},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+		resolver,
+	)
+
+	req, err := builder.Build(context.Background(), state, "", 20)
+	require.NoError(t, err)
+	require.Len(t, req.Tools, 1)
+	assert.Equal(t, "search_leads", req.Tools[0].Name)
 }
