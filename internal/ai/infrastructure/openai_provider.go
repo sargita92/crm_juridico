@@ -46,12 +46,14 @@ func (p *OpenAIProvider) Name() string {
 // GenerateResponse sends a request to the OpenAI API and returns the response.
 func (p *OpenAIProvider) GenerateResponse(ctx context.Context, req *domain.AIRequest) (*domain.AIResponse, error) {
 	messages := p.buildMessages(req)
+	messages = append(messages, p.buildToolResultMessages(req.ToolResults)...)
 
 	body := openAIRequest{
 		Model:       req.Model,
 		Messages:    messages,
 		Temperature: req.Temperature,
 		MaxTokens:   req.MaxTokens,
+		Tools:       p.buildOpenAITools(req.Tools),
 	}
 
 	bodyBytes, err := json.Marshal(body)
@@ -117,11 +119,14 @@ func (p *OpenAIProvider) GenerateResponse(ctx context.Context, req *domain.AIReq
 		zap.Duration("duration", duration),
 	)
 
+	toolCalls := p.parseToolCalls(apiResp.Choices)
+
 	return &domain.AIResponse{
 		Content:          choice.Message.Content,
 		FinishReason:     choice.FinishReason,
 		PromptTokens:     apiResp.Usage.PromptTokens,
 		CompletionTokens: apiResp.Usage.CompletionTokens,
+		ToolCalls:        toolCalls,
 	}, nil
 }
 
@@ -144,6 +149,89 @@ func (p *OpenAIProvider) buildMessages(req *domain.AIRequest) []openAIMessage {
 	return messages
 }
 
+// buildOpenAITools converts domain ToolDefinitions to OpenAI function calling format.
+func (p *OpenAIProvider) buildOpenAITools(tools []domain.ToolDefinition) []openAITool {
+	if len(tools) == 0 {
+		return nil
+	}
+	result := make([]openAITool, len(tools))
+	for i, td := range tools {
+		properties := make(map[string]interface{})
+		var required []string
+
+		for name, param := range td.Parameters {
+			prop := map[string]interface{}{
+				"type":        param.Type,
+				"description": param.Description,
+			}
+			if len(param.Enum) > 0 {
+				prop["enum"] = param.Enum
+			}
+			properties[name] = prop
+			if param.Required {
+				required = append(required, name)
+			}
+		}
+
+		params := map[string]interface{}{
+			"type":       "object",
+			"properties": properties,
+		}
+		if len(required) > 0 {
+			params["required"] = required
+		}
+
+		result[i] = openAITool{
+			Type: "function",
+			Function: openAIFunction{
+				Name:        td.Name,
+				Description: td.Description,
+				Parameters:  params,
+			},
+		}
+	}
+	return result
+}
+
+// parseToolCalls extracts domain ToolCalls from OpenAI response choices.
+func (p *OpenAIProvider) parseToolCalls(choices []openAIChoice) []domain.ToolCall {
+	if len(choices) == 0 {
+		return nil
+	}
+	msg := choices[0].Message
+	if len(msg.ToolCalls) == 0 {
+		return nil
+	}
+
+	calls := make([]domain.ToolCall, len(msg.ToolCalls))
+	for i, tc := range msg.ToolCalls {
+		var args map[string]interface{}
+		_ = json.Unmarshal([]byte(tc.Function.Arguments), &args)
+		if args == nil {
+			args = make(map[string]interface{})
+		}
+		calls[i] = domain.ToolCall{
+			ID:        tc.ID,
+			ToolName:  tc.Function.Name,
+			Arguments: args,
+		}
+	}
+	return calls
+}
+
+// buildToolResultMessages converts domain ToolResults to OpenAI tool messages.
+func (p *OpenAIProvider) buildToolResultMessages(results []domain.ToolResult) []openAIMessage {
+	msgs := make([]openAIMessage, len(results))
+	for i, r := range results {
+		msgs[i] = openAIMessage{
+			Role:       "tool",
+			ToolCallID: r.ToolCallID,
+			Content:    r.Content,
+		}
+	}
+	return msgs
+}
+
 // — internal JSON structs —
 
 type openAIRequest struct {
@@ -151,11 +239,36 @@ type openAIRequest struct {
 	Messages    []openAIMessage `json:"messages"`
 	Temperature float64         `json:"temperature"`
 	MaxTokens   int             `json:"max_tokens"`
+	Tools       []openAITool    `json:"tools,omitempty"`
 }
 
 type openAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role       string           `json:"role"`
+	Content    string           `json:"content"`
+	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string           `json:"tool_call_id,omitempty"`
+}
+
+type openAITool struct {
+	Type     string         `json:"type"`
+	Function openAIFunction `json:"function"`
+}
+
+type openAIFunction struct {
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
+	Parameters  map[string]interface{} `json:"parameters"`
+}
+
+type openAIToolCall struct {
+	ID       string             `json:"id"`
+	Type     string             `json:"type"`
+	Function openAIFunctionCall `json:"function"`
+}
+
+type openAIFunctionCall struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 type openAIResponse struct {
