@@ -1,0 +1,22 @@
+{{define "team/group_section_funnels.html"}}
+<h2>🎯 Funis atribuídos</h2>
+
+<form hx-post="/tenant/team/groups/{{.GroupID}}/funnels"
+      hx-on::after-request="if(event.detail.successful){htmx.ajax('GET','/tenant/team/groups/{{.GroupID}}/section/funnels',{target:event.target.closest('section'),swap:'innerHTML'});}">
+    <ul class="checkbox-list">
+        {{range .Funnels}}
+        <li>
+            <label>
+                <input type="checkbox" name="funnel_ids" value="{{.ID}}" {{if .Assigned}}checked{{end}}>
+                {{.Name}}
+            </label>
+        </li>
+        {{else}}
+        <li class="muted">Nenhum funil cadastrado neste tenant.</li>
+        {{end}}
+    </ul>
+    <div class="section-actions" style="margin-top:1rem">
+        <button class="btn btn-primary" type="submit">Salvar funis</button>
+    </div>
+</form>
+{{end}}

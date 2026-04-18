@@ -40,6 +40,12 @@ type permRow struct {
 	Cells    []permCell
 }
 
+type funnelOpt struct {
+	ID       string
+	Name     string
+	Assigned bool
+}
+
 // PageHandler renders HTML pages for the "Equipe > Grupos" tab and group detail.
 type PageHandler struct {
 	createGroup   *application.CreateGroupUseCase
@@ -267,7 +273,39 @@ func (h *PageHandler) sectionPermissions(c *gin.Context) {
 		"Rows":    rows,
 	})
 }
-func (h *PageHandler) sectionFunnels(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) sectionFunnels(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantID := middleware.GetTenantID(ctx)
+	groupID := c.Param("id")
+
+	funnels, err := h.listFunnelsUC.Execute(ctx, tenantID)
+	if err != nil {
+		h.log.Error("failed to list funnels", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	assigned, err := h.manageGF.ListByGroup(ctx, groupID)
+	if err != nil {
+		h.log.Error("failed to list group funnels", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	aset := make(map[string]bool, len(assigned))
+	for _, a := range assigned {
+		aset[a.FunnelID] = true
+	}
+
+	opts := make([]funnelOpt, len(funnels))
+	for i, f := range funnels {
+		opts[i] = funnelOpt{ID: f.ID, Name: f.Name, Assigned: aset[f.ID]}
+	}
+
+	c.HTML(http.StatusOK, "team/group_section_funnels.html", gin.H{
+		"GroupID": groupID,
+		"Funnels": opts,
+	})
+}
 func (h *PageHandler) sectionViewProfiles(c *gin.Context) { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) sectionLoadBalance(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
 
@@ -294,6 +332,25 @@ func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (h *PageHandler) SetGroupFunnelsHTML(c *gin.Context)     { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) SetGroupFunnelsHTML(c *gin.Context) {
+	ctx := c.Request.Context()
+	groupID := c.Param("id")
+
+	funnelIDs := c.PostFormArray("funnel_ids")
+
+	for _, fid := range funnelIDs {
+		if err := h.manageGF.SetGroupFunnel(ctx, application.GroupFunnelInput{
+			GroupID:   groupID,
+			FunnelID:  fid,
+			ColumnIDs: nil,
+		}); err != nil {
+			h.log.Error("failed to set group funnel", zap.String("funnel_id", fid), zap.Error(err))
+			c.Status(http.StatusUnprocessableEntity)
+			return
+		}
+	}
+
+	c.Status(http.StatusOK)
+}
 func (h *PageHandler) SetViewProfileHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) SetLoadBalanceHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
