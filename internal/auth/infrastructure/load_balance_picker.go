@@ -2,7 +2,9 @@ package infrastructure
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"math/big"
 	"sort"
 
 	"go.uber.org/zap"
@@ -151,7 +153,11 @@ func (p *LoadBalancePicker) applyAlgorithm(ctx context.Context, tenantID string,
 		}
 		return best, nil
 	case authdomain.AlgorithmRandom:
-		return members[0], nil // placeholder — Task 9
+		idx, err := cryptoRandIndex(len(members))
+		if err != nil {
+			return "", err
+		}
+		return members[idx], nil
 	default:
 		return members[0], nil
 	}
@@ -180,3 +186,15 @@ func (p *LoadBalancePicker) fallbackToOwner(ctx context.Context, tenantID, reaso
 
 // sanity: ensure interface compliance at compile time
 var _ funneldomain.ResponsiblePicker = (*LoadBalancePicker)(nil)
+
+// cryptoRandIndex returns a uniform random index in [0, n) using crypto/rand.
+func cryptoRandIndex(n int) (int, error) {
+	if n <= 0 {
+		return 0, errors.New("empty member list")
+	}
+	v, err := rand.Int(rand.Reader, big.NewInt(int64(n)))
+	if err != nil {
+		return 0, err
+	}
+	return int(v.Int64()), nil
+}

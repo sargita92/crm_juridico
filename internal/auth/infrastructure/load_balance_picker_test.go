@@ -332,6 +332,38 @@ func TestLoadBalancePicker_LeastLoad_PrefersUserAbsentFromCounts(t *testing.T) {
 	require.Equal(t, "u-zero", got.UserID)
 }
 
+func TestLoadBalancePicker_Random_AllMembersEventuallyPicked(t *testing.T) {
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
+			"f1": {{ID: "gf1", GroupID: "g1", FunnelID: "f1"}},
+		}},
+		&fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{
+			"g1": {ID: "lb1", TenantID: "t1", GroupID: "g1", Algorithm: authdomain.AlgorithmRandom, Active: true},
+		}},
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{
+			"g1": {{UserID: "u-a"}, {UserID: "u-b"}, {UserID: "u-c"}},
+		}},
+		&fakeUserTenantRepo{
+			ownerByTenant: map[string]string{"t1": "owner-1"},
+			memberActive:  map[string]bool{"u-a": true, "u-b": true, "u-c": true},
+		},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	counts := map[string]int{}
+	for i := 0; i < 300; i++ {
+		got, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+		require.NoError(t, err)
+		counts[got.UserID]++
+	}
+
+	for _, uid := range []string{"u-a", "u-b", "u-c"} {
+		require.Greater(t, counts[uid], 0, "user %s was never picked in 300 draws", uid)
+		require.LessOrEqual(t, counts[uid], 210, "user %s picked too often (>70%%) in 300 draws", uid)
+	}
+}
+
 func TestLoadBalancePicker_FallbackWhenConfigInactive(t *testing.T) {
 	picker := infrastructure.NewLoadBalancePicker(
 		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
