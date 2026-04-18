@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/application"
@@ -35,14 +36,18 @@ func NewPageHandler(
 // RenderBadge returns the unread-count badge fragment. Zero count renders
 // an empty/hidden badge so the UI doesn't show a 0 to the user.
 func (h *PageHandler) RenderBadge(c *gin.Context) {
-	claims := middleware.GetClaims(c.Request.Context())
-	tenantID := middleware.GetTenantID(c.Request.Context())
+	ctx, span := otel.Tracer("notification").Start(c.Request.Context(), "notification.badge")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+
+	claims := middleware.GetClaims(ctx)
+	tenantID := middleware.GetTenantID(ctx)
 	if claims == nil {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
 
-	count, err := h.listUC.CountUnread(c.Request.Context(), tenantID, claims.UserID)
+	count, err := h.listUC.CountUnread(ctx, tenantID, claims.UserID)
 	if err != nil {
 		h.log.Error("page: count unread", zap.Error(err))
 		count = 0
@@ -54,20 +59,24 @@ func (h *PageHandler) RenderBadge(c *gin.Context) {
 // RenderDropdown returns the dropdown body with up to 10 most-recent
 // notifications (read + unread) for the authenticated user.
 func (h *PageHandler) RenderDropdown(c *gin.Context) {
-	claims := middleware.GetClaims(c.Request.Context())
-	tenantID := middleware.GetTenantID(c.Request.Context())
+	ctx, span := otel.Tracer("notification").Start(c.Request.Context(), "notification.dropdown")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+
+	claims := middleware.GetClaims(ctx)
+	tenantID := middleware.GetTenantID(ctx)
 	if claims == nil {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
 
-	items, err := h.listUC.Execute(c.Request.Context(), tenantID, claims.UserID, false, 10, 0)
+	items, err := h.listUC.Execute(ctx, tenantID, claims.UserID, false, 10, 0)
 	if err != nil {
 		h.log.Error("page: list dropdown", zap.Error(err))
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	unread, err := h.listUC.CountUnread(c.Request.Context(), tenantID, claims.UserID)
+	unread, err := h.listUC.CountUnread(ctx, tenantID, claims.UserID)
 	if err != nil {
 		h.log.Warn("page: count unread for dropdown", zap.Error(err))
 		unread = 0
@@ -82,8 +91,12 @@ func (h *PageHandler) RenderDropdown(c *gin.Context) {
 // RenderList returns the notifications list fragment (tab content + pagination)
 // for the authenticated user. Query: ?filter=unread|all&limit=20&offset=0
 func (h *PageHandler) RenderList(c *gin.Context) {
-	claims := middleware.GetClaims(c.Request.Context())
-	tenantID := middleware.GetTenantID(c.Request.Context())
+	ctx, span := otel.Tracer("notification").Start(c.Request.Context(), "notification.page.list")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+
+	claims := middleware.GetClaims(ctx)
+	tenantID := middleware.GetTenantID(ctx)
 	if claims == nil {
 		c.Status(http.StatusUnauthorized)
 		return
@@ -105,7 +118,7 @@ func (h *PageHandler) RenderList(c *gin.Context) {
 	}
 
 	// Fetch one extra to know if there's a next page.
-	items, err := h.listUC.Execute(c.Request.Context(), tenantID, claims.UserID, onlyUnread, limit+1, offset)
+	items, err := h.listUC.Execute(ctx, tenantID, claims.UserID, onlyUnread, limit+1, offset)
 	if err != nil {
 		h.log.Error("page: list", zap.Error(err))
 		c.Status(http.StatusInternalServerError)
@@ -139,8 +152,12 @@ func maxZero(v int) int {
 // RenderPage returns the full /tenant/notifications page with the unread tab
 // selected by default. The tab content is loaded on demand via RenderList.
 func (h *PageHandler) RenderPage(c *gin.Context) {
-	claims := middleware.GetClaims(c.Request.Context())
-	tenantID := middleware.GetTenantID(c.Request.Context())
+	ctx, span := otel.Tracer("notification").Start(c.Request.Context(), "notification.page.render")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+
+	claims := middleware.GetClaims(ctx)
+	tenantID := middleware.GetTenantID(ctx)
 	if claims == nil {
 		c.Status(http.StatusUnauthorized)
 		return
@@ -151,7 +168,7 @@ func (h *PageHandler) RenderPage(c *gin.Context) {
 		filter = "unread"
 	}
 
-	unread, _ := h.listUC.CountUnread(c.Request.Context(), tenantID, claims.UserID)
+	unread, _ := h.listUC.CountUnread(ctx, tenantID, claims.UserID)
 
 	c.HTML(http.StatusOK, "notification/list.html", gin.H{
 		"Filter":      filter,

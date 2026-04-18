@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
+	notifinfra "github.com/sasrgita/crm-juridico/internal/notification/infrastructure"
 	events "github.com/sasrgita/crm-juridico/internal/shared/events"
 )
 
@@ -43,6 +44,7 @@ func (s *NotifyService) Notify(
 	if err := s.notifRepo.Create(ctx, notif); err != nil {
 		return err
 	}
+	notifinfra.NotificationsDeliveredTotal.WithLabelValues(string(notif.Type)).Inc()
 	// Always publish in-app event for SSE consumers.
 	s.eventBus.Publish(events.Event{
 		Type:     events.EventNotification,

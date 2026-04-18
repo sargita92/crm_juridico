@@ -5,26 +5,15 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/application"
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
+	notifinfra "github.com/sasrgita/crm-juridico/internal/notification/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	events "github.com/sasrgita/crm-juridico/internal/shared/events"
 )
-
-// Temporary metric stub — replaced by infrastructure/metrics.go in Task 18.
-var sseActiveStreams = prometheus.NewGauge(prometheus.GaugeOpts{
-	Namespace: "crm",
-	Subsystem: "notifications",
-	Name:      "sse_active_streams",
-	Help:      "Number of currently open SSE notification streams.",
-})
-
-func init() {
-	prometheus.MustRegister(sseActiveStreams)
-}
 
 // Handler holds all notification use cases and the event bus for SSE.
 type Handler struct {
@@ -81,8 +70,8 @@ func (h *Handler) StreamNotifications(c *gin.Context) {
 	ch, cleanup := h.eventBus.Subscribe(tenantID)
 	defer cleanup()
 
-	sseActiveStreams.Inc()
-	defer sseActiveStreams.Dec()
+	notifinfra.SSEActiveStreams.Inc()
+	defer notifinfra.SSEActiveStreams.Dec()
 
 	// Note: c.Stream is intentionally avoided here because gin v1.12.0's
 	// c.Stream calls w.CloseNotify() unconditionally, which panics when the
@@ -94,21 +83,26 @@ func (h *Handler) StreamNotifications(c *gin.Context) {
 		select {
 		case event := <-ch:
 			if event.Type != events.EventNotification {
+				notifinfra.SSEEventsEmittedTotal.WithLabelValues("skipped").Inc()
 				continue
 			}
 			notif, ok := event.Payload.(*domain.Notification)
 			if !ok {
+				notifinfra.SSEEventsEmittedTotal.WithLabelValues("skipped").Inc()
 				continue
 			}
 			if notif.UserID != claims.UserID {
+				notifinfra.SSEEventsEmittedTotal.WithLabelValues("skipped").Inc()
 				continue
 			}
 			if h.renderer == nil {
 				h.log.Warn("sse: renderer not set; skipping event")
+				notifinfra.SSEEventsEmittedTotal.WithLabelValues("skipped").Inc()
 				continue
 			}
 
-			count, err := h.listUC.CountUnread(c.Request.Context(), tenantID, claims.UserID)
+			ctx, span := otel.Tracer("notification").Start(c.Request.Context(), "notification.stream.emit")
+			count, err := h.listUC.CountUnread(ctx, tenantID, claims.UserID)
 			if err != nil {
 				h.log.Warn("sse count unread failed", zap.Error(err))
 				count = 0
@@ -117,6 +111,8 @@ func (h *Handler) StreamNotifications(c *gin.Context) {
 			fragment, err := h.renderer.Render(notif, count)
 			if err != nil {
 				h.log.Error("sse render failed", zap.Error(err))
+				notifinfra.SSEEventsEmittedTotal.WithLabelValues("render_error").Inc()
+				span.End()
 				continue
 			}
 
@@ -126,6 +122,8 @@ func (h *Handler) StreamNotifications(c *gin.Context) {
 			if canFlush {
 				flusher.Flush()
 			}
+			notifinfra.SSEEventsEmittedTotal.WithLabelValues("delivered").Inc()
+			span.End()
 
 		case <-c.Request.Context().Done():
 			return
