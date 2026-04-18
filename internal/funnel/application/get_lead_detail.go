@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
 
@@ -67,6 +69,20 @@ type GetLeadDetailUseCase struct {
 	noteRepo         domain.LeadNoteRepository
 	userNameProvider domain.UserNameProvider
 	productProvider  domain.ProductProvider
+	auditLog         *zap.Logger
+}
+
+// SetAuditLogger attaches a structured logger used for security-sensitive
+// audit events (e.g. cross-tenant access attempts). Optional.
+func (uc *GetLeadDetailUseCase) SetAuditLogger(l *zap.Logger) {
+	uc.auditLog = l
+}
+
+func (uc *GetLeadDetailUseCase) audit() *zap.Logger {
+	if uc.auditLog == nil {
+		return zap.NewNop()
+	}
+	return uc.auditLog
 }
 
 func NewGetLeadDetailUseCase(
@@ -99,6 +115,11 @@ func (uc *GetLeadDetailUseCase) Execute(ctx context.Context, input GetLeadDetail
 		return nil, err
 	}
 	if lead.TenantID != input.TenantID {
+		uc.audit().Warn("cross-tenant lead access denied",
+			zap.String("tenant_id", input.TenantID),
+			zap.String("lead_id", input.LeadID),
+			zap.String("operation", "get_lead_detail"),
+		)
 		return nil, domain.ErrLeadNotFound
 	}
 

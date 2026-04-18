@@ -2,6 +2,7 @@ package domain
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -69,4 +70,17 @@ func TestLead_UpdateScore(t *testing.T) {
 	l, _ := NewLead("id", "t", "f", "c", "ct", "cv")
 	l.UpdateScore(80)
 	assert.Equal(t, 80, l.Score)
+}
+
+// CT-33: Lead atualiza column_entered_at ao mover
+func TestLead_MoveTo_RefreshesColumnEnteredAt(t *testing.T) {
+	l, _ := NewLead("id", "t", "f", "col-1", "ct", "cv")
+	previous := l.ColumnEnteredAt
+	previousUpdatedAt := l.UpdatedAt
+	time.Sleep(2 * time.Millisecond)
+
+	l.MoveTo("col-2", ColumnTypeIntermediate)
+
+	assert.True(t, l.ColumnEnteredAt.After(previous), "ColumnEnteredAt deve ser atualizado no MoveTo")
+	assert.True(t, l.UpdatedAt.After(previousUpdatedAt), "UpdatedAt deve ser atualizado no MoveTo")
 }

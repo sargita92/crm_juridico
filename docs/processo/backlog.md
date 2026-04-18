@@ -27,7 +27,7 @@
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F06 | [Integração com WhatsApp](../features/F06-integracao-whatsapp.md) | concluído | F02 | alta |
-| F07 | [Funis de Vendas (Kanban)](../features/F07-funis-kanban.md) | em andamento | F06 | alta |
+| F07 | [Funis de Vendas (Kanban)](../features/F07-funis-kanban.md) | concluído | F06 | alta |
 
 ## Épico 4: Gestão de Equipe e Operação
 

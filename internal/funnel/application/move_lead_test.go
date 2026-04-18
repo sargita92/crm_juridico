@@ -7,6 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
@@ -106,6 +109,47 @@ func TestMoveLead_ColumnNotFound(t *testing.T) {
 		TenantID: "tenant-1", LeadID: lead.ID, ColumnID: "nope",
 	})
 	assert.ErrorIs(t, err, domain.ErrColumnNotFound)
+}
+
+// CT-66: Log de movimentacao de lead (tenant_id, lead_id, from_column, to_column)
+func TestMoveLead_AuditLogOnSuccess(t *testing.T) {
+	uc, _, _, _, _, lead, col1, col2 := setupMoveLeadTest(t)
+
+	core, logs := observer.New(zapcore.InfoLevel)
+	uc.SetAuditLogger(zap.New(core))
+
+	err := uc.Execute(context.Background(), MoveLeadInput{
+		TenantID: "tenant-1", LeadID: lead.ID, ColumnID: col2.ID,
+	})
+	require.NoError(t, err)
+
+	entries := logs.FilterMessage("lead moved").All()
+	require.Len(t, entries, 1, "deve registrar info audit na movimentacao")
+	fields := entries[0].ContextMap()
+	assert.Equal(t, "tenant-1", fields["tenant_id"])
+	assert.Equal(t, lead.ID, fields["lead_id"])
+	assert.Equal(t, col1.ID, fields["from_column_id"])
+	assert.Equal(t, col2.ID, fields["to_column_id"])
+}
+
+// CT-65: Log de acesso negado (tenant B tenta mover lead de tenant A)
+func TestMoveLead_CrossTenantAccessIsLogged(t *testing.T) {
+	uc, _, _, _, _, lead, _, col2 := setupMoveLeadTest(t)
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	uc.SetAuditLogger(zap.New(core))
+
+	err := uc.Execute(context.Background(), MoveLeadInput{
+		TenantID: "tenant-b", LeadID: lead.ID, ColumnID: col2.ID,
+	})
+	require.ErrorIs(t, err, domain.ErrLeadNotFound)
+
+	entries := logs.FilterMessage("cross-tenant lead access denied").All()
+	require.Len(t, entries, 1, "deve registrar warning ao negar movimentacao cross-tenant")
+	fields := entries[0].ContextMap()
+	assert.Equal(t, "tenant-b", fields["tenant_id"])
+	assert.Equal(t, lead.ID, fields["lead_id"])
+	assert.Equal(t, "move_lead", fields["operation"])
 }
 
 func TestMoveLead_DifferentFunnel(t *testing.T) {

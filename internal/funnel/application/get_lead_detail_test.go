@@ -8,6 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
@@ -101,4 +104,31 @@ func TestGetLeadDetail_WrongTenant(t *testing.T) {
 		TenantID: "other", LeadID: lead.ID,
 	})
 	assert.ErrorIs(t, err, domain.ErrLeadNotFound)
+}
+
+// CT-65: Log de acesso negado a leads (tenant B tenta acessar lead de tenant A)
+func TestGetLeadDetail_CrossTenantAccessIsLogged(t *testing.T) {
+	uc, leadRepo, _, funnelRepo, columnRepo, _, _, _, _ := setupLeadDetailTest()
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	uc.SetAuditLogger(zap.New(core))
+
+	funnel, _ := domain.NewFunnel(uuid.New().String(), "tenant-a", "Vendas", "")
+	_ = funnelRepo.Create(context.Background(), funnel)
+	col, _ := domain.NewColumn(uuid.New().String(), funnel.ID, "Novo", 0, domain.ColumnTypeEntry, "")
+	_ = columnRepo.Create(context.Background(), col)
+	lead, _ := domain.NewLead(uuid.New().String(), "tenant-a", funnel.ID, col.ID, "contact-1", "conv-1")
+	_ = leadRepo.Create(context.Background(), lead)
+
+	_, err := uc.Execute(context.Background(), GetLeadDetailInput{
+		TenantID: "tenant-b", LeadID: lead.ID,
+	})
+	require.ErrorIs(t, err, domain.ErrLeadNotFound)
+
+	entries := logs.FilterMessage("cross-tenant lead access denied").All()
+	require.Len(t, entries, 1, "deve registrar warning ao negar acesso cross-tenant")
+	fields := entries[0].ContextMap()
+	assert.Equal(t, "tenant-b", fields["tenant_id"])
+	assert.Equal(t, lead.ID, fields["lead_id"])
+	assert.Equal(t, "get_lead_detail", fields["operation"])
 }

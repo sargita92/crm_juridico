@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
@@ -23,6 +24,7 @@ type MoveLeadUseCase struct {
 	movementRepo      domain.LeadMovementRepository
 	eventBus          events.EventBus
 	automationTrigger domain.AutomationTrigger
+	auditLog          *zap.Logger
 }
 
 func NewMoveLeadUseCase(
@@ -47,12 +49,30 @@ func (uc *MoveLeadUseCase) SetAutomationTrigger(t domain.AutomationTrigger) {
 	uc.automationTrigger = t
 }
 
+// SetAuditLogger sets an optional structured logger for audit events
+// (successful movements and cross-tenant access denials).
+func (uc *MoveLeadUseCase) SetAuditLogger(l *zap.Logger) {
+	uc.auditLog = l
+}
+
+func (uc *MoveLeadUseCase) audit() *zap.Logger {
+	if uc.auditLog == nil {
+		return zap.NewNop()
+	}
+	return uc.auditLog
+}
+
 func (uc *MoveLeadUseCase) Execute(ctx context.Context, input MoveLeadInput) error {
 	lead, err := uc.leadRepo.FindByID(ctx, input.LeadID)
 	if err != nil {
 		return err
 	}
 	if lead.TenantID != input.TenantID {
+		uc.audit().Warn("cross-tenant lead access denied",
+			zap.String("tenant_id", input.TenantID),
+			zap.String("lead_id", input.LeadID),
+			zap.String("operation", "move_lead"),
+		)
 		return domain.ErrLeadNotFound
 	}
 
@@ -102,6 +122,14 @@ func (uc *MoveLeadUseCase) Execute(ctx context.Context, input MoveLeadInput) err
 	if uc.automationTrigger != nil {
 		_ = uc.automationTrigger.OnLeadEvent(ctx, lead.TenantID, lead.ID, lead.ColumnID)
 	}
+
+	uc.audit().Info("lead moved",
+		zap.String("tenant_id", lead.TenantID),
+		zap.String("lead_id", lead.ID),
+		zap.String("funnel_id", lead.FunnelID),
+		zap.String("from_column_id", fromColumnID),
+		zap.String("to_column_id", col.ID),
+	)
 
 	return nil
 }

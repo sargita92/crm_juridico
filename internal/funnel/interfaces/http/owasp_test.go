@@ -23,12 +23,13 @@ import (
 )
 
 type owaspEnv struct {
-	router     *gin.Engine
-	provider   *authinfra.JWTProvider
-	leadRepo   *owaspMockLeadRepo
-	funnelRepo *owaspMockFunnelRepo
-	columnRepo *owaspMockColumnRepo
-	noteRepo   *owaspMockNoteRepo
+	router       *gin.Engine
+	provider     *authinfra.JWTProvider
+	leadRepo     *owaspMockLeadRepo
+	funnelRepo   *owaspMockFunnelRepo
+	columnRepo   *owaspMockColumnRepo
+	noteRepo     *owaspMockNoteRepo
+	movementRepo *owaspMockMovementRepo
 }
 
 // Minimal mocks for OWASP tests (only what's needed for routing)
@@ -45,11 +46,25 @@ func (m *owaspMockFunnelRepo) FindByID(_ context.Context, id string) (*domain.Fu
 	}
 	return nil, domain.ErrFunnelNotFound
 }
-func (m *owaspMockFunnelRepo) Update(_ context.Context, f *domain.Funnel) error { return nil }
+func (m *owaspMockFunnelRepo) Update(_ context.Context, f *domain.Funnel) error {
+	m.funnels[f.ID] = f
+	return nil
+}
 func (m *owaspMockFunnelRepo) FindByTenantID(_ context.Context, tenantID string) ([]domain.Funnel, error) {
-	return nil, nil
+	out := make([]domain.Funnel, 0)
+	for _, f := range m.funnels {
+		if f.TenantID == tenantID {
+			out = append(out, *f)
+		}
+	}
+	return out, nil
 }
 func (m *owaspMockFunnelRepo) FindDefaultByTenantID(_ context.Context, tenantID string) (*domain.Funnel, error) {
+	for _, f := range m.funnels {
+		if f.TenantID == tenantID && f.IsDefault {
+			return f, nil
+		}
+	}
 	return nil, domain.ErrFunnelNotFound
 }
 
@@ -65,21 +80,67 @@ func (m *owaspMockColumnRepo) FindByID(_ context.Context, id string) (*domain.Co
 	}
 	return nil, domain.ErrColumnNotFound
 }
-func (m *owaspMockColumnRepo) Update(_ context.Context, c *domain.Column) error   { return nil }
-func (m *owaspMockColumnRepo) Delete(_ context.Context, id string) error           { return nil }
+func (m *owaspMockColumnRepo) Update(_ context.Context, c *domain.Column) error {
+	m.columns[c.ID] = c
+	return nil
+}
+func (m *owaspMockColumnRepo) Delete(_ context.Context, id string) error {
+	delete(m.columns, id)
+	return nil
+}
 func (m *owaspMockColumnRepo) FindByFunnelID(_ context.Context, funnelID string) ([]domain.Column, error) {
-	return nil, nil
+	out := make([]domain.Column, 0)
+	for _, c := range m.columns {
+		if c.FunnelID == funnelID {
+			out = append(out, *c)
+		}
+	}
+	// Sort by order_index for stable iteration
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); j++ {
+			if out[j].OrderIndex < out[i].OrderIndex {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+	return out, nil
 }
 func (m *owaspMockColumnRepo) FindEntryByFunnelID(_ context.Context, funnelID string) (*domain.Column, error) {
+	for _, c := range m.columns {
+		if c.FunnelID == funnelID && c.Type == domain.ColumnTypeEntry {
+			return c, nil
+		}
+	}
 	return nil, domain.ErrColumnNotFound
 }
 func (m *owaspMockColumnRepo) CountByFunnelID(_ context.Context, funnelID string) (int, error) {
-	return 0, nil
+	count := 0
+	for _, c := range m.columns {
+		if c.FunnelID == funnelID {
+			count++
+		}
+	}
+	return count, nil
 }
 func (m *owaspMockColumnRepo) GetMaxOrderIndex(_ context.Context, funnelID string) (int, error) {
-	return 0, nil
+	max := -1
+	for _, c := range m.columns {
+		if c.FunnelID == funnelID && c.OrderIndex > max {
+			max = c.OrderIndex
+		}
+	}
+	if max < 0 {
+		return 0, nil
+	}
+	return max, nil
 }
 func (m *owaspMockColumnRepo) SwapOrder(_ context.Context, col1ID string, order1 int, col2ID string, order2 int) error {
+	if c1, ok := m.columns[col1ID]; ok {
+		c1.OrderIndex = order1
+	}
+	if c2, ok := m.columns[col2ID]; ok {
+		c2.OrderIndex = order2
+	}
 	return nil
 }
 
@@ -95,15 +156,40 @@ func (m *owaspMockLeadRepo) FindByID(_ context.Context, id string) (*domain.Lead
 	}
 	return nil, domain.ErrLeadNotFound
 }
-func (m *owaspMockLeadRepo) Update(_ context.Context, l *domain.Lead) error { return nil }
+func (m *owaspMockLeadRepo) Update(_ context.Context, l *domain.Lead) error {
+	m.leads[l.ID] = l
+	return nil
+}
 func (m *owaspMockLeadRepo) FindByContactAndTenant(_ context.Context, tenantID, contactID string) (*domain.Lead, error) {
+	for _, l := range m.leads {
+		if l.TenantID == tenantID && l.ContactID == contactID {
+			return l, nil
+		}
+	}
 	return nil, domain.ErrLeadNotFound
 }
 func (m *owaspMockLeadRepo) FindByFunnelID(_ context.Context, funnelID string, filter domain.LeadFilter) (*domain.LeadList, error) {
-	return &domain.LeadList{}, nil
+	list := &domain.LeadList{Page: filter.Page, Limit: filter.Limit}
+	for _, l := range m.leads {
+		if l.FunnelID != funnelID {
+			continue
+		}
+		if filter.ColumnID != "" && l.ColumnID != filter.ColumnID {
+			continue
+		}
+		list.Leads = append(list.Leads, domain.LeadWithContact{Lead: *l})
+		list.Total++
+	}
+	return list, nil
 }
 func (m *owaspMockLeadRepo) CountByColumnID(_ context.Context, columnID string) (int, error) {
-	return 0, nil
+	count := 0
+	for _, l := range m.leads {
+		if l.ColumnID == columnID {
+			count++
+		}
+	}
+	return count, nil
 }
 
 func (m *owaspMockLeadRepo) FindByConversationID(_ context.Context, conversationID string) (*domain.Lead, error) {
@@ -114,11 +200,22 @@ func (m *owaspMockLeadRepo) FindByTenantAndSearch(_ context.Context, tenantID, q
 	return nil, nil
 }
 
-type owaspMockMovementRepo struct{}
+type owaspMockMovementRepo struct {
+	movements map[string][]domain.LeadMovement
+}
 
-func (m *owaspMockMovementRepo) Create(_ context.Context, mv *domain.LeadMovement) error { return nil }
+func (m *owaspMockMovementRepo) Create(_ context.Context, mv *domain.LeadMovement) error {
+	if m.movements == nil {
+		m.movements = make(map[string][]domain.LeadMovement)
+	}
+	m.movements[mv.LeadID] = append(m.movements[mv.LeadID], *mv)
+	return nil
+}
 func (m *owaspMockMovementRepo) FindByLeadID(_ context.Context, leadID string) ([]domain.LeadMovement, error) {
-	return nil, nil
+	if m.movements == nil {
+		return nil, nil
+	}
+	return m.movements[leadID], nil
 }
 
 type owaspMockContactProvider struct{}
@@ -140,7 +237,11 @@ func (m *owaspMockNoteRepo) Create(_ context.Context, n *domain.LeadNote) error 
 	return nil
 }
 func (m *owaspMockNoteRepo) FindByLeadID(_ context.Context, leadID string) ([]domain.LeadNote, error) {
-	return nil, nil
+	out := make([]domain.LeadNote, 0)
+	for _, n := range m.notes[leadID] {
+		out = append(out, *n)
+	}
+	return out, nil
 }
 
 type owaspMockUserNameProvider struct{}
@@ -155,7 +256,7 @@ func setupOwaspEnv() *owaspEnv {
 	funnelRepo := &owaspMockFunnelRepo{funnels: make(map[string]*domain.Funnel)}
 	columnRepo := &owaspMockColumnRepo{columns: make(map[string]*domain.Column)}
 	leadRepo := &owaspMockLeadRepo{leads: make(map[string]*domain.Lead)}
-	movementRepo := &owaspMockMovementRepo{}
+	movementRepo := &owaspMockMovementRepo{movements: make(map[string][]domain.LeadMovement)}
 	contactProvider := &owaspMockContactProvider{}
 	messageProvider := &owaspMockMessageProvider{}
 	noteRepo := &owaspMockNoteRepo{notes: make(map[string][]*domain.LeadNote)}
@@ -207,12 +308,13 @@ func setupOwaspEnv() *owaspEnv {
 	handler.RegisterRoutes(router, authMw, tenantMw)
 
 	return &owaspEnv{
-		router:     router,
-		provider:   jwtProvider,
-		leadRepo:   leadRepo,
-		funnelRepo: funnelRepo,
-		columnRepo: columnRepo,
-		noteRepo:   noteRepo,
+		router:       router,
+		provider:     jwtProvider,
+		leadRepo:     leadRepo,
+		funnelRepo:   funnelRepo,
+		columnRepo:   columnRepo,
+		noteRepo:     noteRepo,
+		movementRepo: movementRepo,
 	}
 }
 
@@ -288,6 +390,46 @@ func TestOWASP_A01_TenantIsolation_LeadNotVisible(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+// CT-64: Token com tenant adulterado (assinado por chave diferente) recebe 401
+func TestOWASP_A07_TamperedTokenSignature_Returns401(t *testing.T) {
+	env := setupOwaspEnv()
+
+	// Generate a token signed with a DIFFERENT secret (simulando adulteracao)
+	fakeProvider := authinfra.NewJWTProvider("another-secret", 24*time.Hour)
+	tamperedToken, err := fakeProvider.Generate(authdomain.TokenClaims{
+		UserID:   uuid.New().String(),
+		Role:     authdomain.UserRoleUser,
+		TenantID: "any-tenant",
+	})
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/tenant/leads", nil)
+	req.AddCookie(owaspCookie(tamperedToken))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code,
+		"token assinado com chave diferente deve ser rejeitado com 401")
+}
+
+// CT-64 (complemento): Token com payload modificado manualmente (assinatura invalida)
+func TestOWASP_A07_InvalidTokenString_Returns401(t *testing.T) {
+	env := setupOwaspEnv()
+
+	// Token base valido
+	validToken := env.tenantToken(t, "tenant-a")
+	// Corrompe ultimo caractere (signature segment)
+	tampered := validToken[:len(validToken)-1] + "X"
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/tenant/leads", nil)
+	req.AddCookie(owaspCookie(tampered))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code,
+		"token com assinatura corrompida deve ser rejeitado com 401")
 }
 
 func TestOWASP_A01_TenantIsolation_CreateNoteDenied(t *testing.T) {
