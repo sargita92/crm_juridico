@@ -6,7 +6,7 @@ Implementar o sistema de funis de vendas em formato kanban, conectado às conver
 ## Pré-requisitos
 - F06 (integração WhatsApp)
 
-## Status: em andamento
+## Status: concluído
 
 ## Steps
 
@@ -93,7 +93,7 @@ Implementar o sistema de funis de vendas em formato kanban, conectado às conver
 - [x] movimentação manual por drag-and-drop
 - [ ] visualização filtrada por perfil (F08)
 - [x] kanban é intuitivo e bonito
-- [x] cobertura >= 80% (88.8%)
+- [x] cobertura >= 80% por pacote (domain 89.7%, application 83.5%, infrastructure 88.6%, interfaces/http 86.3%)
 
 ## Melhorias futuras
 - Filtros avançados por produto (F10), responsável (F08), score

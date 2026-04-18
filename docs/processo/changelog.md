@@ -4,6 +4,35 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-18] F07 — Funis de Vendas (Kanban) — fechamento
+
+Feature encerrada com validação QA + review de segurança (ambos aprovados):
+
+- **QA validação (66 cenários)**: todos cobertos por testes automatizados.
+  Gaps preenchidos: CT-33 (refresh de `column_entered_at` no `Lead.MoveTo`),
+  CT-64 (JWT tampering — assinatura adulterada/corrompida retorna 401),
+  CT-65/CT-66 (audit logs de tentativa cross-tenant e de movimentação de
+  lead, validados via `zaptest/observer`).
+- **Audit logging opcional** adicionado em `MoveLeadUseCase` e
+  `GetLeadDetailUseCase` (`SetAuditLogger`). Emite `INFO "lead moved"`
+  com tenant_id, lead_id, funnel_id, from/to column_id no sucesso, e
+  `WARN "cross-tenant lead access denied"` em isolamento quebrado.
+- **Security review (OWASP Top 10)**: APROVADO sem achados alto/crítico.
+  Recomendações nice-to-have (rate limiting global, user_id no audit)
+  ficaram para follow-up.
+- **Cobertura por pacote** (todos ≥ 80%):
+  - domain 89.7% · application 83.5% · infrastructure 88.6% ·
+    interfaces/http 86.3%
+  - infrastructure saltou de 3.5% → 88.6% com 48 novos testes de
+    integração (testcontainers-go) + adapters.
+  - interfaces/http saltou de 15.6% → 86.3% com 36 novos testes de
+    handler cobrindo os 17 endpoints.
+- **Suite total**: 1703 testes passando.
+- Artefatos: `docs/artefatos/F07-funis-kanban/qa-validacao/v1.md` e
+  `seguranca-review/v1.md`; backlog atualizado para `concluído`.
+
+---
+
 ## [2026-04-18] F08 Step 6 — Telas de Equipe (HTMX)
 
 - Novo item "Equipe" no sidebar do tenant (visível com `users:read` OU `groups:manage`)
