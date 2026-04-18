@@ -1,0 +1,12 @@
+{{define "team/group_new_modal.html"}}
+<form hx-post="/tenant/team/groups">
+    <label>Nome</label>
+    <input type="text" name="name" required>
+    <label>Descrição</label>
+    <textarea name="description" rows="3"></textarea>
+    <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal('team-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Criar</button>
+    </div>
+</form>
+{{end}}

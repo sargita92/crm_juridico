@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
+	funnelapp "github.com/sasrgita/crm-juridico/internal/funnel/application"
+	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
 	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	permhttp "github.com/sasrgita/crm-juridico/internal/permission/interfaces/http"
@@ -15,6 +17,7 @@ import (
 // Module wires together the permission feature.
 type Module struct {
 	handler       *permhttp.Handler
+	pageHandler   *permhttp.PageHandler
 	resolverUC    *application.ResolvePermissionUseCase
 	vpUC          *application.ManageViewProfilesUseCase
 	listGroupsUC  *application.ListGroupsUseCase
@@ -22,7 +25,14 @@ type Module struct {
 }
 
 // NewModule creates all permission repositories, use cases, and handlers.
-func NewModule(db *gorm.DB, log *zap.Logger, loadBalanceUC *authapp.ManageLoadBalanceUseCase) *Module {
+func NewModule(
+	db *gorm.DB,
+	log *zap.Logger,
+	loadBalanceUC *authapp.ManageLoadBalanceUseCase,
+	listFunnelsUC *funnelapp.ListFunnelsUseCase,
+	columnRepo funneldomain.ColumnRepository,
+	usersListUC *authapp.ManageUsersUseCase,
+) *Module {
 	// Repositories
 	groupRepo := infrastructure.NewGormPermissionGroupRepository(db)
 	ugRepo := infrastructure.NewGormUserGroupRepository(db)
@@ -60,8 +70,26 @@ func NewModule(db *gorm.DB, log *zap.Logger, loadBalanceUC *authapp.ManageLoadBa
 		log,
 	)
 
+	pageHandler := permhttp.NewPageHandler(
+		createGroupUC,
+		listGroupsUC,
+		getGroupUC,
+		updateGroupUC,
+		deleteGroupUC,
+		manageMembersUC,
+		managePermsUC,
+		manageVPUC,
+		manageGFUC,
+		loadBalanceUC,
+		listFunnelsUC,
+		columnRepo,
+		usersListUC,
+		log,
+	)
+
 	return &Module{
 		handler:       handler,
+		pageHandler:   pageHandler,
 		resolverUC:    resolverUC,
 		vpUC:          manageVPUC,
 		listGroupsUC:  listGroupsUC,
@@ -74,7 +102,7 @@ func (m *Module) Name() string { return "permission" }
 
 // RegisterRoutes registers all permission HTTP routes.
 func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
-	m.handler.RegisterRoutes(router, mw.Auth, mw.Tenant, mw.RequirePermission)
+	m.handler.RegisterRoutes(router, m.pageHandler, mw.Auth, mw.Tenant, mw.RequirePermission)
 }
 
 // Resolver exposes the ResolvePermissionUseCase for use as a middleware checker.

@@ -173,8 +173,14 @@ func main() {
 	// Auth module (login, tenant selection, invites, user management)
 	authMod := auth.NewModule(db, tenantMod.TenantRepo(), cfg.JWT.Secret, cfg.JWT.Expiration, cfg.Server.SecureCookie)
 
-	// Permission module (depends on authMod for load balance use case)
-	permissionMod := permission.NewModule(db, log, authMod.LoadBalanceUseCase())
+	// Permission module (depends on authMod for load balance use case and funnelMod for funnels/columns)
+	permissionMod := permission.NewModule(
+		db, log,
+		authMod.LoadBalanceUseCase(),
+		funnelMod.ListFunnelsUC(),
+		funnelMod.ColumnRepo(),
+		authMod.ManageUsersUseCase(),
+	)
 
 	// Wire cross-module permission use cases into auth's PageHandler (resolves circular dep at construction).
 	authMod.AttachPermissionDeps(permissionMod.ListGroupsUseCase(), permissionMod.ManagePermissionsUseCase(), permissionMod.Resolver(), log)

@@ -1,3 +1,20 @@
 {{define "team/groups_page.html"}}
-<div class="muted">Loading groups...</div>
+<div class="admin-table-wrapper">
+    <div class="filters-bar">
+        <span class="muted">{{len .Groups}} grupo(s)</span>
+        <button class="btn btn-primary"
+                hx-get="/tenant/team/groups/new-modal"
+                hx-target="#team-modal-body"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('team-modal-title').textContent='Novo Grupo';openModal('team-modal')">
+            + Novo Grupo
+        </button>
+    </div>
+    <div id="groups-block"
+         hx-get="/tenant/team/groups/table"
+         hx-trigger="refreshTeam from:body"
+         hx-swap="innerHTML">
+        {{template "team/groups_table.html" .}}
+    </div>
+</div>
 {{end}}

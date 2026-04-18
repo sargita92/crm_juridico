@@ -1,0 +1,24 @@
+{{define "team/groups_table.html"}}
+<table class="admin-table">
+    <thead><tr><th>Nome</th><th>Descrição</th><th>Ações</th></tr></thead>
+    <tbody>
+        {{range .Groups}}
+        <tr>
+            <td><a href="/tenant/team/groups/{{.ID}}">{{.Name}}</a></td>
+            <td class="muted">{{.Description}}</td>
+            <td>
+                <a class="btn-icon" href="/tenant/team/groups/{{.ID}}" title="Abrir">👁️</a>
+                <button class="btn-icon"
+                        hx-delete="/tenant/groups/{{.ID}}"
+                        hx-confirm="Excluir este grupo?"
+                        hx-target="#groups-block"
+                        hx-get="/tenant/team/groups/table"
+                        title="Excluir">🗑️</button>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="3" class="empty-state">Crie seu primeiro grupo.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}
