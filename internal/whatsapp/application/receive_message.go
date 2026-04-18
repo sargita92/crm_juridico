@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
@@ -18,6 +19,7 @@ type ReceiveMessageUseCase struct {
 	eventBus         events.EventBus
 	leadCreator      domain.LeadCreator
 	aiHandler        domain.AIHandler
+	log              *zap.Logger
 }
 
 func NewReceiveMessageUseCase(
@@ -25,12 +27,17 @@ func NewReceiveMessageUseCase(
 	conversationRepo domain.ConversationRepository,
 	messageRepo domain.MessageRepository,
 	eventBus events.EventBus,
+	log *zap.Logger,
 ) *ReceiveMessageUseCase {
+	if log == nil {
+		log = zap.NewNop()
+	}
 	return &ReceiveMessageUseCase{
 		contactRepo:      contactRepo,
 		conversationRepo: conversationRepo,
 		messageRepo:      messageRepo,
 		eventBus:         eventBus,
+		log:              log,
 	}
 }
 
@@ -83,7 +90,6 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 	}
 
 	// Find or create conversation
-	newConversation := false
 	conv, err := uc.conversationRepo.FindByContactID(ctx, event.TenantID, contact.ID)
 	if errors.Is(err, domain.ErrConversationNotFound) {
 		conv, err = domain.NewConversation(uuid.New().String(), event.TenantID, contact.ID)
@@ -93,7 +99,6 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 		if err := uc.conversationRepo.Create(ctx, conv); err != nil {
 			return err
 		}
-		newConversation = true
 	} else if err != nil {
 		return err
 	}
@@ -133,14 +138,28 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 		Payload:  conv,
 	})
 
-	// Create lead in funnel if this is a new conversation
-	if newConversation && uc.leadCreator != nil {
-		_ = uc.leadCreator.CreateFromConversation(ctx, event.TenantID, contact.ID, conv.ID, event.Content)
+	// Idempotent: no-ops when the lead already exists. Covers contacts whose
+	// conversation was created out-of-band (fixtures, playground, manual seed).
+	if uc.leadCreator != nil {
+		if err := uc.leadCreator.CreateFromConversation(ctx, event.TenantID, contact.ID, conv.ID, event.Content); err != nil {
+			uc.log.Error("receive_message: lead creation failed",
+				zap.String("tenant_id", event.TenantID),
+				zap.String("contact_id", contact.ID),
+				zap.String("conversation_id", conv.ID),
+				zap.Error(err))
+		}
+	} else {
+		uc.log.Warn("receive_message: leadCreator is nil — lead will not be created",
+			zap.String("tenant_id", event.TenantID),
+			zap.String("contact_id", contact.ID))
 	}
 
-	// Trigger AI handler for all incoming messages
+	// Trigger AI handler for all incoming messages.
+	// Use a detached context so the AI pipeline survives after the HTTP handler returns
+	// (which cancels the request context). Values like trace/request IDs are preserved.
 	if uc.aiHandler != nil {
-		go uc.aiHandler.HandleIncomingMessage(ctx, event.TenantID, conv.ID, event.SenderPhone, event.Content)
+		aiCtx := context.WithoutCancel(ctx)
+		go uc.aiHandler.HandleIncomingMessage(aiCtx, event.TenantID, conv.ID, event.SenderPhone, event.Content)
 	}
 
 	return nil

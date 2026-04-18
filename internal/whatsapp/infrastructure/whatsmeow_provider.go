@@ -254,6 +254,14 @@ func (p *WhatsmeowProvider) handleIncomingMessage(tenantID string, msg *events.M
 	if msg.Info.IsFromMe {
 		return
 	}
+	if !isDirectMessage(msg.Info.Chat) {
+		p.log.Debug("whatsmeow: skipping non-DM message",
+			zap.String("tenant_id", tenantID),
+			zap.String("chat_jid", msg.Info.Chat.String()),
+			zap.String("chat_server", msg.Info.Chat.Server),
+		)
+		return
+	}
 
 	content := msg.Message.GetConversation()
 	if content == "" {
@@ -265,7 +273,7 @@ func (p *WhatsmeowProvider) handleIncomingMessage(tenantID string, msg *events.M
 		return
 	}
 
-	senderJID := msg.Info.Sender.String()
+	senderJID := recipientJID(msg.Info.Sender)
 	senderPhone := msg.Info.Sender.User
 
 	p.handler(context.Background(), domain.IncomingMessage{
@@ -277,6 +285,17 @@ func (p *WhatsmeowProvider) handleIncomingMessage(tenantID string, msg *events.M
 		WhatsAppMsgID: msg.Info.ID,
 		Timestamp:     msg.Info.Timestamp,
 	})
+}
+
+func isDirectMessage(chat types.JID) bool {
+	return chat.Server == types.DefaultUserServer
+}
+
+// recipientJID returns the user JID with no device part, suitable for use as
+// a SendMessage recipient. Sender JIDs from incoming events include the device
+// (e.g. "5511...:56@s.whatsapp.net"), which whatsmeow rejects when sending.
+func recipientJID(sender types.JID) string {
+	return sender.ToNonAD().String()
 }
 
 func sanitizeTenantID(id string) string {

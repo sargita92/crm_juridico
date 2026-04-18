@@ -30,7 +30,7 @@ func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, eventBus events.Ev
 	conversationRepo := infrastructure.NewGormConversationRepository(db)
 	messageRepo := infrastructure.NewGormMessageRepository(db)
 
-	receiveMessageUC := application.NewReceiveMessageUseCase(contactRepo, conversationRepo, messageRepo, eventBus)
+	receiveMessageUC := application.NewReceiveMessageUseCase(contactRepo, conversationRepo, messageRepo, eventBus, log)
 	sendMessageUC := application.NewSendMessageUseCase(conversationRepo, messageRepo, contactRepo, provider, eventBus)
 	listConversationsUC := application.NewListConversationsUseCase(conversationRepo)
 	getMessagesUC := application.NewGetConversationMessagesUseCase(conversationRepo, messageRepo)
