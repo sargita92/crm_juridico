@@ -1,0 +1,75 @@
+### Notificações — Badge, Dropdown, Página, SSE, API JSON (F09 Step 8)
+### Requer cookie JWT válido — faça login primeiro (POST /login) e o token será salvo automaticamente.
+
+@base_url = http://localhost:8080
+@token = YOUR_JWT_HERE
+@notificationId = REPLACE_WITH_NOTIFICATION_ID
+
+###
+### ============= HTML FRAGMENTS (HTMX) =============
+###
+
+### Badge não lidas (fragmento HTML)
+GET {{base_url}}/tenant/notifications/badge
+Authorization: Bearer {{token}}
+
+###
+
+### Dropdown com últimas 10 (fragmento HTML)
+GET {{base_url}}/tenant/notifications/dropdown
+Authorization: Bearer {{token}}
+
+###
+
+### Página dedicada (HTML completo)
+GET {{base_url}}/tenant/notifications
+Authorization: Bearer {{token}}
+
+###
+
+### Lista fragmento — aba não lidas
+GET {{base_url}}/tenant/notifications/list?filter=unread&limit=20&offset=0
+Authorization: Bearer {{token}}
+
+###
+
+### Lista fragmento — aba todas
+GET {{base_url}}/tenant/notifications/list?filter=all&limit=20&offset=0
+Authorization: Bearer {{token}}
+
+###
+### ============= SSE STREAM =============
+###
+
+### Stream SSE (fragmentos HTML — toast + badge OOB swap)
+GET {{base_url}}/notifications/stream
+Accept: text/event-stream
+Authorization: Bearer {{token}}
+
+###
+### ============= API JSON =============
+###
+
+### Listar notificações (JSON API)
+GET {{base_url}}/notifications?unread=true&limit=20&offset=0
+Authorization: Bearer {{token}}
+
+###
+
+### Contagem de não lidas (JSON API)
+GET {{base_url}}/notifications/unread-count
+Authorization: Bearer {{token}}
+
+###
+
+### Marcar notificação como lida
+POST {{base_url}}/notifications/{{notificationId}}/read
+Authorization: Bearer {{token}}
+
+###
+
+### Marcar todas como lidas
+POST {{base_url}}/notifications/read-all
+Authorization: Bearer {{token}}
+
+###
