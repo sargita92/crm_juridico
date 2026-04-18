@@ -1,0 +1,32 @@
+{{define "team/group_section_permissions.html"}}
+<h2>🔐 Permissões</h2>
+
+<form hx-post="/tenant/team/groups/{{.GroupID}}/permissions"
+      hx-on::after-request="if(event.detail.successful){htmx.ajax('GET','/tenant/team/groups/{{.GroupID}}/section/permissions',{target:event.target.closest('section'),swap:'innerHTML'});}">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Recurso</th>
+                {{range .Actions}}<th>{{.}}</th>{{end}}
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Rows}}
+            <tr>
+                <td><strong>{{.Resource}}</strong></td>
+                {{range .Cells}}
+                <td style="text-align:center">
+                    {{if .Available}}
+                        <input type="checkbox" name="perms" value="{{.Resource}}:{{.Action}}" {{if .Granted}}checked{{end}}>
+                    {{else}}<span class="muted">—</span>{{end}}
+                </td>
+                {{end}}
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <div class="section-actions" style="margin-top:1rem">
+        <button class="btn btn-primary" type="submit">Salvar permissões</button>
+    </div>
+</form>
+{{end}}

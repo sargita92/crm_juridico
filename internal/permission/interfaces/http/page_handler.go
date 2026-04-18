@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -12,6 +13,32 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
+
+var groupPermActions = []string{"read", "create", "update", "delete", "manage", "customize"}
+var groupPermResources = []string{"leads", "users", "groups", "funnels", "automations", "products", "specialists", "invites", "settings"}
+var groupPermAvailable = map[string]map[string]bool{
+	"leads":       {"read": true, "create": true, "update": true, "delete": true},
+	"users":       {"read": true, "update": true, "delete": true},
+	"groups":      {"manage": true},
+	"funnels":     {"read": true, "update": true, "customize": true},
+	"automations": {"manage": true},
+	"products":    {"manage": true},
+	"specialists": {"manage": true},
+	"invites":     {"create": true, "read": true, "delete": true},
+	"settings":    {"manage": true},
+}
+
+type permCell struct {
+	Resource  string
+	Action    string
+	Available bool
+	Granted   bool
+}
+
+type permRow struct {
+	Resource string
+	Cells    []permCell
+}
 
 // PageHandler renders HTML pages for the "Equipe > Grupos" tab and group detail.
 type PageHandler struct {
@@ -204,12 +231,69 @@ func (h *PageHandler) sectionMembers(c *gin.Context) {
 		"Candidates": candidates,
 	})
 }
-func (h *PageHandler) sectionPermissions(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
+
+func (h *PageHandler) sectionPermissions(c *gin.Context) {
+	groupID := c.Param("id")
+
+	granted, err := h.managePerms.GetGroupPermissions(c.Request.Context(), groupID)
+	if err != nil {
+		h.log.Error("failed to get group permissions", zap.String("group_id", groupID), zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	gset := make(map[string]bool, len(granted))
+	for _, p := range granted {
+		gset[p.Resource+":"+p.Action] = true
+	}
+
+	rows := make([]permRow, 0, len(groupPermResources))
+	for _, r := range groupPermResources {
+		cells := make([]permCell, len(groupPermActions))
+		for i, a := range groupPermActions {
+			available := groupPermAvailable[r][a]
+			cells[i] = permCell{
+				Resource:  r,
+				Action:    a,
+				Available: available,
+				Granted:   available && gset[r+":"+a],
+			}
+		}
+		rows = append(rows, permRow{Resource: r, Cells: cells})
+	}
+
+	c.HTML(http.StatusOK, "team/group_section_permissions.html", gin.H{
+		"GroupID": groupID,
+		"Actions": groupPermActions,
+		"Rows":    rows,
+	})
+}
 func (h *PageHandler) sectionFunnels(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) sectionViewProfiles(c *gin.Context) { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) sectionLoadBalance(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
 
-func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	groupID := c.Param("id")
+
+	items := c.PostFormArray("perms")
+	inputs := make([]application.PermissionInput, 0, len(items))
+	for _, it := range items {
+		parts := strings.SplitN(it, ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			continue
+		}
+		inputs = append(inputs, application.PermissionInput{Resource: parts[0], Action: parts[1]})
+	}
+
+	if err := h.managePerms.SetGroupPermissions(c.Request.Context(), tenantID, groupID, inputs); err != nil {
+		h.log.Error("failed to set group permissions", zap.Error(err))
+		c.Status(http.StatusUnprocessableEntity)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
 func (h *PageHandler) SetGroupFunnelsHTML(c *gin.Context)     { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) SetViewProfileHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) SetLoadBalanceHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
