@@ -1,0 +1,29 @@
+{{define "team/group_section_view_profiles.html"}}
+<h2>👁️ Perfis de visualização</h2>
+
+{{if not .Funnels}}
+<p class="muted">Atribua funis ao grupo para configurar perfis de visualização.</p>
+{{end}}
+
+{{range .Funnels}}
+<div class="card-inner" style="padding:1rem;border:1px solid #eee;border-radius:8px;margin-top:1rem">
+    <h3>{{.Name}}</h3>
+    <form hx-post="/tenant/team/groups/{{$.GroupID}}/view-profiles/{{.ID}}"
+          hx-on::after-request="if(event.detail.successful){htmx.ajax('GET','/tenant/team/groups/{{$.GroupID}}/section/view-profiles',{target:event.target.closest('section'),swap:'innerHTML'});}">
+        <ul class="checkbox-list">
+            {{range .Columns}}
+            <li>
+                <label>
+                    <input type="checkbox" name="visible_columns" value="{{.ID}}" {{if .Visible}}checked{{end}}>
+                    {{.Name}}
+                </label>
+            </li>
+            {{else}}
+            <li class="muted">Funil sem colunas.</li>
+            {{end}}
+        </ul>
+        <button class="btn btn-primary" type="submit">Salvar</button>
+    </form>
+</div>
+{{end}}
+{{end}}

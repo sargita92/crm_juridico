@@ -46,6 +46,18 @@ type funnelOpt struct {
 	Assigned bool
 }
 
+type columnOpt struct {
+	ID      string
+	Name    string
+	Visible bool
+}
+
+type funnelWithCols struct {
+	ID      string
+	Name    string
+	Columns []columnOpt
+}
+
 // PageHandler renders HTML pages for the "Equipe > Grupos" tab and group detail.
 type PageHandler struct {
 	createGroup   *application.CreateGroupUseCase
@@ -306,7 +318,76 @@ func (h *PageHandler) sectionFunnels(c *gin.Context) {
 		"Funnels": opts,
 	})
 }
-func (h *PageHandler) sectionViewProfiles(c *gin.Context) { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) sectionViewProfiles(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantID := middleware.GetTenantID(ctx)
+	groupID := c.Param("id")
+
+	assignedFunnels, err := h.manageGF.ListByGroup(ctx, groupID)
+	if err != nil {
+		h.log.Error("failed to list group funnels", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	profiles, err := h.manageVP.ListByGroup(ctx, groupID)
+	if err != nil {
+		h.log.Error("failed to list view profiles", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	// Map: funnelID -> set of visibleColumnIDs.
+	visibleByFunnel := make(map[string]map[string]bool, len(profiles))
+	for _, p := range profiles {
+		m := make(map[string]bool, len(p.VisibleColumns))
+		for _, cid := range p.VisibleColumns {
+			m[cid] = true
+		}
+		visibleByFunnel[p.FunnelID] = m
+	}
+
+	// Build funnel-name map to enrich display.
+	allFunnels, err := h.listFunnelsUC.Execute(ctx, tenantID)
+	if err != nil {
+		h.log.Error("failed to list funnels", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	nameByID := make(map[string]string, len(allFunnels))
+	for _, f := range allFunnels {
+		nameByID[f.ID] = f.Name
+	}
+
+	result := make([]funnelWithCols, 0, len(assignedFunnels))
+	for _, gf := range assignedFunnels {
+		cols, err := h.columnRepo.FindByFunnelID(ctx, gf.FunnelID)
+		if err != nil {
+			h.log.Warn("failed to list columns", zap.String("funnel_id", gf.FunnelID), zap.Error(err))
+			continue
+		}
+
+		colOpts := make([]columnOpt, len(cols))
+		visibleSet, hasProfile := visibleByFunnel[gf.FunnelID]
+		for i, col := range cols {
+			visible := true // default: all columns visible when no profile is set
+			if hasProfile {
+				visible = visibleSet[col.ID]
+			}
+			colOpts[i] = columnOpt{ID: col.ID, Name: col.Name, Visible: visible}
+		}
+
+		result = append(result, funnelWithCols{
+			ID:      gf.FunnelID,
+			Name:    nameByID[gf.FunnelID],
+			Columns: colOpts,
+		})
+	}
+
+	c.HTML(http.StatusOK, "team/group_section_view_profiles.html", gin.H{
+		"GroupID": groupID,
+		"Funnels": result,
+	})
+}
 func (h *PageHandler) sectionLoadBalance(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
 
 func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) {
@@ -352,5 +433,21 @@ func (h *PageHandler) SetGroupFunnelsHTML(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 }
-func (h *PageHandler) SetViewProfileHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) SetViewProfileHTML(c *gin.Context) {
+	groupID := c.Param("id")
+	funnelID := c.Param("fid")
+	cols := c.PostFormArray("visible_columns")
+
+	if err := h.manageVP.SetViewProfile(c.Request.Context(), application.ViewProfileInput{
+		GroupID:        groupID,
+		FunnelID:       funnelID,
+		VisibleColumns: cols,
+	}); err != nil {
+		h.log.Error("failed to set view profile", zap.Error(err))
+		c.Status(http.StatusUnprocessableEntity)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
 func (h *PageHandler) SetLoadBalanceHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
