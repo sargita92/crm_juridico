@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"errors"
+	"sort"
 
 	"go.uber.org/zap"
 
@@ -106,8 +107,11 @@ func (p *LoadBalancePicker) PickForFunnel(ctx context.Context, tenantID, funnelI
 		return p.fallbackToOwner(ctx, tenantID, "no_active_members")
 	}
 
-	// 4. Apply the algorithm. (Placeholder until Tasks 7-9: pick first.)
-	pickedUserID := members[0]
+	// 4. Apply the algorithm.
+	pickedUserID, err := p.applyAlgorithm(ctx, tenantID, chosen.cfg, members)
+	if err != nil {
+		return p.fallbackToOwner(ctx, tenantID, "algorithm_error")
+	}
 	algorithm := string(chosen.cfg.Algorithm)
 
 	return funneldomain.PickResult{
@@ -116,6 +120,27 @@ func (p *LoadBalancePicker) PickForFunnel(ctx context.Context, tenantID, funnelI
 		GroupID:   chosen.groupID,
 		Outcome:   funneldomain.PickOutcomePicked,
 	}, nil
+}
+
+func (p *LoadBalancePicker) applyAlgorithm(ctx context.Context, tenantID string, cfg *authdomain.LoadBalanceConfig, members []string) (string, error) {
+	sort.Strings(members) // deterministic order for round_robin and tiebreaks
+
+	switch cfg.Algorithm {
+	case authdomain.AlgorithmRoundRobin:
+		idx := cfg.LastIndex % len(members)
+		picked := members[idx]
+		cfg.IncrementIndex()
+		if err := p.lbRepo.Update(ctx, cfg); err != nil {
+			return "", err
+		}
+		return picked, nil
+	case authdomain.AlgorithmLeastLoad:
+		return members[0], nil // placeholder — Task 8
+	case authdomain.AlgorithmRandom:
+		return members[0], nil // placeholder — Task 9
+	default:
+		return members[0], nil
+	}
 }
 
 func (p *LoadBalancePicker) fallbackToOwner(ctx context.Context, tenantID, reason string) (funneldomain.PickResult, error) {

@@ -239,6 +239,47 @@ func TestLoadBalancePicker_FallbackWhenGroupHasNoActiveMembers(t *testing.T) {
 	require.Equal(t, "owner-1", got.UserID)
 }
 
+func TestLoadBalancePicker_RoundRobin_CyclesThroughMembers(t *testing.T) {
+	cfg := &authdomain.LoadBalanceConfig{
+		ID: "lb1", TenantID: "t1", GroupID: "g1",
+		Algorithm: authdomain.AlgorithmRoundRobin, Active: true, LastIndex: 0,
+	}
+	lbRepo := &fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{"g1": cfg}}
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
+			"f1": {{ID: "gf1", GroupID: "g1", FunnelID: "f1"}},
+		}},
+		lbRepo,
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{
+			"g1": {{UserID: "u-c"}, {UserID: "u-a"}, {UserID: "u-b"}},
+		}},
+		&fakeUserTenantRepo{
+			ownerByTenant: map[string]string{"t1": "owner-1"},
+			memberActive:  map[string]bool{"u-a": true, "u-b": true, "u-c": true},
+		},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	r1, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+	require.NoError(t, err)
+	require.Equal(t, "u-a", r1.UserID)
+
+	r2, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+	require.NoError(t, err)
+	require.Equal(t, "u-b", r2.UserID)
+
+	r3, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+	require.NoError(t, err)
+	require.Equal(t, "u-c", r3.UserID)
+
+	r4, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+	require.NoError(t, err)
+	require.Equal(t, "u-a", r4.UserID)
+
+	require.NotNil(t, lbRepo.lastUpdated, "LastIndex must be persisted via Update")
+}
+
 func TestLoadBalancePicker_FallbackWhenConfigInactive(t *testing.T) {
 	picker := infrastructure.NewLoadBalancePicker(
 		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
