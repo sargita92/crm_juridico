@@ -11,8 +11,7 @@
                 <button class="btn-icon"
                         hx-delete="/tenant/groups/{{.ID}}"
                         hx-confirm="Excluir este grupo?"
-                        hx-target="#groups-block"
-                        hx-get="/tenant/team/groups/table"
+                        hx-on::after-request="if(event.detail.successful){htmx.trigger(document.body,'refreshTeam');}"
                         title="Excluir">🗑️</button>
             </td>
         </tr>

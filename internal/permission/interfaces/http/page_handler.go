@@ -116,10 +116,63 @@ func (h *PageHandler) CreateGroupHTML(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// --- Stubs (implemented in Tasks 13-18) ---
+// --- Group detail scaffold (Tasks 13-18) ---
 
-func (h *PageHandler) GroupDetail(c *gin.Context)             { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) GroupSection(c *gin.Context)            { c.Status(http.StatusNotImplemented) }
+// GroupDetail renders the detail page for a single group (header + section cards).
+func (h *PageHandler) GroupDetail(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	groupID := c.Param("id")
+
+	group, err := h.getGroup.Execute(c.Request.Context(), tenantID, groupID)
+	if err != nil {
+		h.log.Warn("group not found", zap.String("group_id", groupID), zap.Error(err))
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	sections := []struct {
+		Slug  string
+		Title string
+	}{
+		{"members", "👥 Membros"},
+		{"permissions", "🔐 Permissões"},
+		{"funnels", "🎯 Funis atribuídos"},
+		{"view-profiles", "👁️ Perfis de visualização"},
+		{"load-balance", "⚖️ Load Balance"},
+	}
+
+	c.HTML(http.StatusOK, "team/group_detail.html", gin.H{
+		"Group":    group,
+		"Sections": sections,
+	})
+}
+
+// GroupSection dispatches to the appropriate section renderer.
+func (h *PageHandler) GroupSection(c *gin.Context) {
+	name := c.Param("name")
+	switch name {
+	case "members":
+		h.sectionMembers(c)
+	case "permissions":
+		h.sectionPermissions(c)
+	case "funnels":
+		h.sectionFunnels(c)
+	case "view-profiles":
+		h.sectionViewProfiles(c)
+	case "load-balance":
+		h.sectionLoadBalance(c)
+	default:
+		c.Status(http.StatusNotFound)
+	}
+}
+
+// Stubs filled in Tasks 14-18.
+func (h *PageHandler) sectionMembers(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) sectionPermissions(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) sectionFunnels(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) sectionViewProfiles(c *gin.Context) { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) sectionLoadBalance(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
+
 func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) SetGroupFunnelsHTML(c *gin.Context)     { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) SetViewProfileHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }

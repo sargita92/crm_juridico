@@ -1,0 +1,43 @@
+{{define "team/group_detail.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grupo — {{.Group.Name}}</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body class="no-auto-close-modals">
+<div class="admin-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "team")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <nav class="breadcrumbs">
+                <a href="/tenant/team">Equipe</a> › <a href="/tenant/team/groups">Grupos</a> › {{.Group.Name}}
+            </nav>
+            <h1>{{.Group.Name}}</h1>
+            <p class="muted">{{.Group.Description}}</p>
+            <button class="btn btn-danger"
+                    hx-delete="/tenant/groups/{{.Group.ID}}"
+                    hx-confirm="Excluir este grupo?"
+                    hx-on::after-request="if(event.detail.successful){window.location='/tenant/team/groups';}">
+                🗑️ Excluir grupo
+            </button>
+        </div>
+
+        {{range .Sections}}
+        <section class="card"
+                 hx-get="/tenant/team/groups/{{$.Group.ID}}/section/{{.Slug}}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+            <h2>{{.Title}}</h2>
+            <p class="muted">Carregando...</p>
+        </section>
+        {{end}}
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}
