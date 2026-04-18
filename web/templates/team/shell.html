@@ -1,0 +1,48 @@
+{{define "team/shell.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipe — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body class="no-auto-close-modals">
+<div class="admin-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "team")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div><h1>Equipe</h1></div>
+        </div>
+        <div class="tabs">
+            <a href="/tenant/team/users"
+               class="tab {{if eq .ActiveTab "users"}}active{{end}}">Usuários</a>
+            <a href="/tenant/team/groups"
+               class="tab {{if eq .ActiveTab "groups"}}active{{end}}">Grupos</a>
+        </div>
+        <div id="tab-content">
+            {{template .ContentTemplate .}}
+        </div>
+    </main>
+</div>
+
+<div id="team-modal" class="modal-overlay" style="display:none"
+     onclick="if(event.target===this)closeModal('team-modal')">
+    <div class="modal-card modal-card-lg">
+        <h2 id="team-modal-title">—</h2>
+        <div id="team-modal-body"><p class="text-muted">Carregando...</p></div>
+    </div>
+</div>
+
+<script src="/static/js/admin.js"></script>
+<script>
+document.body.addEventListener("refreshTeam", function() {
+    closeModal('team-modal');
+    htmx.trigger('#users-block', 'load');
+    htmx.trigger('#groups-block', 'load');
+});
+</script>
+</body>
+</html>
+{{end}}
