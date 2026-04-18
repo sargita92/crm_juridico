@@ -206,6 +206,35 @@ func (r *GormLeadRepository) CountByColumnID(ctx context.Context, columnID strin
 	return int(count), nil
 }
 
+// CountActiveByUsers counts open leads (Status == "open") per user within a
+// tenant. Users with zero results are absent from the returned map.
+// An empty userIDs slice returns an empty map and no error.
+func (r *GormLeadRepository) CountActiveByUsers(ctx context.Context, tenantID string, userIDs []string) (map[string]int, error) {
+	if len(userIDs) == 0 {
+		return map[string]int{}, nil
+	}
+	type row struct {
+		ResponsibleUserID string `gorm:"column:responsible_user_id"`
+		Cnt               int    `gorm:"column:cnt"`
+	}
+	var rows []row
+	err := r.db.WithContext(ctx).
+		Table("leads").
+		Select("responsible_user_id, COUNT(*) AS cnt").
+		Where("tenant_id = ? AND status = ? AND responsible_user_id IN ?",
+			tenantID, string(domain.LeadStatusOpen), userIDs).
+		Group("responsible_user_id").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]int, len(rows))
+	for _, row := range rows {
+		out[row.ResponsibleUserID] = row.Cnt
+	}
+	return out, nil
+}
+
 // FindByTenantAndSearch returns up to limit leads for the tenant whose contact
 // name or phone matches the query string (case-insensitive, LIKE search).
 // If query is empty all leads for the tenant are returned (up to limit).
@@ -237,3 +266,7 @@ func (r *GormLeadRepository) FindByTenantAndSearch(ctx context.Context, tenantID
 	}
 	return leads, nil
 }
+
+// Compile-time assertion: GormLeadRepository must satisfy the LeadLoadCounter
+// port so picker implementations can depend on this repo.
+var _ domain.LeadLoadCounter = (*GormLeadRepository)(nil)
