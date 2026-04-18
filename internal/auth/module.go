@@ -15,10 +15,11 @@ import (
 
 // Module wires up the auth domain (login, tenant selection, invites, user management).
 type Module struct {
-	handler       *authhttp.Handler
-	inviteUC      *application.InviteUserUseCase
-	manageUsersUC *application.ManageUsersUseCase
-	loginUC       *application.LoginUseCase
+	handler         *authhttp.Handler
+	inviteUC        *application.InviteUserUseCase
+	manageUsersUC   *application.ManageUsersUseCase
+	loginUC         *application.LoginUseCase
+	loadBalanceUC   *application.ManageLoadBalanceUseCase
 }
 
 // NewModule builds and returns a fully wired auth Module.
@@ -41,6 +42,10 @@ func NewModule(
 	inviteUC := application.NewInviteUserUseCase(inviteRepo, userRepo, userTenantRepo, passwordHasher)
 	manageUsersUC := application.NewManageUsersUseCase(userRepo, userTenantRepo)
 
+	loadBalanceRepo := infrastructure.NewGormLoadBalanceConfigRepository(db)
+	groupChecker := infrastructure.NewGroupTenantCheckerAdapter(db)
+	loadBalanceUC := application.NewManageLoadBalanceUseCase(loadBalanceRepo, groupChecker)
+
 	handler := authhttp.NewHandler(loginUC, selectTenantUC, listTenantsUC, secureCookie)
 
 	return &Module{
@@ -48,6 +53,7 @@ func NewModule(
 		inviteUC:      inviteUC,
 		manageUsersUC: manageUsersUC,
 		loginUC:       loginUC,
+		loadBalanceUC: loadBalanceUC,
 	}
 }
 
@@ -74,6 +80,9 @@ func (m *Module) InviteUseCase() *application.InviteUserUseCase { return m.invit
 
 // ManageUsersUseCase exposes the manage-users use case.
 func (m *Module) ManageUsersUseCase() *application.ManageUsersUseCase { return m.manageUsersUC }
+
+// LoadBalanceUseCase exposes the manage-load-balance use case (used cross-module).
+func (m *Module) LoadBalanceUseCase() *application.ManageLoadBalanceUseCase { return m.loadBalanceUC }
 
 // registerInvitePublicRoutes registers routes that do not require authentication.
 func (m *Module) registerInvitePublicRoutes(router *gin.Engine) {
