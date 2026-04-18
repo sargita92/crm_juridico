@@ -110,3 +110,17 @@ Cookie: token={{tenant_token}}
 ### Token invalido (401)
 GET {{base_url}}/tenant/leads
 Cookie: token=invalid.token
+
+### ============================================
+### F08 Step 4 — Responsible assigned automatically on create
+### ============================================
+### After POST /leads or an inbound WhatsApp message creates a lead, the
+### returned/listed lead carries a non-empty responsible_user_id. When
+### the destination funnel/column has no active load-balance group, the
+### responsible falls back to the tenant owner.
+###
+### Set {{lead_id}} after creation (via kanban/WhatsApp flow).
+
+GET {{base_url}}/tenant/leads/{{lead_id}}
+Cookie: token={{tenant_token}}
+### Expect: response body includes "responsible_user_id": "<uuid>"

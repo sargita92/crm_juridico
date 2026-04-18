@@ -378,3 +378,27 @@ Cookie: token={{token}}
 Content-Type: application/x-www-form-urlencoded
 
 algorithm=round_robin&active=true
+
+###
+### ============= F08 Step 4 — Uniqueness rule on SetByGroup =============
+###
+### Activating a second group whose funnel/column coverage overlaps an
+### already-active group yields an error (mapped to 409 Conflict at the
+### HTTP boundary). Sentinel: ErrActiveLoadBalanceOverlap.
+###
+### Define {{groupIdSecondary}} as another group in the same tenant whose
+### GroupFunnel coverage overlaps with an already-active LB group.
+
+@groupIdSecondary = REPLACE_WITH_SECOND_GROUP_ID
+
+### Tentar ativar LB no grupo secundário (espera 409)
+PUT {{base_url}}/tenant/groups/{{groupIdSecondary}}/load-balance
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "algorithm": "round_robin",
+  "active": true
+}
+### Expect: 409 Conflict when another group already has an active
+### load-balance config covering the same funnel/column.
