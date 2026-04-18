@@ -1,0 +1,29 @@
+{{define "partials/notification_dropdown.html"}}
+<div class="dropdown-header">
+    <strong>Notificações</strong>
+    {{if gt .UnreadCount 0}}<span class="dropdown-unread-count">{{.UnreadCount}} não lidas</span>{{end}}
+</div>
+<div class="dropdown-body">
+    {{if eq (len .Items) 0}}
+    <div class="dropdown-empty">
+        <div class="empty-icon">🔔</div>
+        <div>Nenhuma notificação</div>
+    </div>
+    {{else}}
+    {{range .Items}}
+        {{template "notification/item.html" .}}
+    {{end}}
+    {{end}}
+</div>
+<div class="dropdown-footer">
+    {{if gt .UnreadCount 0}}
+    <button type="button" class="btn btn-link"
+            hx-post="/notifications/read-all"
+            hx-swap="none"
+            hx-on::after-request="htmx.trigger('body', 'refreshBadge'); htmx.ajax('GET', '/tenant/notifications/dropdown', '#notification-dropdown')">
+        Marcar todas como lidas
+    </button>
+    {{end}}
+    <a href="/tenant/notifications" class="btn btn-link">Ver todas</a>
+</div>
+{{end}}

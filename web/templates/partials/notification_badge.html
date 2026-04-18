@@ -1,0 +1,7 @@
+{{define "partials/notification_badge.html"}}
+{{if gt .Count 0}}
+<span id="notification-badge" class="notification-badge" hx-get="/tenant/notifications/badge" hx-trigger="refreshBadge from:body" hx-swap="outerHTML">{{.Count}}</span>
+{{else}}
+<span id="notification-badge" class="notification-badge notification-badge-hidden" hx-get="/tenant/notifications/badge" hx-trigger="refreshBadge from:body" hx-swap="outerHTML"></span>
+{{end}}
+{{end}}

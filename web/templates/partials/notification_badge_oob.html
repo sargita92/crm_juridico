@@ -1,0 +1,7 @@
+{{define "partials/notification_badge_oob.html"}}
+{{if gt .Count 0}}
+<span id="notification-badge" class="notification-badge" hx-swap-oob="true">{{.Count}}</span>
+{{else}}
+<span id="notification-badge" class="notification-badge notification-badge-hidden" hx-swap-oob="true"></span>
+{{end}}
+{{end}}

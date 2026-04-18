@@ -1,0 +1,24 @@
+{{define "partials/notification_bell.html"}}
+<div class="notification-bell-container" id="notification-bell">
+    <button type="button" class="notification-bell-btn" aria-label="Notificações"
+            hx-get="/tenant/notifications/dropdown"
+            hx-target="#notification-dropdown"
+            hx-swap="innerHTML"
+            onclick="toggleNotificationDropdown(event)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 1 1-6 0"/>
+        </svg>
+        <span id="notification-badge-wrapper"
+              hx-get="/tenant/notifications/badge"
+              hx-trigger="load, every 30s, refreshBadge from:body"
+              hx-swap="innerHTML"></span>
+    </button>
+    <div id="notification-dropdown" class="notification-dropdown" style="display:none"></div>
+</div>
+
+<div id="toast-container" class="toast-container"
+     hx-ext="sse"
+     sse-connect="/notifications/stream"
+     sse-swap="notification"
+     hx-swap="beforeend"></div>
+{{end}}
