@@ -37,3 +37,6 @@ docs/superpowers/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local debug / curl artifacts
+cookies.txt
