@@ -23,10 +23,15 @@ type StepEvalResult struct {
 }
 
 // StepMetadata holds structured metadata returned by the LLM inside a hidden comment.
+// Disqualified is a hard veto signal the LLM raises when it detects criteria that
+// make the lead ineligible for the product (e.g. "never contributed to INSS" for
+// Auxílio-Doença). The engine moves the lead to the specialist's configured
+// disqualified_column immediately, regardless of the running score.
 type StepMetadata struct {
 	StepCompleted bool   `json:"step_completed"`
 	CollectedData string `json:"collected_data"`
 	Score         int    `json:"score"`
+	Disqualified  bool   `json:"disqualified"`
 }
 
 // StepEvaluator evaluates user messages against step rules.

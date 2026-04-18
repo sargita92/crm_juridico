@@ -139,4 +139,20 @@ func TestStepEvaluator_ParseMetadata(t *testing.T) {
 		assert.Equal(t, "", meta.CollectedData)
 		assert.Equal(t, response, cleaned)
 	})
+
+	t.Run("parses disqualified flag", func(t *testing.T) {
+		response := `Entendi. Nao conseguimos seguir.<!--STEP_META:{"step_completed":true,"collected_data":"nunca contribuiu","score":0,"disqualified":true}-->`
+		meta, cleaned := e.ParseMetadata(response)
+
+		assert.True(t, meta.StepCompleted)
+		assert.True(t, meta.Disqualified, "disqualified flag must be parsed")
+		assert.Equal(t, 0, meta.Score)
+		assert.Equal(t, "Entendi. Nao conseguimos seguir.", cleaned)
+	})
+
+	t.Run("disqualified defaults to false when absent", func(t *testing.T) {
+		response := `Ok.<!--STEP_META:{"step_completed":true,"collected_data":"x","score":10}-->`
+		meta, _ := e.ParseMetadata(response)
+		assert.False(t, meta.Disqualified)
+	})
 }

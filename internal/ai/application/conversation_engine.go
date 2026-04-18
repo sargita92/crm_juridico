@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -29,6 +30,14 @@ type LeadUpdater interface {
 	MoveLeadToColumn(ctx context.Context, conversationID, columnID string) error
 }
 
+// ScoringConfigFinder loads the scoring configuration for a specialist. When
+// supplied, the engine promotes a lead to QualifiedColumnID once its score
+// crosses Threshold, and demotes it to DisqualifiedColumnID when all steps are
+// completed below the threshold.
+type ScoringConfigFinder interface {
+	FindBySpecialistID(ctx context.Context, specialistID string) (*specDomain.ScoringConfig, error)
+}
+
 // ConversationEngine orchestrates the AI conversation flow for a lead.
 type ConversationEngine struct {
 	providerRegistry    *domain.ProviderRegistry
@@ -44,10 +53,13 @@ type ConversationEngine struct {
 	toolRegistry        *ToolRegistry
 	toolResultMaxLength int
 	toolLoopMaxIter     int
+	scoringFinder       ScoringConfigFinder
 	log                 *zap.Logger
 }
 
 // NewConversationEngine creates a ConversationEngine with all required dependencies.
+// scoringFinder is optional: when nil, scoring-based column movement is disabled
+// and only explicit step.TargetColumnID drives column transitions.
 func NewConversationEngine(
 	providerRegistry *domain.ProviderRegistry,
 	configResolver ConfigResolver,
@@ -62,6 +74,7 @@ func NewConversationEngine(
 	toolRegistry *ToolRegistry,
 	toolResultMaxLength int,
 	toolLoopMaxIter int,
+	scoringFinder ScoringConfigFinder,
 	log *zap.Logger,
 ) *ConversationEngine {
 	return &ConversationEngine{
@@ -78,6 +91,7 @@ func NewConversationEngine(
 		toolRegistry:        toolRegistry,
 		toolResultMaxLength: toolResultMaxLength,
 		toolLoopMaxIter:     toolLoopMaxIter,
+		scoringFinder:       scoringFinder,
 		log:                 log,
 	}
 }
@@ -196,13 +210,52 @@ func (e *ConversationEngine) HandleMessages(
 						zap.Error(updateErr),
 					)
 				}
-				if targetColumnID != "" {
-					if moveErr := e.leadUpdater.MoveLeadToColumn(ctx, conversationID, targetColumnID); moveErr != nil {
+
+				// Resolve scoring config once; reused below for LLM veto,
+				// early qualification, and end-of-flow disqualification.
+				var sc *specDomain.ScoringConfig
+				if e.scoringFinder != nil {
+					loaded, scErr := e.scoringFinder.FindBySpecialistID(ctx, specialistID)
+					if scErr == nil {
+						sc = loaded
+					} else if !errors.Is(scErr, specDomain.ErrScoringConfigNotFound) {
+						e.log.Warn("conversation_engine: load scoring config failed",
+							zap.String("specialist_id", specialistID),
+							zap.Error(scErr),
+						)
+					}
+				}
+
+				// Column routing priority:
+				//   1. LLM veto flag (meta.Disqualified) overrides everything.
+				//   2. Explicit step.TargetColumnID for forward progression.
+				//   3. Scoring threshold: qualify as soon as score crosses
+				//      threshold, disqualify once every step has been answered
+				//      without reaching it.
+				effectiveTarget := ""
+				disqualifying := false
+				switch {
+				case meta.Disqualified && sc != nil && sc.DisqualifiedColumnID != "":
+					effectiveTarget = sc.DisqualifiedColumnID
+					disqualifying = true
+				case targetColumnID != "":
+					effectiveTarget = targetColumnID
+				case sc != nil && state.AccumulatedScore >= sc.Threshold && sc.QualifiedColumnID != "":
+					effectiveTarget = sc.QualifiedColumnID
+				case sc != nil && state.CurrentStepIndex >= len(steps) && sc.DisqualifiedColumnID != "":
+					effectiveTarget = sc.DisqualifiedColumnID
+					disqualifying = true
+				}
+
+				if effectiveTarget != "" {
+					if moveErr := e.leadUpdater.MoveLeadToColumn(ctx, conversationID, effectiveTarget); moveErr != nil {
 						e.log.Warn("conversation_engine: move lead to column failed",
 							zap.String("conversation_id", conversationID),
-							zap.String("column_id", targetColumnID),
+							zap.String("column_id", effectiveTarget),
 							zap.Error(moveErr),
 						)
+					} else if disqualifying {
+						aiLeadsDisqualifiedTotal.WithLabelValues(tenantID, specialistID).Inc()
 					}
 				}
 			}
@@ -232,14 +285,17 @@ func (e *ConversationEngine) HandleMessages(
 		responseContent = fallback
 	}
 
-	// 13. Send AI response.
-	if sendErr := e.messageSender.SendAIResponse(ctx, tenantID, conversationID, responseContent); sendErr != nil {
-		return fmt.Errorf("conversation_engine: send response: %w", sendErr)
-	}
-
-	// 14. Persist state.
+	// 13. Persist state BEFORE sending. If we send first and the send fails, the
+	// in-memory state.AdvanceStep changes get lost while lead score/column (which
+	// were already persisted above) stay advanced — state and lead diverge and
+	// the next message re-completes the same step with a double score.
 	if updateErr := e.stateRepo.Update(ctx, state); updateErr != nil {
 		return fmt.Errorf("conversation_engine: update state: %w", updateErr)
+	}
+
+	// 14. Send AI response.
+	if sendErr := e.messageSender.SendAIResponse(ctx, tenantID, conversationID, responseContent); sendErr != nil {
+		return fmt.Errorf("conversation_engine: send response: %w", sendErr)
 	}
 
 	return nil

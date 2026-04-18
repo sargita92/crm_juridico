@@ -119,3 +119,31 @@ func TestOpenAIProvider_SystemPrompt(t *testing.T) {
 	assert.Equal(t, "system", first.Role, "first message role must be 'system'")
 	assert.Equal(t, "You are helpful.", first.Content)
 }
+
+func TestOpenAIProvider_UsesMaxCompletionTokensField(t *testing.T) {
+	var rawBody map[string]any
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&rawBody))
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		resp := map[string]any{
+			"choices": []map[string]any{
+				{"message": map[string]string{"role": "assistant", "content": "ok"}, "finish_reason": "stop"},
+			},
+			"usage": map[string]int{"prompt_tokens": 1, "completion_tokens": 1},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer srv.Close()
+
+	p := NewOpenAIProvider("test-key", srv.URL, newTestLogger(t))
+	_, err := p.GenerateResponse(t.Context(), validRequest(t))
+	require.NoError(t, err)
+
+	_, hasOld := rawBody["max_tokens"]
+	_, hasNew := rawBody["max_completion_tokens"]
+	assert.False(t, hasOld, "must not send 'max_tokens' (rejected by newer models like gpt-5.* and o-series)")
+	assert.True(t, hasNew, "must send 'max_completion_tokens'")
+}

@@ -238,7 +238,7 @@ type openAIRequest struct {
 	Model       string          `json:"model"`
 	Messages    []openAIMessage `json:"messages"`
 	Temperature float64         `json:"temperature"`
-	MaxTokens   int             `json:"max_tokens"`
+	MaxTokens   int             `json:"max_completion_tokens"`
 	Tools       []openAITool    `json:"tools,omitempty"`
 }
 

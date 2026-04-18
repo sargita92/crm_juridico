@@ -131,7 +131,12 @@ func (b *ContextBuilder) Build(ctx context.Context, state *domain.ConversationSt
 
 		// 6. Instruction for LLM to emit STEP_META for free_text steps.
 		if currentStep.DataType == specDomain.StepDataTypeFreeText {
-			sb.WriteString("\n\nAo finalizar esta etapa, inclua no final da sua resposta o seguinte comentario (sem exibi-lo ao usuario):\n<!--STEP_META:{\"step_completed\": true, \"collected_data\": \"<dado coletado>\", \"score\": " + fmt.Sprintf("%d", currentStep.Score) + "}-->")
+			sb.WriteString("\n\n## Como sinalizar progresso da etapa")
+			sb.WriteString("\n\nSó inclua o comentário STEP_META quando a ÚLTIMA MENSAGEM DO CLIENTE REALMENTE responder a pergunta desta etapa. Saudações (\"oi\", \"bom dia\"), perguntas do cliente, ou mensagens vagas NÃO completam a etapa — nestes casos, responda normalmente SEM emitir STEP_META.")
+			sb.WriteString("\n\nQuando a etapa for efetivamente respondida, inclua no FINAL da sua resposta o seguinte comentário (o usuário não o verá):")
+			sb.WriteString("\n<!--STEP_META:{\"step_completed\": true, \"collected_data\": \"<dado coletado da mensagem do cliente>\", \"score\": " + fmt.Sprintf("%d", currentStep.Score) + "}-->")
+			sb.WriteString("\n\nSe detectar um critério de VETO do prompt do especialista (ex: nunca contribuiu ao INSS para Auxílio-Doença), acrescente `\"disqualified\": true` no mesmo comentário:")
+			sb.WriteString("\n<!--STEP_META:{\"step_completed\": true, \"collected_data\": \"nunca contribuiu\", \"score\": 0, \"disqualified\": true}-->")
 		}
 	}
 

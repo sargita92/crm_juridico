@@ -94,6 +94,7 @@ func Load() (*Config, error) {
 	viper.SetDefault("ai.tool_result_max_length", 4000)
 
 	_ = viper.BindEnv("env", "ENV")
+	_ = viper.BindEnv("openai.apikey", "OPENAI_API_KEY")
 	_ = viper.BindEnv("ai.playgroundenabled", "AI_PLAYGROUND_ENABLED")
 	_ = viper.BindEnv("ai.resetcommandenabled", "AI_RESET_COMMAND_ENABLED")
 	_ = viper.BindEnv("ai.tool_loop_max_iterations", "AI_TOOL_LOOP_MAX_ITERATIONS")

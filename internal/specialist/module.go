@@ -19,6 +19,7 @@ type Module struct {
 	guardrailRepo        domain.GuardrailRepository
 	specialistTenantRepo domain.SpecialistTenantRepository
 	specialistToolRepo   domain.SpecialistToolRepository
+	scoringConfigRepo    domain.ScoringConfigRepository
 	handler              *specialisthttp.Handler
 	guardrailHandler     *specialisthttp.GuardrailHandler
 	stepHandler          *specialisthttp.StepHandler
@@ -92,6 +93,7 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 		guardrailRepo:        guardrailRepo,
 		specialistTenantRepo: specialistTenantRepo,
 		specialistToolRepo:   specialistToolRepo,
+		scoringConfigRepo:    scoringRepo,
 		handler:              handler,
 		guardrailHandler:     guardrailHandler,
 		stepHandler:          stepHandler,
@@ -128,4 +130,8 @@ func (m *Module) SpecTenantRepo() domain.SpecialistTenantRepository {
 
 func (m *Module) SpecialistToolRepo() domain.SpecialistToolRepository {
 	return m.specialistToolRepo
+}
+
+func (m *Module) ScoringConfigRepo() domain.ScoringConfigRepository {
+	return m.scoringConfigRepo
 }

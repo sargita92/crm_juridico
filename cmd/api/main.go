@@ -163,6 +163,7 @@ func main() {
 		TenantProductRepo:    productMod.TenantProductRepo(),
 		AutomationEngine:     automationMod.Engine(),
 		SpecialistToolFinder: specialistMod.SpecialistToolRepo(),
+		ScoringConfigFinder:  specialistMod.ScoringConfigRepo(),
 		ToolRegistry:         toolRegistry,
 	})
 	whatsappMod.SetAIHandler(aiMod)

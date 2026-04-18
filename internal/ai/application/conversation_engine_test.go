@@ -137,6 +137,7 @@ func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr 
 		nil,
 		0,
 		5,
+		nil,
 		log,
 	)
 
@@ -210,7 +211,7 @@ func TestConversationEngine_GuardrailViolation_UsesFallback(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, nil, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
@@ -252,7 +253,7 @@ func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, nil, false, nil, 0, 5, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, nil, false, nil, 0, 5, nil, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"42"})
@@ -263,6 +264,242 @@ func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
 	assert.Equal(t, 10, state.AccumulatedScore)
 	assert.True(t, leadUpdater.scoreUpdated)
 	assert.Equal(t, "col-2", leadUpdater.movedColumn)
+}
+
+type mockScoringFinder struct {
+	config *specDomain.ScoringConfig
+	err    error
+}
+
+func (m *mockScoringFinder) FindBySpecialistID(_ context.Context, _ string) (*specDomain.ScoringConfig, error) {
+	return m.config, m.err
+}
+
+func buildScoringEngine(
+	t *testing.T,
+	steps []specDomain.Step,
+	scoring *specDomain.ScoringConfig,
+	state *domain.ConversationState,
+) (*ConversationEngine, *mockLeadUpdater) {
+	t.Helper()
+
+	registry := domain.NewProviderRegistry()
+	registry.Register(&mockAIProvider{
+		name: "openai",
+		resp: &domain.AIResponse{Content: "ok"},
+	})
+
+	cfg, _ := domain.NewAIConfig("cfg-1", "spec-1", "openai", "gpt-4", 0.7, 1024, 0)
+	stateRepo := &mockConvStateRepo{state: state}
+	configResolver := &mockConfigResolver{cfg: cfg}
+	sender := &mockMessageSender{}
+	leadUpdater := &mockLeadUpdater{}
+
+	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
+	contextBuilder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: specialist},
+		&mockStepFinder{steps: steps},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+		nil,
+	)
+
+	var scoringFinder ScoringConfigFinder
+	if scoring != nil {
+		scoringFinder = &mockScoringFinder{config: scoring}
+	}
+
+	engine := NewConversationEngine(
+		registry, configResolver, stateRepo, contextBuilder,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater,
+		nil, false, nil, 0, 5,
+		scoringFinder,
+		zap.NewNop(),
+	)
+	return engine, leadUpdater
+}
+
+func TestConversationEngine_ScoringQualifies_MovesLeadToQualifiedColumn(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "Confirma?", DataType: specDomain.StepDataTypeSelection, Score: 60, TargetColumnID: ""},
+	}
+	scoring := &specDomain.ScoringConfig{
+		SpecialistID:         "spec-1",
+		Threshold:            60,
+		QualifiedColumnID:    "col-qualified",
+		DisqualifiedColumnID: "col-disqualified",
+	}
+
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
+
+	require.NoError(t, err)
+	assert.Equal(t, 60, state.AccumulatedScore)
+	assert.Equal(t, "col-qualified", leadUpdater.movedColumn, "lead must move to qualified column when score crosses threshold")
+}
+
+func TestConversationEngine_AllStepsDoneUnderThreshold_MovesLeadToDisqualifiedColumn(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "Confirma?", DataType: specDomain.StepDataTypeSelection, Score: 10, TargetColumnID: ""},
+	}
+	scoring := &specDomain.ScoringConfig{
+		SpecialistID:         "spec-1",
+		Threshold:            60,
+		QualifiedColumnID:    "col-qualified",
+		DisqualifiedColumnID: "col-disqualified",
+	}
+
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
+
+	require.NoError(t, err)
+	assert.Equal(t, 10, state.AccumulatedScore)
+	assert.Equal(t, "col-disqualified", leadUpdater.movedColumn, "lead must move to disqualified column when all steps are done and score is below threshold")
+}
+
+func TestConversationEngine_StepTargetWinsOverScoring(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "Confirma?", DataType: specDomain.StepDataTypeSelection, Score: 60, TargetColumnID: "col-step-explicit"},
+	}
+	scoring := &specDomain.ScoringConfig{
+		SpecialistID:      "spec-1",
+		Threshold:         60,
+		QualifiedColumnID: "col-qualified",
+	}
+
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
+
+	require.NoError(t, err)
+	assert.Equal(t, "col-step-explicit", leadUpdater.movedColumn, "explicit step target must override scoring threshold")
+}
+
+func TestConversationEngine_LLMDisqualifies_MovesLeadToDisqualifiedColumn(t *testing.T) {
+	// Mid-flow veto: two steps remain, score below threshold, AND the step has
+	// an explicit target_column_id that would normally route the lead forward.
+	// The LLM's `disqualified:true` flag must override the step target and move
+	// the lead straight to the disqualified column.
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "Conte sua situacao.", DataType: specDomain.StepDataTypeFreeText, Score: 10, TargetColumnID: "col-next-stage"},
+		{ID: "step-2", Text: "Mais um detalhe.", DataType: specDomain.StepDataTypeFreeText, Score: 10, TargetColumnID: ""},
+	}
+	scoring := &specDomain.ScoringConfig{
+		SpecialistID:         "spec-1",
+		Threshold:            60,
+		QualifiedColumnID:    "col-qualified",
+		DisqualifiedColumnID: "col-disqualified",
+	}
+
+	registry := domain.NewProviderRegistry()
+	registry.Register(&mockAIProvider{
+		name: "openai",
+		resp: &domain.AIResponse{Content: `Entendi, infelizmente nao conseguimos seguir.<!--STEP_META:{"step_completed":true,"collected_data":"nunca contribuiu","score":0,"disqualified":true}-->`},
+	})
+
+	cfg, _ := domain.NewAIConfig("cfg-1", "spec-1", "openai", "gpt-4", 0.7, 1024, 0)
+	stateRepo := &mockConvStateRepo{state: state}
+	configResolver := &mockConfigResolver{cfg: cfg}
+	sender := &mockMessageSender{}
+	leadUpdater := &mockLeadUpdater{}
+
+	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
+	contextBuilder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: specialist},
+		&mockStepFinder{steps: steps},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+		nil,
+	)
+
+	engine := NewConversationEngine(
+		registry, configResolver, stateRepo, contextBuilder,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater,
+		nil, false, nil, 0, 5,
+		&mockScoringFinder{config: scoring},
+		zap.NewNop(),
+	)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"nunca contribui"})
+
+	require.NoError(t, err)
+	assert.Equal(t, "col-disqualified", leadUpdater.movedColumn, "LLM disqualified flag must override and move lead to disqualified column")
+}
+
+func TestConversationEngine_LLMDisqualifies_NoScoringConfig_NoMove(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "Conte sua situacao.", DataType: specDomain.StepDataTypeFreeText, Score: 10},
+	}
+
+	registry := domain.NewProviderRegistry()
+	registry.Register(&mockAIProvider{
+		name: "openai",
+		resp: &domain.AIResponse{Content: `Ok.<!--STEP_META:{"step_completed":true,"collected_data":"x","score":0,"disqualified":true}-->`},
+	})
+
+	cfg, _ := domain.NewAIConfig("cfg-1", "spec-1", "openai", "gpt-4", 0.7, 1024, 0)
+	stateRepo := &mockConvStateRepo{state: state}
+	configResolver := &mockConfigResolver{cfg: cfg}
+	sender := &mockMessageSender{}
+	leadUpdater := &mockLeadUpdater{}
+
+	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
+	contextBuilder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: specialist},
+		&mockStepFinder{steps: steps},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+		nil,
+	)
+
+	// No scoring finder → disqualify flag has no target to move to.
+	engine := NewConversationEngine(
+		registry, configResolver, stateRepo, contextBuilder,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater,
+		nil, false, nil, 0, 5,
+		nil,
+		zap.NewNop(),
+	)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"x"})
+
+	require.NoError(t, err)
+	assert.Equal(t, "", leadUpdater.movedColumn, "no move when scoring finder is not configured")
+}
+
+func TestConversationEngine_MidFlow_UnderThreshold_NoScoringMove(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "A?", DataType: specDomain.StepDataTypeSelection, Score: 20, TargetColumnID: ""},
+		{ID: "step-2", Text: "B?", DataType: specDomain.StepDataTypeSelection, Score: 60, TargetColumnID: ""},
+	}
+	scoring := &specDomain.ScoringConfig{
+		SpecialistID:         "spec-1",
+		Threshold:            60,
+		QualifiedColumnID:    "col-qualified",
+		DisqualifiedColumnID: "col-disqualified",
+	}
+
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
+
+	require.NoError(t, err)
+	assert.Equal(t, 20, state.AccumulatedScore)
+	assert.Equal(t, "", leadUpdater.movedColumn, "no move when score is below threshold and there are still steps pending")
 }
 
 func TestHandleMessages_ResetCommandEnabled_TriggersReset(t *testing.T) {
@@ -283,7 +520,7 @@ func TestHandleMessages_ResetCommandEnabled_TriggersReset(t *testing.T) {
 
 	engine := NewConversationEngine(
 		nil, nil, stateRepo, nil, nil, nil, sender, nil,
-		resetUC, true, nil, 0, 5, zap.NewNop(),
+		resetUC, true, nil, 0, 5, nil, zap.NewNop(),
 	)
 
 	err = engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"/reset"})
@@ -341,7 +578,7 @@ func TestConversationEngine_ProviderError(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, nil, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})

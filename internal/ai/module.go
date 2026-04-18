@@ -52,6 +52,9 @@ type ModuleDeps struct {
 	TenantProductRepo  productDomain.TenantProductRepository
 	AutomationEngine   *automationApp.AutomationEngine
 	SpecialistToolFinder application.SpecialistToolFinder
+	// ScoringConfigFinder is optional; when provided the engine moves leads to
+	// qualified/disqualified columns based on the specialist's scoring threshold.
+	ScoringConfigFinder application.ScoringConfigFinder
 	// ToolRegistry is an optional pre-created registry shared with the specialist UI (Task 17).
 	// When non-nil, tools are registered into it; when nil, a new private registry is created.
 	ToolRegistry *application.ToolRegistry
@@ -189,6 +192,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		toolRegistry,
 		cfg.ToolResultMaxLength,
 		cfg.ToolLoopMaxIterations,
+		deps.ScoringConfigFinder,
 		log,
 	)
 
