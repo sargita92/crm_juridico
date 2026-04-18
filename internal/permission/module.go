@@ -10,6 +10,7 @@ import (
 	funnelapp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
+	permdomain "github.com/sasrgita/crm-juridico/internal/permission/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	permhttp "github.com/sasrgita/crm-juridico/internal/permission/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
@@ -17,12 +18,13 @@ import (
 
 // Module wires together the permission feature.
 type Module struct {
-	handler       *permhttp.Handler
-	pageHandler   *permhttp.PageHandler
-	resolverUC    *application.ResolvePermissionUseCase
-	vpUC          *application.ManageViewProfilesUseCase
-	listGroupsUC  *application.ListGroupsUseCase
-	managePermsUC *application.ManagePermissionsUseCase
+	handler         *permhttp.Handler
+	pageHandler     *permhttp.PageHandler
+	resolverUC      *application.ResolvePermissionUseCase
+	vpUC            *application.ManageViewProfilesUseCase
+	listGroupsUC    *application.ListGroupsUseCase
+	managePermsUC   *application.ManagePermissionsUseCase
+	groupFunnelRepo permdomain.GroupFunnelRepository
 }
 
 // NewModule creates all permission repositories, use cases, and handlers.
@@ -90,12 +92,13 @@ func NewModule(
 	)
 
 	return &Module{
-		handler:       handler,
-		pageHandler:   pageHandler,
-		resolverUC:    resolverUC,
-		vpUC:          manageVPUC,
-		listGroupsUC:  listGroupsUC,
-		managePermsUC: managePermsUC,
+		handler:         handler,
+		pageHandler:     pageHandler,
+		resolverUC:      resolverUC,
+		vpUC:            manageVPUC,
+		listGroupsUC:    listGroupsUC,
+		managePermsUC:   managePermsUC,
+		groupFunnelRepo: gfRepo,
 	}
 }
 
@@ -119,4 +122,10 @@ func (m *Module) ListGroupsUseCase() *application.ListGroupsUseCase { return m.l
 // ManagePermissionsUseCase exposes permissions CRUD for cross-module use.
 func (m *Module) ManagePermissionsUseCase() *application.ManagePermissionsUseCase {
 	return m.managePermsUC
+}
+
+// GroupFunnelRepo exposes the group-funnel repository for cross-module adapters
+// (e.g. auth's load-balance overlap checker).
+func (m *Module) GroupFunnelRepo() permdomain.GroupFunnelRepository {
+	return m.groupFunnelRepo
 }

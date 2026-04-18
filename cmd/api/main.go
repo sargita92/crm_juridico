@@ -17,16 +17,17 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/ai"
 	aiapp "github.com/sasrgita/crm-juridico/internal/ai/application"
 	"github.com/sasrgita/crm-juridico/internal/auth"
-	landinghttp "github.com/sasrgita/crm-juridico/internal/landing/interfaces/http"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/automation"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
+	landinghttp "github.com/sasrgita/crm-juridico/internal/landing/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/notification"
 	"github.com/sasrgita/crm-juridico/internal/permission"
+	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/product"
 	productinfra "github.com/sasrgita/crm-juridico/internal/product/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
@@ -188,6 +189,13 @@ func main() {
 
 	// Wire cross-module permission use cases into auth's PageHandler (resolves circular dep at construction).
 	authMod.AttachPermissionDeps(permissionMod.ListGroupsUseCase(), permissionMod.ManagePermissionsUseCase(), permissionMod.Resolver(), log)
+
+	// Wire the load-balance overlap checker into auth (enforces the
+	// one-active-LB-per-column invariant at ManageLoadBalanceUseCase.SetByGroup).
+	// Done after both modules exist because the adapter depends on repositories
+	// owned by each side.
+	lbOverlapChecker := perminfra.NewGroupColumnOverlapAdapter(permissionMod.GroupFunnelRepo(), authMod.LoadBalanceRepo())
+	authMod.SetLoadBalanceOverlapChecker(lbOverlapChecker)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod, automationMod}
 

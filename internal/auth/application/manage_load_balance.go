@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
@@ -24,15 +25,28 @@ type SetLoadBalanceInput struct {
 }
 
 type ManageLoadBalanceUseCase struct {
-	repo         domain.LoadBalanceConfigRepository
-	groupChecker GroupTenantChecker
+	repo           domain.LoadBalanceConfigRepository
+	groupChecker   GroupTenantChecker
+	overlapChecker GroupColumnOverlapChecker
 }
 
 func NewManageLoadBalanceUseCase(
 	repo domain.LoadBalanceConfigRepository,
 	groupChecker GroupTenantChecker,
+	overlapChecker GroupColumnOverlapChecker,
 ) *ManageLoadBalanceUseCase {
-	return &ManageLoadBalanceUseCase{repo: repo, groupChecker: groupChecker}
+	return &ManageLoadBalanceUseCase{
+		repo:           repo,
+		groupChecker:   groupChecker,
+		overlapChecker: overlapChecker,
+	}
+}
+
+// SetOverlapChecker allows late injection of the overlap checker after
+// construction. This is used by the wiring layer when the checker depends on
+// repositories owned by a different module (chicken-and-egg resolution).
+func (uc *ManageLoadBalanceUseCase) SetOverlapChecker(checker GroupColumnOverlapChecker) {
+	uc.overlapChecker = checker
 }
 
 func (uc *ManageLoadBalanceUseCase) GetByGroup(ctx context.Context, tenantID, groupID string) (*domain.LoadBalanceConfig, error) {
@@ -53,6 +67,16 @@ func (uc *ManageLoadBalanceUseCase) SetByGroup(ctx context.Context, in SetLoadBa
 	}
 	if !ok {
 		return nil, ErrGroupNotInTenant
+	}
+
+	if in.Active && uc.overlapChecker != nil {
+		overlap, others, err := uc.overlapChecker.HasActiveOverlap(ctx, in.TenantID, in.GroupID)
+		if err != nil {
+			return nil, err
+		}
+		if overlap {
+			return nil, fmt.Errorf("%w: groups=%v", ErrActiveLoadBalanceOverlap, others)
+		}
 	}
 
 	if err := domain.ValidateAlgorithm(in.Algorithm); err != nil {

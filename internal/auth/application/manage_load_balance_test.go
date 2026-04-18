@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -38,10 +39,24 @@ func (m *mockLBRepo) Update(ctx context.Context, cfg *domain.LoadBalanceConfig) 
 	return m.Called(ctx, cfg).Error(0)
 }
 
+// fakeOverlap is a minimal test double that implements GroupColumnOverlapChecker
+// with configurable return values and a call counter.
+type fakeOverlap struct {
+	overlap bool
+	groups  []string
+	err     error
+	calls   int
+}
+
+func (f *fakeOverlap) HasActiveOverlap(_ context.Context, _, _ string) (bool, []string, error) {
+	f.calls++
+	return f.overlap, f.groups, f.err
+}
+
 func TestSetByGroup_CreatesWhenMissing(t *testing.T) {
 	repo := new(mockLBRepo)
 	chk := new(mockGroupChecker)
-	uc := NewManageLoadBalanceUseCase(repo, chk)
+	uc := NewManageLoadBalanceUseCase(repo, chk, &fakeOverlap{overlap: false})
 
 	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
 	repo.On("FindByGroupID", mock.Anything, "t1", "g1").Return(nil, domain.ErrLoadBalanceNotFound)
@@ -58,7 +73,7 @@ func TestSetByGroup_CreatesWhenMissing(t *testing.T) {
 func TestSetByGroup_UpdatesExisting(t *testing.T) {
 	repo := new(mockLBRepo)
 	chk := new(mockGroupChecker)
-	uc := NewManageLoadBalanceUseCase(repo, chk)
+	uc := NewManageLoadBalanceUseCase(repo, chk, &fakeOverlap{overlap: false})
 
 	existing := &domain.LoadBalanceConfig{ID: "id", TenantID: "t1", GroupID: "g1", Algorithm: domain.AlgorithmRoundRobin, Active: true}
 	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
@@ -76,7 +91,7 @@ func TestSetByGroup_UpdatesExisting(t *testing.T) {
 func TestSetByGroup_InvalidAlgorithm(t *testing.T) {
 	repo := new(mockLBRepo)
 	chk := new(mockGroupChecker)
-	uc := NewManageLoadBalanceUseCase(repo, chk)
+	uc := NewManageLoadBalanceUseCase(repo, chk, &fakeOverlap{overlap: false})
 
 	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
 	repo.On("FindByGroupID", mock.Anything, "t1", "g1").Return(nil, domain.ErrLoadBalanceNotFound)
@@ -90,7 +105,7 @@ func TestSetByGroup_InvalidAlgorithm(t *testing.T) {
 func TestSetByGroup_GroupNotInTenant(t *testing.T) {
 	repo := new(mockLBRepo)
 	chk := new(mockGroupChecker)
-	uc := NewManageLoadBalanceUseCase(repo, chk)
+	uc := NewManageLoadBalanceUseCase(repo, chk, &fakeOverlap{overlap: false})
 
 	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(false, nil)
 
@@ -103,7 +118,7 @@ func TestSetByGroup_GroupNotInTenant(t *testing.T) {
 func TestSetByGroup_InvalidAlgorithmOnUpdate(t *testing.T) {
 	repo := new(mockLBRepo)
 	chk := new(mockGroupChecker)
-	uc := NewManageLoadBalanceUseCase(repo, chk)
+	uc := NewManageLoadBalanceUseCase(repo, chk, &fakeOverlap{overlap: false})
 
 	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
 
@@ -117,11 +132,66 @@ func TestSetByGroup_InvalidAlgorithmOnUpdate(t *testing.T) {
 func TestGetByGroup_NotFound(t *testing.T) {
 	repo := new(mockLBRepo)
 	chk := new(mockGroupChecker)
-	uc := NewManageLoadBalanceUseCase(repo, chk)
+	uc := NewManageLoadBalanceUseCase(repo, chk, &fakeOverlap{overlap: false})
 
 	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
 	repo.On("FindByGroupID", mock.Anything, "t1", "g1").Return(nil, domain.ErrLoadBalanceNotFound)
 
 	_, err := uc.GetByGroup(context.Background(), "t1", "g1")
 	assert.ErrorIs(t, err, domain.ErrLoadBalanceNotFound)
+}
+
+func TestManageLoadBalanceUseCase_SetByGroup_RejectsActiveOverlap(t *testing.T) {
+	repo := new(mockLBRepo)
+	chk := new(mockGroupChecker)
+	overlap := &fakeOverlap{overlap: true, groups: []string{"g2", "g3"}}
+	uc := NewManageLoadBalanceUseCase(repo, chk, overlap)
+
+	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
+
+	_, err := uc.SetByGroup(context.Background(), SetLoadBalanceInput{
+		TenantID: "t1", GroupID: "g1", Algorithm: domain.AlgorithmRoundRobin, Active: true,
+	})
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, ErrActiveLoadBalanceOverlap), "expected ErrActiveLoadBalanceOverlap, got %v", err)
+	assert.Equal(t, 1, overlap.calls)
+	repo.AssertNotCalled(t, "FindByGroupID", mock.Anything, mock.Anything, mock.Anything)
+	repo.AssertNotCalled(t, "CreateOrUpdate", mock.Anything, mock.Anything)
+}
+
+func TestManageLoadBalanceUseCase_SetByGroup_AllowsActiveWhenNoOverlap(t *testing.T) {
+	repo := new(mockLBRepo)
+	chk := new(mockGroupChecker)
+	overlap := &fakeOverlap{overlap: false}
+	uc := NewManageLoadBalanceUseCase(repo, chk, overlap)
+
+	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
+	repo.On("FindByGroupID", mock.Anything, "t1", "g1").Return(nil, domain.ErrLoadBalanceNotFound)
+	repo.On("CreateOrUpdate", mock.Anything, mock.Anything).Return(nil)
+
+	cfg, err := uc.SetByGroup(context.Background(), SetLoadBalanceInput{
+		TenantID: "t1", GroupID: "g1", Algorithm: domain.AlgorithmRoundRobin, Active: true,
+	})
+	require.NoError(t, err)
+	assert.True(t, cfg.Active)
+	assert.Equal(t, 1, overlap.calls)
+	repo.AssertCalled(t, "CreateOrUpdate", mock.Anything, mock.Anything)
+}
+
+func TestManageLoadBalanceUseCase_SetByGroup_SkipsCheckWhenDeactivating(t *testing.T) {
+	repo := new(mockLBRepo)
+	chk := new(mockGroupChecker)
+	overlap := &fakeOverlap{overlap: true, groups: []string{"g2"}} // would reject if called
+	uc := NewManageLoadBalanceUseCase(repo, chk, overlap)
+
+	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
+	repo.On("FindByGroupID", mock.Anything, "t1", "g1").Return(nil, domain.ErrLoadBalanceNotFound)
+	repo.On("CreateOrUpdate", mock.Anything, mock.Anything).Return(nil)
+
+	cfg, err := uc.SetByGroup(context.Background(), SetLoadBalanceInput{
+		TenantID: "t1", GroupID: "g1", Algorithm: domain.AlgorithmRoundRobin, Active: false,
+	})
+	require.NoError(t, err)
+	assert.False(t, cfg.Active)
+	assert.Equal(t, 0, overlap.calls, "overlap checker must not be called when deactivating")
 }

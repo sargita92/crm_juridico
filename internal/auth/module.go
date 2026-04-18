@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/application"
+	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	authhttp "github.com/sasrgita/crm-juridico/internal/auth/interfaces/http"
 	permapp "github.com/sasrgita/crm-juridico/internal/permission/application"
@@ -17,12 +18,13 @@ import (
 
 // Module wires up the auth domain (login, tenant selection, invites, user management).
 type Module struct {
-	handler       *authhttp.Handler
-	pageHandler   *authhttp.PageHandler
-	inviteUC      *application.InviteUserUseCase
-	manageUsersUC *application.ManageUsersUseCase
-	loginUC       *application.LoginUseCase
-	loadBalanceUC *application.ManageLoadBalanceUseCase
+	handler         *authhttp.Handler
+	pageHandler     *authhttp.PageHandler
+	inviteUC        *application.InviteUserUseCase
+	manageUsersUC   *application.ManageUsersUseCase
+	loginUC         *application.LoginUseCase
+	loadBalanceUC   *application.ManageLoadBalanceUseCase
+	loadBalanceRepo authdomain.LoadBalanceConfigRepository
 }
 
 // NewModule builds and returns a fully wired auth Module.
@@ -47,16 +49,19 @@ func NewModule(
 
 	loadBalanceRepo := infrastructure.NewGormLoadBalanceConfigRepository(db)
 	groupChecker := infrastructure.NewGroupTenantCheckerAdapter(db)
-	loadBalanceUC := application.NewManageLoadBalanceUseCase(loadBalanceRepo, groupChecker)
+	// Overlap checker is wired later via SetLoadBalanceOverlapChecker because it
+	// depends on permission repositories that are constructed after this module.
+	loadBalanceUC := application.NewManageLoadBalanceUseCase(loadBalanceRepo, groupChecker, nil)
 
 	handler := authhttp.NewHandler(loginUC, selectTenantUC, listTenantsUC, secureCookie)
 
 	return &Module{
-		handler:       handler,
-		inviteUC:      inviteUC,
-		manageUsersUC: manageUsersUC,
-		loginUC:       loginUC,
-		loadBalanceUC: loadBalanceUC,
+		handler:         handler,
+		inviteUC:        inviteUC,
+		manageUsersUC:   manageUsersUC,
+		loginUC:         loginUC,
+		loadBalanceUC:   loadBalanceUC,
+		loadBalanceRepo: loadBalanceRepo,
 	}
 }
 
@@ -86,6 +91,21 @@ func (m *Module) ManageUsersUseCase() *application.ManageUsersUseCase { return m
 
 // LoadBalanceUseCase exposes the manage-load-balance use case (used cross-module).
 func (m *Module) LoadBalanceUseCase() *application.ManageLoadBalanceUseCase { return m.loadBalanceUC }
+
+// LoadBalanceRepo exposes the load-balance config repository so that
+// cross-module adapters (e.g. permission's GroupColumnOverlapAdapter) can query
+// active configs without depending on gorm directly.
+func (m *Module) LoadBalanceRepo() authdomain.LoadBalanceConfigRepository {
+	return m.loadBalanceRepo
+}
+
+// SetLoadBalanceOverlapChecker injects the cross-module overlap checker into
+// the ManageLoadBalanceUseCase. Must be called after the permission module is
+// available so that ManageLoadBalanceUseCase.SetByGroup can enforce the
+// one-active-LB-per-column invariant.
+func (m *Module) SetLoadBalanceOverlapChecker(checker application.GroupColumnOverlapChecker) {
+	m.loadBalanceUC.SetOverlapChecker(checker)
+}
 
 // AttachPermissionDeps wires the PageHandler with use cases from the permission module.
 // Must be called after NewModule and before RegisterRoutes — otherwise the /tenant/team/*
