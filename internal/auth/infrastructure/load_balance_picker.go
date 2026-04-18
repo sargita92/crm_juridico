@@ -6,7 +6,10 @@ import (
 	"errors"
 	"math/big"
 	"sort"
+	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
@@ -47,8 +50,42 @@ func NewLoadBalancePicker(
 	}
 }
 
-// PickForFunnel implements ResponsiblePicker.
+// PickForFunnel implements ResponsiblePicker. It wraps pickInternal with
+// tracing + metrics so observability stays centralized.
 func (p *LoadBalancePicker) PickForFunnel(ctx context.Context, tenantID, funnelID, columnID string) (funneldomain.PickResult, error) {
+	start := time.Now()
+	tracer := otel.Tracer("crm.load_balance")
+	ctx, span := tracer.Start(ctx, "load_balance.pick")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("tenant_id", tenantID),
+		attribute.String("funnel_id", funnelID),
+		attribute.String("column_id", columnID),
+	)
+
+	res, err := p.pickInternal(ctx, tenantID, funnelID, columnID)
+
+	algorithm := res.Algorithm
+	if algorithm == "" {
+		algorithm = "none"
+	}
+	outcome := string(res.Outcome)
+	if err != nil {
+		outcome = "error"
+	}
+	pickerTotal.WithLabelValues(algorithm, outcome).Inc()
+	pickerDuration.WithLabelValues(algorithm).Observe(time.Since(start).Seconds())
+	span.SetAttributes(
+		attribute.String("algorithm", algorithm),
+		attribute.String("outcome", outcome),
+		attribute.String("picked_user_id", res.UserID),
+	)
+	return res, err
+}
+
+// pickInternal performs the actual picker logic. Kept private so PickForFunnel
+// can wrap it with tracing + metrics without duplicating the algorithm.
+func (p *LoadBalancePicker) pickInternal(ctx context.Context, tenantID, funnelID, columnID string) (funneldomain.PickResult, error) {
 	// 1. Find all groups associated with this funnel that cover the column.
 	groups, err := p.groupFunnelRepo.FindByFunnelID(ctx, funnelID)
 	if err != nil {
