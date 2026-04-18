@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
 )
 
@@ -391,4 +392,53 @@ func (m *mockAdminChecker) setAdmin(userID string) {
 
 func (m *mockAdminChecker) IsAdmin(_ context.Context, userID string) (bool, error) {
 	return m.admins[userID], nil
+}
+
+// --- Mock UserRepository ---
+
+type mockUserRepo struct {
+	users map[string]*authdomain.User
+}
+
+func newMockUserRepo(users ...*authdomain.User) *mockUserRepo {
+	m := &mockUserRepo{users: make(map[string]*authdomain.User)}
+	for _, u := range users {
+		m.users[u.ID] = u
+	}
+	return m
+}
+
+func (m *mockUserRepo) Create(_ context.Context, u *authdomain.User) error {
+	m.users[u.ID] = u
+	return nil
+}
+
+func (m *mockUserRepo) FindByID(_ context.Context, id string) (*authdomain.User, error) {
+	if u, ok := m.users[id]; ok {
+		return u, nil
+	}
+	return nil, authdomain.ErrUserNotFound
+}
+
+func (m *mockUserRepo) FindByEmail(_ context.Context, email string) (*authdomain.User, error) {
+	for _, u := range m.users {
+		if u.Email == email {
+			return u, nil
+		}
+	}
+	return nil, authdomain.ErrUserNotFound
+}
+
+func (m *mockUserRepo) Update(_ context.Context, u *authdomain.User) error {
+	m.users[u.ID] = u
+	return nil
+}
+
+func (m *mockUserRepo) ExistsByEmail(_ context.Context, email string) (bool, error) {
+	for _, u := range m.users {
+		if u.Email == email {
+			return true, nil
+		}
+	}
+	return false, nil
 }

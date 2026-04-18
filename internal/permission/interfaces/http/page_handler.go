@@ -166,8 +166,44 @@ func (h *PageHandler) GroupSection(c *gin.Context) {
 	}
 }
 
-// Stubs filled in Tasks 14-18.
-func (h *PageHandler) sectionMembers(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
+// sectionMembers renders the members section with member list and add form.
+func (h *PageHandler) sectionMembers(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantID := middleware.GetTenantID(ctx)
+	groupID := c.Param("id")
+
+	members, err := h.manageMembers.ListMembers(ctx, groupID)
+	if err != nil {
+		h.log.Error("failed to list members", zap.String("group_id", groupID), zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	allUsers, err := h.usersListUC.ListTenantUsers(ctx, tenantID)
+	if err != nil {
+		h.log.Error("failed to list tenant users", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	memberIDs := make(map[string]bool, len(members))
+	for _, m := range members {
+		memberIDs[m.ID] = true
+	}
+
+	candidates := make([]authapp.UserOutput, 0, len(allUsers))
+	for _, u := range allUsers {
+		if !memberIDs[u.ID] {
+			candidates = append(candidates, u)
+		}
+	}
+
+	c.HTML(http.StatusOK, "team/group_section_members.html", gin.H{
+		"GroupID":    groupID,
+		"Members":    members,
+		"Candidates": candidates,
+	})
+}
 func (h *PageHandler) sectionPermissions(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) sectionFunnels(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) sectionViewProfiles(c *gin.Context) { c.Status(http.StatusNotImplemented) }

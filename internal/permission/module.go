@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
+	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	funnelapp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
@@ -32,6 +33,7 @@ func NewModule(
 	listFunnelsUC *funnelapp.ListFunnelsUseCase,
 	columnRepo funneldomain.ColumnRepository,
 	usersListUC *authapp.ManageUsersUseCase,
+	userRepo authdomain.UserRepository,
 ) *Module {
 	// Repositories
 	groupRepo := infrastructure.NewGormPermissionGroupRepository(db)
@@ -51,7 +53,7 @@ func NewModule(
 	updateGroupUC := application.NewUpdateGroupUseCase(groupRepo)
 	listGroupsUC := application.NewListGroupsUseCase(groupRepo)
 	deleteGroupUC := application.NewDeleteGroupUseCase(groupRepo)
-	manageMembersUC := application.NewManageMembersUseCase(groupRepo, ugRepo)
+	manageMembersUC := application.NewManageMembersUseCase(groupRepo, ugRepo, userRepo)
 	managePermsUC := application.NewManagePermissionsUseCase(permRepo)
 	manageVPUC := application.NewManageViewProfilesUseCase(vpRepo)
 	manageGFUC := application.NewManageGroupFunnelsUseCase(gfRepo)

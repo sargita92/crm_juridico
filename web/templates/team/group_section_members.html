@@ -1,0 +1,29 @@
+{{define "team/group_section_members.html"}}
+<h2>👥 Membros</h2>
+
+<ul class="chip-list">
+    {{range .Members}}
+    <li class="chip">
+        {{.Name}} <span class="muted">({{.Email}})</span>
+        <button class="btn-icon"
+                hx-delete="/tenant/groups/{{$.GroupID}}/members/{{.ID}}"
+                hx-target="closest section"
+                hx-on::after-request="if(event.detail.successful){htmx.ajax('GET','/tenant/team/groups/{{$.GroupID}}/section/members',{target:event.target.closest('section'),swap:'innerHTML'});}"
+                title="Remover">✕</button>
+    </li>
+    {{else}}
+    <li class="muted">Sem membros.</li>
+    {{end}}
+</ul>
+
+<form hx-post="/tenant/groups/{{.GroupID}}/members"
+      hx-target="closest section"
+      hx-swap="none"
+      hx-on::after-request="if(event.detail.successful){htmx.ajax('GET','/tenant/team/groups/{{.GroupID}}/section/members',{target:event.target.closest('section'),swap:'innerHTML'});this.reset();}">
+    <select name="user_id" required>
+        <option value="">— Selecione um usuário —</option>
+        {{range .Candidates}}<option value="{{.ID}}">{{.Name}} ({{.Email}})</option>{{end}}
+    </select>
+    <button class="btn btn-primary" type="submit">Adicionar</button>
+</form>
+{{end}}
