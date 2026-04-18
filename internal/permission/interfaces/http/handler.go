@@ -1,14 +1,24 @@
 package http
 
 import (
+	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
+	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
+	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
+
+// loadBalanceUsecase is a local interface so tests can stub the concrete use case.
+type loadBalanceUsecase interface {
+	GetByGroup(ctx context.Context, tenantID, groupID string) (*authdomain.LoadBalanceConfig, error)
+	SetByGroup(ctx context.Context, in authapp.SetLoadBalanceInput) (*authdomain.LoadBalanceConfig, error)
+}
 
 // Handler holds all permission-related use cases and provides HTTP handlers.
 type Handler struct {
@@ -21,6 +31,7 @@ type Handler struct {
 	managePermsUC   *application.ManagePermissionsUseCase
 	manageVPUC      *application.ManageViewProfilesUseCase
 	manageGFUC      *application.ManageGroupFunnelsUseCase
+	loadBalanceUC   loadBalanceUsecase
 	log             *zap.Logger
 }
 
@@ -35,6 +46,7 @@ func NewHandler(
 	managePermsUC *application.ManagePermissionsUseCase,
 	manageVPUC *application.ManageViewProfilesUseCase,
 	manageGFUC *application.ManageGroupFunnelsUseCase,
+	loadBalanceUC loadBalanceUsecase,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
@@ -47,6 +59,7 @@ func NewHandler(
 		managePermsUC:   managePermsUC,
 		manageVPUC:      manageVPUC,
 		manageGFUC:      manageGFUC,
+		loadBalanceUC:   loadBalanceUC,
 		log:             log,
 	}
 }
@@ -386,4 +399,71 @@ func (h *Handler) SetGroupFunnels(c *gin.Context) {
 	}
 
 	c.Status(http.StatusOK)
+}
+
+// --- Load Balance ---
+
+func (h *Handler) GetLoadBalance(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	groupID := c.Param("id")
+
+	cfg, err := h.loadBalanceUC.GetByGroup(c.Request.Context(), tenantID, groupID)
+	if err != nil {
+		if errors.Is(err, authapp.ErrGroupNotInTenant) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+			return
+		}
+		if errors.Is(err, authdomain.ErrLoadBalanceNotFound) {
+			c.JSON(http.StatusOK, gin.H{"algorithm": "round_robin", "active": false, "exists": false})
+			return
+		}
+		h.log.Error("failed to get load balance", zap.String("group_id", groupID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get load balance"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"algorithm": string(cfg.Algorithm),
+		"active":    cfg.Active,
+		"exists":    true,
+	})
+}
+
+func (h *Handler) SetLoadBalance(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	groupID := c.Param("id")
+
+	var req struct {
+		Algorithm string `json:"algorithm" form:"algorithm"`
+		Active    bool   `json:"active" form:"active"`
+	}
+	if err := c.ShouldBind(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cfg, err := h.loadBalanceUC.SetByGroup(c.Request.Context(), authapp.SetLoadBalanceInput{
+		TenantID:  tenantID,
+		GroupID:   groupID,
+		Algorithm: authdomain.LoadBalanceAlgorithm(req.Algorithm),
+		Active:    req.Active,
+	})
+	if err != nil {
+		if errors.Is(err, authapp.ErrGroupNotInTenant) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+			return
+		}
+		if errors.Is(err, authdomain.ErrInvalidAlgorithm) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid algorithm"})
+			return
+		}
+		h.log.Error("failed to set load balance", zap.String("group_id", groupID), zap.Error(err))
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "failed to set load balance"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"algorithm": string(cfg.Algorithm),
+		"active":    cfg.Active,
+	})
 }

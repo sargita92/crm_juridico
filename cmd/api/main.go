@@ -122,9 +122,6 @@ func main() {
 	tenantListerAdapter := productinfra.NewTenantListerAdapter(tenantMod.TenantRepo())
 	productMod.Handler().SetTenantLister(tenantListerAdapter)
 
-	// Permission module
-	permissionMod := permission.NewModule(db, log)
-
 	// Notification module (must be before automation for NotifyService)
 	notificationMod := notification.NewModule(db, sharedEventBus, log)
 
@@ -175,6 +172,9 @@ func main() {
 
 	// Auth module (login, tenant selection, invites, user management)
 	authMod := auth.NewModule(db, tenantMod.TenantRepo(), cfg.JWT.Secret, cfg.JWT.Expiration, cfg.Server.SecureCookie)
+
+	// Permission module (depends on authMod for load balance use case)
+	permissionMod := permission.NewModule(db, log, authMod.LoadBalanceUseCase())
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod, automationMod}
 

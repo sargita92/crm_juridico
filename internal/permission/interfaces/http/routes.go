@@ -25,6 +25,8 @@ func (h *Handler) RegisterRoutes(
 		groups.PUT("/:id/view-profiles/:fid", requirePerm("funnels", "customize"), h.SetViewProfile)
 		groups.GET("/:id/funnels", requirePerm("groups", "manage"), h.ListGroupFunnels)
 		groups.PUT("/:id/funnels", requirePerm("groups", "manage"), h.SetGroupFunnels)
+		groups.GET("/:id/load-balance", requirePerm("groups", "manage"), h.GetLoadBalance)
+		groups.PUT("/:id/load-balance", requirePerm("groups", "manage"), h.SetLoadBalance)
 	}
 
 	users := router.Group("/tenant/users")

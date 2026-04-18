@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
 	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	permhttp "github.com/sasrgita/crm-juridico/internal/permission/interfaces/http"
@@ -19,7 +20,7 @@ type Module struct {
 }
 
 // NewModule creates all permission repositories, use cases, and handlers.
-func NewModule(db *gorm.DB, log *zap.Logger) *Module {
+func NewModule(db *gorm.DB, log *zap.Logger, loadBalanceUC *authapp.ManageLoadBalanceUseCase) *Module {
 	// Repositories
 	groupRepo := infrastructure.NewGormPermissionGroupRepository(db)
 	ugRepo := infrastructure.NewGormUserGroupRepository(db)
@@ -53,6 +54,7 @@ func NewModule(db *gorm.DB, log *zap.Logger) *Module {
 		managePermsUC,
 		manageVPUC,
 		manageGFUC,
+		loadBalanceUC,
 		log,
 	)
 
