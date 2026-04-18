@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -15,6 +16,60 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
+
+// --- Local interfaces for PageHandler testability ---
+
+type pageCreateGroupUC interface {
+	Execute(ctx context.Context, in application.CreateGroupInput) (*application.GroupOutput, error)
+}
+
+type pageListGroupsUC interface {
+	Execute(ctx context.Context, tenantID string) ([]application.GroupOutput, error)
+}
+
+type pageGetGroupUC interface {
+	Execute(ctx context.Context, tenantID, groupID string) (*application.GroupOutput, error)
+}
+
+type pageUpdateGroupUC interface {
+	Execute(ctx context.Context, input application.UpdateGroupInput) (*application.GroupOutput, error)
+}
+
+type pageDeleteGroupUC interface {
+	Execute(ctx context.Context, tenantID, id string) error
+}
+
+type pageManageMembersUC interface {
+	ListMembers(ctx context.Context, groupID string) ([]application.MemberOutput, error)
+}
+
+type pageManagePermsUC interface {
+	GetGroupPermissions(ctx context.Context, groupID string) ([]application.PermissionOutput, error)
+	SetGroupPermissions(ctx context.Context, tenantID, groupID string, inputs []application.PermissionInput) error
+}
+
+type pageManageVPUC interface {
+	ListByGroup(ctx context.Context, groupID string) ([]application.ViewProfileOutput, error)
+	SetViewProfile(ctx context.Context, in application.ViewProfileInput) error
+}
+
+type pageManageGFUC interface {
+	ListByGroup(ctx context.Context, groupID string) ([]application.GroupFunnelOutput, error)
+	SetGroupFunnel(ctx context.Context, in application.GroupFunnelInput) error
+}
+
+type pageLoadBalanceUC interface {
+	GetByGroup(ctx context.Context, tenantID, groupID string) (*authdomain.LoadBalanceConfig, error)
+	SetByGroup(ctx context.Context, in authapp.SetLoadBalanceInput) (*authdomain.LoadBalanceConfig, error)
+}
+
+type pageListFunnelsUC interface {
+	Execute(ctx context.Context, tenantID string) ([]funnelapp.FunnelItem, error)
+}
+
+type pageUsersListUC interface {
+	ListTenantUsers(ctx context.Context, tenantID string) ([]authapp.UserOutput, error)
+}
 
 var groupPermActions = []string{"read", "create", "update", "delete", "manage", "customize"}
 var groupPermResources = []string{"leads", "users", "groups", "funnels", "automations", "products", "specialists", "invites", "settings"}
@@ -62,36 +117,36 @@ type funnelWithCols struct {
 
 // PageHandler renders HTML pages for the "Equipe > Grupos" tab and group detail.
 type PageHandler struct {
-	createGroup   *application.CreateGroupUseCase
-	listGroups    *application.ListGroupsUseCase
-	getGroup      *application.GetGroupUseCase
-	updateGroup   *application.UpdateGroupUseCase
-	deleteGroup   *application.DeleteGroupUseCase
-	manageMembers *application.ManageMembersUseCase
-	managePerms   *application.ManagePermissionsUseCase
-	manageVP      *application.ManageViewProfilesUseCase
-	manageGF      *application.ManageGroupFunnelsUseCase
-	loadBalanceUC *authapp.ManageLoadBalanceUseCase
-	listFunnelsUC *funnelapp.ListFunnelsUseCase
+	createGroup   pageCreateGroupUC
+	listGroups    pageListGroupsUC
+	getGroup      pageGetGroupUC
+	updateGroup   pageUpdateGroupUC
+	deleteGroup   pageDeleteGroupUC
+	manageMembers pageManageMembersUC
+	managePerms   pageManagePermsUC
+	manageVP      pageManageVPUC
+	manageGF      pageManageGFUC
+	loadBalanceUC pageLoadBalanceUC
+	listFunnelsUC pageListFunnelsUC
 	columnRepo    funneldomain.ColumnRepository
-	usersListUC   *authapp.ManageUsersUseCase
+	usersListUC   pageUsersListUC
 	log           *zap.Logger
 }
 
 func NewPageHandler(
-	createGroup *application.CreateGroupUseCase,
-	listGroups *application.ListGroupsUseCase,
-	getGroup *application.GetGroupUseCase,
-	updateGroup *application.UpdateGroupUseCase,
-	deleteGroup *application.DeleteGroupUseCase,
-	manageMembers *application.ManageMembersUseCase,
-	managePerms *application.ManagePermissionsUseCase,
-	manageVP *application.ManageViewProfilesUseCase,
-	manageGF *application.ManageGroupFunnelsUseCase,
-	loadBalanceUC *authapp.ManageLoadBalanceUseCase,
-	listFunnelsUC *funnelapp.ListFunnelsUseCase,
+	createGroup pageCreateGroupUC,
+	listGroups pageListGroupsUC,
+	getGroup pageGetGroupUC,
+	updateGroup pageUpdateGroupUC,
+	deleteGroup pageDeleteGroupUC,
+	manageMembers pageManageMembersUC,
+	managePerms pageManagePermsUC,
+	manageVP pageManageVPUC,
+	manageGF pageManageGFUC,
+	loadBalanceUC pageLoadBalanceUC,
+	listFunnelsUC pageListFunnelsUC,
 	columnRepo funneldomain.ColumnRepository,
-	usersListUC *authapp.ManageUsersUseCase,
+	usersListUC pageUsersListUC,
 	log *zap.Logger,
 ) *PageHandler {
 	return &PageHandler{
