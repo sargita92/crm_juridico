@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -38,6 +39,26 @@ func NewPageHandler(
 		resolverUC:      resolverUC,
 		log:             log,
 	}
+}
+
+// permissionCatalog is the complete list of (resource, action) pairs the UI exposes
+// for individual user permissions. Kept in sync with backend middleware expectations.
+var permissionCatalog = []struct{ Resource, Action string }{
+	{"leads", "read"}, {"leads", "create"}, {"leads", "update"}, {"leads", "delete"},
+	{"users", "read"}, {"users", "update"}, {"users", "delete"},
+	{"groups", "manage"},
+	{"funnels", "read"}, {"funnels", "customize"},
+	{"automations", "manage"},
+	{"products", "manage"},
+	{"specialists", "manage"},
+	{"invites", "create"}, {"invites", "read"}, {"invites", "delete"},
+	{"settings", "manage"},
+}
+
+type modalPerm struct {
+	Resource string
+	Action   string
+	Granted  bool
 }
 
 // RedirectToUsers handles GET /tenant/team.
@@ -138,7 +159,62 @@ func (h *PageHandler) CreateInvite(c *gin.Context) {
 	c.HTML(http.StatusOK, "team/invite_success.html", gin.H{"InviteURL": inviteURL})
 }
 
-func (h *PageHandler) UserPermissionsModal(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) SetUserPermissionsHTML(c *gin.Context) { c.Status(http.StatusNotImplemented) }
+// UserPermissionsModal renders the individual-permissions modal for a user.
+func (h *PageHandler) UserPermissionsModal(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	userID := c.Param("id")
+
+	granted, err := h.manageUserPerms.GetUserPermissions(c.Request.Context(), tenantID, userID)
+	if err != nil {
+		h.log.Error("failed to load user permissions", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	grantedSet := make(map[string]bool, len(granted))
+	for _, p := range granted {
+		grantedSet[p.Resource+":"+p.Action] = true
+	}
+
+	all := make([]modalPerm, len(permissionCatalog))
+	for i, p := range permissionCatalog {
+		all[i] = modalPerm{
+			Resource: p.Resource,
+			Action:   p.Action,
+			Granted:  grantedSet[p.Resource+":"+p.Action],
+		}
+	}
+
+	c.HTML(http.StatusOK, "team/user_permissions_modal.html", gin.H{
+		"UserID":   userID,
+		"AllPerms": all,
+	})
+}
+
+// SetUserPermissionsHTML handles POST /tenant/team/users/:id/permissions.
+// Form field `perms` carries values like "resource:action".
+func (h *PageHandler) SetUserPermissionsHTML(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	userID := c.Param("id")
+
+	items := c.PostFormArray("perms")
+	inputs := make([]permapp.PermissionInput, 0, len(items))
+	for _, it := range items {
+		parts := strings.SplitN(it, ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			continue
+		}
+		inputs = append(inputs, permapp.PermissionInput{Resource: parts[0], Action: parts[1]})
+	}
+
+	if err := h.manageUserPerms.SetUserPermissions(c.Request.Context(), tenantID, userID, inputs); err != nil {
+		h.log.Error("failed to set user permissions", zap.Error(err))
+		c.Status(http.StatusUnprocessableEntity)
+		return
+	}
+
+	c.Header("HX-Trigger", "refreshTeam")
+	c.Status(http.StatusNoContent)
+}
+
 func (h *PageHandler) UserWhatsAppModal(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) SetUserWhatsApp(c *gin.Context)        { c.Status(http.StatusNotImplemented) }

@@ -1,0 +1,22 @@
+{{define "team/user_permissions_modal.html"}}
+<div>
+    <p class="muted">Marque as permissões individuais atribuídas a este usuário. Essas permissões se somam às herdadas dos grupos.</p>
+
+    <form hx-post="/tenant/team/users/{{.UserID}}/permissions"
+          hx-target="#team-modal-body"
+          hx-swap="innerHTML">
+        <div class="checkbox-list">
+            {{range .AllPerms}}
+            <label>
+                <input type="checkbox" name="perms" value="{{.Resource}}:{{.Action}}" {{if .Granted}}checked{{end}}>
+                <span class="perm-label"><strong>{{.Resource}}</strong>:{{.Action}}</span>
+            </label>
+            {{end}}
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn" onclick="closeModal('team-modal')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+    </form>
+</div>
+{{end}}
