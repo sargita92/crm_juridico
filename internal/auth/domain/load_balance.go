@@ -26,6 +26,7 @@ type LoadBalanceConfig struct {
 	GroupID   string
 	Algorithm LoadBalanceAlgorithm
 	LastIndex int
+	Active    bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -49,6 +50,7 @@ func NewLoadBalanceConfig(id, tenantID, groupID string, algorithm LoadBalanceAlg
 		GroupID:   groupID,
 		Algorithm: algorithm,
 		LastIndex: 0,
+		Active:    true,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}, nil

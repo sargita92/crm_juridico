@@ -17,6 +17,7 @@ type loadBalanceConfigModel struct {
 	GroupID   string    `gorm:"column:group_id;type:char(36);not null;uniqueIndex:uk_lb_tenant_group"`
 	Algorithm string    `gorm:"column:algorithm;type:varchar(20);not null;default:round_robin"`
 	LastIndex int       `gorm:"column:last_index;not null;default:0"`
+	Active    bool      `gorm:"column:active;not null;default:true"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
@@ -30,6 +31,7 @@ func loadBalanceToModel(c *domain.LoadBalanceConfig) *loadBalanceConfigModel {
 		GroupID:   c.GroupID,
 		Algorithm: string(c.Algorithm),
 		LastIndex: c.LastIndex,
+		Active:    c.Active,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
 	}
@@ -42,6 +44,7 @@ func loadBalanceToDomain(m *loadBalanceConfigModel) *domain.LoadBalanceConfig {
 		GroupID:   m.GroupID,
 		Algorithm: domain.LoadBalanceAlgorithm(m.Algorithm),
 		LastIndex: m.LastIndex,
+		Active:    m.Active,
 		CreatedAt: m.CreatedAt,
 		UpdatedAt: m.UpdatedAt,
 	}
@@ -60,7 +63,7 @@ func (r *GormLoadBalanceConfigRepository) CreateOrUpdate(ctx context.Context, cf
 	return r.db.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "group_id"}},
-			DoUpdates: clause.AssignmentColumns([]string{"algorithm", "last_index", "updated_at"}),
+			DoUpdates: clause.AssignmentColumns([]string{"algorithm", "last_index", "active", "updated_at"}),
 		}).
 		Create(model).Error
 }

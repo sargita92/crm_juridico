@@ -1,0 +1,2 @@
+ALTER TABLE load_balance_configs
+    ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE;
