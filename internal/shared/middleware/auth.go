@@ -59,3 +59,8 @@ func GetClaims(ctx context.Context) *domain.TokenClaims {
 	}
 	return nil
 }
+
+// SetClaimsForTest injects TokenClaims into context for testing purposes.
+func SetClaimsForTest(ctx context.Context, claims *domain.TokenClaims) context.Context {
+	return context.WithValue(ctx, claimsKey{}, claims)
+}

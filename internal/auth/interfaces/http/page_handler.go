@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,21 +14,44 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
 
+// inviteUsecase is a local interface for testability.
+type inviteUsecase interface {
+	ListInvites(ctx context.Context, tenantID string) ([]application.InviteOutput, error)
+	GenerateInvite(ctx context.Context, tenantID, createdBy string, groupIDs []string, expiresInDays int) (*application.InviteOutput, error)
+}
+
+// manageUsersUsecase is a local interface for testability.
+type manageUsersUsecase interface {
+	ListTenantUsers(ctx context.Context, tenantID string) ([]application.UserOutput, error)
+	SetWhatsAppID(ctx context.Context, userID, tenantID, whatsAppID string) error
+}
+
+// listGroupsUsecase is a local interface for testability.
+type listGroupsUsecase interface {
+	Execute(ctx context.Context, tenantID string) ([]permapp.GroupOutput, error)
+}
+
+// manageUserPermsUsecase is a local interface for testability.
+type manageUserPermsUsecase interface {
+	GetUserPermissions(ctx context.Context, tenantID, userID string) ([]permapp.PermissionOutput, error)
+	SetUserPermissions(ctx context.Context, tenantID, userID string, inputs []permapp.PermissionInput) error
+}
+
 // PageHandler renders HTML pages for the "Equipe > Usuários" tab.
 type PageHandler struct {
-	inviteUC        *application.InviteUserUseCase
-	manageUsers     *application.ManageUsersUseCase
-	listGroupsUC    *permapp.ListGroupsUseCase
-	manageUserPerms *permapp.ManagePermissionsUseCase
+	inviteUC        inviteUsecase
+	manageUsers     manageUsersUsecase
+	listGroupsUC    listGroupsUsecase
+	manageUserPerms manageUserPermsUsecase
 	resolverUC      *permapp.ResolvePermissionUseCase
 	log             *zap.Logger
 }
 
 func NewPageHandler(
-	inviteUC *application.InviteUserUseCase,
-	manageUsers *application.ManageUsersUseCase,
-	listGroupsUC *permapp.ListGroupsUseCase,
-	manageUserPerms *permapp.ManagePermissionsUseCase,
+	inviteUC inviteUsecase,
+	manageUsers manageUsersUsecase,
+	listGroupsUC listGroupsUsecase,
+	manageUserPerms manageUserPermsUsecase,
 	resolverUC *permapp.ResolvePermissionUseCase,
 	log *zap.Logger,
 ) *PageHandler {
