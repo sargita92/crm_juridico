@@ -4,6 +4,23 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-18] F09 Step 8 — Telas de Notificações (HTMX)
+
+Fecha o loop de UX do Step 4.1: todo lead atribuído via load balance agora é visto pelo responsável em tempo real através de toast + badge + dropdown + página dedicada.
+
+- **Sino flutuante** (`position: fixed` canto superior direito) em 10 páginas do tenant via `partials/notification_bell.html` + `partials/tenant_head.html` compartilhados. CSS dedicado em `web/static/css/notification.css`.
+- **Dropdown** com 10 últimas + botão "marcar todas" + link "Ver todas" → página dedicada `/tenant/notifications` com tabs "Não lidas" / "Todas" e paginação.
+- **Toast em tempo real** via SSE: `/notifications/stream` agora emite HTML fragment (toast + badge OOB swap) ao invés de JSON. HTMX ext `htmx-ext-sse@2.2.2` consome via `sse-swap="notification"` com `hx-swap="beforeend"`. `c.SSEvent` usa `gin-contrib/sse` que formata corretamente dados multi-linha (cada `\n` vira `\ndata:`).
+- **Deep-link** `lead_assigned` → `/tenant/leads?open=<lead_id>`: kanban handler valida ownership via `GetLeadDetailUseCase` e carrega o drawer existente via HTMX (`hx-trigger="load"`). Cross-tenant e lead inexistente são ignorados silenciosamente (sem 404 pra evitar timing oracle).
+- **PageHandler** novo em `internal/notification/interfaces/http/page_handler.go` com 4 rotas HTML (`/tenant/notifications`, `/list`, `/dropdown`, `/badge`). Late-binding do `ToastRenderer` via `Module.SetRenderer()` resolve o ciclo module ↔ template-parse (módulo construído antes de `setupRouter` parsear templates).
+- **Observabilidade**: métricas `crm_notifications_delivered_total{type}`, `crm_notifications_sse_active_streams`, `crm_notifications_sse_events_emitted_total{outcome}` em `internal/notification/infrastructure/metrics.go`. Spans OTel `notification.page.render|list|dropdown|badge` + `notification.stream.emit`.
+- **Cobertura**: `internal/notification/interfaces/http` em ~49% (foco nos handlers novos); `page_handler.go` individual tem funções em 53-100%. OWASP tests cobrem 401 nas 4 rotas + isolamento por user e tenant.
+- **Regressão UX aceita**: 3 páginas (funnel_detail, funnel_form, group_detail) tinham `<title>` dinâmico (ex.: "Funil — {{.Funnel.Name}}") — simplificados para estático ("Funil"/"Grupo") porque o `tenant_head.html` recebe só `Title` via `dict`. O `<h1>` continua dinâmico.
+- **Fora de escopo**: preferências de notificação (canal WhatsApp sem emissor), emissores dos 4 tipos ainda inativos (`lead_moved`, `lead_handoff`, `lead_qualified`, `rate_limit_reached`), som, admin area, observabilidade transversal dos demais módulos.
+- Artefatos: `docs/artefatos/F08-F09-usuarios-permissoes-automacoes/design-step8-notification-screens.md` + `plan-step8-notification-screens.md`; `rest/notifications.http`.
+
+---
+
 ## [2026-04-18] F08 Step 4/4.1 — Load Balance integrado ao fluxo de criação de lead
 
 Todo lead criado (HTTP manual, WhatsApp ou IA) passa a nascer com `ResponsibleUserID` preenchido automaticamente. Fecha os dois itens abertos da F08: distribuição automática entre membros do grupo responsável (Step 4) e atribuição do responsável humano no momento da criação (Step 4.1).

@@ -47,6 +47,20 @@
 
 ### Itens complementares (a fazer)
 - [x] Load balance integration (conectar à criação de leads) — picker + fallback + evento + notificação
-- [ ] Telas HTMX para notificações (badge, toast, painel)
+- [x] Telas HTMX para notificações (badge, toast, painel, página dedicada)
 - [x] Telas HTMX para automações (list, CRUD modal, toggle, logs, 7 tipos de campos dinâmicos)
-- [ ] Observabilidade: métricas Prometheus + traces nos novos endpoints
+- [ ] Observabilidade: métricas Prometheus + traces nos novos endpoints (varredura transversal — automation, permission, auth — ainda aberta)
+
+### Plan 5: F09 Step 8 Notification Screens (concluído)
+- [x] Template helpers (typeIcon, typeLabel, relativeTime)
+- [x] ToastRenderer (HTML fragment + OOB badge) usado pelo SSE stream
+- [x] PageHandler com 4 rotas: /tenant/notifications, /list, /dropdown, /badge
+- [x] SSE handler migrado de JSON para HTML fragment (c.SSEvent multi-line safe)
+- [x] Partials: tenant_head, notification_bell, notification_dropdown, notification_badge (+ OOB), notification_toast
+- [x] Página dedicada com tabs (não lidas/todas) + paginação
+- [x] Deep-link lead_assigned → /tenant/leads?open=<lead_id> (abre drawer existente, ignora cross-tenant silenciosamente)
+- [x] CSS completo (notification.css) + toggleNotificationDropdown em admin.js
+- [x] Propagação do sino em 10 páginas do tenant
+- [x] Métricas Prometheus (delivered_total{type}, sse_active_streams, sse_events_emitted_total{outcome}) + OTel spans nas 4 rotas + stream
+- [x] OWASP tests (401 nas 4 rotas, isolamento por user_id e tenant_id)
+- [x] rest/notifications.http atualizado
