@@ -1,0 +1,18 @@
+{{define "partials/notification_toast.html"}}
+<div id="toast-{{.ID}}" class="toast-notif toast-notif-{{.Type}}"
+     hx-post="/notifications/{{.ID}}/read"
+     hx-swap="none"
+     hx-trigger="click"
+     {{if eq .Type "lead_assigned"}}
+     hx-on::after-request="window.location.href='/tenant/leads?open={{index .Metadata "lead_id"}}'"
+     {{end}}
+     role="alert">
+    <div class="toast-icon">{{typeIcon .Type}}</div>
+    <div class="toast-body">
+        <div class="toast-title">{{.Title}}</div>
+        {{if .Body}}<div class="toast-text">{{.Body}}</div>{{end}}
+    </div>
+    <button type="button" class="toast-close" onclick="event.stopPropagation();document.getElementById('toast-{{.ID}}').remove()">×</button>
+    <script>setTimeout(function(){var el=document.getElementById('toast-{{.ID}}');if(el)el.remove();},5000);</script>
+</div>
+{{end}}

@@ -1,0 +1,33 @@
+{{define "notification/item.html"}}
+<div class="notif-item notif-item-{{.Type}} {{if not .Read}}notif-item-unread{{end}}"
+     data-notif-id="{{.ID}}">
+    {{if not .Read}}<span class="notif-unread-dot"></span>{{end}}
+    <div class="notif-icon">{{typeIcon .Type}}</div>
+    <div class="notif-body">
+        <div class="notif-title">{{.Title}}</div>
+        {{if .Body}}<div class="notif-text">{{.Body}}</div>{{end}}
+        <div class="notif-meta">
+            <span class="notif-type-label">{{typeLabel .Type}}</span>
+            <span class="notif-time">{{relativeTime .CreatedAt}}</span>
+        </div>
+    </div>
+    <div class="notif-actions">
+        {{if and (eq (printf "%s" .Type) "lead_assigned") (index .Metadata "lead_id")}}
+        <a href="/tenant/leads?open={{index .Metadata "lead_id"}}"
+           class="btn btn-sm btn-primary"
+           hx-post="/notifications/{{.ID}}/read"
+           hx-swap="none"
+           hx-trigger="click"
+           hx-on::after-request="htmx.trigger('body', 'refreshBadge')">Abrir lead</a>
+        {{end}}
+        {{if not .Read}}
+        <button type="button" class="btn btn-sm btn-link"
+                hx-post="/notifications/{{.ID}}/read"
+                hx-swap="none"
+                hx-on::after-request="htmx.trigger('body', 'refreshBadge'); htmx.ajax('GET', window.location.pathname + window.location.search, '#notifications-list')">
+            Marcar lida
+        </button>
+        {{end}}
+    </div>
+</div>
+{{end}}
