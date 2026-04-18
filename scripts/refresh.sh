@@ -99,8 +99,13 @@ else
 fi
 
 if [ "$LOAD_FIXTURES" = true ]; then
-    echo "==> Carregando fixtures..."
+    echo "==> Carregando fixtures (fixtures.sql)..."
     mysql_user < "$PROJECT_ROOT/fixture/fixtures.sql"
+
+    if [ -f "$PROJECT_ROOT/fixture/escritorio-teste.sql" ]; then
+        echo "==> Carregando fixtures (escritorio-teste.sql)..."
+        mysql_user < "$PROJECT_ROOT/fixture/escritorio-teste.sql"
+    fi
 fi
 
 if [ "$RESTART_APP" = true ]; then

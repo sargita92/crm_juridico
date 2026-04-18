@@ -849,6 +849,23 @@ body {
     border-top: 1px solid #f0f0f5;
 }
 
+.prompt-display {
+    background: #f7f8fb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #2d3748;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
 /* Alert box (for block reason) */
 
 .alert {

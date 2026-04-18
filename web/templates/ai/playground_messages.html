@@ -18,11 +18,14 @@
             <button type="submit" class="btn btn-danger btn-sm" title="Reiniciar conversa">Reset</button>
         </form>
     </div>
-    <div class="wa-messages" id="messages-area"
-         hx-get="/tenant/ai/playground/conversation/{{.Contact.ID}}"
-         hx-trigger="every 2s"
-         hx-target="#chat"
-         hx-swap="innerHTML">
+    <div class="wa-messages" id="messages-area">
+        <div id="messages-list"
+             style="display:flex;flex-direction:column;gap:0.25rem;"
+             hx-get="/tenant/ai/playground/conversation/{{.Contact.ID}}"
+             hx-trigger="sse:new-message"
+             hx-target="this"
+             hx-select="#messages-list"
+             hx-swap="outerHTML">
         {{if .Messages}}
         {{range .Messages}}
         <div class="wa-msg {{if eq .Direction "outgoing"}}wa-msg-out{{else}}wa-msg-in{{end}}">
@@ -39,6 +42,7 @@
             <p>Inicio da conversa</p>
         </div>
         {{end}}
+        </div>
     </div>
     <div class="wa-input-area">
         <form hx-post="/tenant/ai/playground/conversation/{{.Contact.ID}}/send"
