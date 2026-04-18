@@ -112,7 +112,9 @@ func main() {
 	funnelProductRouterAdapter := funnelinfra.NewFunnelProductRouterAdapter(productMod.FunnelProductRepo())
 
 	productListerAdapter := funnelinfra.NewProductListerAdapter(productMod.ProductRepo(), productMod.TenantProductRepo())
-	// TODO Task 14: wire LoadBalancePicker here
+	// Funnel module is built with a nil picker; the real LoadBalancePicker is
+	// wired below via funnelMod.SetResponsiblePicker after the permission
+	// module exists (see Task 14 wiring).
 	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, sharedEventBus, nil, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
@@ -196,6 +198,21 @@ func main() {
 	// owned by each side.
 	lbOverlapChecker := perminfra.NewGroupColumnOverlapAdapter(permissionMod.GroupFunnelRepo(), authMod.LoadBalanceRepo())
 	authMod.SetLoadBalanceOverlapChecker(lbOverlapChecker)
+
+	// Wire the LoadBalancePicker into the funnel module. The picker depends on
+	// repositories owned by BOTH auth and permission modules, and the funnel
+	// module depends on it transitively via CreateLeadUseCase — the cycle is
+	// broken by constructing funnel with a nil picker first, then injecting the
+	// real one here via SetResponsiblePicker.
+	picker := authinfra.NewLoadBalancePicker(
+		permissionMod.GroupFunnelRepo(),
+		authMod.LoadBalanceRepo(),
+		permissionMod.UserGroupRepo(),
+		authMod.UserTenantRepo(),
+		funnelMod.LeadLoadCounter(),
+		log,
+	)
+	funnelMod.SetResponsiblePicker(picker)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod, automationMod}
 

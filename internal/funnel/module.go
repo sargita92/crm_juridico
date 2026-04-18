@@ -102,6 +102,13 @@ func (m *Module) LeadRepo() domain.LeadRepository {
 	return m.leadRepo
 }
 
+// LeadLoadCounter exposes the gorm lead repository as a LeadLoadCounter so
+// that cross-module adapters (e.g. auth's LoadBalancePicker) can evaluate the
+// "least load" algorithm without depending on the concrete gorm type.
+func (m *Module) LeadLoadCounter() domain.LeadLoadCounter {
+	return m.leadRepo.(domain.LeadLoadCounter)
+}
+
 func (m *Module) MoveLeadUC() *application.MoveLeadUseCase {
 	return m.moveLeadUC
 }
@@ -127,4 +134,12 @@ func (m *Module) FunnelRepo() domain.FunnelRepository {
 func (m *Module) SetAutomationTrigger(t domain.AutomationTrigger) {
 	m.leadCreator.SetAutomationTrigger(t)
 	m.moveLeadUC.SetAutomationTrigger(t)
+}
+
+// SetResponsiblePicker late-binds the ResponsiblePicker into the CreateLead
+// use case. Required because the picker depends on repositories owned by the
+// permission and auth modules, which in turn depend on funnel — breaking the
+// construction cycle via this setter.
+func (m *Module) SetResponsiblePicker(p domain.ResponsiblePicker) {
+	m.leadCreator.SetPicker(p)
 }

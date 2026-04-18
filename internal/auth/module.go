@@ -25,6 +25,7 @@ type Module struct {
 	loginUC         *application.LoginUseCase
 	loadBalanceUC   *application.ManageLoadBalanceUseCase
 	loadBalanceRepo authdomain.LoadBalanceConfigRepository
+	userTenantRepo  authdomain.UserTenantRepository
 }
 
 // NewModule builds and returns a fully wired auth Module.
@@ -62,6 +63,7 @@ func NewModule(
 		loginUC:         loginUC,
 		loadBalanceUC:   loadBalanceUC,
 		loadBalanceRepo: loadBalanceRepo,
+		userTenantRepo:  userTenantRepo,
 	}
 }
 
@@ -97,6 +99,13 @@ func (m *Module) LoadBalanceUseCase() *application.ManageLoadBalanceUseCase { re
 // active configs without depending on gorm directly.
 func (m *Module) LoadBalanceRepo() authdomain.LoadBalanceConfigRepository {
 	return m.loadBalanceRepo
+}
+
+// UserTenantRepo exposes the user-tenant repository so that cross-module
+// adapters (e.g. auth's LoadBalancePicker, wired in main.go) can resolve
+// tenant membership and owner fallback without duplicating the gorm instance.
+func (m *Module) UserTenantRepo() authdomain.UserTenantRepository {
+	return m.userTenantRepo
 }
 
 // SetLoadBalanceOverlapChecker injects the cross-module overlap checker into

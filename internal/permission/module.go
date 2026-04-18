@@ -25,6 +25,7 @@ type Module struct {
 	listGroupsUC    *application.ListGroupsUseCase
 	managePermsUC   *application.ManagePermissionsUseCase
 	groupFunnelRepo permdomain.GroupFunnelRepository
+	userGroupRepo   permdomain.UserGroupRepository
 }
 
 // NewModule creates all permission repositories, use cases, and handlers.
@@ -99,6 +100,7 @@ func NewModule(
 		listGroupsUC:    listGroupsUC,
 		managePermsUC:   managePermsUC,
 		groupFunnelRepo: gfRepo,
+		userGroupRepo:   ugRepo,
 	}
 }
 
@@ -128,4 +130,10 @@ func (m *Module) ManagePermissionsUseCase() *application.ManagePermissionsUseCas
 // (e.g. auth's load-balance overlap checker).
 func (m *Module) GroupFunnelRepo() permdomain.GroupFunnelRepository {
 	return m.groupFunnelRepo
+}
+
+// UserGroupRepo exposes the user-group repository for cross-module adapters
+// (e.g. auth's LoadBalancePicker, which needs to enumerate group members).
+func (m *Module) UserGroupRepo() permdomain.UserGroupRepository {
+	return m.userGroupRepo
 }

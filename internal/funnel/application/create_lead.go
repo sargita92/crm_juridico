@@ -57,6 +57,13 @@ func (uc *CreateLeadUseCase) SetAutomationTrigger(t domain.AutomationTrigger) {
 	uc.automationTrigger = t
 }
 
+// SetPicker injects the ResponsiblePicker. Used for late-binding when the
+// picker depends on cross-module repositories that are constructed after the
+// funnel module (see main.go module wiring order).
+func (uc *CreateLeadUseCase) SetPicker(p domain.ResponsiblePicker) {
+	uc.picker = p
+}
+
 func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput) error {
 	// Check if lead already exists for this contact+tenant
 	_, err := uc.leadRepo.FindByContactAndTenant(ctx, input.TenantID, input.ContactID)
