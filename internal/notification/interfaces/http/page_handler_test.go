@@ -65,6 +65,7 @@ func newPageEnv(t *testing.T) *pageEnv {
 
 	pages := router.Group("/tenant/notifications")
 	pages.GET("/badge", handler.RenderBadge)
+	pages.GET("/dropdown", handler.RenderDropdown)
 
 	return &pageEnv{router: router, handler: handler, repo: repo}
 }
@@ -106,4 +107,48 @@ func TestRenderBadge_WithUnread(t *testing.T) {
 
 func uid(i int) string {
 	return "n-" + time.Now().Format("150405") + "-" + string(rune('a'+i))
+}
+
+// ---------------------------------------------------------------------------
+// Task 5 — RenderDropdown
+// ---------------------------------------------------------------------------
+
+func TestRenderDropdown_ReturnsLast10(t *testing.T) {
+	env := newPageEnv(t)
+	// Seed 15 notifications; should return 10 newest first.
+	for i := 0; i < 15; i++ {
+		n, _ := domain.NewNotification(uid(i), testTenantID, testUserID, domain.TypeLeadAssigned, "t", "b", nil)
+		env.seed(t, n)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications/dropdown", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotEmpty(t, w.Body.String())
+}
+
+func TestRenderDropdown_Empty(t *testing.T) {
+	env := newPageEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications/dropdown", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRenderDropdown_IsolatesPerUser(t *testing.T) {
+	env := newPageEnv(t)
+	n, _ := domain.NewNotification("n-other", testTenantID, "other-user", domain.TypeLeadAssigned, "Privada", "", nil)
+	env.seed(t, n)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications/dropdown", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotContains(t, w.Body.String(), "n-other")
+	assert.NotContains(t, w.Body.String(), "Privada")
 }
