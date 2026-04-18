@@ -65,7 +65,7 @@
 {{if .OpenLeadID}}
 <div id="open-lead-loader"
      hx-get="/tenant/leads/{{.OpenLeadID}}"
-     hx-trigger="load"
+     hx-trigger="load once"
      hx-target="#lead-modal"
      hx-swap="innerHTML"
      style="display:none"></div>

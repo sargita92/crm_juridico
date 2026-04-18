@@ -17,11 +17,13 @@ function closeModal(id) {
     if (modal) modal.style.display = "none";
 }
 
-// Close modals on Escape key
+// Close modals and notification dropdown on Escape key
 document.addEventListener("keydown", function(e) {
     if (e.key === "Escape") {
         var modals = document.querySelectorAll(".modal-overlay");
         modals.forEach(function(m) { m.style.display = "none"; });
+        var dd = document.getElementById("notification-dropdown");
+        if (dd) dd.style.display = "none";
     }
 });
 
@@ -49,9 +51,3 @@ document.addEventListener('click', function(evt) {
     dd.style.display = 'none';
 });
 
-document.addEventListener('keydown', function(evt) {
-    if (evt.key === 'Escape') {
-        var dd = document.getElementById('notification-dropdown');
-        if (dd) dd.style.display = 'none';
-    }
-});
