@@ -188,6 +188,7 @@ func setupTestEnv(t *testing.T, opts ...testEnvOpt) *testEnv {
 		funnelProductRouterAdapter,
 		productListerAdapter,
 		eventBus,
+		stubResponsiblePicker{}, // Task 14 will swap for the real LoadBalancePicker.
 		log,
 	)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
@@ -401,4 +402,14 @@ func cleanupPlaygroundContact(t *testing.T, db *gorm.DB) {
 			t.Fatalf("cleanup: %q: %v", stmt, err)
 		}
 	}
+}
+
+// stubResponsiblePicker satisfies funnel.domain.ResponsiblePicker for the AI
+// e2e harness. It always returns a synthetic user id so CreateLeadUseCase
+// (invoked via ReceiveMessageUC) does not blow up; the AI tests do not assert
+// anything about responsible-user assignment.
+type stubResponsiblePicker struct{}
+
+func (stubResponsiblePicker) PickForFunnel(_ context.Context, _, _, _ string) (funneldomain.PickResult, error) {
+	return funneldomain.PickResult{UserID: "ai-e2e-stub-user", Outcome: funneldomain.PickOutcomePicked}, nil
 }

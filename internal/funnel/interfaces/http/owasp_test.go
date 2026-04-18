@@ -270,7 +270,7 @@ func setupOwaspEnv() *owaspEnv {
 	createColumnUC := application.NewCreateColumnUseCase(funnelRepo, columnRepo)
 	deleteColumnUC := application.NewDeleteColumnUseCase(funnelRepo, columnRepo, leadRepo)
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
-	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil, nil)
+	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil, nil, nil, owaspStubPicker{})
 	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, nil)
 	userNameProvider := &owaspMockUserNameProvider{}
 	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider, nil)
@@ -447,4 +447,13 @@ func TestOWASP_A01_TenantIsolation_CreateNoteDenied(t *testing.T) {
 	env.router.ServeHTTP(w, req)
 
 	assert.NotEqual(t, http.StatusOK, w.Code)
+}
+
+// owaspStubPicker keeps OWASP wiring working after CreateLeadUseCase gained a
+// required ResponsiblePicker. These tests do not exercise lead creation, so a
+// trivial stub is sufficient.
+type owaspStubPicker struct{}
+
+func (owaspStubPicker) PickForFunnel(_ context.Context, _, _, _ string) (domain.PickResult, error) {
+	return domain.PickResult{UserID: "owasp-stub-user", Outcome: domain.PickOutcomePicked}, nil
 }

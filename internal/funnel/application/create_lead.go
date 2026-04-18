@@ -26,6 +26,7 @@ type CreateLeadUseCase struct {
 	funnelProductRouter domain.FunnelProductRouter
 	eventBus            events.EventBus
 	automationTrigger   domain.AutomationTrigger
+	picker              domain.ResponsiblePicker
 }
 
 func NewCreateLeadUseCase(
@@ -36,6 +37,7 @@ func NewCreateLeadUseCase(
 	productDetector domain.ProductDetector,
 	funnelProductRouter domain.FunnelProductRouter,
 	eventBus events.EventBus,
+	picker domain.ResponsiblePicker,
 ) *CreateLeadUseCase {
 	return &CreateLeadUseCase{
 		funnelRepo:          funnelRepo,
@@ -45,6 +47,7 @@ func NewCreateLeadUseCase(
 		productDetector:     productDetector,
 		funnelProductRouter: funnelProductRouter,
 		eventBus:            eventBus,
+		picker:              picker,
 	}
 }
 
@@ -106,6 +109,16 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 	if detectedProductID != "" {
 		lead.SetProduct(detectedProductID)
 	}
+
+	// Pick the responsible user before persisting the lead. If the picker
+	// fails (including ErrNoResponsibleAvailable), we abort lead creation
+	// entirely — no lead, no movement, no events.
+	pick, err := uc.picker.PickForFunnel(ctx, input.TenantID, funnel.ID, entryCol.ID)
+	if err != nil {
+		return err
+	}
+	lead.AssignResponsible(pick.UserID)
+
 	if err := uc.leadRepo.Create(ctx, lead); err != nil {
 		return err
 	}
@@ -121,10 +134,22 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 			Type:     events.EventLeadCreated,
 			TenantID: lead.TenantID,
 			Payload: map[string]string{
-				"lead_id":    lead.ID,
-				"funnel_id":  lead.FunnelID,
-				"column_id":  lead.ColumnID,
-				"contact_id": lead.ContactID,
+				"lead_id":             lead.ID,
+				"funnel_id":           lead.FunnelID,
+				"column_id":           lead.ColumnID,
+				"contact_id":          lead.ContactID,
+				"responsible_user_id": lead.ResponsibleUserID,
+			},
+		})
+		uc.eventBus.Publish(events.Event{
+			Type:     events.EventLeadResponsibleAssigned,
+			TenantID: lead.TenantID,
+			Payload: events.ResponsibleAssignedPayload{
+				LeadID:            lead.ID,
+				ResponsibleUserID: lead.ResponsibleUserID,
+				Reason:            "created",
+				Outcome:           string(pick.Outcome),
+				Algorithm:         pick.Algorithm,
 			},
 		})
 	}

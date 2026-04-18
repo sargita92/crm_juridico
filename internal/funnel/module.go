@@ -35,6 +35,7 @@ func NewModule(
 	funnelProductRouter domain.FunnelProductRouter,
 	productLister domain.ProductLister,
 	eventBus events.EventBus,
+	picker domain.ResponsiblePicker,
 	log *zap.Logger,
 ) *Module {
 	funnelRepo := infrastructure.NewGormFunnelRepository(db)
@@ -53,7 +54,7 @@ func NewModule(
 	createColumnUC := application.NewCreateColumnUseCase(funnelRepo, columnRepo)
 	deleteColumnUC := application.NewDeleteColumnUseCase(funnelRepo, columnRepo, leadRepo)
 	moveColumnUC := application.NewMoveColumnUseCase(funnelRepo, columnRepo)
-	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, productDetector, funnelProductRouter, eventBus)
+	createLeadUC := application.NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, productDetector, funnelProductRouter, eventBus, picker)
 	moveLeadUC := application.NewMoveLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, eventBus)
 	moveLeadUC.SetAuditLogger(log)
 	getLeadDetailUC := application.NewGetLeadDetailUseCase(leadRepo, movementRepo, funnelRepo, columnRepo, contactProvider, messageProvider, noteRepo, userNameProvider, productProvider)

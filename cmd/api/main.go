@@ -111,7 +111,8 @@ func main() {
 	funnelProductRouterAdapter := funnelinfra.NewFunnelProductRouterAdapter(productMod.FunnelProductRepo())
 
 	productListerAdapter := funnelinfra.NewProductListerAdapter(productMod.ProductRepo(), productMod.TenantProductRepo())
-	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, sharedEventBus, log)
+	// TODO Task 14: wire LoadBalancePicker here
+	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, sharedEventBus, nil, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
 	// Cross-module: product handler needs funnel lister for link form
