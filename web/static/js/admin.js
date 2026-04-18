@@ -32,3 +32,26 @@ document.addEventListener("htmx:afterSwap", function() {
     var modals = document.querySelectorAll(".modal-overlay");
     modals.forEach(function(m) { m.style.display = "none"; });
 });
+
+// --- Notification dropdown ---
+function toggleNotificationDropdown(evt) {
+    evt.stopPropagation();
+    var dd = document.getElementById('notification-dropdown');
+    if (!dd) return;
+    dd.style.display = (dd.style.display === 'block') ? 'none' : 'block';
+}
+
+document.addEventListener('click', function(evt) {
+    var dd = document.getElementById('notification-dropdown');
+    var bell = document.getElementById('notification-bell');
+    if (!dd || dd.style.display !== 'block') return;
+    if (bell && bell.contains(evt.target)) return;
+    dd.style.display = 'none';
+});
+
+document.addEventListener('keydown', function(evt) {
+    if (evt.key === 'Escape') {
+        var dd = document.getElementById('notification-dropdown');
+        if (dd) dd.style.display = 'none';
+    }
+});
