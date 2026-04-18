@@ -66,11 +66,13 @@ func (r *GormFunnelProductRepository) FindByFunnelID(ctx context.Context, funnel
 	return result, nil
 }
 
-func (r *GormFunnelProductRepository) FindTopPriorityFunnel(ctx context.Context, productID string) (*domain.FunnelProduct, error) {
+func (r *GormFunnelProductRepository) FindTopPriorityFunnel(ctx context.Context, tenantID, productID string) (*domain.FunnelProduct, error) {
 	var model funnelProductModel
 	if err := r.db.WithContext(ctx).
-		Where("product_id = ?", productID).
-		Order("priority DESC").
+		Table("funnel_products").
+		Joins("JOIN funnels ON funnels.id = funnel_products.funnel_id").
+		Where("funnel_products.product_id = ? AND funnels.tenant_id = ?", productID, tenantID).
+		Order("funnel_products.priority DESC").
 		Limit(1).
 		First(&model).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

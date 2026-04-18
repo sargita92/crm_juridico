@@ -441,9 +441,14 @@ func newMockFunnelProductRouter() *mockFunnelProductRouter {
 	return &mockFunnelProductRouter{routes: make(map[string]string)}
 }
 
-func (m *mockFunnelProductRouter) FindTopPriorityFunnelID(_ context.Context, productID string) (string, error) {
+func (m *mockFunnelProductRouter) FindTopPriorityFunnelID(_ context.Context, tenantID, productID string) (string, error) {
 	if m.err != nil {
 		return "", m.err
+	}
+	// Routes keyed by "tenantID|productID" take precedence (tenant-scoped);
+	// fall back to productID-only keys for tests that predate tenant scoping.
+	if funnelID, ok := m.routes[tenantID+"|"+productID]; ok {
+		return funnelID, nil
 	}
 	if funnelID, ok := m.routes[productID]; ok {
 		return funnelID, nil

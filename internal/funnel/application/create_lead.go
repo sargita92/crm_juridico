@@ -76,7 +76,7 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 	// Funnel routing: if a product was detected, try to find the best funnel for it
 	var funnel *domain.Funnel
 	if detectedProductID != "" && uc.funnelProductRouter != nil {
-		funnelID, routeErr := uc.funnelProductRouter.FindTopPriorityFunnelID(ctx, detectedProductID)
+		funnelID, routeErr := uc.funnelProductRouter.FindTopPriorityFunnelID(ctx, input.TenantID, detectedProductID)
 		if routeErr == nil && funnelID != "" {
 			if candidate, findErr := uc.funnelRepo.FindByID(ctx, funnelID); findErr == nil && candidate.Active {
 				funnel = candidate

@@ -129,6 +129,46 @@ func TestCreateLead_ProductDetected_RoutesToCorrectFunnel(t *testing.T) {
 	}
 }
 
+func TestCreateLead_ProductRoutesToOtherTenantFunnel_IsIgnored(t *testing.T) {
+	// Regression: the router used to query funnel_products by product_id only,
+	// which could return a funnel belonging to another tenant. The lead would
+	// then be created under a foreign tenant's funnel and vanish from the
+	// caller tenant's kanban. See gorm_funnel_product_repository.go.
+	funnelRepo := newMockFunnelRepo()
+	columnRepo := newMockColumnRepo()
+	leadRepo := newMockLeadRepo()
+	movementRepo := newMockLeadMovementRepo()
+
+	// Callers tenant: default funnel only.
+	defaultFunnel, _ := domain.NewFunnel(uuid.New().String(), "tenant-1", "Default", "")
+	defaultFunnel.SetDefault()
+	_ = funnelRepo.Create(context.Background(), defaultFunnel)
+	defaultEntry, _ := domain.NewColumn(uuid.New().String(), defaultFunnel.ID, "Novo", 0, domain.ColumnTypeEntry, "#22c55e")
+	_ = columnRepo.Create(context.Background(), defaultEntry)
+
+	// Product detection hits, but the only route registered is for ANOTHER tenant.
+	detector := newMockProductDetector()
+	detector.AddResult("tenant-1", "foo", "product-1")
+
+	router := newMockFunnelProductRouter()
+	router.routes["tenant-2|product-1"] = "funnel-of-tenant-2" // cross-tenant; must be ignored
+
+	uc := NewCreateLeadUseCase(funnelRepo, columnRepo, leadRepo, movementRepo, detector, router, nil)
+
+	err := uc.Execute(context.Background(), CreateLeadInput{
+		TenantID:       "tenant-1",
+		ContactID:      "contact-1",
+		ConversationID: "conv-1",
+		MessageText:    "foo",
+	})
+
+	require.NoError(t, err)
+	require.Len(t, leadRepo.leads, 1)
+	for _, l := range leadRepo.leads {
+		assert.Equal(t, defaultFunnel.ID, l.FunnelID, "must fall back to own-tenant default funnel, never route to another tenant's funnel")
+	}
+}
+
 func TestCreateLead_NoProductDetected_DefaultFunnel(t *testing.T) {
 	funnelRepo := newMockFunnelRepo()
 	columnRepo := newMockColumnRepo()

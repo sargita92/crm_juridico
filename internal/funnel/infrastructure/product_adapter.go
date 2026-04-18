@@ -43,8 +43,8 @@ func NewFunnelProductRouterAdapter(fpRepo *productinfra.GormFunnelProductReposit
 	return &FunnelProductRouterAdapter{fpRepo: fpRepo}
 }
 
-func (a *FunnelProductRouterAdapter) FindTopPriorityFunnelID(ctx context.Context, productID string) (string, error) {
-	fp, err := a.fpRepo.FindTopPriorityFunnel(ctx, productID)
+func (a *FunnelProductRouterAdapter) FindTopPriorityFunnelID(ctx context.Context, tenantID, productID string) (string, error) {
+	fp, err := a.fpRepo.FindTopPriorityFunnel(ctx, tenantID, productID)
 	if err != nil {
 		return "", err
 	}

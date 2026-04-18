@@ -224,7 +224,7 @@ func (m *mockFunnelProductRepo) FindByFunnelID(_ context.Context, funnelID strin
 	return result, nil
 }
 
-func (m *mockFunnelProductRepo) FindTopPriorityFunnel(_ context.Context, productID string) (*domain.FunnelProduct, error) {
+func (m *mockFunnelProductRepo) FindTopPriorityFunnel(_ context.Context, _ string, productID string) (*domain.FunnelProduct, error) {
 	list := m.byProduct[productID]
 	if len(list) == 0 {
 		return nil, domain.ErrFunnelProductNotFound

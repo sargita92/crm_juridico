@@ -24,7 +24,10 @@ type FunnelProductRepository interface {
 	Delete(ctx context.Context, funnelID, productID string) error
 	FindByProductID(ctx context.Context, productID string) ([]FunnelProduct, error)
 	FindByFunnelID(ctx context.Context, funnelID string) ([]FunnelProduct, error)
-	FindTopPriorityFunnel(ctx context.Context, productID string) (*FunnelProduct, error)
+	// FindTopPriorityFunnel returns the funnel-product association with the
+	// highest priority for this product, restricted to funnels owned by the
+	// given tenant. Tenant-scoped to prevent cross-tenant leakage.
+	FindTopPriorityFunnel(ctx context.Context, tenantID, productID string) (*FunnelProduct, error)
 	UpdatePriority(ctx context.Context, funnelID, productID string, priority int) error
 }
 

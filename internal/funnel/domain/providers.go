@@ -37,7 +37,10 @@ type ProductProvider interface {
 }
 
 type FunnelProductRouter interface {
-	FindTopPriorityFunnelID(ctx context.Context, productID string) (funnelID string, err error)
+	// FindTopPriorityFunnelID returns the funnel for this product scoped to the
+	// given tenant. Cross-tenant leakage is not allowed: a funnel belonging to a
+	// different tenant must never be returned, even if it has a higher priority.
+	FindTopPriorityFunnelID(ctx context.Context, tenantID, productID string) (funnelID string, err error)
 }
 
 // ProductInfo is a lightweight product representation for UI dropdowns and badges.

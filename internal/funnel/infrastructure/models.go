@@ -39,8 +39,8 @@ type leadModel struct {
 	ColumnID          string `gorm:"column:column_id;type:char(36);not null"`
 	ContactID         string `gorm:"column:contact_id;type:char(36);not null"`
 	ConversationID    string `gorm:"column:conversation_id;type:char(36);not null"`
-	ProductID         string `gorm:"column:product_id;type:char(36)"`
-	ResponsibleUserID string `gorm:"column:responsible_user_id;type:char(36)"`
+	ProductID         *string `gorm:"column:product_id;type:char(36)"`
+	ResponsibleUserID *string `gorm:"column:responsible_user_id;type:char(36)"`
 	Score             int    `gorm:"column:score;type:int;not null;default:0"`
 	Status            string `gorm:"column:status;type:varchar(20);not null;default:'open'"`
 	ColumnEnteredAt   time.Time
@@ -53,7 +53,7 @@ func (leadModel) TableName() string { return "leads" }
 type leadMovementModel struct {
 	ID           string    `gorm:"primaryKey;column:id;type:char(36)"`
 	LeadID       string    `gorm:"column:lead_id;type:char(36);not null"`
-	FromColumnID string    `gorm:"column:from_column_id;type:char(36)"`
+	FromColumnID *string   `gorm:"column:from_column_id;type:char(36)"`
 	ToColumnID   string    `gorm:"column:to_column_id;type:char(36);not null"`
 	MovedAt      time.Time `gorm:"column:moved_at;not null"`
 }
@@ -126,14 +126,31 @@ func leadToModel(l *domain.Lead) *leadModel {
 		ColumnID:          l.ColumnID,
 		ContactID:         l.ContactID,
 		ConversationID:    l.ConversationID,
-		ProductID:         l.ProductID,
-		ResponsibleUserID: l.ResponsibleUserID,
+		ProductID:         nullableFKString(l.ProductID),
+		ResponsibleUserID: nullableFKString(l.ResponsibleUserID),
 		Score:             l.Score,
 		Status:            string(l.Status),
 		ColumnEnteredAt:   l.ColumnEnteredAt,
 		CreatedAt:         l.CreatedAt,
 		UpdatedAt:         l.UpdatedAt,
 	}
+}
+
+// nullableFKString returns nil for an empty string so GORM inserts SQL NULL,
+// which is required for char(36) FK columns — an empty string would violate
+// the constraint.
+func nullableFKString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func derefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
 }
 
 func leadToDomain(m *leadModel) *domain.Lead {
@@ -144,8 +161,8 @@ func leadToDomain(m *leadModel) *domain.Lead {
 		ColumnID:          m.ColumnID,
 		ContactID:         m.ContactID,
 		ConversationID:    m.ConversationID,
-		ProductID:         m.ProductID,
-		ResponsibleUserID: m.ResponsibleUserID,
+		ProductID:         derefString(m.ProductID),
+		ResponsibleUserID: derefString(m.ResponsibleUserID),
 		Score:             m.Score,
 		Status:            domain.LeadStatus(m.Status),
 		ColumnEnteredAt:   m.ColumnEnteredAt,
@@ -160,7 +177,7 @@ func movementToModel(m *domain.LeadMovement) *leadMovementModel {
 	return &leadMovementModel{
 		ID:           m.ID,
 		LeadID:       m.LeadID,
-		FromColumnID: m.FromColumnID,
+		FromColumnID: nullableFKString(m.FromColumnID),
 		ToColumnID:   m.ToColumnID,
 		MovedAt:      m.MovedAt,
 	}
@@ -170,7 +187,7 @@ func movementToDomain(m *leadMovementModel) *domain.LeadMovement {
 	return &domain.LeadMovement{
 		ID:           m.ID,
 		LeadID:       m.LeadID,
-		FromColumnID: m.FromColumnID,
+		FromColumnID: derefString(m.FromColumnID),
 		ToColumnID:   m.ToColumnID,
 		MovedAt:      m.MovedAt,
 	}

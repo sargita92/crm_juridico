@@ -67,7 +67,7 @@ func (m *owaspFPRepo) FindByProductID(_ context.Context, productID string) ([]do
 func (m *owaspFPRepo) FindByFunnelID(_ context.Context, funnelID string) ([]domain.FunnelProduct, error) {
 	return nil, nil
 }
-func (m *owaspFPRepo) FindTopPriorityFunnel(_ context.Context, productID string) (*domain.FunnelProduct, error) {
+func (m *owaspFPRepo) FindTopPriorityFunnel(_ context.Context, _ string, productID string) (*domain.FunnelProduct, error) {
 	return nil, domain.ErrFunnelProductNotFound
 }
 func (m *owaspFPRepo) UpdatePriority(_ context.Context, funnelID, productID string, priority int) error {
