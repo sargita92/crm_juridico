@@ -10,6 +10,12 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
 )
 
+// ErrPickerNotConfigured indicates the ResponsiblePicker was never wired into
+// the use case. This is a deployment/wiring bug — production flows must always
+// have a picker. Returning it here instead of panicking gives callers a
+// chance to surface the misconfiguration as a structured error.
+var ErrPickerNotConfigured = errors.New("responsible picker not configured")
+
 type CreateLeadInput struct {
 	TenantID       string
 	ContactID      string
@@ -120,6 +126,9 @@ func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput)
 	// Pick the responsible user before persisting the lead. If the picker
 	// fails (including ErrNoResponsibleAvailable), we abort lead creation
 	// entirely — no lead, no movement, no events.
+	if uc.picker == nil {
+		return ErrPickerNotConfigured
+	}
 	pick, err := uc.picker.PickForFunnel(ctx, input.TenantID, funnel.ID, entryCol.ID)
 	if err != nil {
 		return err
