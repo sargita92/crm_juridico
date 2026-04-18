@@ -241,3 +241,23 @@ func TestRenderPage_ExplicitAllTab(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+// ---------------------------------------------------------------------------
+// Task 8 — Route registration contract
+// ---------------------------------------------------------------------------
+
+func TestPageRoutes_RegisteredUnderTenantNotifications(t *testing.T) {
+	env := newPageEnv(t)
+
+	for _, path := range []string{
+		"/tenant/notifications",
+		"/tenant/notifications/list",
+		"/tenant/notifications/dropdown",
+		"/tenant/notifications/badge",
+	} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", path, nil)
+		env.router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code, "path %s should return 200", path)
+	}
+}

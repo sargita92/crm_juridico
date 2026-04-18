@@ -18,6 +18,7 @@ import (
 // Module wires up the notification domain.
 type Module struct {
 	handler       *notifhttp.Handler
+	pageHandler   *notifhttp.PageHandler
 	notifyService *application.NotifyService
 }
 
@@ -36,8 +37,9 @@ func NewModule(db *gorm.DB, eventBus events.EventBus, log *zap.Logger) *Module {
 	prefsUC := application.NewManagePreferencesUseCase(prefRepo)
 
 	// Renderer is nil here because templates haven't been parsed yet.
-	// Task 8 wires SetRenderer(...) after setupRouter completes.
+	// main.go calls SetRenderer(...) after setupRouter() completes.
 	handler := notifhttp.NewHandler(notifyService, listUC, markReadUC, prefsUC, eventBus, nil, log)
+	pageHandler := notifhttp.NewPageHandler(listUC, markReadUC, log)
 
 	// Subscribe to cross-module events that must produce user notifications.
 	// Requires a GlobalEventBus (cross-tenant). Busses that only support the
@@ -53,7 +55,7 @@ func NewModule(db *gorm.DB, eventBus events.EventBus, log *zap.Logger) *Module {
 		log.Info("notification: event bus does not support cross-tenant subscription; skipping lead-assigned listener")
 	}
 
-	return &Module{handler: handler, notifyService: notifyService}
+	return &Module{handler: handler, pageHandler: pageHandler, notifyService: notifyService}
 }
 
 // consumeResponsibleAssigned drains the global subscription channel and turns
@@ -107,9 +109,16 @@ func (m *Module) Name() string { return "notification" }
 // RegisterRoutes implements module.Module.
 func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.handler.RegisterRoutes(router, mw.Auth, mw.Tenant)
+	m.pageHandler.RegisterPageRoutes(router, mw.Auth, mw.Tenant)
 }
 
 // NotifyService exposes the NotifyService for cross-module use.
 func (m *Module) NotifyService() *application.NotifyService {
 	return m.notifyService
+}
+
+// SetRenderer injects the ToastRenderer after templates are parsed.
+// Called by main.go after setupRouter() completes.
+func (m *Module) SetRenderer(r *notifhttp.ToastRenderer) {
+	m.handler.SetRenderer(r)
 }

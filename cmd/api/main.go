@@ -235,7 +235,8 @@ func main() {
 		RequirePermission: requirePermMw,
 	}
 
-	router := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
+	router, tmpl := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
+	notificationMod.SetRenderer(notifhttp.NewToastRenderer(tmpl))
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -275,7 +276,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool) *gin.Engine {
+func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool) (*gin.Engine, *template.Template) {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -392,5 +393,5 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 		mod.RegisterRoutes(router, mw)
 	}
 
-	return router
+	return router, tmpl
 }

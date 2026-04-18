@@ -2,7 +2,7 @@ package http
 
 import "github.com/gin-gonic/gin"
 
-// RegisterRoutes attaches all notification routes to the given engine.
+// RegisterRoutes attaches the JSON/API notification routes.
 func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.HandlerFunc) {
 	notif := router.Group("/notifications")
 	notif.Use(authMw, tenantMw)
@@ -14,5 +14,17 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.Handle
 		notif.POST("/read-all", h.MarkAllRead)
 		notif.GET("/preferences", h.GetPreferences)
 		notif.PUT("/preferences", h.UpdatePreferences)
+	}
+}
+
+// RegisterPageRoutes attaches the HTML page routes under /tenant/notifications.
+func (p *PageHandler) RegisterPageRoutes(router *gin.Engine, authMw, tenantMw gin.HandlerFunc) {
+	pages := router.Group("/tenant/notifications")
+	pages.Use(authMw, tenantMw)
+	{
+		pages.GET("", p.RenderPage)
+		pages.GET("/list", p.RenderList)
+		pages.GET("/dropdown", p.RenderDropdown)
+		pages.GET("/badge", p.RenderBadge)
 	}
 }
