@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
+	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	funnelapp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
@@ -388,7 +390,29 @@ func (h *PageHandler) sectionViewProfiles(c *gin.Context) {
 		"Funnels": result,
 	})
 }
-func (h *PageHandler) sectionLoadBalance(c *gin.Context)  { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) sectionLoadBalance(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantID := middleware.GetTenantID(ctx)
+	groupID := c.Param("id")
+
+	cfg, err := h.loadBalanceUC.GetByGroup(ctx, tenantID, groupID)
+	algo := string(authdomain.AlgorithmRoundRobin)
+	active := false
+	if err == nil && cfg != nil {
+		algo = string(cfg.Algorithm)
+		active = cfg.Active
+	} else if err != nil && !errors.Is(err, authdomain.ErrLoadBalanceNotFound) && !errors.Is(err, authapp.ErrGroupNotInTenant) {
+		h.log.Error("failed to get load balance", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.HTML(http.StatusOK, "team/group_section_load_balance.html", gin.H{
+		"GroupID":   groupID,
+		"Algorithm": algo,
+		"Active":    active,
+	})
+}
 
 func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
@@ -450,4 +474,32 @@ func (h *PageHandler) SetViewProfileHTML(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 }
-func (h *PageHandler) SetLoadBalanceHTML(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
+func (h *PageHandler) SetLoadBalanceHTML(c *gin.Context) {
+	ctx := c.Request.Context()
+	tenantID := middleware.GetTenantID(ctx)
+	groupID := c.Param("id")
+
+	algorithm := c.PostForm("algorithm")
+	active := c.PostForm("active") == "true"
+
+	if _, err := h.loadBalanceUC.SetByGroup(ctx, authapp.SetLoadBalanceInput{
+		TenantID:  tenantID,
+		GroupID:   groupID,
+		Algorithm: authdomain.LoadBalanceAlgorithm(algorithm),
+		Active:    active,
+	}); err != nil {
+		if errors.Is(err, authdomain.ErrInvalidAlgorithm) {
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, authapp.ErrGroupNotInTenant) {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		h.log.Error("failed to set load balance", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}

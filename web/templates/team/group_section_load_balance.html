@@ -1,0 +1,32 @@
+{{define "team/group_section_load_balance.html"}}
+<h2>⚖️ Load Balance</h2>
+
+<form hx-post="/tenant/team/groups/{{.GroupID}}/load-balance"
+      hx-on::after-request="if(event.detail.successful){htmx.ajax('GET','/tenant/team/groups/{{.GroupID}}/section/load-balance',{target:event.target.closest('section'),swap:'innerHTML'});}">
+    <fieldset>
+        <legend>Algoritmo</legend>
+        <label style="display:block;margin:.5rem 0">
+            <input type="radio" name="algorithm" value="round_robin" {{if eq .Algorithm "round_robin"}}checked{{end}}>
+            <strong>Round-robin</strong> <span class="muted">— distribui em ordem circular</span>
+        </label>
+        <label style="display:block;margin:.5rem 0">
+            <input type="radio" name="algorithm" value="least_load" {{if eq .Algorithm "least_load"}}checked{{end}}>
+            <strong>Menor carga</strong> <span class="muted">— atribui para quem tem menos leads</span>
+        </label>
+        <label style="display:block;margin:.5rem 0">
+            <input type="radio" name="algorithm" value="random" {{if eq .Algorithm "random"}}checked{{end}}>
+            <strong>Aleatório</strong> <span class="muted">— sorteia</span>
+        </label>
+    </fieldset>
+
+    <label style="display:block;margin-top:1rem">
+        <input type="checkbox" name="active" value="true" {{if .Active}}checked{{end}}>
+        Balanceamento ativo
+    </label>
+    <p class="muted">Quando ativo, novos leads serão atribuídos automaticamente aos membros deste grupo.</p>
+
+    <div class="section-actions" style="margin-top:1rem">
+        <button class="btn btn-primary" type="submit">Salvar</button>
+    </div>
+</form>
+{{end}}
