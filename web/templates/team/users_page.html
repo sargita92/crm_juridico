@@ -1,3 +1,20 @@
 {{define "team/users_page.html"}}
-<div class="muted">Loading users...</div>
+<div class="admin-table-wrapper">
+    <div class="filters-bar">
+        <span class="muted">{{len .Users}} usuário(s)</span>
+        <button class="btn btn-primary"
+                hx-get="/tenant/team/invites/new-modal"
+                hx-target="#team-modal-body"
+                hx-swap="innerHTML"
+                onclick="document.getElementById('team-modal-title').textContent='Convidar Usuário';openModal('team-modal')">
+            + Convidar Usuário
+        </button>
+    </div>
+    <div id="users-block"
+         hx-get="/tenant/team/users/table"
+         hx-trigger="refreshTeam from:body"
+         hx-swap="innerHTML">
+        {{template "team/users_table.html" .}}
+    </div>
+</div>
 {{end}}

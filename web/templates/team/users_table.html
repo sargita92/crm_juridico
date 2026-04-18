@@ -1,0 +1,76 @@
+{{define "team/users_table.html"}}
+<table class="admin-table">
+    <thead>
+        <tr><th>Nome</th><th>Papel</th><th>Grupos</th><th>WhatsApp</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+        {{range .Users}}
+        <tr>
+            <td>
+                <div class="cell-primary">{{.Name}}</div>
+                <div class="cell-secondary muted">{{.Email}}</div>
+            </td>
+            <td>
+                {{if .IsOwner}}
+                    <span class="badge badge-gold">Owner</span>
+                {{else}}
+                    <span class="badge">Membro</span>
+                {{end}}
+            </td>
+            <td class="muted">—</td>
+            <td>
+                {{if .WhatsAppID}}{{.WhatsAppID}}{{else}}—{{end}}
+                <button class="btn-icon"
+                        hx-get="/tenant/team/users/{{.ID}}/whatsapp-modal"
+                        hx-target="#team-modal-body"
+                        onclick="document.getElementById('team-modal-title').textContent='Editar WhatsApp';openModal('team-modal')"
+                        title="Editar WhatsApp">✏️</button>
+            </td>
+            <td>
+                <button class="btn-icon"
+                        hx-get="/tenant/team/users/{{.ID}}/permissions-modal"
+                        hx-target="#team-modal-body"
+                        onclick="document.getElementById('team-modal-title').textContent='Permissões';openModal('team-modal')"
+                        title="Permissões">🔑</button>
+                {{if not .IsOwner}}
+                <button class="btn-icon"
+                        hx-delete="/tenant/users/{{.ID}}"
+                        hx-confirm="Remover este usuário do tenant?"
+                        hx-target="#users-block"
+                        hx-swap="innerHTML"
+                        title="Remover">🗑️</button>
+                {{end}}
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="5" class="empty-state">Convide seu primeiro membro.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+
+<h3 style="margin-top:2rem">Convites pendentes</h3>
+<table class="admin-table">
+    <thead>
+        <tr><th>Link</th><th>Expira em</th><th>Grupos</th><th>Ações</th></tr>
+    </thead>
+    <tbody>
+        {{range .Invites}}
+        <tr>
+            <td><input type="text" readonly value="/invite/{{.Token}}" onclick="this.select();document.execCommand('copy')"/></td>
+            <td>{{.ExpiresAt.Format "02/01/2006"}}</td>
+            <td>{{len .GroupIDs}} grupo(s)</td>
+            <td>
+                <button class="btn-icon"
+                        hx-delete="/tenant/invites/{{.ID}}"
+                        hx-confirm="Revogar este convite?"
+                        hx-target="#users-block"
+                        hx-get="/tenant/team/users/table"
+                        title="Revogar">🗑️</button>
+            </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="4" class="empty-state">Nenhum convite pendente.</td></tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}

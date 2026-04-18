@@ -87,8 +87,10 @@ func (m *Module) ManageUsersUseCase() *application.ManageUsersUseCase { return m
 // LoadBalanceUseCase exposes the manage-load-balance use case (used cross-module).
 func (m *Module) LoadBalanceUseCase() *application.ManageLoadBalanceUseCase { return m.loadBalanceUC }
 
-// AttachPermissionDeps wires cross-module permission use cases into the PageHandler.
-// Must be called after permission.NewModule and before RegisterRoutes.
+// AttachPermissionDeps wires the PageHandler with use cases from the permission module.
+// Must be called after NewModule and before RegisterRoutes — otherwise the /tenant/team/*
+// routes will be skipped. Calling twice will overwrite the previous PageHandler; the
+// wiring expects a single invocation from main.go.
 func (m *Module) AttachPermissionDeps(
 	listGroupsUC *permapp.ListGroupsUseCase,
 	manageUserPerms *permapp.ManagePermissionsUseCase,

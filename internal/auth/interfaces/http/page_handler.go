@@ -54,7 +54,11 @@ func (h *PageHandler) UsersPage(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	invites, _ := h.inviteUC.ListInvites(c.Request.Context(), tenantID)
+	invites, err := h.inviteUC.ListInvites(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Warn("failed to list invites", zap.Error(err))
+		invites = nil
+	}
 
 	c.HTML(http.StatusOK, "team/shell.html", gin.H{
 		"ActiveTab": "users",
@@ -65,7 +69,24 @@ func (h *PageHandler) UsersPage(c *gin.Context) {
 
 // --- Stubs (implemented in later tasks) ---
 
-func (h *PageHandler) UsersTable(c *gin.Context)             { c.Status(http.StatusNotImplemented) }
+// UsersTable renders only the users + invites table fragment (for HTMX refreshes).
+func (h *PageHandler) UsersTable(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+
+	users, err := h.manageUsers.ListTenantUsers(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to list users", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	invites, err := h.inviteUC.ListInvites(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Warn("failed to list invites", zap.Error(err))
+		invites = nil
+	}
+
+	c.HTML(http.StatusOK, "team/users_table.html", gin.H{"Users": users, "Invites": invites})
+}
 func (h *PageHandler) InviteNewModal(c *gin.Context)         { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) CreateInvite(c *gin.Context)           { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) UserPermissionsModal(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
