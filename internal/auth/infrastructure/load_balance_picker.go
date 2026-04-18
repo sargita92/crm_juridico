@@ -46,8 +46,76 @@ func NewLoadBalancePicker(
 
 // PickForFunnel implements ResponsiblePicker.
 func (p *LoadBalancePicker) PickForFunnel(ctx context.Context, tenantID, funnelID, columnID string) (funneldomain.PickResult, error) {
-	// Subsequent tasks will plug algorithm logic here. For now, always fall back.
-	return p.fallbackToOwner(ctx, tenantID, "no_group")
+	// 1. Find all groups associated with this funnel that cover the column.
+	groups, err := p.groupFunnelRepo.FindByFunnelID(ctx, funnelID)
+	if err != nil {
+		return p.fallbackToOwner(ctx, tenantID, "group_lookup_error")
+	}
+	covering := make([]permdomain.GroupFunnel, 0, len(groups))
+	for _, gf := range groups {
+		if gf.CoversColumn(columnID) {
+			covering = append(covering, gf)
+		}
+	}
+	if len(covering) == 0 {
+		return p.fallbackToOwner(ctx, tenantID, "no_group")
+	}
+
+	// 2. Filter to groups whose LoadBalanceConfig is ACTIVE.
+	type active struct {
+		groupID string
+		cfg     *authdomain.LoadBalanceConfig
+	}
+	var actives []active
+	for _, gf := range covering {
+		cfg, err := p.lbRepo.FindByGroupID(ctx, tenantID, gf.GroupID)
+		if err != nil {
+			if errors.Is(err, authdomain.ErrLoadBalanceNotFound) {
+				continue
+			}
+			return p.fallbackToOwner(ctx, tenantID, "lb_lookup_error")
+		}
+		if cfg != nil && cfg.Active {
+			actives = append(actives, active{gf.GroupID, cfg})
+		}
+	}
+	if len(actives) == 0 {
+		return p.fallbackToOwner(ctx, tenantID, "no_active_config")
+	}
+	if len(actives) > 1 {
+		p.log.Error("load_balance.pick multiple_active_groups — check uniqueness rule",
+			zap.String("tenant_id", tenantID), zap.String("funnel_id", funnelID), zap.String("column_id", columnID),
+		)
+		return p.fallbackToOwner(ctx, tenantID, "multiple_active_groups")
+	}
+
+	chosen := actives[0]
+
+	// 3. Fetch group members and filter to active tenant members.
+	ugs, err := p.userGroupRepo.FindByGroupID(ctx, chosen.groupID)
+	if err != nil {
+		return p.fallbackToOwner(ctx, tenantID, "member_lookup_error")
+	}
+	members := make([]string, 0, len(ugs))
+	for _, ug := range ugs {
+		if _, err := p.userTenantRepo.FindByUserAndTenant(ctx, ug.UserID, tenantID); err == nil {
+			members = append(members, ug.UserID)
+		}
+	}
+	if len(members) == 0 {
+		return p.fallbackToOwner(ctx, tenantID, "no_active_members")
+	}
+
+	// 4. Apply the algorithm. (Placeholder until Tasks 7-9: pick first.)
+	pickedUserID := members[0]
+	algorithm := string(chosen.cfg.Algorithm)
+
+	return funneldomain.PickResult{
+		UserID:    pickedUserID,
+		Algorithm: algorithm,
+		GroupID:   chosen.groupID,
+		Outcome:   funneldomain.PickOutcomePicked,
+	}, nil
 }
 
 func (p *LoadBalancePicker) fallbackToOwner(ctx context.Context, tenantID, reason string) (funneldomain.PickResult, error) {
@@ -73,6 +141,3 @@ func (p *LoadBalancePicker) fallbackToOwner(ctx context.Context, tenantID, reaso
 
 // sanity: ensure interface compliance at compile time
 var _ funneldomain.ResponsiblePicker = (*LoadBalancePicker)(nil)
-
-// stub to appease "unused" linter for errors until algorithm tasks use it
-var _ = errors.New

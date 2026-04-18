@@ -155,3 +155,111 @@ func TestLoadBalancePicker_HardError_WhenNoOwnerExists(t *testing.T) {
 
 	require.ErrorIs(t, err, funneldomain.ErrNoResponsibleAvailable)
 }
+
+func TestLoadBalancePicker_PicksMemberWhenSingleActiveGroup(t *testing.T) {
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
+			"f1": {{ID: "gf1", GroupID: "g1", FunnelID: "f1", ColumnIDs: nil}}, // covers entire funnel
+		}},
+		&fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{
+			"g1": {ID: "lb1", TenantID: "t1", GroupID: "g1", Algorithm: authdomain.AlgorithmRandom, Active: true},
+		}},
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{
+			"g1": {{UserID: "u-member-1", GroupID: "g1"}},
+		}},
+		&fakeUserTenantRepo{
+			ownerByTenant: map[string]string{"t1": "owner-1"},
+			memberActive:  map[string]bool{"u-member-1": true},
+		},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	got, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+
+	require.NoError(t, err)
+	require.Equal(t, funneldomain.PickOutcomePicked, got.Outcome)
+	require.Equal(t, "u-member-1", got.UserID)
+	require.Equal(t, "g1", got.GroupID)
+}
+
+func TestLoadBalancePicker_FallbackWhenMultipleActiveGroupsCoverColumn(t *testing.T) {
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
+			"f1": {
+				{ID: "gf1", GroupID: "g1", FunnelID: "f1"},
+				{ID: "gf2", GroupID: "g2", FunnelID: "f1"},
+			},
+		}},
+		&fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{
+			"g1": {ID: "lb1", TenantID: "t1", GroupID: "g1", Algorithm: authdomain.AlgorithmRandom, Active: true},
+			"g2": {ID: "lb2", TenantID: "t1", GroupID: "g2", Algorithm: authdomain.AlgorithmRandom, Active: true},
+		}},
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{
+			"g1": {{UserID: "u1"}}, "g2": {{UserID: "u2"}},
+		}},
+		&fakeUserTenantRepo{
+			ownerByTenant: map[string]string{"t1": "owner-1"},
+			memberActive:  map[string]bool{"u1": true, "u2": true},
+		},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	got, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+
+	require.NoError(t, err)
+	require.Equal(t, funneldomain.PickOutcomeFallbackOwner, got.Outcome)
+	require.Equal(t, "owner-1", got.UserID)
+}
+
+func TestLoadBalancePicker_FallbackWhenGroupHasNoActiveMembers(t *testing.T) {
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
+			"f1": {{ID: "gf1", GroupID: "g1", FunnelID: "f1"}},
+		}},
+		&fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{
+			"g1": {ID: "lb1", TenantID: "t1", GroupID: "g1", Algorithm: authdomain.AlgorithmRandom, Active: true},
+		}},
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{
+			"g1": {{UserID: "u-gone", GroupID: "g1"}},
+		}},
+		&fakeUserTenantRepo{
+			ownerByTenant: map[string]string{"t1": "owner-1"},
+			memberActive:  map[string]bool{}, // u-gone is no longer a tenant member
+		},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	got, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+
+	require.NoError(t, err)
+	require.Equal(t, funneldomain.PickOutcomeFallbackOwner, got.Outcome)
+	require.Equal(t, "owner-1", got.UserID)
+}
+
+func TestLoadBalancePicker_FallbackWhenConfigInactive(t *testing.T) {
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
+			"f1": {{ID: "gf1", GroupID: "g1", FunnelID: "f1"}},
+		}},
+		&fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{
+			"g1": {ID: "lb1", TenantID: "t1", GroupID: "g1", Algorithm: authdomain.AlgorithmRandom, Active: false},
+		}},
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{
+			"g1": {{UserID: "u1", GroupID: "g1"}},
+		}},
+		&fakeUserTenantRepo{
+			ownerByTenant: map[string]string{"t1": "owner-1"},
+			memberActive:  map[string]bool{"u1": true},
+		},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	got, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+
+	require.NoError(t, err)
+	require.Equal(t, funneldomain.PickOutcomeFallbackOwner, got.Outcome)
+}
