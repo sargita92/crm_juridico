@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -87,8 +88,56 @@ func (h *PageHandler) UsersTable(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "team/users_table.html", gin.H{"Users": users, "Invites": invites})
 }
-func (h *PageHandler) InviteNewModal(c *gin.Context)         { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) CreateInvite(c *gin.Context)           { c.Status(http.StatusNotImplemented) }
+
+// InviteNewModal renders the "Convidar Usuário" modal with the list of groups.
+func (h *PageHandler) InviteNewModal(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+
+	groups, err := h.listGroupsUC.Execute(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to list groups for invite modal", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.HTML(http.StatusOK, "team/invite_new_modal.html", gin.H{"Groups": groups})
+}
+
+// CreateInvite handles POST /tenant/team/invites — form submission from the modal.
+func (h *PageHandler) CreateInvite(c *gin.Context) {
+	claims := middleware.GetClaims(c.Request.Context())
+	tenantID := middleware.GetTenantID(c.Request.Context())
+
+	if claims == nil {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	groupIDs := c.PostFormArray("group_ids")
+	days := 7
+	if n, err := strconv.Atoi(c.PostForm("expires_in_days")); err == nil && n > 0 {
+		days = n
+	}
+
+	out, err := h.inviteUC.GenerateInvite(c.Request.Context(), tenantID, claims.UserID, groupIDs, days)
+	if err != nil {
+		h.log.Error("failed to generate invite", zap.Error(err))
+		c.HTML(http.StatusInternalServerError, "team/invite_new_modal.html", gin.H{
+			"Error":  "Falha ao gerar convite",
+			"Groups": nil,
+		})
+		return
+	}
+
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	}
+	inviteURL := scheme + "://" + c.Request.Host + "/invite/" + out.Token
+
+	c.HTML(http.StatusOK, "team/invite_success.html", gin.H{"InviteURL": inviteURL})
+}
+
 func (h *PageHandler) UserPermissionsModal(c *gin.Context)   { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) SetUserPermissionsHTML(c *gin.Context) { c.Status(http.StatusNotImplemented) }
 func (h *PageHandler) UserWhatsAppModal(c *gin.Context)      { c.Status(http.StatusNotImplemented) }

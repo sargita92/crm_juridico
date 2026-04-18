@@ -1,0 +1,11 @@
+{{define "team/invite_success.html"}}
+<div>
+    <p style="margin-bottom: 1rem; color: #4a5568;">Convite gerado. Envie o link ao convidado:</p>
+    <input type="text" readonly value="{{.InviteURL}}"
+           onclick="this.select();document.execCommand('copy')"
+           style="width: 100%; padding: 0.7rem 1rem; font-size: 0.9rem; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #f8fafc; color: #1a202c; margin-bottom: 1.5rem; cursor: pointer;">
+    <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeModal('team-modal');htmx.trigger(document.body,'refreshTeam')" style="width: auto; padding: 0.6rem 1.25rem; font-size: 0.9rem;">Fechar</button>
+    </div>
+</div>
+{{end}}
