@@ -66,6 +66,7 @@ func newPageEnv(t *testing.T) *pageEnv {
 	pages := router.Group("/tenant/notifications")
 	pages.GET("/badge", handler.RenderBadge)
 	pages.GET("/dropdown", handler.RenderDropdown)
+	pages.GET("/list", handler.RenderList)
 
 	return &pageEnv{router: router, handler: handler, repo: repo}
 }
@@ -151,4 +152,67 @@ func TestRenderDropdown_IsolatesPerUser(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.NotContains(t, w.Body.String(), "n-other")
 	assert.NotContains(t, w.Body.String(), "Privada")
+}
+
+// ---------------------------------------------------------------------------
+// Task 6 — RenderList
+// ---------------------------------------------------------------------------
+
+func TestRenderList_UnreadFilter(t *testing.T) {
+	env := newPageEnv(t)
+	// 3 unread + 2 read
+	for i := 0; i < 3; i++ {
+		n, _ := domain.NewNotification(uid(i), testTenantID, testUserID, domain.TypeLeadAssigned, "U", "", nil)
+		env.seed(t, n)
+	}
+	for i := 3; i < 5; i++ {
+		n, _ := domain.NewNotification(uid(i), testTenantID, testUserID, domain.TypeLeadMoved, "R", "", nil)
+		n.MarkRead()
+		env.seed(t, n)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications/list?filter=unread", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRenderList_AllFilter(t *testing.T) {
+	env := newPageEnv(t)
+	n1, _ := domain.NewNotification("n-1", testTenantID, testUserID, domain.TypeLeadAssigned, "t", "", nil)
+	n2, _ := domain.NewNotification("n-2", testTenantID, testUserID, domain.TypeLeadMoved, "t", "", nil)
+	n2.MarkRead()
+	env.seed(t, n1)
+	env.seed(t, n2)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications/list?filter=all", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRenderList_Pagination(t *testing.T) {
+	env := newPageEnv(t)
+	for i := 0; i < 25; i++ {
+		n, _ := domain.NewNotification(uid(i), testTenantID, testUserID, domain.TypeLeadAssigned, "t", "", nil)
+		env.seed(t, n)
+	}
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications/list?filter=all&limit=10&offset=20", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRenderList_InvalidLimitDefaults(t *testing.T) {
+	env := newPageEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications/list?limit=abc&offset=xyz", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
 }

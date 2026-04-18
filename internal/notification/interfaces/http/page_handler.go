@@ -2,12 +2,18 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
+)
+
+const (
+	defaultPageLimit = 20
+	maxPageLimit     = 100
 )
 
 // PageHandler serves HTML pages and fragments for the notification UI.
@@ -71,4 +77,61 @@ func (h *PageHandler) RenderDropdown(c *gin.Context) {
 		"Items":       items,
 		"UnreadCount": unread,
 	})
+}
+
+// RenderList returns the notifications list fragment (tab content + pagination)
+// for the authenticated user. Query: ?filter=unread|all&limit=20&offset=0
+func (h *PageHandler) RenderList(c *gin.Context) {
+	claims := middleware.GetClaims(c.Request.Context())
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	if claims == nil {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	filter := c.DefaultQuery("filter", "unread")
+	onlyUnread := filter == "unread"
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = defaultPageLimit
+	}
+	if limit > maxPageLimit {
+		limit = maxPageLimit
+	}
+	offset, err := strconv.Atoi(c.Query("offset"))
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
+	// Fetch one extra to know if there's a next page.
+	items, err := h.listUC.Execute(c.Request.Context(), tenantID, claims.UserID, onlyUnread, limit+1, offset)
+	if err != nil {
+		h.log.Error("page: list", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	hasMore := len(items) > limit
+	if hasMore {
+		items = items[:limit]
+	}
+
+	c.HTML(http.StatusOK, "notification/list_items.html", gin.H{
+		"Items":      items,
+		"Filter":     filter,
+		"Limit":      limit,
+		"Offset":     offset,
+		"HasMore":    hasMore,
+		"HasPrev":    offset > 0,
+		"NextOffset": offset + limit,
+		"PrevOffset": maxZero(offset - limit),
+	})
+}
+
+func maxZero(v int) int {
+	if v < 0 {
+		return 0
+	}
+	return v
 }
