@@ -1,0 +1,11 @@
+{{define "team/user_whatsapp_modal.html"}}
+<form hx-post="/tenant/team/users/{{.UserID}}/whatsapp" hx-target="#team-modal-body" hx-swap="innerHTML">
+    <label>WhatsApp ID</label>
+    <input type="text" name="whatsapp_id" value="{{.Current}}" placeholder="5511999999999" required>
+    <p class="muted">Apenas dígitos (código do país + DDD + número).</p>
+    <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal('team-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+</form>
+{{end}}

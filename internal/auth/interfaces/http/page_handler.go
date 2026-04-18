@@ -216,5 +216,49 @@ func (h *PageHandler) SetUserPermissionsHTML(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (h *PageHandler) UserWhatsAppModal(c *gin.Context)      { c.Status(http.StatusNotImplemented) }
-func (h *PageHandler) SetUserWhatsApp(c *gin.Context)        { c.Status(http.StatusNotImplemented) }
+// UserWhatsAppModal renders the WhatsApp-edit modal for a given user.
+func (h *PageHandler) UserWhatsAppModal(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	userID := c.Param("id")
+
+	users, err := h.manageUsers.ListTenantUsers(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Error("failed to list users for whatsapp modal", zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	var current string
+	for _, u := range users {
+		if u.ID == userID {
+			current = u.WhatsAppID
+			break
+		}
+	}
+
+	c.HTML(http.StatusOK, "team/user_whatsapp_modal.html", gin.H{
+		"UserID":  userID,
+		"Current": current,
+	})
+}
+
+// SetUserWhatsApp handles POST /tenant/team/users/:id/whatsapp.
+func (h *PageHandler) SetUserWhatsApp(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	userID := c.Param("id")
+
+	wid := strings.TrimSpace(c.PostForm("whatsapp_id"))
+	if wid == "" {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	if err := h.manageUsers.SetWhatsAppID(c.Request.Context(), userID, tenantID, wid); err != nil {
+		h.log.Error("failed to set whatsapp id", zap.Error(err))
+		c.Status(http.StatusUnprocessableEntity)
+		return
+	}
+
+	c.Header("HX-Trigger", "refreshTeam")
+	c.Status(http.StatusNoContent)
+}
