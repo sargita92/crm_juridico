@@ -229,6 +229,66 @@ func TestMemoryEventBus_EventTypes(t *testing.T) {
 	assert.Equal(t, EventConversationUpdate, ev2.Type)
 }
 
+func TestMemoryEventBus_SubscribeAll_ReceivesFromAllTenants(t *testing.T) {
+	bus := NewMemoryEventBus()
+	ch, cleanup := bus.SubscribeAll()
+	defer cleanup()
+
+	bus.Publish(Event{Type: EventNewMessage, TenantID: "tenant-a", Payload: "A"})
+	bus.Publish(Event{Type: EventNewMessage, TenantID: "tenant-b", Payload: "B"})
+
+	received := make(map[string]bool)
+	timeout := time.After(time.Second)
+	for len(received) < 2 {
+		select {
+		case ev := <-ch:
+			received[ev.TenantID] = true
+		case <-timeout:
+			t.Fatalf("timeout waiting for events; received: %v", received)
+		}
+	}
+	assert.True(t, received["tenant-a"])
+	assert.True(t, received["tenant-b"])
+}
+
+func TestMemoryEventBus_SubscribeAll_FanOutWithTenantSubscribers(t *testing.T) {
+	bus := NewMemoryEventBus()
+	tenantCh, cleanupTenant := bus.Subscribe("tenant-1")
+	defer cleanupTenant()
+	globalCh, cleanupGlobal := bus.SubscribeAll()
+	defer cleanupGlobal()
+
+	bus.Publish(Event{Type: EventNewMessage, TenantID: "tenant-1", Payload: "msg"})
+
+	select {
+	case ev := <-tenantCh:
+		assert.Equal(t, "msg", ev.Payload)
+	case <-time.After(time.Second):
+		t.Fatal("timeout on tenant subscriber")
+	}
+
+	select {
+	case ev := <-globalCh:
+		assert.Equal(t, "msg", ev.Payload)
+		assert.Equal(t, "tenant-1", ev.TenantID)
+	case <-time.After(time.Second):
+		t.Fatal("timeout on global subscriber")
+	}
+}
+
+func TestMemoryEventBus_SubscribeAll_CleanupClosesChannel(t *testing.T) {
+	bus := NewMemoryEventBus()
+	ch, cleanup := bus.SubscribeAll()
+	cleanup()
+
+	_, ok := <-ch
+	assert.False(t, ok, "global channel should be closed after cleanup")
+
+	bus.mu.RLock()
+	assert.Empty(t, bus.globalSubscribers, "cleanup should remove the global subscriber")
+	bus.mu.RUnlock()
+}
+
 func TestMemoryEventBus_CleanupOneOfMany(t *testing.T) {
 	bus := NewMemoryEventBus()
 	ch1, cleanup1 := bus.Subscribe("tenant-1")

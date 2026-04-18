@@ -31,3 +31,16 @@ type EventBus interface {
 	Publish(event Event)
 	Subscribe(tenantID string) (<-chan Event, func())
 }
+
+// GlobalEventBus extends EventBus with a cross-tenant subscription.
+//
+// Consumers that must react to events from all tenants (e.g. notification
+// listeners) can type-assert an EventBus to GlobalEventBus and call
+// SubscribeAll. Implementations that do not support global subscription
+// simply do not satisfy this interface.
+type GlobalEventBus interface {
+	EventBus
+	// SubscribeAll returns a channel that receives events from all tenants.
+	// The returned cleanup function must be invoked to release resources.
+	SubscribeAll() (<-chan Event, func())
+}
