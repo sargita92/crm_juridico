@@ -135,7 +135,21 @@ func (p *LoadBalancePicker) applyAlgorithm(ctx context.Context, tenantID string,
 		}
 		return picked, nil
 	case authdomain.AlgorithmLeastLoad:
-		return members[0], nil // placeholder — Task 8
+		// Tiebreak: deterministic via the lexicographic sort applied to members.
+		// A strictly-by-user.created_at tiebreak would require an extra query per pick;
+		// stability is what matters for fairness over time, not the exact ordering key.
+		counts, err := p.loadCounter.CountActiveByUsers(ctx, tenantID, members)
+		if err != nil {
+			return "", err
+		}
+		best := members[0]
+		bestLoad := counts[best] // absent = 0
+		for _, uid := range members[1:] {
+			if counts[uid] < bestLoad {
+				best, bestLoad = uid, counts[uid]
+			}
+		}
+		return best, nil
 	case authdomain.AlgorithmRandom:
 		return members[0], nil // placeholder — Task 9
 	default:
