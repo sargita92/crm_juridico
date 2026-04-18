@@ -112,12 +112,37 @@ func (h *Handler) RenderKanbanPage(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "funnel/kanban.html", gin.H{
-		"CurrentFunnelID": currentFunnelID,
-		"Funnels":         funnels,
-		"Products":        products,
+		"CurrentFunnelID":  currentFunnelID,
+		"Funnels":          funnels,
+		"Products":         products,
 		"CurrentProductID": c.Query("product_id"),
-		"ActiveNav":       "leads",
+		"ActiveNav":        "leads",
+		"OpenLeadID":       h.resolveOpenLeadID(c, tenantID),
 	})
+}
+
+// resolveOpenLeadID validates that the lead exists and belongs to the tenant.
+// On any mismatch/error it returns an empty string — the caller renders the
+// page without the drawer loader. We do NOT 404 to avoid a timing oracle
+// that would let attackers probe lead IDs across tenants.
+func (h *Handler) resolveOpenLeadID(c *gin.Context, tenantID string) string {
+	id := c.Query("open")
+	if id == "" {
+		return ""
+	}
+	_, err := h.getLeadDetailUC.Execute(c.Request.Context(), application.GetLeadDetailInput{
+		TenantID: tenantID,
+		LeadID:   id,
+	})
+	if err != nil {
+		h.log.Warn("kanban open query ignored",
+			zap.String("lead_id", id),
+			zap.String("tenant_id", tenantID),
+			zap.Error(err),
+		)
+		return ""
+	}
+	return id
 }
 
 func (h *Handler) RenderKanbanContent(c *gin.Context) {

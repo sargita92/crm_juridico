@@ -291,7 +291,7 @@ func setupOwaspEnv() *owaspEnv {
 
 	tmpl := template.New("")
 	for _, name := range []string{
-		"funnel/kanban.html", "funnel/kanban_content.html",
+		"funnel/kanban_content.html",
 		"funnel/lead_drawer.html", "funnel/lead_notes_section.html",
 		"funnel/lead_move.html", "funnel/funnel_list.html",
 		"funnel/funnel_detail.html", "funnel/funnel_form.html",
@@ -300,6 +300,8 @@ func setupOwaspEnv() *owaspEnv {
 	} {
 		template.Must(tmpl.New(name).Parse("ok"))
 	}
+	// kanban.html stub renders OpenLeadID so deep-link tests can assert on it.
+	template.Must(tmpl.New("funnel/kanban.html").Parse("ok{{if .OpenLeadID}} open:{{.OpenLeadID}}{{end}}"))
 	router.SetHTMLTemplate(tmpl)
 
 	jwtProvider := authinfra.NewJWTProvider("test-secret-owasp", 24*time.Hour)

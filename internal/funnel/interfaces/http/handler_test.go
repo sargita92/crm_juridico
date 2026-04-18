@@ -672,3 +672,39 @@ func TestHandleSetLeadProduct_WrongTenant_Returns404(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// ---------- Kanban deep-link (?open=<lead_id>) ----------
+
+func TestKanban_OpenQueryParam_ValidLead(t *testing.T) {
+	env := setupOwaspEnv()
+	f, cols := seedFunnelWithColumns(t, env, "tenant-1", "F", true)
+	lead := seedLead(t, env, "tenant-1", f.ID, cols[0].ID)
+
+	token := env.tenantToken(t, "tenant-1")
+	w := doReq(env, http.MethodGet, "/tenant/leads?open="+lead.ID, token, nil, "")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "open:"+lead.ID)
+}
+
+func TestKanban_OpenQueryParam_InvalidLeadIgnored(t *testing.T) {
+	env := setupOwaspEnv()
+	token := env.tenantToken(t, "tenant-1")
+
+	w := doReq(env, http.MethodGet, "/tenant/leads?open=nonexistent-id", token, nil, "")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotContains(t, w.Body.String(), "nonexistent-id")
+}
+
+func TestKanban_OpenQueryParam_CrossTenantIgnored(t *testing.T) {
+	env := setupOwaspEnv()
+	f, cols := seedFunnelWithColumns(t, env, "other-tenant", "F", true)
+	otherLead := seedLead(t, env, "other-tenant", f.ID, cols[0].ID)
+
+	token := env.tenantToken(t, "tenant-1")
+	w := doReq(env, http.MethodGet, "/tenant/leads?open="+otherLead.ID, token, nil, "")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotContains(t, w.Body.String(), otherLead.ID)
+}

@@ -65,6 +65,14 @@
         </div>
     </main>
 </div>
+{{if .OpenLeadID}}
+<div id="open-lead-loader"
+     hx-get="/tenant/leads/{{.OpenLeadID}}"
+     hx-trigger="load"
+     hx-target="#lead-modal"
+     hx-swap="innerHTML"
+     style="display:none"></div>
+{{end}}
 <div id="lead-modal"></div>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="/static/js/kanban.js"></script>
