@@ -1,0 +1,157 @@
+package infrastructure_test
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
+	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
+	"github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
+	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	permdomain "github.com/sasrgita/crm-juridico/internal/permission/domain"
+)
+
+// --- fakes ---------------------------------------------------------------
+
+type fakeGroupFunnelRepo struct {
+	byFunnel map[string][]permdomain.GroupFunnel
+}
+
+func (f *fakeGroupFunnelRepo) FindByFunnelID(_ context.Context, funnelID string) ([]permdomain.GroupFunnel, error) {
+	return f.byFunnel[funnelID], nil
+}
+func (f *fakeGroupFunnelRepo) CreateOrUpdate(context.Context, *permdomain.GroupFunnel) error {
+	return nil
+}
+func (f *fakeGroupFunnelRepo) FindByGroupID(context.Context, string) ([]permdomain.GroupFunnel, error) {
+	return nil, nil
+}
+func (f *fakeGroupFunnelRepo) FindByFunnelAndColumn(context.Context, string, string) ([]permdomain.GroupFunnel, error) {
+	return nil, nil
+}
+func (f *fakeGroupFunnelRepo) Delete(context.Context, string, string) error { return nil }
+
+type fakeLoadBalanceRepo struct {
+	byGroup     map[string]*authdomain.LoadBalanceConfig
+	updateErr   error
+	lastUpdated *authdomain.LoadBalanceConfig
+}
+
+func (f *fakeLoadBalanceRepo) FindByGroupID(_ context.Context, _, groupID string) (*authdomain.LoadBalanceConfig, error) {
+	if cfg, ok := f.byGroup[groupID]; ok {
+		return cfg, nil
+	}
+	return nil, authdomain.ErrLoadBalanceNotFound
+}
+func (f *fakeLoadBalanceRepo) CreateOrUpdate(context.Context, *authdomain.LoadBalanceConfig) error {
+	return nil
+}
+func (f *fakeLoadBalanceRepo) FindByTenantID(context.Context, string) ([]*authdomain.LoadBalanceConfig, error) {
+	return nil, nil
+}
+func (f *fakeLoadBalanceRepo) Update(_ context.Context, cfg *authdomain.LoadBalanceConfig) error {
+	f.lastUpdated = cfg
+	return f.updateErr
+}
+
+type fakeUserGroupRepo struct {
+	byGroup map[string][]permdomain.UserGroup
+}
+
+func (f *fakeUserGroupRepo) FindByGroupID(_ context.Context, gid string) ([]permdomain.UserGroup, error) {
+	return f.byGroup[gid], nil
+}
+func (f *fakeUserGroupRepo) Create(context.Context, *permdomain.UserGroup) error { return nil }
+func (f *fakeUserGroupRepo) Delete(context.Context, string, string) error       { return nil }
+func (f *fakeUserGroupRepo) FindByUserAndTenant(context.Context, string, string) ([]permdomain.UserGroup, error) {
+	return nil, nil
+}
+func (f *fakeUserGroupRepo) Exists(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+
+type fakeUserTenantRepo struct {
+	ownerByTenant map[string]string
+	memberActive  map[string]bool
+}
+
+func (f *fakeUserTenantRepo) FindByTenantID(_ context.Context, tenantID string) ([]*authdomain.UserTenant, error) {
+	owner := f.ownerByTenant[tenantID]
+	if owner == "" {
+		return []*authdomain.UserTenant{}, nil
+	}
+	return []*authdomain.UserTenant{{UserID: owner, TenantID: tenantID, IsOwner: true}}, nil
+}
+func (f *fakeUserTenantRepo) FindByUserAndTenant(_ context.Context, uid, tid string) (*authdomain.UserTenant, error) {
+	if f.memberActive == nil {
+		return &authdomain.UserTenant{UserID: uid, TenantID: tid}, nil
+	}
+	if _, ok := f.memberActive[uid]; !ok {
+		return nil, errors.New("not a member")
+	}
+	return &authdomain.UserTenant{UserID: uid, TenantID: tid}, nil
+}
+
+// stubs for unused methods
+func (f *fakeUserTenantRepo) Associate(context.Context, string, string) error { return nil }
+func (f *fakeUserTenantRepo) FindTenantIDsByUserID(context.Context, string) ([]string, error) {
+	return nil, nil
+}
+func (f *fakeUserTenantRepo) UpdateIsOwner(context.Context, string, string, bool) error { return nil }
+func (f *fakeUserTenantRepo) UpdateWhatsAppID(context.Context, string, string, string) error {
+	return nil
+}
+func (f *fakeUserTenantRepo) RemoveFromTenant(context.Context, string, string) error { return nil }
+func (f *fakeUserTenantRepo) IsOwner(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+
+type fakeLoadCounter struct {
+	counts map[string]int
+}
+
+func (f *fakeLoadCounter) CountActiveByUsers(context.Context, string, []string) (map[string]int, error) {
+	if f.counts == nil {
+		return map[string]int{}, nil
+	}
+	return f.counts, nil
+}
+
+// --- test ----------------------------------------------------------------
+
+func TestLoadBalancePicker_FallbackToOwner_WhenNoGroupCoversColumn(t *testing.T) {
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{}}, // no groups
+		&fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{}},
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{}},
+		&fakeUserTenantRepo{ownerByTenant: map[string]string{"t1": "owner-1"}},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	got, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+
+	require.NoError(t, err)
+	require.Equal(t, funneldomain.PickResult{
+		UserID:  "owner-1",
+		Outcome: funneldomain.PickOutcomeFallbackOwner,
+	}, got)
+}
+
+func TestLoadBalancePicker_HardError_WhenNoOwnerExists(t *testing.T) {
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{},
+		&fakeLoadBalanceRepo{},
+		&fakeUserGroupRepo{},
+		&fakeUserTenantRepo{ownerByTenant: map[string]string{}}, // no owner for t1
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	_, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+
+	require.ErrorIs(t, err, funneldomain.ErrNoResponsibleAvailable)
+}
