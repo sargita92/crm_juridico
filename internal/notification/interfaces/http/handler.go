@@ -1,12 +1,11 @@
 package http
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/application"
@@ -15,14 +14,27 @@ import (
 	events "github.com/sasrgita/crm-juridico/internal/shared/events"
 )
 
+// Temporary metric stub — replaced by infrastructure/metrics.go in Task 18.
+var sseActiveStreams = prometheus.NewGauge(prometheus.GaugeOpts{
+	Namespace: "crm",
+	Subsystem: "notifications",
+	Name:      "sse_active_streams",
+	Help:      "Number of currently open SSE notification streams.",
+})
+
+func init() {
+	prometheus.MustRegister(sseActiveStreams)
+}
+
 // Handler holds all notification use cases and the event bus for SSE.
 type Handler struct {
-	notifySvc      *application.NotifyService
-	listUC         *application.ListNotificationsUseCase
-	markReadUC     *application.MarkReadUseCase
-	preferencesUC  *application.ManagePreferencesUseCase
-	eventBus       events.EventBus
-	log            *zap.Logger
+	notifySvc     *application.NotifyService
+	listUC        *application.ListNotificationsUseCase
+	markReadUC    *application.MarkReadUseCase
+	preferencesUC *application.ManagePreferencesUseCase
+	eventBus      events.EventBus
+	renderer      *ToastRenderer
+	log           *zap.Logger
 }
 
 // NewHandler builds a notification Handler.
@@ -32,6 +44,7 @@ func NewHandler(
 	markReadUC *application.MarkReadUseCase,
 	preferencesUC *application.ManagePreferencesUseCase,
 	eventBus events.EventBus,
+	renderer *ToastRenderer,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
@@ -40,14 +53,26 @@ func NewHandler(
 		markReadUC:    markReadUC,
 		preferencesUC: preferencesUC,
 		eventBus:      eventBus,
+		renderer:      renderer,
 		log:           log,
 	}
 }
 
+// SetRenderer allows late-binding injection of the renderer after the router's
+// template set has been parsed. Required because the module is constructed
+// before `setupRouter` parses templates.
+func (h *Handler) SetRenderer(r *ToastRenderer) { h.renderer = r }
+
 // StreamNotifications opens a Server-Sent Events stream for the authenticated user.
+// Each event is delivered as an HTML fragment: the toast markup plus an OOB
+// swap that refreshes the unread-count badge.
 func (h *Handler) StreamNotifications(c *gin.Context) {
 	claims := middleware.GetClaims(c.Request.Context())
 	tenantID := middleware.GetTenantID(c.Request.Context())
+	if claims == nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "authentication required"})
+		return
+	}
 
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -56,35 +81,56 @@ func (h *Handler) StreamNotifications(c *gin.Context) {
 	ch, cleanup := h.eventBus.Subscribe(tenantID)
 	defer cleanup()
 
-	c.Stream(func(w io.Writer) bool {
+	sseActiveStreams.Inc()
+	defer sseActiveStreams.Dec()
+
+	// Note: c.Stream is intentionally avoided here because gin v1.12.0's
+	// c.Stream calls w.CloseNotify() unconditionally, which panics when the
+	// underlying ResponseWriter is *httptest.ResponseRecorder (no CloseNotifier).
+	// c.SSEvent itself does not call CloseNotify and is safe to use directly.
+	flusher, canFlush := c.Writer.(http.Flusher)
+
+	for {
 		select {
 		case event := <-ch:
 			if event.Type != events.EventNotification {
-				return true
+				continue
 			}
 			notif, ok := event.Payload.(*domain.Notification)
 			if !ok {
-				return true
+				continue
 			}
-			if claims == nil || notif.UserID != claims.UserID {
-				return true
+			if notif.UserID != claims.UserID {
+				continue
 			}
-			data, err := json.Marshal(map[string]interface{}{
-				"id":       notif.ID,
-				"type":     notif.Type,
-				"title":    notif.Title,
-				"body":     notif.Body,
-				"metadata": notif.Metadata,
-			})
+			if h.renderer == nil {
+				h.log.Warn("sse: renderer not set; skipping event")
+				continue
+			}
+
+			count, err := h.listUC.CountUnread(c.Request.Context(), tenantID, claims.UserID)
 			if err != nil {
-				return true
+				h.log.Warn("sse count unread failed", zap.Error(err))
+				count = 0
 			}
-			c.SSEvent("notification", string(data))
-			return true
+
+			fragment, err := h.renderer.Render(notif, count)
+			if err != nil {
+				h.log.Error("sse render failed", zap.Error(err))
+				continue
+			}
+
+			// c.SSEvent uses gin-contrib/sse which correctly prefixes every
+			// line of a multi-line data value with "data:", per the SSE spec.
+			c.SSEvent("notification", fragment)
+			if canFlush {
+				flusher.Flush()
+			}
+
 		case <-c.Request.Context().Done():
-			return false
+			return
 		}
-	})
+	}
 }
 
 // ListNotifications returns paginated notifications for the authenticated user.

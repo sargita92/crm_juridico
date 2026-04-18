@@ -35,7 +35,9 @@ func NewModule(db *gorm.DB, eventBus events.EventBus, log *zap.Logger) *Module {
 	markReadUC := application.NewMarkReadUseCase(notifRepo)
 	prefsUC := application.NewManagePreferencesUseCase(prefRepo)
 
-	handler := notifhttp.NewHandler(notifyService, listUC, markReadUC, prefsUC, eventBus, log)
+	// Renderer is nil here because templates haven't been parsed yet.
+	// Task 8 wires SetRenderer(...) after setupRouter completes.
+	handler := notifhttp.NewHandler(notifyService, listUC, markReadUC, prefsUC, eventBus, nil, log)
 
 	// Subscribe to cross-module events that must produce user notifications.
 	// Requires a GlobalEventBus (cross-tenant). Busses that only support the
