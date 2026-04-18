@@ -39,7 +39,7 @@ func NewLoadBalanceConfig(id, tenantID, groupID string, algorithm LoadBalanceAlg
 	if groupID == "" {
 		return nil, ErrGroupIDRequired
 	}
-	if err := validateAlgorithm(algorithm); err != nil {
+	if err := ValidateAlgorithm(algorithm); err != nil {
 		return nil, err
 	}
 
@@ -63,7 +63,8 @@ func (c *LoadBalanceConfig) IncrementIndex() int {
 	return c.LastIndex
 }
 
-func validateAlgorithm(a LoadBalanceAlgorithm) error {
+// ValidateAlgorithm checks if the algorithm is valid.
+func ValidateAlgorithm(a LoadBalanceAlgorithm) error {
 	switch a {
 	case AlgorithmRoundRobin, AlgorithmLeastLoad, AlgorithmRandom:
 		return nil

@@ -100,6 +100,20 @@ func TestSetByGroup_GroupNotInTenant(t *testing.T) {
 	assert.ErrorIs(t, err, ErrGroupNotInTenant)
 }
 
+func TestSetByGroup_InvalidAlgorithmOnUpdate(t *testing.T) {
+	repo := new(mockLBRepo)
+	chk := new(mockGroupChecker)
+	uc := NewManageLoadBalanceUseCase(repo, chk)
+
+	chk.On("BelongsToTenant", mock.Anything, "t1", "g1").Return(true, nil)
+
+	_, err := uc.SetByGroup(context.Background(), SetLoadBalanceInput{
+		TenantID: "t1", GroupID: "g1", Algorithm: "weird", Active: true,
+	})
+	require.ErrorIs(t, err, domain.ErrInvalidAlgorithm)
+	repo.AssertNotCalled(t, "CreateOrUpdate", mock.Anything, mock.Anything)
+}
+
 func TestGetByGroup_NotFound(t *testing.T) {
 	repo := new(mockLBRepo)
 	chk := new(mockGroupChecker)

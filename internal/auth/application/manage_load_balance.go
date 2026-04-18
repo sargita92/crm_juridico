@@ -55,6 +55,10 @@ func (uc *ManageLoadBalanceUseCase) SetByGroup(ctx context.Context, in SetLoadBa
 		return nil, ErrGroupNotInTenant
 	}
 
+	if err := domain.ValidateAlgorithm(in.Algorithm); err != nil {
+		return nil, err
+	}
+
 	existing, err := uc.repo.FindByGroupID(ctx, in.TenantID, in.GroupID)
 	if err != nil && !errors.Is(err, domain.ErrLoadBalanceNotFound) {
 		return nil, err
