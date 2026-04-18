@@ -1,0 +1,45 @@
+{{define "notification/list.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    {{template "partials/tenant_head.html" (dict "Title" "Notificações")}}
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" .ActiveNav)}}
+    {{template "partials/notification_bell.html" .}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <h1>Notificações</h1>
+                {{if gt .UnreadCount 0}}<span class="subtitle">{{.UnreadCount}} não lidas</span>{{end}}
+            </div>
+        </div>
+        <div class="tabs">
+            <button type="button" class="tab {{if eq .Filter "unread"}}tab-active{{end}}"
+                    hx-get="/tenant/notifications/list?filter=unread"
+                    hx-target="#notifications-list"
+                    hx-swap="innerHTML"
+                    hx-on::after-request="this.classList.add('tab-active'); this.nextElementSibling.classList.remove('tab-active')">
+                Não lidas
+            </button>
+            <button type="button" class="tab {{if eq .Filter "all"}}tab-active{{end}}"
+                    hx-get="/tenant/notifications/list?filter=all"
+                    hx-target="#notifications-list"
+                    hx-swap="innerHTML"
+                    hx-on::after-request="this.classList.add('tab-active'); this.previousElementSibling.classList.remove('tab-active')">
+                Todas
+            </button>
+        </div>
+        <div id="notifications-list"
+             hx-get="/tenant/notifications/list?filter={{.Filter}}"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <p class="text-muted">Carregando...</p>
+        </div>
+    </main>
+</div>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

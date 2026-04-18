@@ -1,0 +1,34 @@
+{{define "notification/list_items.html"}}
+{{if eq (len .Items) 0}}
+<div class="empty-state">
+    <div class="empty-icon">🔔</div>
+    {{if eq .Filter "unread"}}
+    <div class="empty-title">Tudo em dia!</div>
+    <div class="empty-text">Você não tem notificações não lidas.</div>
+    {{else}}
+    <div class="empty-title">Nenhuma notificação</div>
+    <div class="empty-text">Quando algo acontecer com seus leads, você verá aqui.</div>
+    {{end}}
+</div>
+{{else}}
+<div class="notif-list">
+    {{range .Items}}
+        {{template "notification/item.html" .}}
+    {{end}}
+</div>
+<div class="pagination">
+    {{if .HasPrev}}
+    <button type="button" class="btn btn-link"
+            hx-get="/tenant/notifications/list?filter={{.Filter}}&limit={{.Limit}}&offset={{.PrevOffset}}"
+            hx-target="#notifications-list"
+            hx-swap="innerHTML">← Anterior</button>
+    {{end}}
+    {{if .HasMore}}
+    <button type="button" class="btn btn-link"
+            hx-get="/tenant/notifications/list?filter={{.Filter}}&limit={{.Limit}}&offset={{.NextOffset}}"
+            hx-target="#notifications-list"
+            hx-swap="innerHTML">Próximo →</button>
+    {{end}}
+</div>
+{{end}}
+{{end}}
