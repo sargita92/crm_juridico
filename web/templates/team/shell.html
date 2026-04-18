@@ -22,7 +22,7 @@
                class="tab {{if eq .ActiveTab "groups"}}active{{end}}">Grupos</a>
         </div>
         <div id="tab-content">
-            {{template .ContentTemplate .}}
+            {{if eq .ActiveTab "users"}}{{template "team/users_page.html" .}}{{else if eq .ActiveTab "groups"}}{{template "team/groups_page.html" .}}{{end}}
         </div>
     </main>
 </div>

@@ -57,10 +57,9 @@ func (h *PageHandler) UsersPage(c *gin.Context) {
 	invites, _ := h.inviteUC.ListInvites(c.Request.Context(), tenantID)
 
 	c.HTML(http.StatusOK, "team/shell.html", gin.H{
-		"ActiveTab":       "users",
-		"ContentTemplate": "team/users_page.html",
-		"Users":           users,
-		"Invites":         invites,
+		"ActiveTab": "users",
+		"Users":     users,
+		"Invites":   invites,
 	})
 }
 
