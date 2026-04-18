@@ -4,6 +4,26 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-18] F08 Step 4/4.1 — Load Balance integrado ao fluxo de criação de lead
+
+Todo lead criado (HTTP manual, WhatsApp ou IA) passa a nascer com `ResponsibleUserID` preenchido automaticamente. Fecha os dois itens abertos da F08: distribuição automática entre membros do grupo responsável (Step 4) e atribuição do responsável humano no momento da criação (Step 4.1).
+
+- **Porta `ResponsiblePicker`** (`internal/funnel/domain`) + implementação `LoadBalancePicker` (`internal/auth/infrastructure`) com 3 algoritmos:
+  - `round_robin` (persistência de `LastIndex`, ordem determinística por sort lexicográfico dos membros)
+  - `least_load` (contagem de leads ativos `status=open` no tenant, tiebreak determinístico)
+  - `random` (uniforme via `crypto/rand`)
+- **Cascata de fallback**: sem grupo / sem config ativa / config inativa / sem membros / erro de infra → owner do tenant. Lead nunca nasce órfão.
+- **Regra de unicidade** ("1 grupo ativo com load balance por funil/coluna") validada proativamente em `ManageLoadBalanceUseCase.SetByGroup` via novo port `GroupColumnOverlapChecker` + adapter `permission/infrastructure`; erro `ErrActiveLoadBalanceOverlap` (mapeável a 409 no HTTP boundary).
+- **Evento `EventLeadResponsibleAssigned`** publicado junto ao `EventLeadCreated` (que ganhou `responsible_user_id` no payload); `notification.Module` assina globalmente via novo `GlobalEventBus.SubscribeAll()` e cria notificação in-app `lead_assigned` para o responsável.
+- **Observabilidade**: métricas `crm_lead_responsible_picker_total{algorithm,outcome}` e `_duration_seconds{algorithm}`; span OTel `load_balance.pick`; logs com níveis diferenciados (Info para fallback benigno, Warn para infra-error, Error com preservação do erro original).
+- **Defesa**: `errors.Is(authdomain.ErrUserNotFound)` no filtro de membros ativos; nil-guard com `ErrPickerNotConfigured` no `CreateLeadUseCase` para falha explícita em wiring incorreto; compile-time assertion que o gorm lead repo implementa `LeadLoadCounter`.
+- **Cobertura**: `funnel/application` 83.6%, `auth/application` 81.6%, funções do picker 78–100%. Suite total ~1330 testes passando em `-short`; tree integrado 1717+ com integration tests.
+- **Wiring**: late-binding setter (`funnelMod.SetResponsiblePicker`) para resolver ciclo de construção auth → permission → funnel; mesma estratégia do `SetLoadBalanceOverlapChecker`.
+- **Follow-ups (não bloqueantes)**: race do `LastIndex` em round-robin sob alta concorrência; índice composto `(tenant_id, status, responsible_user_id)` em `leads` para hot path do `least_load`; auditoria de cobertura de `auth/infrastructure` (41.5% pacote-total devido a gorm repos rodados só em integration).
+- Artefatos: `docs/artefatos/F08-F09-usuarios-permissoes-automacoes/design-step4-load-balance-integration.md` + `plan-step4-load-balance-integration.md`; arquivos .http atualizados em `rest/06-funis-kanban.http` e `rest/team.http`.
+
+---
+
 ## [2026-04-18] F07 — Funis de Vendas (Kanban) — fechamento
 
 Feature encerrada com validação QA + review de segurança (ambos aprovados):

@@ -164,11 +164,11 @@ Fluxo após a mudança:
 5. leadRepo.Create(lead)  [mesma tx]
 6. eventBus.Publish(EventLeadCreated{..., ResponsibleUserID: pick.UserID})
 7. eventBus.Publish(EventLeadResponsibleAssigned{
-       LeadID, TenantID, ResponsibleUserID,
+       LeadID, ResponsibleUserID,
        Reason: "created",
        Outcome: pick.Outcome,       // "picked" ou "fallback_owner"
        Algorithm: pick.Algorithm,
-   })
+   })  // TenantID vai no envelope Event.TenantID, não no payload
 ```
 
 ### 5.1 Mudança no payload de `EventLeadCreated`
@@ -177,11 +177,11 @@ O evento já existe e é publicado em `internal/funnel/application/create_lead.g
 
 ### 5.2 Novo evento `EventLeadResponsibleAssigned`
 
-Adicionado em `internal/shared/events/event.go` como novo tipo. Payload:
+Adicionado em `internal/shared/events/event.go` como novo tipo. O `tenant_id` viaja no envelope `events.Event.TenantID` (comum a todos os eventos do sistema), não duplicado no payload. Payload tipado `ResponsibleAssignedPayload`:
 
 ```
 {
-  lead_id, tenant_id, responsible_user_id,
+  lead_id, responsible_user_id,
   reason: "created",          // futuro: "reassigned", "auto_move" etc.
   outcome: "picked" | "fallback_owner",
   algorithm: "round_robin" | "least_load" | "random" | ""  // vazio em fallback
