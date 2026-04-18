@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
@@ -70,12 +69,15 @@ func (uc *ManageLoadBalanceUseCase) SetByGroup(ctx context.Context, in SetLoadBa
 	}
 
 	if in.Active && uc.overlapChecker != nil {
-		overlap, others, err := uc.overlapChecker.HasActiveOverlap(ctx, in.TenantID, in.GroupID)
+		overlap, _, err := uc.overlapChecker.HasActiveOverlap(ctx, in.TenantID, in.GroupID)
 		if err != nil {
 			return nil, err
 		}
 		if overlap {
-			return nil, fmt.Errorf("%w: groups=%v", ErrActiveLoadBalanceOverlap, others)
+			// Overlapping group IDs are internal data; do not leak them in the
+			// user-facing error. The wiring layer can log them at its boundary
+			// if operational visibility is needed.
+			return nil, ErrActiveLoadBalanceOverlap
 		}
 	}
 
