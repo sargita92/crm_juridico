@@ -22,7 +22,7 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-// --- Stub for loadBalanceUsecase interface ---
+// --- Stub for loadBalanceUseCase interface ---
 
 type stubLB struct {
 	getFn func(ctx context.Context, tenantID, groupID string) (*authdomain.LoadBalanceConfig, error)
@@ -39,7 +39,7 @@ func (s *stubLB) SetByGroup(ctx context.Context, in authapp.SetLoadBalanceInput)
 
 // --- Helper to build a minimal handler with nil use cases (safe for tests that don't invoke them) ---
 
-func newTestHandler(lb loadBalanceUsecase) *Handler {
+func newTestHandler(lb loadBalanceUseCase) *Handler {
 	log, _ := zap.NewDevelopment()
 	return &Handler{
 		loadBalanceUC: lb,

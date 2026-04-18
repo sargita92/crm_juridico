@@ -14,8 +14,8 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
 
-// loadBalanceUsecase is a local interface so tests can stub the concrete use case.
-type loadBalanceUsecase interface {
+// loadBalanceUseCase is a local interface so tests can stub the concrete use case.
+type loadBalanceUseCase interface {
 	GetByGroup(ctx context.Context, tenantID, groupID string) (*authdomain.LoadBalanceConfig, error)
 	SetByGroup(ctx context.Context, in authapp.SetLoadBalanceInput) (*authdomain.LoadBalanceConfig, error)
 }
@@ -31,7 +31,7 @@ type Handler struct {
 	managePermsUC   *application.ManagePermissionsUseCase
 	manageVPUC      *application.ManageViewProfilesUseCase
 	manageGFUC      *application.ManageGroupFunnelsUseCase
-	loadBalanceUC   loadBalanceUsecase
+	loadBalanceUC   loadBalanceUseCase
 	log             *zap.Logger
 }
 
@@ -46,7 +46,7 @@ func NewHandler(
 	managePermsUC *application.ManagePermissionsUseCase,
 	manageVPUC *application.ManageViewProfilesUseCase,
 	manageGFUC *application.ManageGroupFunnelsUseCase,
-	loadBalanceUC loadBalanceUsecase,
+	loadBalanceUC loadBalanceUseCase,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
@@ -434,10 +434,10 @@ func (h *Handler) SetLoadBalance(c *gin.Context) {
 	groupID := c.Param("id")
 
 	var req struct {
-		Algorithm string `json:"algorithm" form:"algorithm"`
-		Active    bool   `json:"active" form:"active"`
+		Algorithm string `json:"algorithm"`
+		Active    bool   `json:"active"`
 	}
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -458,7 +458,7 @@ func (h *Handler) SetLoadBalance(c *gin.Context) {
 			return
 		}
 		h.log.Error("failed to set load balance", zap.String("group_id", groupID), zap.Error(err))
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "failed to set load balance"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set load balance"})
 		return
 	}
 
