@@ -135,3 +135,27 @@ func maxZero(v int) int {
 	}
 	return v
 }
+
+// RenderPage returns the full /tenant/notifications page with the unread tab
+// selected by default. The tab content is loaded on demand via RenderList.
+func (h *PageHandler) RenderPage(c *gin.Context) {
+	claims := middleware.GetClaims(c.Request.Context())
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	if claims == nil {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	filter := c.DefaultQuery("filter", "unread")
+	if filter != "unread" && filter != "all" {
+		filter = "unread"
+	}
+
+	unread, _ := h.listUC.CountUnread(c.Request.Context(), tenantID, claims.UserID)
+
+	c.HTML(http.StatusOK, "notification/list.html", gin.H{
+		"Filter":      filter,
+		"UnreadCount": unread,
+		"ActiveNav":   "", // no sidebar item highlights on this page
+	})
+}

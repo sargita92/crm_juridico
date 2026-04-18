@@ -67,6 +67,7 @@ func newPageEnv(t *testing.T) *pageEnv {
 	pages.GET("/badge", handler.RenderBadge)
 	pages.GET("/dropdown", handler.RenderDropdown)
 	pages.GET("/list", handler.RenderList)
+	pages.GET("", handler.RenderPage)
 
 	return &pageEnv{router: router, handler: handler, repo: repo}
 }
@@ -212,6 +213,30 @@ func TestRenderList_InvalidLimitDefaults(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/tenant/notifications/list?limit=abc&offset=xyz", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// ---------------------------------------------------------------------------
+// Task 7 — RenderPage
+// ---------------------------------------------------------------------------
+
+func TestRenderPage_DefaultsToUnreadTab(t *testing.T) {
+	env := newPageEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications", nil)
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRenderPage_ExplicitAllTab(t *testing.T) {
+	env := newPageEnv(t)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/tenant/notifications?filter=all", nil)
 	env.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
