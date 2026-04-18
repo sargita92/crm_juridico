@@ -46,7 +46,7 @@
 - [x] Arquivos .http em rest/team.http para todos os novos endpoints
 
 ### Itens complementares (a fazer)
-- [ ] Load balance integration (conectar à criação de leads)
+- [x] Load balance integration (conectar à criação de leads) — picker + fallback + evento + notificação
 - [ ] Telas HTMX para notificações (badge, toast, painel)
 - [x] Telas HTMX para automações (list, CRUD modal, toggle, logs, 7 tipos de campos dinâmicos)
 - [ ] Observabilidade: métricas Prometheus + traces nos novos endpoints

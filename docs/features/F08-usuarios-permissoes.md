@@ -31,14 +31,14 @@ Implementar o sistema de usuários, grupos de permissão, perfis de visualizaç�
 
 ### Step 4: Load balance de leads
 - [x] caso de uso: configurar balanceamento para um grupo
-- [ ] ao entrar lead no funil → distribuir automaticamente entre membros do grupo responsável
+- [x] ao entrar lead no funil → distribuir automaticamente entre membros do grupo responsável
 - [x] algoritmos: round-robin, menor carga, aleatório (configurável)
 - [x] caso de uso: reatribuir lead manualmente
 - [x] testes
 
 ### Step 4.1: Responsável do lead e notificações
 - [x] todo lead deve ter um humano responsável associado (campo responsible_user_id no Lead)
-- [ ] ao criar lead (via IA/WhatsApp ou manual), atribuir responsável via load balance ou manualmente
+- [x] ao criar lead (via IA/WhatsApp ou manual), atribuir responsável via load balance ou manualmente
 - [x] notificar responsável quando:
   - lead é criado e atribuído a ele
   - lead é movido de coluna (pela IA ou manualmente)
