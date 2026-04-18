@@ -4,6 +4,58 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-18] F08 Step 6 — Telas de Equipe (HTMX)
+
+- Novo item "Equipe" no sidebar do tenant (visível com `users:read` OU `groups:manage`)
+- Rota `/tenant/team` com 2 abas: **Usuários** e **Grupos**
+- Aba Usuários: lista + convites pendentes, modal de convite (link copiável),
+  modal de permissões individuais (override sobre as herdadas do grupo),
+  modal de WhatsApp ID, remoção (bloqueada para owner)
+- Aba Grupos: lista + criação; cada grupo abre um detail com 5 seções:
+  - 👥 Membros (adicionar/remover, seleciona entre usuários do tenant)
+  - 🔐 Permissões (matriz resource × action)
+  - 🎯 Funis atribuídos (toggle de funis do tenant)
+  - 👁️ Perfis de visualização (colunas visíveis por funil)
+  - ⚖️ Load Balance (algoritmo + toggle ativo)
+- Backend de load balance concluído: `ManageLoadBalanceUseCase`, campo `active`
+  (migration 000051), endpoints `GET/PUT /tenant/groups/:id/load-balance`
+- Cross-module wiring via `AttachPermissionDeps` no auth module + accessors
+  (`ListGroupsUseCase`, `ManagePermissionsUseCase`) no permission module
+- 19 tests no `auth.PageHandler` (91% cobertura), 37 tests no
+  `permission.PageHandler` (≥85% por função), 103 tests OWASP (401/403/tenant
+  isolation), 1569 tests totais no repositório
+- Artefatos: design spec + plano em
+  `docs/artefatos/F08-F09-usuarios-permissoes-automacoes/`,
+  arquivo `rest/team.http` para testes manuais
+
+---
+
+## [2026-04-18] F17 — AI Playground e robustez do pipeline
+
+Ferramenta interna de desenvolvimento para exercitar o motor de IA sem
+envolver o WhatsApp real, mais robustez colhida no caminho:
+
+- **Playground UI** (`/tenant/ai/playground`): sidebar de contatos + chat
+  com polling de 2s, botão de reset que zera state e volta o lead à
+  coluna inicial
+- **Scoring-driven routing**: `ConversationEngine` consulta o `ScoringConfig`
+  do especialista para qualificar/desqualificar leads automaticamente
+  (veto do LLM > `TargetColumnID` explícito > threshold atingido > flow
+  completo sem threshold); `ScoringConfigFinder` opcional por DI
+- **WhatsApp DM-only**: filtra mensagens que não são 1:1 (groups/status
+  broadcast) e usa `ToNonAD()` no JID do sender para evitar rejeição no
+  send; AI processing passou a usar `context.WithoutCancel` para não
+  cancelar ao final do HTTP request
+- **Hardening cross-cutting**:
+  - Lookup produto → funil agora é tenant-scoped (regressão:
+    `TestCreateLead_ProductRoutesToOtherTenantFunnel_IsIgnored`)
+  - `Lead.ProductID`/`ResponsibleUserID` e `LeadMovement.FromColumnID`
+    persistem como `NULL` quando vazios (antes: empty string violava FK)
+- Scripts `create-playground-lead.sh` / `test-playground.sh` e fixture
+  `escritorio-teste.sql` para seed rápido
+
+---
+
 ## [2026-04-16] F15 — Internal Tool Registry para Especialistas IA
 
 - Domain: `ToolDefinition`, `ToolCall`, `ToolResult`, `ToolCategory`, `ParameterDef`, `Tool` interface

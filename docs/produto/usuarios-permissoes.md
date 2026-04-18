@@ -58,3 +58,17 @@ Admin do sistema (acesso total)
        └── Grupos de permissão (configuráveis)
             └── Usuários individuais
 ```
+
+---
+
+## Onde encontrar na interface
+
+Aba **Equipe** no sidebar do tenant (`/tenant/team`). Só aparece para quem
+tem `users:read` ou `groups:manage`.
+
+- **Aba Usuários**: lista de membros + convites pendentes, modal de convite
+  com link copiável, modal para editar permissões individuais (somadas às
+  herdadas do grupo), modal de WhatsApp ID, botão de remover
+- **Aba Grupos**: lista de grupos + criação; abrir um grupo leva ao detail
+  com 5 seções — Membros, Permissões (matriz recurso × ação), Funis
+  atribuídos, Perfis de visualização e Load Balance

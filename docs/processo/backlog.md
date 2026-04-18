@@ -33,7 +33,7 @@
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
-| F08 | [Usuários e Permissões](../features/F08-usuarios-permissoes.md) | em andamento | F07 | média |
+| F08 | [Usuários e Permissões](../features/F08-usuarios-permissoes.md) | concluído | F07 | média |
 | F09 | [Automações](../features/F09-automacoes.md) | em andamento | F07 | média |
 | F10 | [Produtos](../features/F10-produtos.md) | em andamento | F07 | alta |
 
@@ -62,6 +62,15 @@
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F13 | [Landing Page](../features/F13-landing-page.md) | concluído | — | baixa |
+
+## Épico 9: Ferramentas de desenvolvimento
+
+Suporte interno, não faz parte do produto final.
+
+| # | Feature | Status | Dependência | Prioridade |
+|---|---------|--------|-------------|------------|
+| F17 | [Fluxo de teste manual (/reset)](../features/F17-fluxo-teste-manual.md) | concluído | F16 | baixa |
+| F17 | [AI Playground](../features/F17-ai-playground.md) | concluído | F16 | baixa |
 
 ---
 
