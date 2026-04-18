@@ -55,11 +55,11 @@ Implementar o sistema de usuários, grupos de permissão, perfis de visualizaç�
 - [x] testes
 
 ### Step 6: Telas (HTMX)
-- [ ] template de gestão de usuários
-- [ ] template de gestão de grupos de permissão
-- [ ] template de configuração de perfis de visualização
-- [ ] template de configuração de load balance
-- [ ] interações via HTMX
+- [x] template de gestão de usuários
+- [x] template de gestão de grupos de permissão
+- [x] template de configuração de perfis de visualização
+- [x] template de configuração de load balance
+- [x] interações via HTMX
 
 ## Critérios de aceite
 - grupos de permissão funcionam e controlam acesso

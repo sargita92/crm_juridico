@@ -36,12 +36,17 @@
 - [x] 3 migrations (000046-000048)
 - [x] 21 tests, 91.3% coverage
 
+### Plan 4: F08 Step 6 Team Screens (concluído)
+- [x] Load balance backend (use case + HTTP + active flag + migration 000051)
+- [x] Sidebar "Equipe" + shell com tabs (usuários, grupos)
+- [x] Aba Usuários (lista, convites, permissões individuais, WhatsApp)
+- [x] Aba Grupos + detail com 5 seções (membros, permissões, funis, perfis de visualização, load balance)
+- [x] 37 tests no permission PageHandler, 19 tests no auth PageHandler
+- [x] 103 testes OWASP (401/403/tenant isolation)
+- [x] Arquivos .http em rest/team.http para todos os novos endpoints
+
 ### Itens complementares (a fazer)
 - [ ] Load balance integration (conectar à criação de leads)
-- [ ] Telas HTMX para gestão de grupos e permissões
-- [ ] Telas HTMX para convites e gestão de usuários
 - [ ] Telas HTMX para notificações (badge, toast, painel)
 - [x] Telas HTMX para automações (list, CRUD modal, toggle, logs, 7 tipos de campos dinâmicos)
-- [ ] Testes OWASP nos novos endpoints (401/403, isolamento de tenant)
 - [ ] Observabilidade: métricas Prometheus + traces nos novos endpoints
-- [ ] Arquivos .http em rest/ para os novos endpoints

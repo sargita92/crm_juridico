@@ -1,0 +1,380 @@
+### Equipe — Usuários, Grupos, Permissões, Load Balance (F08 Step 6)
+### Requer cookie JWT válido — faça login primeiro (POST /login) e o token será salvo automaticamente.
+
+@base_url = http://localhost:8080
+@token = YOUR_JWT_HERE
+@userId = REPLACE_WITH_USER_ID
+@groupId = REPLACE_WITH_GROUP_ID
+@funnelId = REPLACE_WITH_FUNNEL_ID
+@inviteId = REPLACE_WITH_INVITE_ID
+
+###
+### ============= USUÁRIOS (Users tab) =============
+###
+
+### Listar usuários do tenant (JSON API)
+GET {{base_url}}/tenant/users
+Authorization: Bearer {{token}}
+
+###
+
+### Página de usuários (HTMX + HTML)
+GET {{base_url}}/tenant/team/users
+Authorization: Bearer {{token}}
+
+###
+
+### Tabela de usuários (fragmento HTMX)
+GET {{base_url}}/tenant/team/users/table
+Authorization: Bearer {{token}}
+
+###
+
+### Modal de permissões do usuário
+GET {{base_url}}/tenant/team/users/{{userId}}/permissions-modal
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar permissões do usuário (form POST)
+POST {{base_url}}/tenant/team/users/{{userId}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+perms=leads:read&perms=leads:create&perms=leads:update
+
+###
+
+### Modal de WhatsApp do usuário
+GET {{base_url}}/tenant/team/users/{{userId}}/whatsapp-modal
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar WhatsApp do usuário
+POST {{base_url}}/tenant/team/users/{{userId}}/whatsapp
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+whatsapp_id=5511999999999
+
+###
+
+### Remover usuário do tenant (JSON API)
+DELETE {{base_url}}/tenant/users/{{userId}}
+Authorization: Bearer {{token}}
+
+###
+### ============= CONVITES (Invites) =============
+###
+
+### Modal para criar convite
+GET {{base_url}}/tenant/team/invites/new-modal
+Authorization: Bearer {{token}}
+
+###
+
+### Listar convites do tenant (JSON API)
+GET {{base_url}}/tenant/invites
+Authorization: Bearer {{token}}
+
+###
+
+### Criar convite (form POST)
+POST {{base_url}}/tenant/team/invites
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+group_ids={{groupId}}&expires_in_days=7
+
+###
+
+### Revogar convite (JSON API)
+DELETE {{base_url}}/tenant/invites/{{inviteId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Aceitar convite (público, sem autenticação)
+POST {{base_url}}/invite/{{inviteToken}}/accept
+Content-Type: application/x-www-form-urlencoded
+
+password=nova_senha_123
+
+###
+### ============= GRUPOS DE PERMISSÃO =============
+###
+
+### Página de grupos (HTMX + HTML)
+GET {{base_url}}/tenant/team/groups
+Authorization: Bearer {{token}}
+
+###
+
+### Tabela de grupos (fragmento HTMX)
+GET {{base_url}}/tenant/team/groups/table
+Authorization: Bearer {{token}}
+
+###
+
+### Modal para criar novo grupo
+GET {{base_url}}/tenant/team/groups/new-modal
+Authorization: Bearer {{token}}
+
+###
+
+### Criar grupo (form POST)
+POST {{base_url}}/tenant/team/groups
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=Vendas&description=Equipe comercial
+
+###
+
+### Listar grupos (JSON API)
+GET {{base_url}}/tenant/groups
+Authorization: Bearer {{token}}
+
+###
+
+### Obter grupo (JSON API)
+GET {{base_url}}/tenant/groups/{{groupId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Atualizar grupo (JSON API)
+PUT {{base_url}}/tenant/groups/{{groupId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Vendas Senior",
+  "description": "Equipe comercial senior"
+}
+
+###
+
+### Deletar grupo (JSON API)
+DELETE {{base_url}}/tenant/groups/{{groupId}}
+Authorization: Bearer {{token}}
+
+###
+### ============= DETALHE DO GRUPO (5 seções) =============
+###
+
+### Página de detalhe do grupo
+GET {{base_url}}/tenant/team/groups/{{groupId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Seção: Membros
+GET {{base_url}}/tenant/team/groups/{{groupId}}/section/members
+Authorization: Bearer {{token}}
+
+###
+
+### Adicionar membro ao grupo (JSON API)
+POST {{base_url}}/tenant/groups/{{groupId}}/members
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": "{{userId}}"
+}
+
+###
+
+### Remover membro do grupo (JSON API)
+DELETE {{base_url}}/tenant/groups/{{groupId}}/members/{{userId}}
+Authorization: Bearer {{token}}
+
+###
+
+### Seção: Permissões
+GET {{base_url}}/tenant/team/groups/{{groupId}}/section/permissions
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar permissões do grupo (form POST)
+POST {{base_url}}/tenant/team/groups/{{groupId}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+perms=leads:read&perms=leads:create&perms=groups:manage&perms=funnels:read
+
+###
+
+### Obter permissões do grupo (JSON API)
+GET {{base_url}}/tenant/groups/{{groupId}}/permissions
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar permissões do grupo (JSON API)
+PUT {{base_url}}/tenant/groups/{{groupId}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "permissions": ["leads:read", "leads:create", "groups:manage", "funnels:read"]
+}
+
+###
+
+### Seção: Funis
+GET {{base_url}}/tenant/team/groups/{{groupId}}/section/funnels
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar funis do grupo (form POST)
+POST {{base_url}}/tenant/team/groups/{{groupId}}/funnels
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+funnel_ids={{funnelId}}
+
+###
+
+### Obter funis do grupo (JSON API)
+GET {{base_url}}/tenant/groups/{{groupId}}/funnels
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar funis do grupo (JSON API)
+PUT {{base_url}}/tenant/groups/{{groupId}}/funnels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "funnel_ids": ["{{funnelId}}"]
+}
+
+###
+
+### Seção: Perfis de Visualização
+GET {{base_url}}/tenant/team/groups/{{groupId}}/section/view-profiles
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar perfil de visualização para um funil (form POST)
+POST {{base_url}}/tenant/team/groups/{{groupId}}/view-profiles/{{funnelId}}
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+visible_columns=col-1&visible_columns=col-2&visible_columns=col-3
+
+###
+
+### Obter perfis de visualização do grupo (JSON API)
+GET {{base_url}}/tenant/groups/{{groupId}}/view-profiles
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar perfil de visualização (JSON API)
+PUT {{base_url}}/tenant/groups/{{groupId}}/view-profiles/{{funnelId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "visible_columns": ["col-1", "col-2", "col-3"]
+}
+
+###
+
+### Seção: Load Balance
+GET {{base_url}}/tenant/team/groups/{{groupId}}/section/load-balance
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar configuração de load balance (form POST — HTML)
+POST {{base_url}}/tenant/team/groups/{{groupId}}/load-balance
+Authorization: Bearer {{token}}
+Content-Type: application/x-www-form-urlencoded
+
+algorithm=round_robin&active=true
+
+###
+
+### Obter configuração de load balance (JSON API)
+GET {{base_url}}/tenant/groups/{{groupId}}/load-balance
+Authorization: Bearer {{token}}
+
+###
+
+### Salvar configuração de load balance (JSON API)
+PUT {{base_url}}/tenant/groups/{{groupId}}/load-balance
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "algorithm": "round_robin",
+  "active": true
+}
+
+###
+### ============= EXEMPLO: Fluxo completo =============
+###
+
+### 1. Login (salva automaticamente token no cookie)
+POST {{base_url}}/login
+Content-Type: application/x-www-form-urlencoded
+
+email=usuario@tenant.com&password=senha123
+
+> {%
+    client.global.set("token", response.body.token);
+%}
+
+###
+
+### 2. Listar usuários
+GET {{base_url}}/tenant/team/users
+Cookie: token={{token}}
+
+###
+
+### 3. Listar grupos
+GET {{base_url}}/tenant/team/groups
+Cookie: token={{token}}
+
+###
+
+### 4. Criar novo grupo
+POST {{base_url}}/tenant/team/groups
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=Suporte&description=Equipe de suporte ao cliente
+
+###
+
+### 5. Acessar detalhe do grupo (substituir {{groupId}})
+GET {{base_url}}/tenant/team/groups/{{groupId}}
+Cookie: token={{token}}
+
+###
+
+### 6. Configurar permissões do grupo
+POST {{base_url}}/tenant/team/groups/{{groupId}}/permissions
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+perms=leads:read&perms=leads:update&perms=products:manage
+
+###
+
+### 7. Configurar load balance
+POST {{base_url}}/tenant/team/groups/{{groupId}}/load-balance
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+algorithm=round_robin&active=true
