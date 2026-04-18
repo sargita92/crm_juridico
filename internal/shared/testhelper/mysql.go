@@ -147,6 +147,9 @@ func TemplateFuncMap() template.FuncMap {
 		"add":                 func(a, b int) int { return a + b },
 		"sub":                 func(a, b int) int { return a - b },
 		"aiPlaygroundEnabled": func() bool { return false },
+		"typeIcon":            func(t string) string { return "🔔" },
+		"typeLabel":           func(t string) string { return "" },
+		"relativeTime":        func(t time.Time) string { return "" },
 		"dict": func(values ...interface{}) map[string]interface{} {
 			m := make(map[string]interface{})
 			for i := 0; i+1 < len(values); i += 2 {

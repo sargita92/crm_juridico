@@ -26,6 +26,8 @@ import (
 	landinghttp "github.com/sasrgita/crm-juridico/internal/landing/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/mcp"
 	"github.com/sasrgita/crm-juridico/internal/notification"
+	notifdomain "github.com/sasrgita/crm-juridico/internal/notification/domain"
+	notifhttp "github.com/sasrgita/crm-juridico/internal/notification/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/permission"
 	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/product"
@@ -289,6 +291,13 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 		"aiPlaygroundEnabled": func() bool { return aiPlaygroundEnabled },
 		"add":                 func(a, b int) int { return a + b },
 		"sub":                 func(a, b int) int { return a - b },
+		"typeIcon": func(t string) string {
+			return notifhttp.TypeIcon(notifdomain.NotificationType(t))
+		},
+		"typeLabel": func(t string) string {
+			return notifhttp.TypeLabel(notifdomain.NotificationType(t))
+		},
+		"relativeTime": notifhttp.RelativeTime,
 		"formatFileSize": func(size int64) string {
 			const (
 				kb = 1024

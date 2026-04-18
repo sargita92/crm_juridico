@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -53,6 +54,9 @@ func newPageRouter(ph *PageHandler) *gin.Engine {
 		"sub": func(a, b int) int { return a - b },
 		"aiPlaygroundEnabled": func() bool { return false },
 		"formatFileSize":      func(size int64) string { return "0 B" },
+		"typeIcon":            func(t string) string { return "🔔" },
+		"typeLabel":           func(t string) string { return "" },
+		"relativeTime":        func(t time.Time) string { return "" },
 	}
 
 	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob(templateRoot()))
