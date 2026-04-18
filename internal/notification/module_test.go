@@ -95,10 +95,8 @@ func TestNotificationModule_CreatesNotification_OnResponsibleAssigned(t *testing
 	mod := notification.NewModule(db, bus, zap.NewNop())
 	require.NotNil(t, mod)
 
-	// Give the subscriber goroutine a moment to register with the bus before
-	// we publish, so the event isn't lost.
-	time.Sleep(20 * time.Millisecond)
-
+	// SubscribeAll is called synchronously in NewModule, so publishing
+	// immediately after is safe — no warm-up required.
 	bus.Publish(events.Event{
 		Type:     events.EventLeadResponsibleAssigned,
 		TenantID: tenantID,
@@ -146,8 +144,6 @@ func TestNotificationModule_IgnoresOtherEventTypes(t *testing.T) {
 	mod := notification.NewModule(db, bus, zap.NewNop())
 	require.NotNil(t, mod)
 
-	time.Sleep(20 * time.Millisecond)
-
 	// Publish an unrelated event type; listener must not create a notification.
 	bus.Publish(events.Event{
 		Type:     events.EventLeadCreated,
@@ -172,8 +168,6 @@ func TestNotificationModule_IgnoresMalformedPayload(t *testing.T) {
 	bus := events.NewMemoryEventBus()
 	mod := notification.NewModule(db, bus, zap.NewNop())
 	require.NotNil(t, mod)
-
-	time.Sleep(20 * time.Millisecond)
 
 	// Correct type but wrong payload shape — listener should log Warn and continue.
 	bus.Publish(events.Event{

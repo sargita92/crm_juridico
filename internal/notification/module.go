@@ -40,8 +40,13 @@ func NewModule(db *gorm.DB, eventBus events.EventBus, log *zap.Logger) *Module {
 	// Subscribe to cross-module events that must produce user notifications.
 	// Requires a GlobalEventBus (cross-tenant). Busses that only support the
 	// per-tenant Subscribe method are skipped with an Info log.
+	//
+	// The subscription is registered SYNCHRONOUSLY before NewModule returns so
+	// that any event published immediately after construction is guaranteed to
+	// be delivered — no race between NewModule and goroutine scheduling.
 	if globalBus, ok := eventBus.(events.GlobalEventBus); ok {
-		go subscribeResponsibleAssigned(globalBus, notifyService, log)
+		ch, unsub := globalBus.SubscribeAll()
+		go consumeResponsibleAssigned(ch, unsub, notifyService, log)
 	} else {
 		log.Info("notification: event bus does not support cross-tenant subscription; skipping lead-assigned listener")
 	}
@@ -49,11 +54,10 @@ func NewModule(db *gorm.DB, eventBus events.EventBus, log *zap.Logger) *Module {
 	return &Module{handler: handler, notifyService: notifyService}
 }
 
-// subscribeResponsibleAssigned listens for EventLeadResponsibleAssigned across
-// all tenants and turns each event into a persistent notification for the
-// responsible user. It exits cleanly when the subscription channel closes.
-func subscribeResponsibleAssigned(bus events.GlobalEventBus, svc *application.NotifyService, log *zap.Logger) {
-	ch, unsub := bus.SubscribeAll()
+// consumeResponsibleAssigned drains the global subscription channel and turns
+// EventLeadResponsibleAssigned events into persistent notifications for the
+// responsible user. It exits cleanly when the channel closes.
+func consumeResponsibleAssigned(ch <-chan events.Event, unsub func(), svc *application.NotifyService, log *zap.Logger) {
 	defer unsub()
 
 	for ev := range ch {
