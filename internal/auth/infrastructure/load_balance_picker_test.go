@@ -74,8 +74,9 @@ func (f *fakeUserGroupRepo) Exists(context.Context, string, string) (bool, error
 }
 
 type fakeUserTenantRepo struct {
-	ownerByTenant map[string]string
-	memberActive  map[string]bool
+	ownerByTenant   map[string]string
+	memberActive    map[string]bool
+	findByUserError error // if non-nil, overrides the memberActive lookup
 }
 
 func (f *fakeUserTenantRepo) FindByTenantID(_ context.Context, tenantID string) ([]*authdomain.UserTenant, error) {
@@ -86,11 +87,14 @@ func (f *fakeUserTenantRepo) FindByTenantID(_ context.Context, tenantID string) 
 	return []*authdomain.UserTenant{{UserID: owner, TenantID: tenantID, IsOwner: true}}, nil
 }
 func (f *fakeUserTenantRepo) FindByUserAndTenant(_ context.Context, uid, tid string) (*authdomain.UserTenant, error) {
+	if f.findByUserError != nil {
+		return nil, f.findByUserError
+	}
 	if f.memberActive == nil {
 		return &authdomain.UserTenant{UserID: uid, TenantID: tid}, nil
 	}
 	if _, ok := f.memberActive[uid]; !ok {
-		return nil, errors.New("not a member")
+		return nil, authdomain.ErrUserNotFound
 	}
 	return &authdomain.UserTenant{UserID: uid, TenantID: tid}, nil
 }
@@ -362,6 +366,35 @@ func TestLoadBalancePicker_Random_AllMembersEventuallyPicked(t *testing.T) {
 		require.Greater(t, counts[uid], 0, "user %s was never picked in 300 draws", uid)
 		require.LessOrEqual(t, counts[uid], 210, "user %s picked too often (>70%%) in 300 draws", uid)
 	}
+}
+
+func TestLoadBalancePicker_FallbackOnMemberLookupInfraError(t *testing.T) {
+	// A non-ErrUserNotFound error from FindByUserAndTenant must NOT be
+	// treated as "not a member" — it's a real infra failure and we must
+	// fall back to the owner rather than silently skip.
+	picker := infrastructure.NewLoadBalancePicker(
+		&fakeGroupFunnelRepo{byFunnel: map[string][]permdomain.GroupFunnel{
+			"f1": {{ID: "gf1", GroupID: "g1", FunnelID: "f1"}},
+		}},
+		&fakeLoadBalanceRepo{byGroup: map[string]*authdomain.LoadBalanceConfig{
+			"g1": {ID: "lb1", TenantID: "t1", GroupID: "g1", Algorithm: authdomain.AlgorithmRandom, Active: true},
+		}},
+		&fakeUserGroupRepo{byGroup: map[string][]permdomain.UserGroup{
+			"g1": {{UserID: "u1", GroupID: "g1"}},
+		}},
+		&fakeUserTenantRepo{
+			ownerByTenant:   map[string]string{"t1": "owner-1"},
+			findByUserError: errors.New("db unreachable"),
+		},
+		&fakeLoadCounter{},
+		zap.NewNop(),
+	)
+
+	got, err := picker.PickForFunnel(context.Background(), "t1", "f1", "c1")
+
+	require.NoError(t, err)
+	require.Equal(t, funneldomain.PickOutcomeFallbackOwner, got.Outcome)
+	require.Equal(t, "owner-1", got.UserID)
 }
 
 func TestLoadBalancePicker_FallbackWhenConfigInactive(t *testing.T) {

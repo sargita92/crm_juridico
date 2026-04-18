@@ -89,6 +89,11 @@ func (p *LoadBalancePicker) pickInternal(ctx context.Context, tenantID, funnelID
 	// 1. Find all groups associated with this funnel that cover the column.
 	groups, err := p.groupFunnelRepo.FindByFunnelID(ctx, funnelID)
 	if err != nil {
+		p.log.Error("load_balance.pick group_lookup_error",
+			zap.String("tenant_id", tenantID),
+			zap.String("funnel_id", funnelID),
+			zap.Error(err),
+		)
 		return p.fallbackToOwner(ctx, tenantID, "group_lookup_error")
 	}
 	covering := make([]permdomain.GroupFunnel, 0, len(groups))
@@ -113,6 +118,11 @@ func (p *LoadBalancePicker) pickInternal(ctx context.Context, tenantID, funnelID
 			if errors.Is(err, authdomain.ErrLoadBalanceNotFound) {
 				continue
 			}
+			p.log.Error("load_balance.pick lb_lookup_error",
+				zap.String("tenant_id", tenantID),
+				zap.String("group_id", gf.GroupID),
+				zap.Error(err),
+			)
 			return p.fallbackToOwner(ctx, tenantID, "lb_lookup_error")
 		}
 		if cfg != nil && cfg.Active {
@@ -134,13 +144,27 @@ func (p *LoadBalancePicker) pickInternal(ctx context.Context, tenantID, funnelID
 	// 3. Fetch group members and filter to active tenant members.
 	ugs, err := p.userGroupRepo.FindByGroupID(ctx, chosen.groupID)
 	if err != nil {
+		p.log.Error("load_balance.pick member_lookup_error",
+			zap.String("tenant_id", tenantID),
+			zap.String("group_id", chosen.groupID),
+			zap.Error(err),
+		)
 		return p.fallbackToOwner(ctx, tenantID, "member_lookup_error")
 	}
 	members := make([]string, 0, len(ugs))
 	for _, ug := range ugs {
-		if _, err := p.userTenantRepo.FindByUserAndTenant(ctx, ug.UserID, tenantID); err == nil {
-			members = append(members, ug.UserID)
+		if _, err := p.userTenantRepo.FindByUserAndTenant(ctx, ug.UserID, tenantID); err != nil {
+			if errors.Is(err, authdomain.ErrUserNotFound) {
+				continue // legitimately not a tenant member
+			}
+			p.log.Error("load_balance.pick member_check_error",
+				zap.String("tenant_id", tenantID),
+				zap.String("user_id", ug.UserID),
+				zap.Error(err),
+			)
+			return p.fallbackToOwner(ctx, tenantID, "member_check_error")
 		}
+		members = append(members, ug.UserID)
 	}
 	if len(members) == 0 {
 		return p.fallbackToOwner(ctx, tenantID, "no_active_members")
@@ -149,6 +173,11 @@ func (p *LoadBalancePicker) pickInternal(ctx context.Context, tenantID, funnelID
 	// 4. Apply the algorithm.
 	pickedUserID, err := p.applyAlgorithm(ctx, tenantID, chosen.cfg, members)
 	if err != nil {
+		p.log.Error("load_balance.pick algorithm_error",
+			zap.String("tenant_id", tenantID),
+			zap.String("group_id", chosen.groupID),
+			zap.Error(err),
+		)
 		return p.fallbackToOwner(ctx, tenantID, "algorithm_error")
 	}
 	algorithm := string(chosen.cfg.Algorithm)
@@ -196,6 +225,10 @@ func (p *LoadBalancePicker) applyAlgorithm(ctx context.Context, tenantID string,
 		}
 		return members[idx], nil
 	default:
+		p.log.Warn("load_balance.pick unknown_algorithm",
+			zap.String("tenant_id", tenantID),
+			zap.String("algorithm", string(cfg.Algorithm)),
+		)
 		return members[0], nil
 	}
 }
@@ -207,11 +240,22 @@ func (p *LoadBalancePicker) fallbackToOwner(ctx context.Context, tenantID, reaso
 	}
 	for _, ut := range uts {
 		if ut.IsOwner {
-			p.log.Info("load_balance.pick fallback_owner",
+			fields := []zap.Field{
 				zap.String("tenant_id", tenantID),
 				zap.String("reason", reason),
 				zap.String("picked_user_id", ut.UserID),
-			)
+			}
+			// Choose log level by reason. Infra-error reasons are Warn so the
+			// fallback is noticed even without checking the preceding Error log.
+			// multiple_active_groups is already logged at Error upstream; here we
+			// stay at Info to avoid double-Error on the same event.
+			switch reason {
+			case "group_lookup_error", "lb_lookup_error", "member_lookup_error",
+				"member_check_error", "algorithm_error":
+				p.log.Warn("load_balance.pick fallback_owner", fields...)
+			default:
+				p.log.Info("load_balance.pick fallback_owner", fields...)
+			}
 			return funneldomain.PickResult{
 				UserID:  ut.UserID,
 				Outcome: funneldomain.PickOutcomeFallbackOwner,
