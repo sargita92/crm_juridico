@@ -14,9 +14,11 @@ import (
 
 // Module wires together the permission feature.
 type Module struct {
-	handler    *permhttp.Handler
-	resolverUC *application.ResolvePermissionUseCase
-	vpUC       *application.ManageViewProfilesUseCase
+	handler       *permhttp.Handler
+	resolverUC    *application.ResolvePermissionUseCase
+	vpUC          *application.ManageViewProfilesUseCase
+	listGroupsUC  *application.ListGroupsUseCase
+	managePermsUC *application.ManagePermissionsUseCase
 }
 
 // NewModule creates all permission repositories, use cases, and handlers.
@@ -59,9 +61,11 @@ func NewModule(db *gorm.DB, log *zap.Logger, loadBalanceUC *authapp.ManageLoadBa
 	)
 
 	return &Module{
-		handler:    handler,
-		resolverUC: resolverUC,
-		vpUC:       manageVPUC,
+		handler:       handler,
+		resolverUC:    resolverUC,
+		vpUC:          manageVPUC,
+		listGroupsUC:  listGroupsUC,
+		managePermsUC: managePermsUC,
 	}
 }
 
@@ -78,3 +82,11 @@ func (m *Module) Resolver() *application.ResolvePermissionUseCase { return m.res
 
 // ViewProfileUC exposes the ManageViewProfilesUseCase for cross-module use.
 func (m *Module) ViewProfileUC() *application.ManageViewProfilesUseCase { return m.vpUC }
+
+// ListGroupsUseCase exposes ListGroups for cross-module use.
+func (m *Module) ListGroupsUseCase() *application.ListGroupsUseCase { return m.listGroupsUC }
+
+// ManagePermissionsUseCase exposes permissions CRUD for cross-module use.
+func (m *Module) ManagePermissionsUseCase() *application.ManagePermissionsUseCase {
+	return m.managePermsUC
+}

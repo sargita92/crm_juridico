@@ -176,6 +176,9 @@ func main() {
 	// Permission module (depends on authMod for load balance use case)
 	permissionMod := permission.NewModule(db, log, authMod.LoadBalanceUseCase())
 
+	// Wire cross-module permission use cases into auth's PageHandler (resolves circular dep at construction).
+	authMod.AttachPermissionDeps(permissionMod.ListGroupsUseCase(), permissionMod.ManagePermissionsUseCase(), permissionMod.Resolver(), log)
+
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod, automationMod}
 
 	// Token provider is used for the auth middleware and admin login route
