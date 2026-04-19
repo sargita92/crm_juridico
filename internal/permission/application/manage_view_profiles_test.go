@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	infra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,15 +27,18 @@ func TestManageViewProfiles_SetViewProfile_Create(t *testing.T) {
 	repo := newMockViewProfileRepo()
 	uc := NewManageViewProfilesUseCase(repo)
 
+	before := testutil.ToFloat64(infra.ChangesTotal.WithLabelValues("view_profile", "updated"))
 	err := uc.SetViewProfile(context.Background(), ViewProfileInput{
 		GroupID:        "group-1",
 		FunnelID:       "funnel-1",
 		VisibleColumns: []string{"col-1", "col-2"},
 	})
+	after := testutil.ToFloat64(infra.ChangesTotal.WithLabelValues("view_profile", "updated"))
 
 	require.NoError(t, err)
 	assert.Len(t, repo.profiles, 1)
 	assert.Equal(t, []string{"col-1", "col-2"}, repo.profiles[0].VisibleColumns)
+	assert.Equal(t, before+1, after)
 }
 
 func TestManageViewProfiles_SetViewProfile_Update(t *testing.T) {

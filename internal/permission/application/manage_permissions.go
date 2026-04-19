@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
+	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 )
 
 // PermissionInput describes a resource+action pair to be assigned.
@@ -57,6 +58,7 @@ func (uc *ManagePermissionsUseCase) SetGroupPermissions(ctx context.Context, ten
 			return err
 		}
 	}
+	infrastructure.ChangesTotal.WithLabelValues("group", "updated").Inc()
 	return nil
 }
 
@@ -84,6 +86,7 @@ func (uc *ManagePermissionsUseCase) SetUserPermissions(ctx context.Context, tena
 			return err
 		}
 	}
+	infrastructure.ChangesTotal.WithLabelValues("user", "updated").Inc()
 	return nil
 }
 

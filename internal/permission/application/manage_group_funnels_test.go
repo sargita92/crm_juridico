@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	infra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,17 +26,20 @@ func TestManageGroupFunnels_SetGroupFunnel_Success(t *testing.T) {
 	repo := newMockGroupFunnelRepo()
 	uc := NewManageGroupFunnelsUseCase(repo)
 
+	before := testutil.ToFloat64(infra.ChangesTotal.WithLabelValues("funnel", "updated"))
 	err := uc.SetGroupFunnel(context.Background(), GroupFunnelInput{
 		GroupID:   "group-1",
 		FunnelID:  "funnel-1",
 		ColumnIDs: []string{"col-1", "col-2"},
 	})
+	after := testutil.ToFloat64(infra.ChangesTotal.WithLabelValues("funnel", "updated"))
 
 	require.NoError(t, err)
 	assert.Len(t, repo.funnels, 1)
 	assert.Equal(t, "group-1", repo.funnels[0].GroupID)
 	assert.Equal(t, "funnel-1", repo.funnels[0].FunnelID)
 	assert.Equal(t, []string{"col-1", "col-2"}, repo.funnels[0].ColumnIDs)
+	assert.Equal(t, before+1, after)
 }
 
 func TestManageGroupFunnels_SetGroupFunnel_Update(t *testing.T) {

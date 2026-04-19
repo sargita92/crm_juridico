@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
+	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 )
 
 // ViewProfileInput is the data required to set a view profile for a group.
@@ -44,14 +45,22 @@ func (uc *ManageViewProfilesUseCase) SetViewProfile(ctx context.Context, input V
 
 	if existing != nil {
 		existing.UpdateColumns(input.VisibleColumns)
-		return uc.profiles.CreateOrUpdate(ctx, existing)
+		if err := uc.profiles.CreateOrUpdate(ctx, existing); err != nil {
+			return err
+		}
+		infrastructure.ChangesTotal.WithLabelValues("view_profile", "updated").Inc()
+		return nil
 	}
 
 	vp, err := domain.NewViewProfile(uuid.New().String(), input.GroupID, input.FunnelID, input.VisibleColumns)
 	if err != nil {
 		return err
 	}
-	return uc.profiles.CreateOrUpdate(ctx, vp)
+	if err := uc.profiles.CreateOrUpdate(ctx, vp); err != nil {
+		return err
+	}
+	infrastructure.ChangesTotal.WithLabelValues("view_profile", "updated").Inc()
+	return nil
 }
 
 // ListByGroup returns all view profiles associated with the given group.

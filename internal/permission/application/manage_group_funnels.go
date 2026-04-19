@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
+	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 )
 
 // GroupFunnelInput is the data required to associate a group with a funnel.
@@ -38,7 +39,11 @@ func (uc *ManageGroupFunnelsUseCase) SetGroupFunnel(ctx context.Context, input G
 	if err != nil {
 		return err
 	}
-	return uc.funnels.CreateOrUpdate(ctx, gf)
+	if err := uc.funnels.CreateOrUpdate(ctx, gf); err != nil {
+		return err
+	}
+	infrastructure.ChangesTotal.WithLabelValues("funnel", "updated").Inc()
+	return nil
 }
 
 // ListByGroup returns all funnel associations for the given group.
