@@ -27,9 +27,13 @@ type fakeTenantHTTPProvider struct {
 	funil     domain.FunilBlock
 	funilName string
 	whats     domain.WhatsAppStats
+	// lastUserFilter captura o ponteiro de filtro userID passado pelo UC ao provider
+	// (usado por owasp_test.go para validar isolamento de escopo). Reescrito a cada chamada.
+	lastUserFilter *string
 }
 
-func (f *fakeTenantHTTPProvider) FunilBlock(_ context.Context, _ string, _ *string, _ time.Time) (*domain.FunilBlock, string, error) {
+func (f *fakeTenantHTTPProvider) FunilBlock(_ context.Context, _ string, userFilter *string, _ time.Time) (*domain.FunilBlock, string, error) {
+	f.lastUserFilter = userFilter
 	return &f.funil, f.funilName, nil
 }
 func (f *fakeTenantHTTPProvider) WhatsAppBlock(_ context.Context, _ string, _ *string) (*domain.WhatsAppStats, error) {
