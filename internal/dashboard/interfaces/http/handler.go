@@ -2,12 +2,14 @@ package http
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/dashboard/application"
+	"github.com/sasrgita/crm-juridico/internal/dashboard/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
@@ -62,20 +64,37 @@ func (h *Handler) tenantFragment(c *gin.Context) {
 }
 
 func (h *Handler) renderTenant(c *gin.Context, tmpl string) {
-	ctx := c.Request.Context()
+	start := time.Now()
+	scope := "tenant"
+	outcome := "success"
+	defer func() {
+		infrastructure.RenderDuration.WithLabelValues(scope).Observe(time.Since(start).Seconds())
+		infrastructure.LoadTotal.WithLabelValues(scope, outcome).Inc()
+	}()
+
+	ctx, span := httpTracer.Start(c.Request.Context(), "dashboard.http.tenant")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+
 	claims := middleware.GetClaims(ctx)
 	if claims == nil {
+		outcome = "error"
 		c.String(http.StatusUnauthorized, "no claims")
 		return
 	}
 	tenantID := middleware.GetTenantID(ctx)
 	if tenantID == "" {
+		outcome = "error"
 		c.String(http.StatusBadRequest, "no tenant context")
 		return
 	}
 	isOwner, err := h.userTenants.IsOwner(ctx, claims.UserID, tenantID)
 	if err != nil {
-		h.log.Error("tenant dashboard: check owner", zap.Error(err))
+		outcome = "error"
+		h.log.Error("dashboard tenant: check owner",
+			zap.Error(err),
+			zap.String("tenant_id", tenantID),
+			zap.String("user_id", claims.UserID))
 		c.String(http.StatusInternalServerError, "erro interno")
 		return
 	}
@@ -89,7 +108,11 @@ func (h *Handler) renderTenant(c *gin.Context, tmpl string) {
 		IsOwner:  isOwner,
 	})
 	if err != nil {
-		h.log.Error("tenant dashboard: execute", zap.Error(err))
+		outcome = "error"
+		h.log.Error("dashboard tenant: execute",
+			zap.Error(err),
+			zap.String("tenant_id", tenantID),
+			zap.String("user_id", claims.UserID))
 		c.String(http.StatusInternalServerError, "erro ao carregar dashboard")
 		return
 	}
@@ -98,6 +121,13 @@ func (h *Handler) renderTenant(c *gin.Context, tmpl string) {
 		"Stats":    vm,
 		"TenantID": tenantID,
 	})
+
+	h.log.Info("dashboard_rendered",
+		zap.String("scope", scope),
+		zap.String("tenant_id", tenantID),
+		zap.String("user_id", claims.UserID),
+		zap.Bool("scope_is_user", !isOwner),
+		zap.Duration("took", time.Since(start)))
 }
 
 func (h *Handler) adminPage(c *gin.Context) {
@@ -109,13 +139,40 @@ func (h *Handler) adminFragment(c *gin.Context) {
 }
 
 func (h *Handler) renderAdmin(c *gin.Context, tmpl string) {
-	ctx := c.Request.Context()
+	start := time.Now()
+	scope := "admin"
+	outcome := "success"
+	defer func() {
+		infrastructure.RenderDuration.WithLabelValues(scope).Observe(time.Since(start).Seconds())
+		infrastructure.LoadTotal.WithLabelValues(scope, outcome).Inc()
+	}()
+
+	ctx, span := httpTracer.Start(c.Request.Context(), "dashboard.http.admin")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+
+	claims := middleware.GetClaims(ctx)
+
 	stats, err := h.adminUC.Execute(ctx)
 	if err != nil {
-		h.log.Error("admin dashboard: execute", zap.Error(err))
+		outcome = "error"
+		userID := ""
+		if claims != nil {
+			userID = claims.UserID
+		}
+		h.log.Error("dashboard admin: execute",
+			zap.Error(err),
+			zap.String("user_id", userID))
 		c.String(http.StatusInternalServerError, "erro ao carregar dashboard")
 		return
 	}
 	vm := ToAdminView(stats)
 	c.HTML(http.StatusOK, tmpl, gin.H{"Stats": vm})
+
+	if claims != nil {
+		h.log.Info("dashboard_rendered",
+			zap.String("scope", scope),
+			zap.String("user_id", claims.UserID),
+			zap.Duration("took", time.Since(start)))
+	}
 }

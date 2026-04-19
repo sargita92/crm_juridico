@@ -153,3 +153,26 @@ Dashboards sugeridos:
 
 - `pagamentos_cron_runs_total{status="error"}` > 0 em janelas de 10m (cron diário falhou)
 - `histogram_quantile(0.95, rate(pagamentos_cron_duration_seconds_bucket[1h]))` > 60s (cron demorando demais)
+
+## F19 — Dashboards
+
+**Métricas Prometheus** (`/metrics`):
+
+- `dashboard_render_duration_seconds{scope="tenant|admin"}` — histograma (default buckets) com o tempo total do handler, do request até o HTML final.
+- `dashboard_load_total{scope="tenant|admin", outcome="success|error"}` — contador de carregamentos por escopo e desfecho.
+
+**Logs estruturados (zap)**:
+
+- `dashboard_rendered` — emitido após sucesso. Campos: `scope`, `tenant_id` (apenas tenant), `user_id`, `scope_is_user` (apenas tenant; `true` quando o caso de uso aplicou recorte por usuário), `took` (duração).
+- `dashboard tenant: check owner` / `dashboard tenant: execute` / `dashboard admin: execute` — emitidos em erros, com `tenant_id` (quando aplicável) e `user_id`.
+
+**Traces OpenTelemetry**:
+
+- HTTP boundary (tracer `dashboard.http`): `dashboard.http.tenant`, `dashboard.http.admin` — span pai, instrumentado no handler.
+- Use cases (tracer `dashboard`): `GetTenantDashboard`, `GetAdminDashboard` — criados nas Tasks 2/3 e ficam como filhos do span HTTP. O span do tenant carrega atributos `tenant_id` e `is_owner`.
+
+**Dashboards Grafana sugeridos**:
+
+- Latência p50/p95/p99 por escopo: `histogram_quantile(0.95, sum(rate(dashboard_render_duration_seconds_bucket[5m])) by (le, scope))`.
+- Taxa de erro por escopo: `sum(rate(dashboard_load_total{outcome="error"}[5m])) by (scope) / sum(rate(dashboard_load_total[5m])) by (scope)`.
+- Volume de carregamentos: `sum(rate(dashboard_load_total[5m])) by (scope)`.
