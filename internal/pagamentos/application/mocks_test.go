@@ -3,6 +3,7 @@ package application_test
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
@@ -26,6 +27,16 @@ func (f *fakeIDGen) NewID() string {
 		return "gen-default"
 	}
 	return f.id
+}
+
+type seqIDGen struct {
+	prefix string
+	seq    int
+}
+
+func (s *seqIDGen) NewID() string {
+	s.seq++
+	return s.prefix + strconv.Itoa(s.seq)
 }
 
 type fakeRepo struct {
