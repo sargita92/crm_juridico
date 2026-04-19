@@ -20,41 +20,56 @@ func escapeLike(s string) string {
 }
 
 type tenantModel struct {
-	ID          string `gorm:"primaryKey;column:id;type:char(36)"`
-	Name        string `gorm:"column:name;type:varchar(255);not null"`
-	Type        string `gorm:"column:type;type:enum('PF','PJ');not null"`
-	Document    string `gorm:"column:document;type:varchar(20);not null;uniqueIndex:idx_tenants_document"`
-	Status      string `gorm:"column:status;type:enum('active','blocked','inactive');not null;default:active"`
-	BlockReason string `gorm:"column:block_reason;type:varchar(500)"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                 string     `gorm:"primaryKey;column:id;type:char(36)"`
+	Name               string     `gorm:"column:name;type:varchar(255);not null"`
+	Type               string     `gorm:"column:type;type:enum('PF','PJ');not null"`
+	Document           string     `gorm:"column:document;type:varchar(20);not null;uniqueIndex:idx_tenants_document"`
+	Status             string     `gorm:"column:status;type:enum('active','blocked','inactive');not null;default:active"`
+	BlockReason        string     `gorm:"column:block_reason;type:varchar(500)"`
+	Plano              string     `gorm:"column:plano;type:varchar(20);not null;default:mensal"`
+	ValorCobrancaCents *int64     `gorm:"column:valor_cobranca_cents"`
+	DiaVencimento      *uint8     `gorm:"column:dia_vencimento"`
+	DataInicioCobranca *time.Time `gorm:"column:data_inicio_cobranca"`
+	ExibirPagamentos   bool       `gorm:"column:exibir_pagamentos;not null"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 func (tenantModel) TableName() string { return "tenants" }
 
 func toModel(t *domain.Tenant) *tenantModel {
 	return &tenantModel{
-		ID:          t.ID,
-		Name:        t.Name,
-		Type:        string(t.Type),
-		Document:    t.Document,
-		Status:      string(t.Status),
-		BlockReason: t.BlockReason,
-		CreatedAt:   t.CreatedAt,
-		UpdatedAt:   t.UpdatedAt,
+		ID:                 t.ID,
+		Name:               t.Name,
+		Type:               string(t.Type),
+		Document:           t.Document,
+		Status:             string(t.Status),
+		BlockReason:        t.BlockReason,
+		Plano:              t.Plano,
+		ValorCobrancaCents: t.ValorCobrancaCents,
+		DiaVencimento:      t.DiaVencimento,
+		DataInicioCobranca: t.DataInicioCobranca,
+		ExibirPagamentos:   t.ExibirPagamentos,
+		CreatedAt:          t.CreatedAt,
+		UpdatedAt:          t.UpdatedAt,
 	}
 }
 
 func toDomain(m *tenantModel) *domain.Tenant {
 	return &domain.Tenant{
-		ID:          m.ID,
-		Name:        m.Name,
-		Type:        domain.TenantType(m.Type),
-		Document:    m.Document,
-		Status:      domain.TenantStatus(m.Status),
-		BlockReason: m.BlockReason,
-		CreatedAt:   m.CreatedAt,
-		UpdatedAt:   m.UpdatedAt,
+		ID:                 m.ID,
+		Name:               m.Name,
+		Type:               domain.TenantType(m.Type),
+		Document:           m.Document,
+		Status:             domain.TenantStatus(m.Status),
+		BlockReason:        m.BlockReason,
+		Plano:              m.Plano,
+		ValorCobrancaCents: m.ValorCobrancaCents,
+		DiaVencimento:      m.DiaVencimento,
+		DataInicioCobranca: m.DataInicioCobranca,
+		ExibirPagamentos:   m.ExibirPagamentos,
+		CreatedAt:          m.CreatedAt,
+		UpdatedAt:          m.UpdatedAt,
 	}
 }
 

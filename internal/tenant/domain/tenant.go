@@ -36,14 +36,19 @@ var (
 )
 
 type Tenant struct {
-	ID          string
-	Name        string
-	Type        TenantType
-	Document    string
-	Status      TenantStatus
-	BlockReason string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                 string
+	Name               string
+	Type               TenantType
+	Document           string
+	Status             TenantStatus
+	BlockReason        string
+	Plano              string
+	ValorCobrancaCents *int64
+	DiaVencimento      *uint8
+	DataInicioCobranca *time.Time
+	ExibirPagamentos   bool
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 func NewTenant(id, name string, tenantType TenantType, document string) (*Tenant, error) {
@@ -59,14 +64,28 @@ func NewTenant(id, name string, tenantType TenantType, document string) (*Tenant
 
 	now := time.Now()
 	return &Tenant{
-		ID:        id,
-		Name:      name,
-		Type:      tenantType,
-		Document:  document,
-		Status:    TenantStatusActive,
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:               id,
+		Name:             name,
+		Type:             tenantType,
+		Document:         document,
+		Status:           TenantStatusActive,
+		Plano:            "mensal",
+		ExibirPagamentos: true,
+		CreatedAt:        now,
+		UpdatedAt:        now,
 	}, nil
+}
+
+// SetBillingConfig atualiza os campos de cobrança do tenant. A validação de
+// combinações válidas (ex: plano mensal exige valor/dia/data) é feita na
+// aplicação antes de chamar esse setter.
+func (t *Tenant) SetBillingConfig(plano string, valorCents *int64, dia *uint8, start *time.Time, exibir bool) {
+	t.Plano = plano
+	t.ValorCobrancaCents = valorCents
+	t.DiaVencimento = dia
+	t.DataInicioCobranca = start
+	t.ExibirPagamentos = exibir
+	t.UpdatedAt = time.Now()
 }
 
 func (t *Tenant) IsActive() bool {

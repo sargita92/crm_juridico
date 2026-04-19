@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -290,4 +291,26 @@ func TestGormTenantRepository_FindByDocument_NotFound(t *testing.T) {
 
 	_, err := repo.FindByDocument(context.Background(), "00.000.000/0000-00")
 	assert.ErrorIs(t, err, domain.ErrTenantNotFound)
+}
+
+func TestTenantRepository_BillingFields_Roundtrip(t *testing.T) {
+	repo, _ := setupTenantRepo(t)
+
+	tn, err := domain.NewTenant(uuid.New().String(), "BF", domain.TenantTypePJ, uuid.New().String()[:20])
+	require.NoError(t, err)
+	valor := int64(75000)
+	dia := uint8(15)
+	start := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+	tn.SetBillingConfig("anual", &valor, &dia, &start, false)
+	require.NoError(t, repo.Create(context.Background(), tn))
+
+	got, err := repo.FindByID(context.Background(), tn.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "anual", got.Plano)
+	require.NotNil(t, got.ValorCobrancaCents)
+	assert.Equal(t, int64(75000), *got.ValorCobrancaCents)
+	require.NotNil(t, got.DiaVencimento)
+	assert.Equal(t, uint8(15), *got.DiaVencimento)
+	require.NotNil(t, got.DataInicioCobranca)
+	assert.False(t, got.ExibirPagamentos)
 }
