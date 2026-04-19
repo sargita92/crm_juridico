@@ -2,10 +2,13 @@ package application_test
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 )
+
+var errBoom = errors.New("boom")
 
 type fakeClock struct{ now time.Time }
 
@@ -116,4 +119,28 @@ func (r *fakeRepo) Summary(_ context.Context, _ string, _ time.Time) (*domain.Su
 		return nil, r.summaryErr
 	}
 	return r.summaryResult, nil
+}
+
+type fakeBillingRepo struct {
+	byID   map[string]*domain.TenantBilling
+	listed []domain.TenantBilling
+	getErr error
+}
+
+func newFakeBillingRepo() *fakeBillingRepo {
+	return &fakeBillingRepo{byID: map[string]*domain.TenantBilling{}}
+}
+
+func (r *fakeBillingRepo) GetByID(_ context.Context, tenantID string) (*domain.TenantBilling, error) {
+	if r.getErr != nil {
+		return nil, r.getErr
+	}
+	if tb, ok := r.byID[tenantID]; ok {
+		return tb, nil
+	}
+	return nil, domain.ErrTenantNotFound
+}
+
+func (r *fakeBillingRepo) ListActiveBillable(_ context.Context) ([]domain.TenantBilling, error) {
+	return r.listed, nil
 }
