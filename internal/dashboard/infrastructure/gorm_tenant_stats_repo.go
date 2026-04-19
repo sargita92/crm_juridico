@@ -272,6 +272,8 @@ func (r *GormTenantStatsRepo) ResponsaveisBlock(ctx context.Context, tenantID st
 				COUNT(l.id) AS total,
 				SUM(CASE WHEN l.status='won' THEN 1 ELSE 0 END) AS won,
 				SUM(CASE WHEN l.status='lost' THEN 1 ELSE 0 END) AS lost`).
+		// LEFT JOIN preserva leads cujo responsible_user_id aponta para usuário deletado/inexistente
+		// (não há FK enforçando users.id). Esses casos aparecem com UserName vazio, em vez de sumirem do relatório.
 		Joins("LEFT JOIN users u ON u.id = l.responsible_user_id").
 		Where("l.tenant_id = ? AND l.responsible_user_id IS NOT NULL", tenantID)
 	q = applyLeadUserScope(q, userID, "l")
@@ -318,6 +320,8 @@ func (r *GormTenantStatsRepo) TempoFunilBlock(ctx context.Context, tenantID stri
 		Stuck      int64
 	}
 	var rows []row
+	// AvgHours considera todos os leads (incluindo won/lost) — representa tempo histórico de processamento.
+	// StuckOver7Days conta apenas status='open' — representa trabalho pendente.
 	q := r.db.WithContext(ctx).Table("leads AS l").
 		Select(`c.id AS column_id, c.name AS name, c.order_index AS order_index,
 				AVG(TIMESTAMPDIFF(HOUR, l.column_entered_at, ?)) AS avg_hours,

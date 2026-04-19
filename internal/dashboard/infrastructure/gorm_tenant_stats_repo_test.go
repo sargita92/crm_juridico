@@ -638,3 +638,39 @@ func TestTempoFunilBlock_StuckOver7Days(t *testing.T) {
 	require.Len(t, got, 1)
 	assert.Equal(t, int64(1), got[0].StuckOver7Days) // só leadStuck
 }
+
+func TestResponsaveisBlock_EmptyTenant(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+
+	got, err := repo.ResponsaveisBlock(ctx, tenantID, nil)
+	require.NoError(t, err)
+	assert.NotNil(t, got, "deve retornar slice vazio (não nil) para handler iterar")
+	assert.Empty(t, got)
+}
+
+func TestTempoFunilBlock_EmptyTenant(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	// Tenant sem default funnel → método curto-circuita e retorna (nil, nil).
+	// Esse caso é distinto de "tem funnel mas sem leads" (que retornaria slice vazio).
+
+	got, err := repo.TempoFunilBlock(ctx, tenantID, nil, time.Now())
+	require.NoError(t, err)
+	assert.Nil(t, got, "sem default funnel → retorna nil (não slice vazio); handler deve tratar como empty state")
+}
+
+func TestTempoFunilBlock_FunnelExists_NoLeads(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	seedFunnelDefault(t, db, tenantID, "Funil")
+	// Funnel existe mas sem leads → contraste com TestTempoFunilBlock_EmptyTenant.
+
+	got, err := repo.TempoFunilBlock(ctx, tenantID, nil, time.Now())
+	require.NoError(t, err)
+	assert.NotNil(t, got, "deve retornar slice vazio (não nil) quando funnel existe sem leads")
+	assert.Empty(t, got)
+}
