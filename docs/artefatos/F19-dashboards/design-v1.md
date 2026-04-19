@@ -94,9 +94,11 @@ internal/dashboard/
 - Qualificacoes realizadas (contador)
 - Agentes por tenant (bar chart)
 
-### Bloco 6: Financeiro/Billing
-- Placeholder visual: card com "Em breve" e icone
-- Estrutura preparada no backend para receber dados futuros
+### Bloco 6: Financeiro/Billing (revisado 2026-04-19 — dados reais de F11)
+- Contadores do ano corrente: receita (pago), total pendente, total atrasado — agregados de todos os tenants
+- Distribuição de tenants por plano (doughnut): mensal / anual / vitalício / externo
+- Top 10 tenants com maior valor atrasado (bar horizontal)
+- Fonte: `internal/pagamentos` (PaymentRepository + BillingConfig)
 
 ## UI — Layout Comum
 

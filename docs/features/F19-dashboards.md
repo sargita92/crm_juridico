@@ -56,7 +56,7 @@ Ver [docs/artefatos/F19-dashboards/design-v1.md](../artefatos/F19-dashboards/des
 - [ ] Bloco 3 — Health por tenant: top 10 mais ativos (bar horizontal), inativos > 30 dias (lista + alerta)
 - [ ] Bloco 4 — Infraestrutura: latência média, taxa de 5xx, status de serviços (Prometheus)
 - [ ] Bloco 5 — Especialistas/IA: total de agentes, qualificações, agentes por tenant
-- [ ] Bloco 6 — Financeiro/Billing: placeholder "Em breve" com estrutura pronta no backend
+- [ ] Bloco 6 — Financeiro/Billing (dados reais de F11): receita do ano, total pendente, total atrasado (contadores), tenants por plano (doughnut), top 10 tenants atrasados (bar horizontal)
 
 ### Step 6: Frontend comum
 - [ ] Chart.js via CDN no layout (admin e tenant)
