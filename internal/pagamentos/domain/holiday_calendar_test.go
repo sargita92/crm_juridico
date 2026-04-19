@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -114,6 +115,54 @@ func TestIsHoliday_NotHoliday(t *testing.T) {
 	cal := domain.NewBrazilHolidayCalendar()
 	assert.False(t, cal.IsHoliday(time.Date(2026, 12, 23, 0, 0, 0, 0, time.UTC)))
 	assert.False(t, cal.IsHoliday(time.Date(2026, 5, 13, 0, 0, 0, 0, time.UTC)))
+}
+
+// TestBrazilHolidayCalendar_ConcurrentAccess garante que o calendário é
+// seguro para uso concorrente. O cache por ano é populado sob demanda e,
+// sem sincronização, leituras + escritas simultâneas no mapa interno
+// causariam pânico do runtime ("fatal error: concurrent map read and map
+// write"). O teste lança 50 goroutines exercitando IsHoliday,
+// NextBusinessDay e AddBusinessDays em múltiplos anos (2024-2028), de modo
+// a forçar tanto cache miss (primeira chamada de cada ano) quanto cache
+// hit. Deve ser executado com -race para flagrar qualquer regressão.
+func TestBrazilHolidayCalendar_ConcurrentAccess(t *testing.T) {
+	cal := domain.NewBrazilHolidayCalendar()
+
+	years := []int{2024, 2025, 2026, 2027, 2028}
+	const goroutines = 50
+	const iterationsPerGoroutine = 100
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	start := make(chan struct{})
+
+	for g := 0; g < goroutines; g++ {
+		go func(id int) {
+			defer wg.Done()
+			<-start // libera todas ao mesmo tempo, maximizando o stress
+
+			for i := 0; i < iterationsPerGoroutine; i++ {
+				year := years[(id+i)%len(years)]
+				month := time.Month(((id + i) % 12) + 1)
+				day := ((id+i)%27 + 1)
+				d := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+
+				_ = cal.IsHoliday(d)
+				_ = cal.NextBusinessDay(d)
+				_ = cal.AddBusinessDays(d, (id+i)%5)
+			}
+		}(g)
+	}
+
+	close(start)
+	wg.Wait()
+
+	// Sanity check pós-stress: o cache continua íntegro e devolve resultados
+	// determinísticos para feriados conhecidos em cada ano exercitado.
+	for _, year := range years {
+		newYear := time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC)
+		assert.Truef(t, cal.IsHoliday(newYear), "1 jan %d deve ser feriado após acesso concorrente", year)
+	}
 }
 
 func TestEaster_KnownYears(t *testing.T) {

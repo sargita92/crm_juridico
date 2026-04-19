@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // HolidayCalendar abstrai um calendário de feriados, usado pelo cron de
 // pagamentos para calcular vencimentos prorrogando para o próximo dia útil.
@@ -15,7 +18,14 @@ type HolidayCalendar interface {
 // Christi) são calculados a partir da Páscoa pelo algoritmo anônimo
 // gregoriano de Meeus/Jones/Butcher. Os feriados são carregados sob demanda
 // por ano e mantidos em cache.
+//
+// O calendário é seguro para uso concorrente: o cache por ano é protegido
+// por sync.RWMutex, permitindo múltiplas leituras simultâneas (caminho
+// quente, com cache hit) e serializando apenas a primeira escrita de cada
+// ano (cache miss). Necessário porque o calendário é compartilhado entre o
+// cron diário de pagamentos e chamadas concorrentes de handlers HTTP.
 type BrazilHolidayCalendar struct {
+	mu    sync.RWMutex
 	cache map[int]map[string]bool
 }
 
@@ -70,7 +80,21 @@ func (c *BrazilHolidayCalendar) isBusinessDay(day time.Time) bool {
 
 // holidaysForYear devolve o conjunto de feriados (chaveado por YYYY-MM-DD)
 // para o ano informado, carregando-o sob demanda.
+//
+// Usa o padrão double-check: tenta ler com lock compartilhado (RLock); se
+// cache miss, adquire lock exclusivo (Lock) e revalida antes de escrever,
+// evitando que duas goroutines que perderam o cache simultaneamente
+// recomputem e sobrescrevam o conjunto de feriados.
 func (c *BrazilHolidayCalendar) holidaysForYear(year int) map[string]bool {
+	c.mu.RLock()
+	cached, ok := c.cache[year]
+	c.mu.RUnlock()
+	if ok {
+		return cached
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if cached, ok := c.cache[year]; ok {
 		return cached
 	}
