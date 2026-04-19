@@ -76,3 +76,56 @@ func TestToTenantView_PopulatesAllBlocks(t *testing.T) {
 	assert.True(t, vm.ScopeIsUser)
 	assert.Equal(t, "Maria", vm.CurrentUserName)
 }
+
+func TestToAdminView_NilProducesEmpty(t *testing.T) {
+	vm := dashhttp.ToAdminView(nil)
+	assert.NotNil(t, vm)
+	assert.Equal(t, int64(0), vm.Bloco1_Tenants.Total)
+}
+
+func TestToAdminView_PopulatesAllBlocks(t *testing.T) {
+	s := &domain.AdminStats{
+		Bloco1_Tenants: domain.TenantsBlock{
+			Totals:       domain.TenantStatusCount{Active: 10, Inactive: 2, Blocked: 1},
+			NewThisMonth: 3,
+			Last6Months:  []domain.MonthlyCount{{Label: "2026-04", Count: 3}},
+		},
+		Bloco2_Uso: domain.UsageBlock{TotalLeads: 500, TotalMessages: 2000, ActiveConversations: 50},
+		Bloco3_Health: domain.HealthBlock{
+			Top10Active:  []domain.TenantActivity{{TenantID: "t1", TenantName: "T1", LeadCount: 5}},
+			InactiveList: []domain.InactiveTenant{{TenantID: "t9", TenantName: "T9", DaysInactive: 60}},
+		},
+		Bloco4_Infra: domain.Infrastructure{
+			APILatencyMs:   120.5,
+			Error5xxRate:   0.001,
+			ServicesStatus: []domain.ServiceStatus{{Name: "mysql", Up: true}},
+		},
+		Bloco5_Especialistas: domain.SpecialistsBlock{
+			Total: 8, Qualifications: 0,
+			ByTenant: []domain.SpecialistByTenant{{TenantID: "t1", TenantName: "T1", Total: 2}},
+		},
+		Bloco6_Financeiro: domain.FinancialBlock{
+			ReceitaAnoCents:    1_500_000,
+			PendenteTotalCents: 200_000,
+			AtrasadoTotalCents: 50_000,
+			PlanDist:           domain.PlanDistribution{Mensal: 5, Anual: 2, Vitalicio: 1, Externo: 0},
+			TopOverdue:         []domain.OverdueTenant{{TenantID: "t9", TenantName: "T9", ValorCents: 50_000}},
+		},
+	}
+	vm := dashhttp.ToAdminView(s)
+	require.NotNil(t, vm)
+	assert.Equal(t, int64(13), vm.Bloco1_Tenants.Total) // 10+2+1
+	require.Len(t, vm.Bloco1_Tenants.Last6Months, 1)
+	assert.Equal(t, "2026-04", vm.Bloco1_Tenants.Last6Months[0].Label)
+	assert.Equal(t, int64(500), vm.Bloco2_Uso.TotalLeads)
+	require.Len(t, vm.Bloco3_Health.Top10Active, 1)
+	require.Len(t, vm.Bloco3_Health.InactiveList, 1)
+	assert.Equal(t, "120.5ms", vm.Bloco4_Infra.APILatencyMs)
+	assert.Equal(t, "0.1%", vm.Bloco4_Infra.Error5xxRate) // 0.001 * 100
+	require.Len(t, vm.Bloco4_Infra.ServicesStatus, 1)
+	assert.Equal(t, int64(8), vm.Bloco5_Especialistas.Total)
+	assert.Equal(t, int64(8), vm.Bloco6_Financeiro.PlanDist.Total) // 5+2+1+0
+	assert.Equal(t, "R$ 15.000,00", vm.Bloco6_Financeiro.ReceitaAno)
+	require.Len(t, vm.Bloco6_Financeiro.TopOverdue, 1)
+	assert.Equal(t, "R$ 500,00", vm.Bloco6_Financeiro.TopOverdue[0].Valor)
+}

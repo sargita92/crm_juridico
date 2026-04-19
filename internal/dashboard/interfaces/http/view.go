@@ -177,3 +177,151 @@ func formatResponseSec(sec float64) string {
 	}
 	return fmt.Sprintf("%.1fh", sec/3600)
 }
+
+// AdminView é o view-model do dashboard admin. Strings já formatadas (BRL, %, etc.).
+type AdminView struct {
+	Bloco1_Tenants       TenantsView
+	Bloco2_Uso           UsageView
+	Bloco3_Health        HealthView
+	Bloco4_Infra         InfraView
+	Bloco5_Especialistas SpecialistsView
+	Bloco6_Financeiro    FinancialView
+}
+
+type TenantsView struct {
+	Active       int64
+	Inactive     int64
+	Blocked      int64
+	Total        int64
+	NewThisMonth int64
+	Last6Months  []MonthlyView
+}
+
+type MonthlyView struct {
+	Label string
+	Count int64
+}
+
+type UsageView struct {
+	TotalLeads          int64
+	TotalMessages       int64
+	ActiveConversations int64
+}
+
+type HealthView struct {
+	Top10Active  []TenantActivityView
+	InactiveList []InactiveTenantView
+}
+
+type TenantActivityView struct {
+	TenantName string
+	LeadCount  int64
+}
+
+type InactiveTenantView struct {
+	TenantName   string
+	DaysInactive int64
+}
+
+type InfraView struct {
+	APILatencyMs   string // ex: "120.5ms"
+	Error5xxRate   string // ex: "0.1%"
+	ServicesStatus []ServiceStatusView
+}
+
+type ServiceStatusView struct {
+	Name string
+	Up   bool
+}
+
+type SpecialistsView struct {
+	Total          int64
+	Qualifications int64
+	ByTenant       []SpecialistByTenantView
+}
+
+type SpecialistByTenantView struct {
+	TenantName string
+	Total      int64
+}
+
+type FinancialView struct {
+	ReceitaAno    string // BRL formatado
+	PendenteTotal string // BRL
+	AtrasadoTotal string // BRL
+	PlanDist      PlanDistributionView
+	TopOverdue    []OverdueTenantView
+}
+
+type PlanDistributionView struct {
+	Mensal    int64
+	Anual     int64
+	Vitalicio int64
+	Externo   int64
+	Total     int64 // soma — útil pra render percentuais no template
+}
+
+type OverdueTenantView struct {
+	TenantName string
+	Valor      string // BRL
+}
+
+func ToAdminView(s *domain.AdminStats) *AdminView {
+	if s == nil {
+		return &AdminView{}
+	}
+	out := &AdminView{
+		Bloco1_Tenants: TenantsView{
+			Active:       s.Bloco1_Tenants.Totals.Active,
+			Inactive:     s.Bloco1_Tenants.Totals.Inactive,
+			Blocked:      s.Bloco1_Tenants.Totals.Blocked,
+			Total:        s.Bloco1_Tenants.Totals.Active + s.Bloco1_Tenants.Totals.Inactive + s.Bloco1_Tenants.Totals.Blocked,
+			NewThisMonth: s.Bloco1_Tenants.NewThisMonth,
+		},
+		Bloco2_Uso: UsageView{
+			TotalLeads:          s.Bloco2_Uso.TotalLeads,
+			TotalMessages:       s.Bloco2_Uso.TotalMessages,
+			ActiveConversations: s.Bloco2_Uso.ActiveConversations,
+		},
+		Bloco4_Infra: InfraView{
+			APILatencyMs: fmt.Sprintf("%.1fms", s.Bloco4_Infra.APILatencyMs),
+			Error5xxRate: FormatPct(s.Bloco4_Infra.Error5xxRate * 100),
+		},
+		Bloco5_Especialistas: SpecialistsView{
+			Total:          s.Bloco5_Especialistas.Total,
+			Qualifications: s.Bloco5_Especialistas.Qualifications,
+		},
+		Bloco6_Financeiro: FinancialView{
+			ReceitaAno:    FormatBRL(s.Bloco6_Financeiro.ReceitaAnoCents),
+			PendenteTotal: FormatBRL(s.Bloco6_Financeiro.PendenteTotalCents),
+			AtrasadoTotal: FormatBRL(s.Bloco6_Financeiro.AtrasadoTotalCents),
+			PlanDist: PlanDistributionView{
+				Mensal:    s.Bloco6_Financeiro.PlanDist.Mensal,
+				Anual:     s.Bloco6_Financeiro.PlanDist.Anual,
+				Vitalicio: s.Bloco6_Financeiro.PlanDist.Vitalicio,
+				Externo:   s.Bloco6_Financeiro.PlanDist.Externo,
+				Total: s.Bloco6_Financeiro.PlanDist.Mensal + s.Bloco6_Financeiro.PlanDist.Anual +
+					s.Bloco6_Financeiro.PlanDist.Vitalicio + s.Bloco6_Financeiro.PlanDist.Externo,
+			},
+		},
+	}
+	for _, m := range s.Bloco1_Tenants.Last6Months {
+		out.Bloco1_Tenants.Last6Months = append(out.Bloco1_Tenants.Last6Months, MonthlyView{Label: m.Label, Count: m.Count})
+	}
+	for _, t := range s.Bloco3_Health.Top10Active {
+		out.Bloco3_Health.Top10Active = append(out.Bloco3_Health.Top10Active, TenantActivityView{TenantName: t.TenantName, LeadCount: t.LeadCount})
+	}
+	for _, t := range s.Bloco3_Health.InactiveList {
+		out.Bloco3_Health.InactiveList = append(out.Bloco3_Health.InactiveList, InactiveTenantView{TenantName: t.TenantName, DaysInactive: t.DaysInactive})
+	}
+	for _, ss := range s.Bloco4_Infra.ServicesStatus {
+		out.Bloco4_Infra.ServicesStatus = append(out.Bloco4_Infra.ServicesStatus, ServiceStatusView{Name: ss.Name, Up: ss.Up})
+	}
+	for _, st := range s.Bloco5_Especialistas.ByTenant {
+		out.Bloco5_Especialistas.ByTenant = append(out.Bloco5_Especialistas.ByTenant, SpecialistByTenantView{TenantName: st.TenantName, Total: st.Total})
+	}
+	for _, ov := range s.Bloco6_Financeiro.TopOverdue {
+		out.Bloco6_Financeiro.TopOverdue = append(out.Bloco6_Financeiro.TopOverdue, OverdueTenantView{TenantName: ov.TenantName, Valor: FormatBRL(ov.ValorCents)})
+	}
+	return out
+}

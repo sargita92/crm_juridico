@@ -100,10 +100,22 @@ func (h *Handler) renderTenant(c *gin.Context, tmpl string) {
 	})
 }
 
-// Stubs — Task 13 substitui.
 func (h *Handler) adminPage(c *gin.Context) {
-	c.String(http.StatusOK, "admin dashboard placeholder (Task 13)")
+	h.renderAdmin(c, "admin/dashboard/page.html")
 }
+
 func (h *Handler) adminFragment(c *gin.Context) {
-	c.String(http.StatusOK, "admin fragment placeholder (Task 13)")
+	h.renderAdmin(c, "admin/dashboard/content.html")
+}
+
+func (h *Handler) renderAdmin(c *gin.Context, tmpl string) {
+	ctx := c.Request.Context()
+	stats, err := h.adminUC.Execute(ctx)
+	if err != nil {
+		h.log.Error("admin dashboard: execute", zap.Error(err))
+		c.String(http.StatusInternalServerError, "erro ao carregar dashboard")
+		return
+	}
+	vm := ToAdminView(stats)
+	c.HTML(http.StatusOK, tmpl, gin.H{"Stats": vm})
 }
