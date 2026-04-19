@@ -117,17 +117,6 @@ func (h *Handler) HandleLogout(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (h *Handler) RenderDashboard(c *gin.Context) {
-	claims := middleware.GetClaims(c.Request.Context())
-	userName := ""
-	if claims != nil {
-		userName = claims.UserID // placeholder until we fetch the name
-	}
-	c.HTML(http.StatusOK, "auth/dashboard.html", gin.H{
-		"UserName": userName,
-	})
-}
-
 func (h *Handler) renderLoginError(c *gin.Context) {
 	// HTMX requests get the card partial (for hx-swap="outerHTML")
 	// Non-HTMX requests get the full page
@@ -150,8 +139,5 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.Handle
 	authGroup.POST("/select-tenant", h.HandleSelectTenant)
 	authGroup.POST("/logout", h.HandleLogout)
 
-	// Authenticated + tenant required
-	tenantGroup := router.Group("/")
-	tenantGroup.Use(authMw, tenantMw)
-	tenantGroup.GET("/dashboard", h.RenderDashboard)
+	_ = tenantMw // tenant middleware no longer used by auth handler — F19 dashboard module owns /dashboard now
 }
