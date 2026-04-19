@@ -386,3 +386,124 @@ func TestProdutosBlock_UserScope(t *testing.T) {
 	assert.Equal(t, "Produto u1", rows[0].ProductName)
 	assert.Equal(t, int64(1), rows[0].Total)
 }
+
+// ---------- WhatsAppBlock helpers ----------
+
+// seedMessage inserts a message row and returns its ID. timestamp e direction são explícitos.
+func seedMessage(t *testing.T, db *gorm.DB, conversationID, direction, content string, ts time.Time) string {
+	t.Helper()
+	id := uuid.New().String()
+	err := db.Exec(`INSERT INTO messages (id, conversation_id, direction, content, type, status, timestamp, created_at)
+		VALUES (?, ?, ?, ?, 'text', 'sent', ?, NOW())`,
+		id, conversationID, direction, content, ts).Error
+	require.NoError(t, err)
+	return id
+}
+
+// leadConversationID returns the conversation_id linked to a previously seeded lead.
+// seedLead cria a conversa internamente; este helper expõe esse ID para testes que
+// precisam vincular mensagens ao mesmo lead/conversa.
+func leadConversationID(t *testing.T, db *gorm.DB, leadID string) string {
+	t.Helper()
+	var convID string
+	err := db.Raw(`SELECT conversation_id FROM leads WHERE id = ?`, leadID).Scan(&convID).Error
+	require.NoError(t, err)
+	require.NotEmpty(t, convID)
+	return convID
+}
+
+// ---------- WhatsAppBlock tests ----------
+
+func TestWhatsAppBlock_CountsAndActive(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	contactID := seedContact(t, db, tenantID)
+
+	// 2 abertas, 3 fechadas — total 5 conversas
+	open1 := seedConversation(t, db, tenantID, contactID)
+	open2 := seedConversation(t, db, tenantID, contactID)
+	closed1 := seedConversation(t, db, tenantID, contactID)
+	closed2 := seedConversation(t, db, tenantID, contactID)
+	closed3 := seedConversation(t, db, tenantID, contactID)
+	// Marcar 3 como closed
+	require.NoError(t, db.Exec(`UPDATE conversations SET status='closed' WHERE id IN (?, ?, ?)`, closed1, closed2, closed3).Error)
+
+	// 10 incoming espalhadas; 7 outgoing
+	base := time.Date(2026, 4, 19, 10, 0, 0, 0, time.UTC)
+	for i := 0; i < 5; i++ {
+		seedMessage(t, db, open1, "incoming", "in", base.Add(time.Duration(i)*time.Minute))
+	}
+	for i := 0; i < 5; i++ {
+		seedMessage(t, db, open2, "incoming", "in", base.Add(time.Duration(i)*time.Minute))
+	}
+	for i := 0; i < 4; i++ {
+		seedMessage(t, db, open1, "outgoing", "out", base.Add(time.Duration(10+i)*time.Minute))
+	}
+	for i := 0; i < 3; i++ {
+		seedMessage(t, db, open2, "outgoing", "out", base.Add(time.Duration(10+i)*time.Minute))
+	}
+
+	got, err := repo.WhatsAppBlock(ctx, tenantID, nil)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), got.ActiveConversations)
+	assert.Equal(t, int64(10), got.IncomingMessages)
+	assert.Equal(t, int64(7), got.OutgoingMessages)
+}
+
+func TestWhatsAppBlock_FirstResponseAvg(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	contactID := seedContact(t, db, tenantID)
+
+	// Conversa A: incoming 10:00, outgoing 10:05 → 300s
+	convA := seedConversation(t, db, tenantID, contactID)
+	seedMessage(t, db, convA, "incoming", "x", time.Date(2026, 4, 19, 10, 0, 0, 0, time.UTC))
+	seedMessage(t, db, convA, "outgoing", "y", time.Date(2026, 4, 19, 10, 5, 0, 0, time.UTC))
+
+	// Conversa B: incoming 11:00, outgoing 11:02 → 120s
+	convB := seedConversation(t, db, tenantID, contactID)
+	seedMessage(t, db, convB, "incoming", "x", time.Date(2026, 4, 19, 11, 0, 0, 0, time.UTC))
+	seedMessage(t, db, convB, "outgoing", "y", time.Date(2026, 4, 19, 11, 2, 0, 0, time.UTC))
+
+	got, err := repo.WhatsAppBlock(ctx, tenantID, nil)
+	require.NoError(t, err)
+	assert.InDelta(t, 210.0, got.FirstResponseAvgSec, 0.5) // (300+120)/2 = 210
+}
+
+func TestWhatsAppBlock_UserScope_FiltersByLeadResponsible(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	funnelID := seedFunnelDefault(t, db, tenantID, "Funil")
+	columnID := seedColumn(t, db, funnelID, "Novos", 0, "entry")
+
+	// Lead A → responsável u2 (seedLead cria contact + conversation internamente)
+	u2 := uuid.New().String()
+	leadA := seedLead(t, db, leadOpts{
+		tenantID: tenantID, funnelID: funnelID, columnID: columnID,
+		status: "open", responsible: &u2,
+	})
+	convA := leadConversationID(t, db, leadA)
+
+	// Lead B → responsável "other" (contact distinto via seedLead, sem violar UNIQUE(tenant_id, contact_id))
+	other := uuid.New().String()
+	leadB := seedLead(t, db, leadOpts{
+		tenantID: tenantID, funnelID: funnelID, columnID: columnID,
+		status: "open", responsible: &other,
+	})
+	convB := leadConversationID(t, db, leadB)
+
+	seedMessage(t, db, convA, "incoming", "x", time.Date(2026, 4, 19, 9, 0, 0, 0, time.UTC))
+	seedMessage(t, db, convA, "outgoing", "y", time.Date(2026, 4, 19, 9, 1, 0, 0, time.UTC))
+	seedMessage(t, db, convB, "incoming", "x", time.Date(2026, 4, 19, 9, 0, 0, 0, time.UTC))
+	seedMessage(t, db, convB, "outgoing", "y", time.Date(2026, 4, 19, 9, 1, 0, 0, time.UTC))
+
+	got, err := repo.WhatsAppBlock(ctx, tenantID, &u2)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), got.ActiveConversations) // só convA pertence a u2
+	assert.Equal(t, int64(1), got.IncomingMessages)
+	assert.Equal(t, int64(1), got.OutgoingMessages)
+	assert.InDelta(t, 60.0, got.FirstResponseAvgSec, 0.5)
+}

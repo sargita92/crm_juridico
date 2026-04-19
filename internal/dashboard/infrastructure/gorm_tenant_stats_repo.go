@@ -161,10 +161,87 @@ func (r *GormTenantStatsRepo) ProdutosBlock(
 	return out, nil
 }
 
-// Stubs para tasks 6 (WhatsApp) e 7 (Responsaveis/TempoFunil) — serão reimplementados.
-// Existem agora apenas para satisfazer a interface application.TenantStatsProvider.
+// WhatsAppBlock — Bloco 2: agregados de conversas/mensagens do tenant.
+//   - ActiveConversations: COUNT(DISTINCT c.id) onde c.status='open'.
+//   - IncomingMessages / OutgoingMessages: contagem de messages por direction
+//     juntando em conversations do tenant.
+//   - FirstResponseAvgSec: tempo médio (s) entre primeira incoming e primeira
+//     outgoing por conversa, considerando apenas conversas com first_outgoing
+//     >= first_incoming. COALESCE(..., 0) garante zero quando não há dados.
+//
+// Quando userID != nil, restringe via leads.conversation_id = c.id AND
+// leads.responsible_user_id = userID em todas as agregações.
 func (r *GormTenantStatsRepo) WhatsAppBlock(ctx context.Context, tenantID string, userID *string) (*domain.WhatsAppStats, error) {
-	return &domain.WhatsAppStats{}, nil
+	out := &domain.WhatsAppStats{}
+
+	// Conversas ativas (status='open')
+	convQ := r.db.WithContext(ctx).Table("conversations AS c").
+		Where("c.tenant_id = ? AND c.status = ?", tenantID, "open")
+	if userID != nil {
+		convQ = convQ.Joins("JOIN leads l ON l.conversation_id = c.id").
+			Where("l.responsible_user_id = ?", *userID)
+	}
+	var active int64
+	if err := convQ.Distinct("c.id").Count(&active).Error; err != nil {
+		return nil, err
+	}
+	out.ActiveConversations = active
+
+	// Mensagens incoming/outgoing
+	type mRow struct {
+		Direction string
+		Total     int64
+	}
+	var mrows []mRow
+	msgQ := r.db.WithContext(ctx).Table("messages AS m").
+		Select("m.direction AS direction, COUNT(*) AS total").
+		Joins("JOIN conversations c ON c.id = m.conversation_id").
+		Where("c.tenant_id = ?", tenantID)
+	if userID != nil {
+		msgQ = msgQ.Joins("JOIN leads l ON l.conversation_id = c.id").
+			Where("l.responsible_user_id = ?", *userID)
+	}
+	if err := msgQ.Group("m.direction").Scan(&mrows).Error; err != nil {
+		return nil, err
+	}
+	for _, rr := range mrows {
+		switch rr.Direction {
+		case "incoming":
+			out.IncomingMessages = rr.Total
+		case "outgoing":
+			out.OutgoingMessages = rr.Total
+		}
+	}
+
+	// Tempo médio de primeira resposta (segundos). Conversas com both incoming e outgoing
+	// onde first_outgoing.timestamp >= first_incoming.timestamp.
+	type rtRow struct{ DiffSec float64 }
+	sqlRaw := `
+	SELECT COALESCE(AVG(TIMESTAMPDIFF(SECOND, first_in.t, first_out.t)), 0) AS diff_sec
+	FROM (
+		SELECT m.conversation_id AS cid, MIN(m.timestamp) AS t
+		FROM messages m JOIN conversations c ON c.id = m.conversation_id
+		WHERE c.tenant_id = ? AND m.direction = 'incoming'
+		GROUP BY m.conversation_id
+	) first_in
+	JOIN (
+		SELECT m.conversation_id AS cid, MIN(m.timestamp) AS t
+		FROM messages m JOIN conversations c ON c.id = m.conversation_id
+		WHERE c.tenant_id = ? AND m.direction = 'outgoing'
+		GROUP BY m.conversation_id
+	) first_out ON first_out.cid = first_in.cid
+	WHERE first_out.t >= first_in.t`
+	args := []any{tenantID, tenantID}
+	if userID != nil {
+		sqlRaw += ` AND first_in.cid IN (SELECT conversation_id FROM leads WHERE tenant_id = ? AND responsible_user_id = ?)`
+		args = append(args, tenantID, *userID)
+	}
+	var rr rtRow
+	if err := r.db.WithContext(ctx).Raw(sqlRaw, args...).Scan(&rr).Error; err != nil {
+		return nil, err
+	}
+	out.FirstResponseAvgSec = rr.DiffSec
+	return out, nil
 }
 
 func (r *GormTenantStatsRepo) ResponsaveisBlock(ctx context.Context, tenantID string, userID *string) ([]domain.ResponsiblePerformance, error) {
