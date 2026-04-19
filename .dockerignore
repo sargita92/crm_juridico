@@ -10,3 +10,4 @@ rest/
 *.md
 .air.toml
 .claude/
+storage/
