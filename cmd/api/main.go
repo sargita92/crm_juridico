@@ -238,6 +238,7 @@ func main() {
 		GraceDays: cfg.Billing.GraceDays,
 		Location:  pagLoc,
 	})
+	pagamentosMod.SetPermissionChecker(permissionMod.Resolver())
 	if err := pagamentosMod.StartScheduler(); err != nil {
 		log.Fatal("start billing scheduler", zap.Error(err))
 	}

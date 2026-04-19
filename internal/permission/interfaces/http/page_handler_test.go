@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -57,6 +58,24 @@ func newPageRouter(ph *PageHandler) *gin.Engine {
 		"typeIcon":            func(t string) string { return "🔔" },
 		"typeLabel":           func(t string) string { return "" },
 		"relativeTime":        func(t time.Time) string { return "" },
+		"formatValor": func(c *int64) string {
+			if c == nil {
+				return ""
+			}
+			return fmt.Sprintf("%.2f", float64(*c)/100.0)
+		},
+		"uint8Or": func(p *uint8, fallback uint8) uint8 {
+			if p == nil {
+				return fallback
+			}
+			return *p
+		},
+		"dateOr": func(p *time.Time) string {
+			if p == nil {
+				return ""
+			}
+			return p.Format("2006-01-02")
+		},
 	}
 
 	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob(templateRoot()))

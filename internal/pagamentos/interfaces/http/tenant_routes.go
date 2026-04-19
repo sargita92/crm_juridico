@@ -6,8 +6,19 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
 
-// registerTenantPortalRoutes sera completado na Task 15.
+// SetPortalMiddleware injeta o middleware de autorizacao do portal (tenant
+// com plano cobravel + exibir_pagamentos=true + usuario com payments:view
+// ou owner/admin). Deve ser chamado pelo module antes de RegisterRoutes.
+func (h *Handler) SetPortalMiddleware(mw gin.HandlerFunc) {
+	h.portalMw = mw
+}
+
 func (h *Handler) registerTenantPortalRoutes(router *gin.Engine, mw module.Middlewares) {
-	_ = router
-	_ = mw
+	if h.portalMw == nil {
+		// sem middleware de portal, nao expomos as rotas (seguranca em primeiro lugar)
+		return
+	}
+	g := router.Group("/pagamentos")
+	g.Use(mw.Auth, mw.Tenant, h.portalMw)
+	g.GET("", h.TenantList)
 }

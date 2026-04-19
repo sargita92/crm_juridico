@@ -26,6 +26,7 @@ type Handler struct {
 	cancel      *application.CancelPayment
 	billing     domain.TenantBillingRepository
 	paymentRepo domain.PaymentRepository
+	portalMw    gin.HandlerFunc
 	log         *zap.Logger
 }
 

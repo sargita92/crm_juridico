@@ -14,6 +14,14 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
 
+// SetPermissionChecker liga o resolver de permissoes ao middleware do portal
+// tenant. Chamado no wiring do cmd/api apos a criacao dos modulos auth
+// e permission (quebra do ciclo de dependencias).
+func (m *Module) SetPermissionChecker(perm pagamentoshttp.PermissionChecker) {
+	checker := pagamentoshttp.NewPortalAccessChecker(m.billingRepo, perm)
+	m.handler.SetPortalMiddleware(checker.Middleware())
+}
+
 type Config struct {
 	CronSpec  string
 	GraceDays int
