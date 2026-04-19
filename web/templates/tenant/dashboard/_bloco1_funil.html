@@ -1,0 +1,35 @@
+{{define "tenant/dashboard/_bloco1_funil.html"}}
+<section class="dashboard-card">
+    <header>
+        <h2>Funil de Leads — {{.Stats.Bloco1_Funil.ColumnTotals | len}} colunas</h2>
+        <span class="subtitle">{{.Stats.ActiveFunnelName}}</span>
+    </header>
+    <div class="dashboard-counter-row">
+        <div class="dashboard-counter"><span class="label">Abertos</span><span class="value">{{.Stats.Bloco1_Funil.Open}}</span></div>
+        <div class="dashboard-counter success"><span class="label">Ganhos</span><span class="value">{{.Stats.Bloco1_Funil.Won}}</span></div>
+        <div class="dashboard-counter danger"><span class="label">Perdidos</span><span class="value">{{.Stats.Bloco1_Funil.Lost}}</span></div>
+        <div class="dashboard-counter"><span class="label">Conversão</span><span class="value">{{.Stats.Bloco1_Funil.ConversionPct}}</span></div>
+        <div class="dashboard-counter"><span class="label">Novos hoje</span><span class="value">{{.Stats.Bloco1_Funil.NewToday}}</span></div>
+        <div class="dashboard-counter"><span class="label">Esta semana</span><span class="value">{{.Stats.Bloco1_Funil.NewThisWeek}}</span></div>
+    </div>
+    {{if .Stats.Bloco1_Funil.ColumnTotals}}
+    <canvas id="chart-bloco1-cols" class="dashboard-chart"></canvas>
+    <script type="application/json" id="data-bloco1-cols">{{.Stats.Bloco1_Funil.ColumnTotalsJSON}}</script>
+    <script>
+    (function(){
+        const cols = JSON.parse(document.getElementById('data-bloco1-cols').textContent);
+        new Chart(document.getElementById('chart-bloco1-cols'), {
+            type: 'bar',
+            data: {
+                labels: cols.map(c => c.ColumnName),
+                datasets: [{ label: 'Leads por coluna', data: cols.map(c => c.Count), backgroundColor: '#4299e1' }]
+            },
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    })();
+    </script>
+    {{else}}
+    <div class="dashboard-empty">Nenhuma coluna configurada no funil.</div>
+    {{end}}
+</section>
+{{end}}

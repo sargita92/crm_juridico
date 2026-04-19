@@ -75,6 +75,11 @@ func TestToTenantView_PopulatesAllBlocks(t *testing.T) {
 	assert.Equal(t, "12.5h", vm.Bloco4_TempoFunil[0].AvgHours)
 	assert.True(t, vm.ScopeIsUser)
 	assert.Equal(t, "Maria", vm.CurrentUserName)
+	// JSON pré-serializado p/ Chart.js no template.
+	assert.Contains(t, string(vm.Bloco1_Funil.ColumnTotalsJSON), `"ColumnName":"Novos"`)
+	assert.Contains(t, string(vm.Bloco1_Funil.ColumnTotalsJSON), `"Count":3`)
+	assert.Contains(t, string(vm.Bloco2_WhatsApp.MessagesJSON), `"in":10`)
+	assert.Contains(t, string(vm.Bloco2_WhatsApp.MessagesJSON), `"out":8`)
 }
 
 func TestToAdminView_NilProducesEmpty(t *testing.T) {
@@ -128,4 +133,11 @@ func TestToAdminView_PopulatesAllBlocks(t *testing.T) {
 	assert.Equal(t, "R$ 15.000,00", vm.Bloco6_Financeiro.ReceitaAno)
 	require.Len(t, vm.Bloco6_Financeiro.TopOverdue, 1)
 	assert.Equal(t, "R$ 500,00", vm.Bloco6_Financeiro.TopOverdue[0].Valor)
+	assert.Equal(t, int64(50_000), vm.Bloco6_Financeiro.TopOverdue[0].ValorCents)
+	// JSON pré-serializado p/ Chart.js no template.
+	assert.Contains(t, string(vm.Bloco1_Tenants.MonthlyJSON), `"Label":"2026-04"`)
+	assert.Contains(t, string(vm.Bloco3_Health.Top10JSON), `"TenantName":"T1"`)
+	assert.Contains(t, string(vm.Bloco5_Especialistas.ByTenantJSON), `"TenantName":"T1"`)
+	assert.Contains(t, string(vm.Bloco6_Financeiro.PlanDistJSON), `"Mensal":5`)
+	assert.Contains(t, string(vm.Bloco6_Financeiro.TopOverdueJSON), `"ValorCents":50000`)
 }

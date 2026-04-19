@@ -1,0 +1,34 @@
+{{define "tenant/dashboard/page.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    {{template "partials/tenant_head.html" (dict "Title" "Dashboard")}}
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+<div class="tenant-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "dashboard")}}
+    <main class="tenant-content">
+        <div class="dashboard-page">
+            <header class="dashboard-header">
+                <div>
+                    <h1>Dashboard
+                        {{if .Stats.ScopeIsUser}}<span class="scope-badge">{{.Stats.CurrentUserName}}</span>{{end}}
+                    </h1>
+                </div>
+                <button class="dashboard-refresh-btn"
+                        hx-get="/dashboard/content"
+                        hx-target="#dashboard-content"
+                        hx-swap="outerHTML">
+                    Atualizar
+                </button>
+            </header>
+            {{template "tenant/dashboard/content.html" .}}
+        </div>
+    </main>
+</div>
+<!-- Chart.js (sem SRI por enquanto — TODO F19) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+</body>
+</html>
+{{end}}

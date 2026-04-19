@@ -1,0 +1,37 @@
+{{define "admin/dashboard/page.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "dashboard")}}
+    <main class="admin-content">
+        <div class="dashboard-page">
+            <header class="dashboard-header">
+                <div>
+                    <h1>Dashboard</h1>
+                </div>
+                <button class="dashboard-refresh-btn"
+                        hx-get="/admin/dashboard/content"
+                        hx-target="#dashboard-content"
+                        hx-swap="outerHTML">
+                    Atualizar
+                </button>
+            </header>
+            {{template "admin/dashboard/content.html" .}}
+        </div>
+    </main>
+</div>
+<!-- Chart.js (sem SRI por enquanto — TODO F19) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
+{{end}}

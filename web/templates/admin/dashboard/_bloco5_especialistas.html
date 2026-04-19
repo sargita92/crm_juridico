@@ -1,0 +1,21 @@
+{{define "admin/dashboard/_bloco5_especialistas.html"}}
+<section class="dashboard-card">
+    <header><h2>Especialistas</h2></header>
+    <div class="dashboard-counter-row">
+        <div class="dashboard-counter"><span class="label">Total</span><span class="value">{{.Stats.Bloco5_Especialistas.Total}}</span></div>
+        <div class="dashboard-counter"><span class="label">Qualificações</span><span class="value">{{.Stats.Bloco5_Especialistas.Qualifications}}</span></div>
+    </div>
+    {{if .Stats.Bloco5_Especialistas.ByTenant}}
+    <table class="dashboard-table">
+        <thead><tr><th>Tenant</th><th>Especialistas</th></tr></thead>
+        <tbody>
+            {{range .Stats.Bloco5_Especialistas.ByTenant}}
+            <tr><td>{{.TenantName}}</td><td>{{.Total}}</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <div class="dashboard-empty">Nenhum especialista cadastrado.</div>
+    {{end}}
+</section>
+{{end}}

@@ -1,0 +1,52 @@
+{{define "admin/dashboard/_bloco6_financeiro.html"}}
+<section class="dashboard-card full-width">
+    <header><h2>Financeiro (plataforma)</h2></header>
+    <div class="dashboard-counter-row">
+        <div class="dashboard-counter success"><span class="label">Receita do ano</span><span class="value">{{.Stats.Bloco6_Financeiro.ReceitaAno}}</span></div>
+        <div class="dashboard-counter warning"><span class="label">Pendente</span><span class="value">{{.Stats.Bloco6_Financeiro.PendenteTotal}}</span></div>
+        <div class="dashboard-counter danger"><span class="label">Atrasado</span><span class="value">{{.Stats.Bloco6_Financeiro.AtrasadoTotal}}</span></div>
+    </div>
+    <div class="dashboard-grid" style="margin-top:1rem">
+        <div>
+            <h3 style="font-size:0.95rem;margin:0 0 0.5rem 0">Distribuição de planos</h3>
+            <canvas id="chart-bloco6-plans" class="dashboard-chart"></canvas>
+            <script type="application/json" id="data-bloco6-plans">{{.Stats.Bloco6_Financeiro.PlanDistJSON}}</script>
+            <script>
+            (function(){
+                const p = JSON.parse(document.getElementById('data-bloco6-plans').textContent);
+                new Chart(document.getElementById('chart-bloco6-plans'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Mensal','Anual','Vitalício','Externo'],
+                        datasets: [{ data: [p.Mensal, p.Anual, p.Vitalicio, p.Externo], backgroundColor: ['#4299e1','#48bb78','#9f7aea','#ed8936'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            })();
+            </script>
+        </div>
+        <div>
+            <h3 style="font-size:0.95rem;margin:0 0 0.5rem 0">Top 10 atrasados</h3>
+            {{if .Stats.Bloco6_Financeiro.TopOverdue}}
+            <canvas id="chart-bloco6-overdue" class="dashboard-chart"></canvas>
+            <script type="application/json" id="data-bloco6-overdue">{{.Stats.Bloco6_Financeiro.TopOverdueJSON}}</script>
+            <script>
+            (function(){
+                const items = JSON.parse(document.getElementById('data-bloco6-overdue').textContent);
+                new Chart(document.getElementById('chart-bloco6-overdue'), {
+                    type: 'bar',
+                    data: {
+                        labels: items.map(i => i.TenantName),
+                        datasets: [{ label: 'Atrasado', data: items.map(i => i.ValorCents/100), backgroundColor: '#e53e3e' }]
+                    },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            })();
+            </script>
+            {{else}}
+            <div class="dashboard-empty">Nenhum tenant com atraso.</div>
+            {{end}}
+        </div>
+    </div>
+</section>
+{{end}}

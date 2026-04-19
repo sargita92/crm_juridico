@@ -1,0 +1,25 @@
+{{define "tenant/dashboard/_bloco3_responsaveis.html"}}
+<section class="dashboard-card">
+    <header>
+        <h2>{{if .Stats.ScopeIsUser}}Meus números{{else}}Por responsável{{end}}</h2>
+    </header>
+    {{if .Stats.Bloco3_Responsaveis}}
+    <table class="dashboard-table">
+        <thead><tr><th>Usuário</th><th>Total</th><th>Ganhos</th><th>Perdidos</th><th>Conversão</th></tr></thead>
+        <tbody>
+            {{range .Stats.Bloco3_Responsaveis}}
+            <tr>
+                <td>{{.UserName}}</td>
+                <td>{{.Total}}</td>
+                <td>{{.Won}}</td>
+                <td>{{.Lost}}</td>
+                <td>{{.ConversionPct}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <div class="dashboard-empty">Nenhum responsável com leads.</div>
+    {{end}}
+</section>
+{{end}}

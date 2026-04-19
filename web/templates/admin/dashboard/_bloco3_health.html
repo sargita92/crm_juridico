@@ -1,0 +1,37 @@
+{{define "admin/dashboard/_bloco3_health.html"}}
+<section class="dashboard-card full-width">
+    <header><h2>Saúde dos tenants</h2></header>
+    <div class="dashboard-grid">
+        <div>
+            <h3 style="font-size:0.95rem;margin:0 0 0.5rem 0">Top 10 mais ativos</h3>
+            {{if .Stats.Bloco3_Health.Top10Active}}
+            <table class="dashboard-table">
+                <thead><tr><th>Tenant</th><th>Leads</th></tr></thead>
+                <tbody>
+                    {{range .Stats.Bloco3_Health.Top10Active}}
+                    <tr><td>{{.TenantName}}</td><td>{{.LeadCount}}</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="dashboard-empty">Nenhum tenant ativo.</div>
+            {{end}}
+        </div>
+        <div>
+            <h3 style="font-size:0.95rem;margin:0 0 0.5rem 0">Inativos &gt; 30 dias</h3>
+            {{if .Stats.Bloco3_Health.InactiveList}}
+            <table class="dashboard-table">
+                <thead><tr><th>Tenant</th><th>Dias inativo</th></tr></thead>
+                <tbody>
+                    {{range .Stats.Bloco3_Health.InactiveList}}
+                    <tr><td>{{.TenantName}}</td><td>{{.DaysInactive}}</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="dashboard-empty">Nenhum tenant inativo.</div>
+            {{end}}
+        </div>
+    </div>
+</section>
+{{end}}

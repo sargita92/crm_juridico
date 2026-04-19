@@ -1,7 +1,9 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"strings"
 
 	"github.com/sasrgita/crm-juridico/internal/dashboard/domain"
@@ -68,14 +70,15 @@ type TenantView struct {
 }
 
 type FunilView struct {
-	Open          int64
-	Won           int64
-	Lost          int64
-	Total         int64 // open+won+lost
-	ColumnTotals  []ColumnLeadsView
-	ConversionPct string
-	NewToday      int64
-	NewThisWeek   int64
+	Open               int64
+	Won                int64
+	Lost               int64
+	Total              int64 // open+won+lost
+	ColumnTotals       []ColumnLeadsView
+	ColumnTotalsJSON   template.JS // JSON array p/ Chart.js (pre-encoded em ToTenantView)
+	ConversionPct      string
+	NewToday           int64
+	NewThisWeek        int64
 }
 
 type ColumnLeadsView struct {
@@ -88,6 +91,7 @@ type WhatsAppView struct {
 	OutgoingMessages    int64
 	ActiveConversations int64
 	FirstResponseAvg    string // ex: "3.5min" ou "-"
+	MessagesJSON        template.JS // JSON {"in":N,"out":M} p/ Chart.js
 }
 
 type ResponsibleView struct {
@@ -162,6 +166,24 @@ func ToTenantView(s *domain.TenantStats) *TenantView {
 			ProductName: p.ProductName, Total: p.Total, Won: p.Won, Lost: p.Lost,
 		})
 	}
+
+	// Pré-serializa estruturas que serão consumidas pelo Chart.js no template,
+	// usando <script type="application/json"> + JSON.parse no front. Mantém o
+	// view-model agnóstico de template/HTML.
+	if data, err := json.Marshal(out.Bloco1_Funil.ColumnTotals); err == nil {
+		out.Bloco1_Funil.ColumnTotalsJSON = template.JS(data)
+	} else {
+		out.Bloco1_Funil.ColumnTotalsJSON = template.JS("[]")
+	}
+	msgData := map[string]int64{
+		"in":  s.Bloco2_WhatsApp.IncomingMessages,
+		"out": s.Bloco2_WhatsApp.OutgoingMessages,
+	}
+	if data, err := json.Marshal(msgData); err == nil {
+		out.Bloco2_WhatsApp.MessagesJSON = template.JS(data)
+	} else {
+		out.Bloco2_WhatsApp.MessagesJSON = template.JS("{}")
+	}
 	return out
 }
 
@@ -189,12 +211,13 @@ type AdminView struct {
 }
 
 type TenantsView struct {
-	Active       int64
-	Inactive     int64
-	Blocked      int64
-	Total        int64
-	NewThisMonth int64
-	Last6Months  []MonthlyView
+	Active          int64
+	Inactive        int64
+	Blocked         int64
+	Total           int64
+	NewThisMonth    int64
+	Last6Months     []MonthlyView
+	MonthlyJSON     template.JS // JSON array de Last6Months p/ Chart.js
 }
 
 type MonthlyView struct {
@@ -211,6 +234,7 @@ type UsageView struct {
 type HealthView struct {
 	Top10Active  []TenantActivityView
 	InactiveList []InactiveTenantView
+	Top10JSON    template.JS // JSON array p/ Chart.js
 }
 
 type TenantActivityView struct {
@@ -238,6 +262,7 @@ type SpecialistsView struct {
 	Total          int64
 	Qualifications int64
 	ByTenant       []SpecialistByTenantView
+	ByTenantJSON   template.JS // JSON array p/ Chart.js
 }
 
 type SpecialistByTenantView struct {
@@ -246,11 +271,13 @@ type SpecialistByTenantView struct {
 }
 
 type FinancialView struct {
-	ReceitaAno    string // BRL formatado
-	PendenteTotal string // BRL
-	AtrasadoTotal string // BRL
-	PlanDist      PlanDistributionView
-	TopOverdue    []OverdueTenantView
+	ReceitaAno     string // BRL formatado
+	PendenteTotal  string // BRL
+	AtrasadoTotal  string // BRL
+	PlanDist       PlanDistributionView
+	TopOverdue     []OverdueTenantView
+	PlanDistJSON   template.JS // JSON {"Mensal":N,"Anual":N,"Vitalicio":N,"Externo":N}
+	TopOverdueJSON template.JS // JSON array com TenantName + ValorCents (raw int64)
 }
 
 type PlanDistributionView struct {
@@ -264,6 +291,7 @@ type PlanDistributionView struct {
 type OverdueTenantView struct {
 	TenantName string
 	Valor      string // BRL
+	ValorCents int64  // raw para chart (dividido por 100 em JS)
 }
 
 func ToAdminView(s *domain.AdminStats) *AdminView {
@@ -321,7 +349,41 @@ func ToAdminView(s *domain.AdminStats) *AdminView {
 		out.Bloco5_Especialistas.ByTenant = append(out.Bloco5_Especialistas.ByTenant, SpecialistByTenantView{TenantName: st.TenantName, Total: st.Total})
 	}
 	for _, ov := range s.Bloco6_Financeiro.TopOverdue {
-		out.Bloco6_Financeiro.TopOverdue = append(out.Bloco6_Financeiro.TopOverdue, OverdueTenantView{TenantName: ov.TenantName, Valor: FormatBRL(ov.ValorCents)})
+		out.Bloco6_Financeiro.TopOverdue = append(out.Bloco6_Financeiro.TopOverdue, OverdueTenantView{
+			TenantName: ov.TenantName,
+			Valor:      FormatBRL(ov.ValorCents),
+			ValorCents: ov.ValorCents,
+		})
+	}
+
+	// Pré-serializa estruturas que serão consumidas pelo Chart.js no template.
+	// Usa template.JS para sinalizar a html/template que o conteúdo já é literal
+	// JSON seguro (caso contrário ele re-quotaria como string JS dentro de
+	// <script type="application/json">).
+	if data, err := json.Marshal(out.Bloco1_Tenants.Last6Months); err == nil {
+		out.Bloco1_Tenants.MonthlyJSON = template.JS(data)
+	} else {
+		out.Bloco1_Tenants.MonthlyJSON = template.JS("[]")
+	}
+	if data, err := json.Marshal(out.Bloco3_Health.Top10Active); err == nil {
+		out.Bloco3_Health.Top10JSON = template.JS(data)
+	} else {
+		out.Bloco3_Health.Top10JSON = template.JS("[]")
+	}
+	if data, err := json.Marshal(out.Bloco5_Especialistas.ByTenant); err == nil {
+		out.Bloco5_Especialistas.ByTenantJSON = template.JS(data)
+	} else {
+		out.Bloco5_Especialistas.ByTenantJSON = template.JS("[]")
+	}
+	if data, err := json.Marshal(out.Bloco6_Financeiro.PlanDist); err == nil {
+		out.Bloco6_Financeiro.PlanDistJSON = template.JS(data)
+	} else {
+		out.Bloco6_Financeiro.PlanDistJSON = template.JS("{}")
+	}
+	if data, err := json.Marshal(out.Bloco6_Financeiro.TopOverdue); err == nil {
+		out.Bloco6_Financeiro.TopOverdueJSON = template.JS(data)
+	} else {
+		out.Bloco6_Financeiro.TopOverdueJSON = template.JS("[]")
 	}
 	return out
 }

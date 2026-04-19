@@ -1,0 +1,21 @@
+{{define "tenant/dashboard/_bloco4_tempo.html"}}
+<section class="dashboard-card">
+    <header><h2>Tempo no funil</h2></header>
+    {{if .Stats.Bloco4_TempoFunil}}
+    <table class="dashboard-table">
+        <thead><tr><th>Coluna</th><th>Tempo médio</th><th>Parados &gt; 7d</th></tr></thead>
+        <tbody>
+            {{range .Stats.Bloco4_TempoFunil}}
+            <tr>
+                <td>{{.ColumnName}}</td>
+                <td>{{.AvgHours}}</td>
+                <td>{{if gt .StuckOver7Days 0}}<span class="dashboard-counter danger" style="display:inline-block;padding:2px 8px;font-weight:600">{{.StuckOver7Days}}</span>{{else}}{{.StuckOver7Days}}{{end}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <div class="dashboard-empty">Sem dados de tempo no funil.</div>
+    {{end}}
+</section>
+{{end}}
