@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 4/20 concluída)
+**Status**: 🟡 em andamento (Task 5/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -24,7 +24,7 @@
 | 2 | GetTenantDashboard UC + fakes + testes | ✅ | b03a730 + bb57a7e |
 | 3 | GetAdminDashboard UC + testes | ✅ | e311e15 |
 | 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ✅ | f4579bb |
-| 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ⬜ | — |
+| 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ✅ | 92a604f + 2ace7a8 |
 | 6 | Tenant stats repo (bloco 2 — WhatsApp) | ⬜ | — |
 | 7 | Tenant stats repo (blocos 3, 4 — responsáveis/tempo) | ⬜ | — |
 | 8 | Admin stats repo (blocos 1, 2, 3 — tenants/uso/health) | ⬜ | — |
@@ -107,3 +107,8 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 4 — testes de borda recomendados antes de Task 9** (consumer real): (1) DB vazio → `&GlobalSummary{}` sem panic; (2) `data_pagamento = 31/dez/ano-1` NÃO conta no `TotalPagoAnoCents` (timezone-prone); (3) tenant com mix de status → `TopOverdue` só soma `atrasado`. Adicionar quando Task 9 entrar.
 - **Task 4 — observação para Task 9**: `GlobalSummary` não cobre distribuição por plano (`Mensal/Anual/Vitalicio/Externo`). Task 9 precisa de query separada em `tenant_billings.plan` (ou estender `GlobalSummary` se ficar pesado).
 - **Task 4 — sem transação entre 2 queries**: dashboard tolera eventual consistency. Considerar comment one-liner em `GlobalSummary` se incomodar.
+- **Task 5 — bugs do plano corrigidos**: (1) tabela é `funnel_columns`, NÃO `columns`; (2) `Row().Scan` retorna `sql.ErrNoRows` (plano usava `gorm.ErrRecordNotFound`) — trocado por `Take(...).Error` + `errors.Is`.
+- **Task 5 — schema delta runtime**: `products` é global desde mig 28, com join `tenant_products`. SQL de `ProdutosBlock` está correto (filtra por `leads.tenant_id`); só `seedProduct` precisou inserir nas duas tabelas.
+- **Task 5 — interface guard**: `var _ application.TenantStatsProvider = (*GormTenantStatsRepo)(nil)` adicionado para fail-fast em Tasks 6/7/11.
+- **Task 5 — observação para Task 6**: `seedConversation` já existe; criar `seedMessage`. Cleanup de `messages`/`conversations` já está em ordem FK.
+- **Task 5 — observação para Task 7**: criar `seedUser`/`seedUserTenant`. `responsible_user_id` já é plumbado via `leadOpts.responsible`.
