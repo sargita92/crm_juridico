@@ -49,7 +49,7 @@
 - [x] Load balance integration (conectar à criação de leads) — picker + fallback + evento + notificação
 - [x] Telas HTMX para notificações (badge, toast, painel, página dedicada)
 - [x] Telas HTMX para automações (list, CRUD modal, toggle, logs, 7 tipos de campos dinâmicos)
-- [ ] Observabilidade: métricas Prometheus + traces nos novos endpoints (varredura transversal — automation, permission, auth — ainda aberta)
+- [x] Observabilidade mínima (OTel spans nos handlers + crm_automation_executions_total, crm_permission_changes_total, crm_auth_invites_total) — observabilidade avançada em [F18](../../features/F18-observabilidade-avancada.md)
 
 ### Plan 5: F09 Step 8 Notification Screens (concluído)
 - [x] Template helpers (typeIcon, typeLabel, relativeTime)
