@@ -1,6 +1,7 @@
 package pagamentos
 
 import (
+	"context"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -107,3 +108,15 @@ func (m *Module) Summary() *application.GetTenantFinancialSummary { return m.sum
 
 // PaymentRepo expõe o repositório para uso cruzado (dashboard admin).
 func (m *Module) PaymentRepo() domain.PaymentRepository { return m.paymentRepo }
+
+// ShowsPortalForTenant retorna se o tenant tem billing config ativa para
+// exibir a aba Pagamentos. Usado pelo middleware SidebarFlags para esconder
+// o link na sidebar quando o portal não está disponível. UX-only — autorização
+// continua no PortalAccessChecker.
+func (m *Module) ShowsPortalForTenant(ctx context.Context, tenantID string) bool {
+	tb, err := m.billingRepo.GetByID(ctx, tenantID)
+	if err != nil {
+		return false
+	}
+	return tb.Config.ShowsPortalMenu()
+}

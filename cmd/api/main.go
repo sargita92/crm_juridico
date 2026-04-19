@@ -276,12 +276,23 @@ func main() {
 	tenantMw := middleware.RequireTenant()
 	adminMw := middleware.RequireAdmin()
 	requirePermMw := middleware.RequirePermission(permissionMod.Resolver())
+	// Sidebar UX flag: cookie ux_show_pagamentos lido por JS na sidebar.
+	sidebarMw := middleware.SidebarFlags(pagamentosMod.ShowsPortalForTenant)
 
 	mw := module.Middlewares{
 		Auth:              authMw,
 		Tenant:            tenantMw,
 		Admin:             adminMw,
 		RequirePermission: requirePermMw,
+	}
+
+	// Compose Tenant middleware to also stamp sidebar flags after auth/tenant resolution.
+	mw.Tenant = func(c *gin.Context) {
+		tenantMw(c)
+		if c.IsAborted() {
+			return
+		}
+		sidebarMw(c)
 	}
 
 	router, tmpl := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
