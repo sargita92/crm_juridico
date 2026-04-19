@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (preflight concluído, aguardando Task 1)
+**Status**: 🟡 em andamento (Task 1/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -19,8 +19,8 @@
 
 | Task | Descrição | Status | Commit |
 |---|---|---|---|
-| Preflight | Branch, spec v2, status, plano | 🟡 em andamento | (pendente) |
-| 1 | Domain outputs (TenantStats, AdminStats) | ⬜ | — |
+| Preflight | Branch, spec v2, status, plano | ✅ | 573634f |
+| 1 | Domain outputs (TenantStats, AdminStats) | ✅ | 746ebb5 |
 | 2 | GetTenantDashboard UC + fakes + testes | ⬜ | — |
 | 3 | GetAdminDashboard UC + testes | ⬜ | — |
 | 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ⬜ | — |
@@ -92,4 +92,6 @@
 
 _(Preencher conforme forem aparecendo divergências entre o plano e a realidade do código — tabelas/colunas com nomes diferentes, helpers que já existem, etc. Este é o log de "lições aprendidas" para referência futura.)_
 
-_(vazio por enquanto)_
+- **Task 1 — naming dos sentinel errors**: o plano usa `ErrTenantRequired` / `ErrUserRequired`, mas o restante do projeto (funnel, pagamentos) usa `ErrTenantIDRequired` / `ErrUserIDRequired`. Mantido como no plano para não desviar; se incomodar em Task 2 (UC retorna esses erros), avaliar rename antes do wiring.
+- **Task 1 — observação para Task 11/12 (infra)**: `Infrastructure.APILatencyMs` zero-value não distingue "Prometheus indisponível" de "sem requests". Considerar flag `PrometheusUp` ou tratar no template.
+- **Task 1 — observação para Task 2 (UC tenant)**: lembrar de popular `ScopeIsUser`, `CurrentUserName`, `ActiveFunnelName` em `TenantStats` e cobrir com teste explícito.
