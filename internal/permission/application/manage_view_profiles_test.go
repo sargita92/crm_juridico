@@ -46,15 +46,18 @@ func TestManageViewProfiles_SetViewProfile_Update(t *testing.T) {
 	repo := newMockViewProfileRepo(existing)
 	uc := NewManageViewProfilesUseCase(repo)
 
+	before := testutil.ToFloat64(infra.ChangesTotal.WithLabelValues("view_profile", "updated"))
 	err := uc.SetViewProfile(context.Background(), ViewProfileInput{
 		GroupID:        "group-1",
 		FunnelID:       "funnel-1",
 		VisibleColumns: []string{"col-1", "col-2", "col-3"},
 	})
+	after := testutil.ToFloat64(infra.ChangesTotal.WithLabelValues("view_profile", "updated"))
 
 	require.NoError(t, err)
 	assert.Len(t, repo.profiles, 1, "should upsert, not append")
 	assert.Equal(t, []string{"col-1", "col-2", "col-3"}, repo.profiles[0].VisibleColumns)
+	assert.Equal(t, before+1, after)
 }
 
 func TestManageViewProfiles_SetViewProfile_MissingGroupID(t *testing.T) {
