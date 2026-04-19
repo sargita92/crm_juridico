@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	infra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,8 +86,13 @@ func TestTick_ExecutesAndLogsSuccess(t *testing.T) {
 		},
 	}
 
+	before := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues("expiration", "success"))
+
 	ticker := newTestTicker(autoRepo, logRepo, runner)
 	ticker.tick()
+
+	after := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues("expiration", "success"))
+	assert.Equal(t, before+2, after, "executions_total{type=expiration,outcome=success} should increment by 2 (one per lead)")
 
 	assert.Equal(t, 2, runner.calls())
 	assert.Equal(t, 2, logRepo.count())
@@ -112,8 +119,13 @@ func TestTick_ExecutorError(t *testing.T) {
 		executeErr: errors.New("archive failed"),
 	}
 
+	before := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues("expiration", "error"))
+
 	ticker := newTestTicker(autoRepo, logRepo, runner)
 	ticker.tick()
+
+	after := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues("expiration", "error"))
+	assert.Equal(t, before+1, after, "executions_total{type=expiration,outcome=error} should increment by 1")
 
 	assert.Equal(t, 1, runner.calls())
 	assert.Equal(t, 1, logRepo.count())

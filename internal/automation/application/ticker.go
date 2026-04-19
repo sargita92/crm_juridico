@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sasrgita/crm-juridico/internal/automation/application/executors"
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
+	"github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 )
 
 // expirationRunner is the minimal interface ExpirationTicker needs from the expiration executor.
@@ -84,6 +85,7 @@ func (t *ExpirationTicker) tick() {
 				status = domain.StatusError
 				errMsg = execErr.Error()
 			}
+			infrastructure.ExecutionsTotal.WithLabelValues(string(autoCopy.Type), string(status)).Inc()
 			log := domain.NewExecutionLog(uuid.New().String(), autoCopy.ID, leadID, autoCopy.TenantID, status, errMsg)
 			_ = t.logRepo.Create(ctx, log)
 		}

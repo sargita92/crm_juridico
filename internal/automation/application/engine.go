@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
+	"github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 )
 
 // AsyncTypes lists the automation types that must be executed asynchronously.
@@ -84,6 +85,7 @@ func (e *AutomationEngine) executeAndLog(ctx context.Context, exec domain.Execut
 		status = domain.StatusError
 		errMsg = err.Error()
 	}
+	infrastructure.ExecutionsTotal.WithLabelValues(string(auto.Type), string(status)).Inc()
 	log := domain.NewExecutionLog(uuid.New().String(), auto.ID, leadID, tenantID, status, errMsg)
 	_ = e.logRepo.Create(ctx, log)
 }

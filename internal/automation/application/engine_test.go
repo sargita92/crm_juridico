@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	infra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,8 +34,13 @@ func TestEngine_OnLeadEvent_ExecutesAutomations(t *testing.T) {
 	engine := NewAutomationEngine(autoRepo, logRepo)
 	engine.RegisterExecutor(domain.TypeAutoNote, exec)
 
+	before := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues(string(a.Type), "success"))
+
 	err := engine.OnLeadEvent(context.Background(), "tenant-1", "lead-1", "col-1")
 	require.NoError(t, err)
+
+	after := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues(string(a.Type), "success"))
+	assert.Equal(t, before+1, after, "executions_total{type=auto_note,outcome=success} should increment by 1")
 
 	assert.Equal(t, 1, exec.calls(), "executor should have been called once")
 	assert.Equal(t, 1, logRepo.count(), "one execution log should exist")
@@ -76,8 +83,13 @@ func TestEngine_OnLeadEvent_ExecutorError(t *testing.T) {
 	engine := NewAutomationEngine(autoRepo, logRepo)
 	engine.RegisterExecutor(domain.TypeAutoNote, exec)
 
+	before := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues(string(a.Type), "error"))
+
 	err := engine.OnLeadEvent(context.Background(), "tenant-1", "lead-1", "col-1")
 	require.NoError(t, err) // OnLeadEvent itself does not surface executor errors
+
+	after := testutil.ToFloat64(infra.ExecutionsTotal.WithLabelValues(string(a.Type), "error"))
+	assert.Equal(t, before+1, after, "executions_total{type=auto_note,outcome=error} should increment by 1")
 
 	assert.Equal(t, 1, exec.calls())
 	assert.Equal(t, 1, logRepo.count())
