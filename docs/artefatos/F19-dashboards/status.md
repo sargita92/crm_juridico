@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 8/20 concluída)
+**Status**: 🟡 em andamento (Task 9/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -28,7 +28,7 @@
 | 6 | Tenant stats repo (bloco 2 — WhatsApp) | ✅ | 87e2010 |
 | 7 | Tenant stats repo (blocos 3, 4 — responsáveis/tempo) | ✅ | bcccd05 + 8d45e72 |
 | 8 | Admin stats repo (blocos 1, 2, 3 — tenants/uso/health) | ✅ | 3c59e1b + 8e160b6 |
-| 9 | Admin stats repo (blocos 5, 6 — especialistas/financeiro) | ⬜ | — |
+| 9 | Admin stats repo (blocos 5, 6 — especialistas/financeiro) | ✅ | a736dbb |
 | 10 | PrometheusStatsProvider (bloco 4 admin) | ⬜ | — |
 | 11 | Wiring `dashboard.Module` + `cmd/api/main.go` | ⬜ | — |
 | 12 | Handlers HTTP tenant | ⬜ | — |
@@ -123,3 +123,8 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 8 — decisão de produto**: `Top10Active` inclui tenants `blocked`/`inactive` com leads — métrica é volume histórico, não status. Test de regressão `TestHealthBlock_Top10Active_IncludesBlockedTenants`.
 - **Task 8 — observação para Task 9**: (a) construtor de `GormAdminStatsRepo` precisará aceitar `payments` (quebra `setupAdminRepo`); (b) adicionar `DELETE FROM payments` em `setupStatsRepo` antes de seed de pagamentos para `FinanceiroBlock`; (c) `tenants.plano` é VARCHAR (não ENUM) — distribuição lê valores como string.
 - **Task 8 — perf annotations futuras**: `InactiveList` usa correlated subqueries (O(N) por tenant); `UsageBlock` faz 3 round-trips. Tudo aceitável agora; revisitar em Task 17 se p95 doer.
+- **Task 9 — TODO(F05) Qualifications**: `EspecialistasBlock.Qualifications` fica em 0 com test de regressão `TestEspecialistasBlock_QualificationsAlwaysZero`. Quando F05 expor contador, ajustar 2 linhas (production + test).
+- **Task 9 — decisão `EspecialistasBlock.Total`**: conta tanto active quanto inactive (sem WHERE status). Aceitável para "inventário do admin"; se PO quiser só active, adicionar `Where("status='active'")`.
+- **Task 9 — `FinanceiroBlock` plan distribution silenciosamente ignora valores desconhecidos**: aceitável (admin vê só categorias conhecidas). Se Task 17 adicionar tracing/log, considerar `default:` que emita métrica. Quando F11 adicionar `plano='trial'`, atualizar struct + switch.
+- **Task 9 — observação para Task 11 (wiring)**: ordem de init em `cmd/api`: `pagamentos.Module` ANTES de `dashboard.Module`; passar `pagamentosModule.PaymentRepo()` no `NewGormAdminStatsRepo(db, payments)`.
+- **Task 9 — perf**: dashboard admin total fica em ~12+ round-trips (6 blocos × média 2 queries). Revisitar em Task 17 se p95 incomodar.
