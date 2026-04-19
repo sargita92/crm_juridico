@@ -1,23 +1,51 @@
-### Listar todos os arquivos do tenant
-GET {{base_url}}/api/files?page=1&per_page=20
-Authorization: Bearer {{tenant_token}}
+### F14 — Arquivos por Lead
+#
+# Todas as rotas exigem auth (cookie de sessão do tenant) + permissão files:view.
+# Os endpoints renderizam HTMX/HTML — não são JSON.
 
-### Filtrar arquivos por lead
-GET {{base_url}}/api/files?lead_id={{lead_id}}&page=1&per_page=20
-Authorization: Bearer {{tenant_token}}
+### Listar todos os arquivos do tenant (página completa)
+GET {{base_url}}/tenant/files
 
-### Filtrar arquivos por tipo
-GET {{base_url}}/api/files?tipo=imagem&page=1&per_page=20
-Authorization: Bearer {{tenant_token}}
+### Listar (fragmento HTMX — usado pelos filtros)
+GET {{base_url}}/tenant/files/list
 
-### Filtrar arquivos por período
-GET {{base_url}}/api/files?from=2026-04-01&to=2026-04-05&page=1&per_page=20
-Authorization: Bearer {{tenant_token}}
+### Filtrar por tipo (image | document | audio | video | other)
+GET {{base_url}}/tenant/files/list?type=image
 
-### Buscar por nome
-GET {{base_url}}/api/files?search=contrato&page=1&per_page=20
-Authorization: Bearer {{tenant_token}}
+### Filtrar por período (today | 7d | 30d | custom)
+GET {{base_url}}/tenant/files/list?period=7d
 
-### Download de arquivo
-GET {{base_url}}/api/files/{{file_id}}/download
-Authorization: Bearer {{tenant_token}}
+### Período custom (from/to ISO date)
+GET {{base_url}}/tenant/files/list?period=custom&from=2026-04-01&to=2026-04-19
+
+### Buscar por nome (case-insensitive, parcial)
+GET {{base_url}}/tenant/files/list?q=contrato
+
+### Filtrar por lead (pré-aplicado ao chegar do detalhe do lead)
+GET {{base_url}}/tenant/files/list?lead_id={{lead_id}}
+
+### Combinar filtros
+GET {{base_url}}/tenant/files/list?type=document&period=7d&q=contrato
+
+### Drawer de preview (HTML fragment)
+GET {{base_url}}/tenant/files/{{file_id}}/preview
+
+### Download (attachment com Content-Disposition UTF-8)
+GET {{base_url}}/tenant/files/{{file_id}}/download
+
+### Thumbnail (só para media_type=image; 404 para outros)
+GET {{base_url}}/tenant/files/{{file_id}}/thumbnail
+
+### Seção "Arquivos (N)" dentro do modal de detalhe do lead
+GET {{base_url}}/tenant/leads/{{lead_id}}/files-summary
+
+### --- Casos negativos (OWASP) ---
+
+### 401: sem sessão
+GET {{base_url}}/tenant/files
+
+### 403: sessão válida sem permissão files:view
+GET {{base_url}}/tenant/files
+
+### 404: arquivo de outro tenant
+GET {{base_url}}/tenant/files/{{other_tenant_file_id}}/preview

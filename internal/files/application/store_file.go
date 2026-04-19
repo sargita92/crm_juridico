@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/sasrgita/crm-juridico/internal/files/domain"
+	"github.com/sasrgita/crm-juridico/internal/files/infrastructure"
 )
 
 type StoreFileInput struct {
@@ -88,6 +89,9 @@ func (uc *StoreFileUseCase) Execute(ctx context.Context, in StoreFileInput) (*do
 	if err := uc.repo.Create(ctx, f); err != nil {
 		return nil, fmt.Errorf("persist file: %w", err)
 	}
+
+	infrastructure.StoredTotal.WithLabelValues(string(f.MediaType), string(f.Direction)).Inc()
+	infrastructure.StoredBytes.Add(float64(f.SizeBytes))
 
 	return f, nil
 }

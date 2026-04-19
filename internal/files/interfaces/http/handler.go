@@ -15,6 +15,7 @@ import (
 
 	"github.com/sasrgita/crm-juridico/internal/files/application"
 	"github.com/sasrgita/crm-juridico/internal/files/domain"
+	"github.com/sasrgita/crm-juridico/internal/files/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
 
@@ -116,6 +117,7 @@ func (h *Handler) Download(c *gin.Context) {
 	}
 	defer rc.Close()
 
+	infrastructure.DownloadsTotal.WithLabelValues(string(f.MediaType)).Inc()
 	h.log.Info("file downloaded",
 		zap.String("tenant_id", tenantID),
 		zap.String("file_id", id),
