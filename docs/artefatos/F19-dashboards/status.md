@@ -1,19 +1,19 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 19/20 concluída)
+**Status**: ✅ concluído (20/20 tasks, 72 testes, cov ≥ 80%)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
 
 ## Fluxo de agentes
 - PO: ✅ (spec v1 em 2026-04-07, revisada v2 em 2026-04-19 com Bloco 6 real)
-- UI/UX: 🟡 pendente — templates nos Steps 14-16 do plano
+- UI/UX: ✅ (templates Tasks 14-16, 15 templates novos, dashboard.css)
 - Arquiteto: ✅ (plano de 20 tasks em `docs/superpowers/plans/2026-04-19-F19-dashboards.md`)
-- Dev Backend: 🟡 pendente (Tasks 1–13, 17)
-- Dev Front-end: 🟡 pendente (Tasks 14–16)
-- QA: 🟡 pendente (Task 18)
-- Segurança: 🟡 pendente (Task 18)
+- Dev Backend: ✅ (Tasks 1–13, 17 — domain + UCs + repos GORM + handlers + observabilidade)
+- Dev Front-end: ✅ (Tasks 14–16 — Chart.js + 15 templates)
+- QA: ✅ (Task 18 — 9 testes OWASP, cobertura ≥ 80% em todos os pacotes)
+- Segurança: ✅ (Task 18 — A01, A03, A04/A05 cobertos)
 
 ## Progresso (Tasks concluídas)
 
@@ -39,7 +39,7 @@
 | 17 | Observabilidade (metrics/spans/logs) | ✅ | cc8caee |
 | 18 | Testes OWASP + cobertura ≥ 80% | ✅ | db2cdf5 |
 | 19 | `rest/16-dashboard.http` + menus + changelog | ✅ | 8019212 |
-| 20 | Fechamento (backlog, status, PR) | ⬜ | — |
+| 20 | Fechamento (backlog, status, PR) | ✅ | _(este commit)_ |
 
 ## Decisões-chave
 - **Escopo**: todos os 8 Steps do feature file F19 estão no plano. Nada foi postergado.

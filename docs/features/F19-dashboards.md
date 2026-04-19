@@ -9,7 +9,7 @@ Transformar os stubs atuais de `/dashboard` (tenant) e `/admin/dashboard` em pai
 - F08 (usuários e permissões) — perfis (owner/admin do tenant vs usuário comum) e isolamento
 - F10 (produtos) — agregações por produto
 
-## Status: backlog
+## Status: concluído (2026-04-19)
 
 ## Design aprovado
 Ver [docs/artefatos/F19-dashboards/design-v1.md](../artefatos/F19-dashboards/design-v1.md) (aprovado em 2026-04-07).
@@ -24,57 +24,57 @@ Ver [docs/artefatos/F19-dashboards/design-v1.md](../artefatos/F19-dashboards/des
 ## Steps
 
 ### Step 1: Módulo `internal/dashboard` (domínio + use cases)
-- [ ] structs de output tenant (`TenantStats`) e admin (`AdminStats`)
-- [ ] use case `GetTenantDashboard` com filtro por `responsible_user_id` quando usuário comum
-- [ ] use case `GetAdminDashboard` (guard por role admin)
-- [ ] testes unitários com dados mockados (taxas, médias)
+- [x] structs de output tenant (`TenantStats`) e admin (`AdminStats`)
+- [x] use case `GetTenantDashboard` com filtro por `responsible_user_id` quando usuário comum
+- [x] use case `GetAdminDashboard` (guard por role admin)
+- [x] testes unitários com dados mockados (taxas, médias)
 
 ### Step 2: Repositórios e providers
-- [ ] `gorm_tenant_stats_repo.go` — queries agregadas por tenant (leads, funil, WhatsApp, produtos, responsáveis, tempo no funil)
-- [ ] `gorm_admin_stats_repo.go` — queries agregadas da plataforma (tenants, uso, top ativos, especialistas)
-- [ ] `prometheus_stats_provider.go` — métricas de infra (latência, erro 5xx, status de serviços)
-- [ ] testes de integração com testcontainers-go
+- [x] `gorm_tenant_stats_repo.go` — queries agregadas por tenant (leads, funil, WhatsApp, produtos, responsáveis, tempo no funil)
+- [x] `gorm_admin_stats_repo.go` — queries agregadas da plataforma (tenants, uso, top ativos, especialistas)
+- [x] `prometheus_stats_provider.go` — métricas de infra (latência, erro 5xx, status de serviços)
+- [x] testes de integração com testcontainers-go
 
 ### Step 3: Handlers HTMX e rotas
-- [ ] `GET /dashboard` — substitui stub; renderiza layout + fragmento
-- [ ] `GET /dashboard/content` — fragmento para refresh (botão Atualizar)
-- [ ] `GET /admin/dashboard` — substitui stub; guard por role admin
-- [ ] `GET /admin/dashboard/content` — fragmento admin
-- [ ] registrar rotas em `cmd/api`
-- [ ] testes de handler (HTML válido, dados corretos)
+- [x] `GET /dashboard` — substitui stub; renderiza layout + fragmento
+- [x] `GET /dashboard/content` — fragmento para refresh (botão Atualizar)
+- [x] `GET /admin/dashboard` — substitui stub; guard por role admin
+- [x] `GET /admin/dashboard/content` — fragmento admin
+- [x] registrar rotas em `cmd/api`
+- [x] testes de handler (HTML válido, dados corretos)
 
 ### Step 4: UI — Dashboard Tenant (5 blocos)
-- [ ] Bloco 1 — Funil/Leads: totais por status (open/won/lost), leads por coluna (bar), conversão (doughnut), novos hoje/semana
-- [ ] Bloco 2 — WhatsApp: mensagens in/out (bar), conversas ativas, tempo médio de primeira resposta
-- [ ] Bloco 3 — Performance por responsável: leads por responsável (bar), conversão por responsável; usuário comum vê só os próprios
-- [ ] Bloco 4 — Tempo no funil: tempo médio por coluna (bar horizontal), leads parados > 7 dias (lista + alerta)
-- [ ] Bloco 5 — Produtos: leads por produto (doughnut), conversão por produto (bar)
+- [x] Bloco 1 — Funil/Leads: totais por status (open/won/lost), leads por coluna (bar), conversão (doughnut), novos hoje/semana
+- [x] Bloco 2 — WhatsApp: mensagens in/out (bar), conversas ativas, tempo médio de primeira resposta
+- [x] Bloco 3 — Performance por responsável: leads por responsável (bar), conversão por responsável; usuário comum vê só os próprios
+- [x] Bloco 4 — Tempo no funil: tempo médio por coluna (bar horizontal), leads parados > 7 dias (lista + alerta)
+- [x] Bloco 5 — Produtos: leads por produto (doughnut), conversão por produto (bar)
 
 ### Step 5: UI — Dashboard Admin (6 blocos)
-- [ ] Bloco 1 — Tenants: ativos/inativos/bloqueados (doughnut), novos no mês, crescimento 6 meses (line)
-- [ ] Bloco 2 — Uso da plataforma: total de leads, total de mensagens WhatsApp, conversas ativas
-- [ ] Bloco 3 — Health por tenant: top 10 mais ativos (bar horizontal), inativos > 30 dias (lista + alerta)
-- [ ] Bloco 4 — Infraestrutura: latência média, taxa de 5xx, status de serviços (Prometheus)
-- [ ] Bloco 5 — Especialistas/IA: total de agentes, qualificações, agentes por tenant
-- [ ] Bloco 6 — Financeiro/Billing (dados reais de F11): receita do ano, total pendente, total atrasado (contadores), tenants por plano (doughnut), top 10 tenants atrasados (bar horizontal)
+- [x] Bloco 1 — Tenants: ativos/inativos/bloqueados (doughnut), novos no mês, crescimento 6 meses (line)
+- [x] Bloco 2 — Uso da plataforma: total de leads, total de mensagens WhatsApp, conversas ativas
+- [x] Bloco 3 — Health por tenant: top 10 mais ativos (bar horizontal), inativos > 30 dias (lista + alerta)
+- [x] Bloco 4 — Infraestrutura: latência média, taxa de 5xx, status de serviços (Prometheus)
+- [x] Bloco 5 — Especialistas/IA: total de agentes, qualificações, agentes por tenant
+- [x] Bloco 6 — Financeiro/Billing (dados reais de F11): receita do ano, total pendente, total atrasado (contadores), tenants por plano (doughnut), top 10 tenants atrasados (bar horizontal)
 
 ### Step 6: Frontend comum
-- [ ] Chart.js via CDN no layout (admin e tenant)
-- [ ] grid responsivo: 2 colunas desktop, 1 coluna mobile
-- [ ] cards de contadores (ícone + valor + label)
-- [ ] inicialização de gráficos via evento `htmx:afterSwap`
-- [ ] botão "Atualizar" com `hx-get` no fragmento de conteúdo
+- [x] Chart.js via CDN no layout (admin e tenant)
+- [x] grid responsivo: 2 colunas desktop, 1 coluna mobile
+- [x] cards de contadores (ícone + valor + label)
+- [x] inicialização de gráficos via evento `htmx:afterSwap`
+- [x] botão "Atualizar" com `hx-get` no fragmento de conteúdo
 
 ### Step 7: Segurança e observabilidade
-- [ ] testes OWASP: usuário comum só vê seus dados; isolamento de tenant; admin dashboard inacessível para não-admin
-- [ ] métricas: `dashboard_render_duration_seconds{scope=tenant|admin}`, `dashboard_load_total{scope,outcome}`
-- [ ] logs com `request_id`, `tenant_id`, `user_id`
-- [ ] spans OTel nos use cases
+- [x] testes OWASP: usuário comum só vê seus dados; isolamento de tenant; admin dashboard inacessível para não-admin
+- [x] métricas: `dashboard_render_duration_seconds{scope=tenant|admin}`, `dashboard_load_total{scope,outcome}`
+- [x] logs com `request_id`, `tenant_id`, `user_id`
+- [x] spans OTel nos use cases
 
 ### Step 8: Arquivos `.http`, documentação e changelog
-- [ ] adicionar em `rest/` fluxos para `/dashboard` e `/admin/dashboard` (inclui `/content`)
-- [ ] atualizar `docs/engenharia/observabilidade.md` com novas métricas
-- [ ] entrada em `docs/processo/changelog.md`
+- [x] adicionar em `rest/` fluxos para `/dashboard` e `/admin/dashboard` (inclui `/content`)
+- [x] atualizar `docs/engenharia/observabilidade.md` com novas métricas
+- [x] entrada em `docs/processo/changelog.md`
 
 ## Decisões técnicas
 - Módulo `internal/dashboard/` com DDD + Clean Architecture
@@ -84,11 +84,11 @@ Ver [docs/artefatos/F19-dashboards/design-v1.md](../artefatos/F19-dashboards/des
 - Reutiliza repositórios existentes (lead, funnel, column, conversation, message, tenant, user, product, specialist)
 
 ## Critérios de aceite
-- [ ] tenant dashboard exibe os 5 blocos com dados reais
-- [ ] admin dashboard exibe os 6 blocos com dados reais (Financeiro como placeholder)
-- [ ] usuário comum vê apenas seus próprios dados nos blocos 3
-- [ ] admin dashboard inacessível para não-admin (403)
-- [ ] tempo de render p95 < 500ms em ambiente de dev com massa de dados típica
-- [ ] cobertura >= 80% no módulo `dashboard`
-- [ ] build + containers OK
-- [ ] arquivos `.http` em `rest/` atualizados
+- [x] tenant dashboard exibe os 5 blocos com dados reais
+- [x] admin dashboard exibe os 6 blocos com dados reais (Financeiro **com dados reais de F11** — opção B aprovada em 2026-04-19)
+- [x] usuário comum vê apenas seus próprios dados nos blocos 3
+- [x] admin dashboard inacessível para não-admin (403)
+- [ ] tempo de render p95 < 500ms em ambiente de dev com massa de dados típica _(não medido — métricas `dashboard_render_duration_seconds` instaladas; medir após deploy de staging)_
+- [x] cobertura >= 80% no módulo `dashboard`
+- [x] build + containers OK
+- [x] arquivos `.http` em `rest/` atualizados
