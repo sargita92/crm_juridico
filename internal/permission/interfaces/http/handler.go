@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
@@ -68,6 +69,9 @@ func NewHandler(
 
 // ListGroups returns all permission groups for the current tenant.
 func (h *Handler) ListGroups(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.list_groups")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	groups, err := h.listGroupsUC.Execute(c.Request.Context(), tenantID)
@@ -82,6 +86,9 @@ func (h *Handler) ListGroups(c *gin.Context) {
 
 // GetGroup returns a single permission group by ID, scoped to the current tenant.
 func (h *Handler) GetGroup(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.get_group")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
 
@@ -97,6 +104,9 @@ func (h *Handler) GetGroup(c *gin.Context) {
 
 // CreateGroup creates a new permission group for the current tenant.
 func (h *Handler) CreateGroup(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.create_group")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	var req struct {
@@ -124,6 +134,9 @@ func (h *Handler) CreateGroup(c *gin.Context) {
 
 // UpdateGroup updates an existing permission group.
 func (h *Handler) UpdateGroup(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.update_group")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
 
@@ -153,6 +166,9 @@ func (h *Handler) UpdateGroup(c *gin.Context) {
 
 // DeleteGroup deletes a permission group by ID.
 func (h *Handler) DeleteGroup(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.delete_group")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
 
@@ -169,6 +185,9 @@ func (h *Handler) DeleteGroup(c *gin.Context) {
 
 // ListMembers returns all members of a group.
 func (h *Handler) ListMembers(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.list_members")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 
 	members, err := h.manageMembersUC.ListMembers(c.Request.Context(), groupID)
@@ -183,6 +202,9 @@ func (h *Handler) ListMembers(c *gin.Context) {
 
 // AddMember adds a user to a group.
 func (h *Handler) AddMember(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.add_member")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groupID := c.Param("id")
 
@@ -205,6 +227,9 @@ func (h *Handler) AddMember(c *gin.Context) {
 
 // RemoveMember removes a user from a group.
 func (h *Handler) RemoveMember(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.remove_member")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 	userID := c.Param("uid")
 
@@ -221,6 +246,9 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 
 // GetGroupPermissions returns all permissions assigned to a group.
 func (h *Handler) GetGroupPermissions(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.get_group_permissions")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 
 	perms, err := h.managePermsUC.GetGroupPermissions(c.Request.Context(), groupID)
@@ -235,6 +263,9 @@ func (h *Handler) GetGroupPermissions(c *gin.Context) {
 
 // SetGroupPermissions replaces all permissions for a group.
 func (h *Handler) SetGroupPermissions(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.set_group_permissions")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groupID := c.Param("id")
 
@@ -266,6 +297,9 @@ func (h *Handler) SetGroupPermissions(c *gin.Context) {
 
 // GetUserPermissions returns all individual permissions assigned to a user within the current tenant.
 func (h *Handler) GetUserPermissions(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.get_user_permissions")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	userID := c.Param("id")
 
@@ -281,6 +315,9 @@ func (h *Handler) GetUserPermissions(c *gin.Context) {
 
 // SetUserPermissions replaces all individual permissions for a user within the current tenant.
 func (h *Handler) SetUserPermissions(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.set_user_permissions")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	userID := c.Param("id")
 
@@ -314,6 +351,9 @@ func (h *Handler) SetUserPermissions(c *gin.Context) {
 
 // ListViewProfiles returns all view profiles for a group.
 func (h *Handler) ListViewProfiles(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.list_view_profiles")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 
 	profiles, err := h.manageVPUC.ListByGroup(c.Request.Context(), groupID)
@@ -328,6 +368,9 @@ func (h *Handler) ListViewProfiles(c *gin.Context) {
 
 // SetViewProfile creates or updates the view profile for a group+funnel combination.
 func (h *Handler) SetViewProfile(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.set_view_profile")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 	funnelID := c.Param("fid")
 
@@ -356,6 +399,9 @@ func (h *Handler) SetViewProfile(c *gin.Context) {
 
 // ListGroupFunnels returns all funnel associations for a group.
 func (h *Handler) ListGroupFunnels(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.list_group_funnels")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 
 	funnels, err := h.manageGFUC.ListByGroup(c.Request.Context(), groupID)
@@ -371,6 +417,9 @@ func (h *Handler) ListGroupFunnels(c *gin.Context) {
 // SetGroupFunnels sets one or more funnel associations for a group.
 // Each entry in the request body will be upserted individually.
 func (h *Handler) SetGroupFunnels(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.set_group_funnels")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 
 	var req []struct {
@@ -404,6 +453,9 @@ func (h *Handler) SetGroupFunnels(c *gin.Context) {
 // --- Load Balance ---
 
 func (h *Handler) GetLoadBalance(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.get_load_balance")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groupID := c.Param("id")
 
@@ -430,6 +482,9 @@ func (h *Handler) GetLoadBalance(c *gin.Context) {
 }
 
 func (h *Handler) SetLoadBalance(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.set_load_balance")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groupID := c.Param("id")
 

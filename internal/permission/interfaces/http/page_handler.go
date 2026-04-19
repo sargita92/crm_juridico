@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
@@ -171,6 +172,9 @@ func NewPageHandler(
 
 // GroupsPage renders the shell + groups tab.
 func (h *PageHandler) GroupsPage(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.groups")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groups, err := h.listGroups.Execute(c.Request.Context(), tenantID)
 	if err != nil {
@@ -186,6 +190,9 @@ func (h *PageHandler) GroupsPage(c *gin.Context) {
 
 // GroupsTable renders only the groups table fragment.
 func (h *PageHandler) GroupsTable(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.groups_table")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groups, err := h.listGroups.Execute(c.Request.Context(), tenantID)
 	if err != nil {
@@ -198,11 +205,17 @@ func (h *PageHandler) GroupsTable(c *gin.Context) {
 
 // GroupNewModal renders the "Novo Grupo" modal.
 func (h *PageHandler) GroupNewModal(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.group_new_modal")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	c.HTML(http.StatusOK, "team/group_new_modal.html", nil)
 }
 
 // CreateGroupHTML handles POST /tenant/team/groups.
 func (h *PageHandler) CreateGroupHTML(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.create_group")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	out, err := h.createGroup.Execute(c.Request.Context(), application.CreateGroupInput{
 		TenantID:    tenantID,
@@ -222,6 +235,9 @@ func (h *PageHandler) CreateGroupHTML(c *gin.Context) {
 
 // GroupDetail renders the detail page for a single group (header + section cards).
 func (h *PageHandler) GroupDetail(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.group_detail")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groupID := c.Param("id")
 
@@ -251,6 +267,9 @@ func (h *PageHandler) GroupDetail(c *gin.Context) {
 
 // GroupSection dispatches to the appropriate section renderer.
 func (h *PageHandler) GroupSection(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.group_section")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	name := c.Param("name")
 	switch name {
 	case "members":
@@ -470,6 +489,9 @@ func (h *PageHandler) sectionLoadBalance(c *gin.Context) {
 }
 
 func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.set_group_permissions")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	groupID := c.Param("id")
 
@@ -493,7 +515,9 @@ func (h *PageHandler) SetGroupPermissionsHTML(c *gin.Context) {
 }
 
 func (h *PageHandler) SetGroupFunnelsHTML(c *gin.Context) {
-	ctx := c.Request.Context()
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.set_group_funnels")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 
 	funnelIDs := c.PostFormArray("funnel_ids")
@@ -513,6 +537,9 @@ func (h *PageHandler) SetGroupFunnelsHTML(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 func (h *PageHandler) SetViewProfileHTML(c *gin.Context) {
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.set_view_profile")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	groupID := c.Param("id")
 	funnelID := c.Param("fid")
 	cols := c.PostFormArray("visible_columns")
@@ -530,7 +557,9 @@ func (h *PageHandler) SetViewProfileHTML(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 func (h *PageHandler) SetLoadBalanceHTML(c *gin.Context) {
-	ctx := c.Request.Context()
+	ctx, span := otel.Tracer("permission").Start(c.Request.Context(), "permission.page.set_load_balance")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(ctx)
 	groupID := c.Param("id")
 
