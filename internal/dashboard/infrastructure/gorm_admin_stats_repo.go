@@ -9,18 +9,21 @@ import (
 
 	"github.com/sasrgita/crm-juridico/internal/dashboard/application"
 	"github.com/sasrgita/crm-juridico/internal/dashboard/domain"
+	pagamentosDomain "github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 )
 
 // GormAdminStatsRepo implementa application.AdminStatsProvider via GORM/MySQL.
-// Cobre os blocos 1 (tenants), 2 (uso) e 3 (health) do dashboard admin.
-// Os blocos 5 (especialistas) e 6 (financeiro) ficam como stubs zero-value at\u00e9 a Task 9.
+// Cobre os blocos 1 (tenants), 2 (uso), 3 (health), 5 (especialistas) e 6 (financeiro)
+// do dashboard admin. O bloco 6 delega o cálculo de receita/pendente/atrasado/top-overdue
+// para o PaymentRepository (interface do módulo pagamentos), mantendo a SQL financeira
+// em um único lugar; a distribuição de planos é consultada direto em tenants.plano.
 type GormAdminStatsRepo struct {
-	db *gorm.DB
-	// payments injetado em Task 9 (FinanceiroBlock).
+	db       *gorm.DB
+	payments pagamentosDomain.PaymentRepository
 }
 
-func NewGormAdminStatsRepo(db *gorm.DB) *GormAdminStatsRepo {
-	return &GormAdminStatsRepo{db: db}
+func NewGormAdminStatsRepo(db *gorm.DB, payments pagamentosDomain.PaymentRepository) *GormAdminStatsRepo {
+	return &GormAdminStatsRepo{db: db, payments: payments}
 }
 
 // Compile-time check: GormAdminStatsRepo implements the application provider.
@@ -194,12 +197,103 @@ func (r *GormAdminStatsRepo) HealthBlock(ctx context.Context, now time.Time) (*d
 	return out, nil
 }
 
-// EspecialistasBlock — stub. Implementado na Task 9.
+// EspecialistasBlock — Bloco 5: total de especialistas, contador de qualificações
+// e distribuição por tenant via junction specialist_tenants.
+//
+// Qualifications fica em 0 enquanto a F05 não expõe um contador de qualificações
+// (não há tabela `specialist_qualifications` hoje). Quando o módulo de qualificações
+// publicar a contagem (via repo/serviço dedicado), substituir aqui.
 func (r *GormAdminStatsRepo) EspecialistasBlock(ctx context.Context) (*domain.SpecialistsBlock, error) {
-	return &domain.SpecialistsBlock{}, nil
+	out := &domain.SpecialistsBlock{}
+
+	// Total de especialistas (todos, independente de status).
+	if err := r.db.WithContext(ctx).Table("specialists").Count(&out.Total).Error; err != nil {
+		return nil, err
+	}
+
+	// TODO(F05): popular Qualifications quando o módulo de qualificações
+	// expuser o contador (tabela/serviço ainda não disponíveis).
+	out.Qualifications = 0
+
+	// Distribuição por tenant via junction table specialist_tenants.
+	type byTenantRow struct {
+		TenantID   string
+		TenantName string
+		Total      int64
+	}
+	var rows []byTenantRow
+	if err := r.db.WithContext(ctx).
+		Table("specialist_tenants AS st").
+		Select("st.tenant_id AS tenant_id, t.name AS tenant_name, COUNT(*) AS total").
+		Joins("JOIN tenants t ON t.id = st.tenant_id").
+		Group("st.tenant_id, t.name").
+		Order("total DESC").Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, rr := range rows {
+		out.ByTenant = append(out.ByTenant, domain.SpecialistByTenant{
+			TenantID:   rr.TenantID,
+			TenantName: rr.TenantName,
+			Total:      rr.Total,
+		})
+	}
+	return out, nil
 }
 
-// FinanceiroBlock — stub. Implementado na Task 9.
+// FinanceiroBlock — Bloco 6: receita do ano, pendente/atrasado totais, distribuição
+// de planos e top-10 tenants em atraso.
+//
+// Receita/pendente/atrasado/top-overdue vêm de PaymentRepository.GlobalSummary —
+// reusamos a SQL canônica do módulo pagamentos (single source of truth para regras
+// financeiras). PlanDistribution é uma agregação simples sobre tenants.plano e fica
+// neste repo para evitar acoplar pagamentos a conhecimento de planos por contagem.
+//
+// Plans desconhecidos (string fora do conjunto suportado: mensal/anual/vitalicio/externo)
+// são silenciosamente ignorados — o admin vê apenas categorias conhecidas; isso evita
+// quebrar o dashboard caso um valor exótico apareça (ex.: migração futura).
 func (r *GormAdminStatsRepo) FinanceiroBlock(ctx context.Context, now time.Time) (*domain.FinancialBlock, error) {
-	return &domain.FinancialBlock{}, nil
+	gs, err := r.payments.GlobalSummary(ctx, now)
+	if err != nil {
+		return nil, err
+	}
+
+	type pRow struct {
+		Plano string
+		Total int64
+	}
+	var prows []pRow
+	if err := r.db.WithContext(ctx).Table("tenants").
+		Select("plano, COUNT(*) AS total").
+		Where("plano IS NOT NULL AND plano <> ''").
+		Group("plano").Scan(&prows).Error; err != nil {
+		return nil, err
+	}
+	var dist domain.PlanDistribution
+	for _, rr := range prows {
+		switch rr.Plano {
+		case "mensal":
+			dist.Mensal = rr.Total
+		case "anual":
+			dist.Anual = rr.Total
+		case "vitalicio":
+			dist.Vitalicio = rr.Total
+		case "externo":
+			dist.Externo = rr.Total
+		}
+	}
+
+	out := &domain.FinancialBlock{
+		ReceitaAnoCents:    gs.TotalPagoAnoCents,
+		PendenteTotalCents: gs.TotalPendenteCents,
+		AtrasadoTotalCents: gs.TotalAtrasadoCents,
+		PlanDist:           dist,
+	}
+	for _, t := range gs.TopOverdue {
+		out.TopOverdue = append(out.TopOverdue, domain.OverdueTenant{
+			TenantID:   t.TenantID,
+			TenantName: t.TenantName,
+			ValorCents: t.ValorCents,
+		})
+	}
+	return out, nil
 }

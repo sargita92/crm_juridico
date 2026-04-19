@@ -9,14 +9,83 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	pagamentosInfra "github.com/sasrgita/crm-juridico/internal/pagamentos/infrastructure"
 )
 
 // setupAdminRepo reaproveita o cleanup/migrations de setupStatsRepo e devolve o
-// repositório admin sobre o mesmo *gorm.DB já limpo.
+// repositório admin sobre o mesmo *gorm.DB já limpo. Constrói também um
+// PaymentRepository real sobre o mesmo *gorm.DB para que FinanceiroBlock exercite
+// o SQL de GlobalSummary contra a base do testcontainer (integração real).
 func setupAdminRepo(t *testing.T) (*GormAdminStatsRepo, *gorm.DB) {
 	t.Helper()
 	_, db := setupStatsRepo(t)
-	return NewGormAdminStatsRepo(db), db
+	payments := pagamentosInfra.NewGormPaymentRepository(db)
+	return NewGormAdminStatsRepo(db, payments), db
+}
+
+// seedSpecialist insere um specialist via raw SQL e retorna o ID.
+func seedSpecialist(t *testing.T, db *gorm.DB, name string) string {
+	t.Helper()
+	id := uuid.New().String()
+	err := db.Exec(`INSERT INTO specialists (id, name, description, prompt, status, created_at, updated_at)
+		VALUES (?, ?, '', 'p', 'active', NOW(), NOW())`,
+		id, name).Error
+	require.NoError(t, err)
+	return id
+}
+
+// linkSpecialistToTenant insere a linha de associação na junction table specialist_tenants.
+func linkSpecialistToTenant(t *testing.T, db *gorm.DB, specialistID, tenantID string) {
+	t.Helper()
+	err := db.Exec(`INSERT INTO specialist_tenants (specialist_id, tenant_id, created_at)
+		VALUES (?, ?, NOW())`,
+		specialistID, tenantID).Error
+	require.NoError(t, err)
+}
+
+// seedTenantWithPlano insere um tenant com plano explícito (status='active', created_at=NOW()).
+// Necessário porque seedTenant sempre usa default plano='mensal'; aqui os testes do bloco
+// financeiro precisam variar o plano para validar PlanDistribution.
+func seedTenantWithPlano(t *testing.T, db *gorm.DB, name, plano string) string {
+	t.Helper()
+	id := uuid.New().String()
+	err := db.Exec(`INSERT INTO tenants
+		(id, name, type, document, status, plano, exibir_pagamentos, created_at, updated_at)
+		VALUES (?, ?, 'PJ', ?, 'active', ?, 1, NOW(), NOW())`,
+		id, name, id[:20], plano).Error
+	require.NoError(t, err)
+	return id
+}
+
+// paymentOpts agrupa os campos necessários para INSERT direto em payments.
+// Usamos SQL bruto (não domain.NewAvulsoPayment) para fixar status/datas em
+// estados pré-computados que GlobalSummary precisa para o ano atual.
+type paymentOpts struct {
+	tenantID       string
+	tipo           string // "avulso" ou "recorrente"
+	descricao      string
+	valorCents     int64
+	status         string // "pendente" | "pago" | "atrasado" | "cancelado"
+	dataVencimento time.Time
+	dataPagamento  *time.Time
+	createdAt      time.Time
+}
+
+func seedPayment(t *testing.T, db *gorm.DB, opts paymentOpts) string {
+	t.Helper()
+	id := uuid.New().String()
+	var pagoArg interface{}
+	if opts.dataPagamento != nil {
+		pagoArg = *opts.dataPagamento
+	}
+	err := db.Exec(`INSERT INTO payments (id, tenant_id, tipo, descricao, valor_cents, status,
+		data_vencimento, data_pagamento, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		id, opts.tenantID, opts.tipo, opts.descricao, opts.valorCents, opts.status,
+		opts.dataVencimento, pagoArg, opts.createdAt, opts.createdAt).Error
+	require.NoError(t, err)
+	return id
 }
 
 // seedTenantWithStatus insere um tenant via raw SQL com status e created_at controlados.
@@ -226,4 +295,103 @@ func TestHealthBlock_InactiveOver30Days(t *testing.T) {
 	assert.InDelta(t, 60, inactiveByID[tEmpty], 2, "DaysInactive aprox. 60 (last_activity = created_at -60d)")
 	// Ordena\u00e7\u00e3o: T-empty primeiro (mais antigo).
 	assert.Equal(t, tEmpty, got.InactiveList[0].TenantID, "T-empty deve vir primeiro (last_activity mais antigo)")
+}
+
+// ---------- EspecialistasBlock tests ----------
+
+func TestEspecialistasBlock_TotalAndByTenant(t *testing.T) {
+	repo, db := setupAdminRepo(t)
+	ctx := context.Background()
+
+	t1 := seedTenantWithStatus(t, db, "Tenant Um", "active", time.Now())
+	t2 := seedTenantWithStatus(t, db, "Tenant Dois", "active", time.Now())
+	s1 := seedSpecialist(t, db, "S1")
+	s2 := seedSpecialist(t, db, "S2")
+	s3 := seedSpecialist(t, db, "S3")
+	// s1 + s2 -> t1 (2 especialistas para t1)
+	linkSpecialistToTenant(t, db, s1, t1)
+	linkSpecialistToTenant(t, db, s2, t1)
+	// s3 -> t2 (1 especialista para t2)
+	linkSpecialistToTenant(t, db, s3, t2)
+
+	got, err := repo.EspecialistasBlock(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), got.Total)
+	assert.Equal(t, int64(0), got.Qualifications) // por enquanto sempre 0
+	require.Len(t, got.ByTenant, 2)
+	// Ordenado desc por total: t1(2) antes de t2(1).
+	assert.Equal(t, t1, got.ByTenant[0].TenantID)
+	assert.Equal(t, "Tenant Um", got.ByTenant[0].TenantName)
+	assert.Equal(t, int64(2), got.ByTenant[0].Total)
+	assert.Equal(t, t2, got.ByTenant[1].TenantID)
+	assert.Equal(t, int64(1), got.ByTenant[1].Total)
+}
+
+func TestEspecialistasBlock_QualificationsAlwaysZero(t *testing.T) {
+	// Documenta o comportamento atual (TODO F05): Qualifications fica em 0
+	// até o módulo de qualificações expor o contador. Captura regressão se
+	// alguém adicionar mock/contagem prematura.
+	repo, db := setupAdminRepo(t)
+	ctx := context.Background()
+	seedSpecialist(t, db, "S1") // só pra ter contagem != 0
+
+	got, err := repo.EspecialistasBlock(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), got.Qualifications, "Qualifications fica em 0 ate F05 expor contador")
+}
+
+// ---------- FinanceiroBlock tests ----------
+
+func TestFinanceiroBlock_AggregatesFromPaymentRepoAndPlanDistribution(t *testing.T) {
+	repo, db := setupAdminRepo(t)
+	ctx := context.Background()
+	now := time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC)
+
+	// Tenants com diferentes planos:
+	// 2 mensal, 1 anual, 1 vitalicio, 0 externo
+	t1 := seedTenantWithPlano(t, db, "Mensal-1", "mensal")
+	t2 := seedTenantWithPlano(t, db, "Mensal-2", "mensal")
+	seedTenantWithPlano(t, db, "Anual-1", "anual")
+	seedTenantWithPlano(t, db, "Vital-1", "vitalicio")
+
+	// Pagamentos (alimentam GlobalSummary):
+	// t1: pago 200000 no ano + pendente 50000 + atrasado 30000
+	// t2: atrasado 80000
+	paid := now
+	seedPayment(t, db, paymentOpts{tenantID: t1, tipo: "avulso", descricao: "x", valorCents: 200000, status: "pago", dataVencimento: now, dataPagamento: &paid, createdAt: now})
+	seedPayment(t, db, paymentOpts{tenantID: t1, tipo: "avulso", descricao: "y", valorCents: 50000, status: "pendente", dataVencimento: now, createdAt: now})
+	seedPayment(t, db, paymentOpts{tenantID: t1, tipo: "avulso", descricao: "z", valorCents: 30000, status: "atrasado", dataVencimento: now, createdAt: now})
+	seedPayment(t, db, paymentOpts{tenantID: t2, tipo: "avulso", descricao: "a", valorCents: 80000, status: "atrasado", dataVencimento: now, createdAt: now})
+
+	got, err := repo.FinanceiroBlock(ctx, now)
+	require.NoError(t, err)
+
+	// Vindos do GlobalSummary
+	assert.Equal(t, int64(200000), got.ReceitaAnoCents)
+	assert.Equal(t, int64(50000), got.PendenteTotalCents)
+	assert.Equal(t, int64(110000), got.AtrasadoTotalCents) // 30000 + 80000
+
+	// Distribuição de planos (vinda da query direta em tenants.plano)
+	assert.Equal(t, int64(2), got.PlanDist.Mensal)
+	assert.Equal(t, int64(1), got.PlanDist.Anual)
+	assert.Equal(t, int64(1), got.PlanDist.Vitalicio)
+	assert.Equal(t, int64(0), got.PlanDist.Externo)
+
+	// TopOverdue (vindo do GlobalSummary, ordenado por valor desc)
+	require.Len(t, got.TopOverdue, 2)
+	assert.Equal(t, t2, got.TopOverdue[0].TenantID) // 80000 vem antes de 30000
+	assert.Equal(t, int64(80000), got.TopOverdue[0].ValorCents)
+	assert.Equal(t, "Mensal-2", got.TopOverdue[0].TenantName)
+}
+
+func TestFinanceiroBlock_EmptyPlatform(t *testing.T) {
+	repo, _ := setupAdminRepo(t)
+	ctx := context.Background()
+	got, err := repo.FinanceiroBlock(ctx, time.Now())
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), got.ReceitaAnoCents)
+	assert.Equal(t, int64(0), got.PendenteTotalCents)
+	assert.Equal(t, int64(0), got.AtrasadoTotalCents)
+	assert.Equal(t, int64(0), got.PlanDist.Mensal)
+	assert.Empty(t, got.TopOverdue)
 }

@@ -67,6 +67,9 @@ func setupStatsRepo(t *testing.T) (*GormTenantStatsRepo, *gorm.DB) {
 	db.Exec("DELETE FROM tenant_block_history")
 	db.Exec("DELETE FROM user_tenants")
 	db.Exec("DELETE FROM users")
+	db.Exec("DELETE FROM specialist_tenants")
+	db.Exec("DELETE FROM specialists")
+	db.Exec("DELETE FROM payments")
 	db.Exec("DELETE FROM tenants")
 
 	return NewGormTenantStatsRepo(db), db
