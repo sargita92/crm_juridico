@@ -104,3 +104,6 @@ func (m *Module) StopScheduler()        { m.scheduler.Stop() }
 // Summary expõe o UC de resumo financeiro para outros módulos (ex: aba
 // Pagamentos no detalhe do tenant em tenant/).
 func (m *Module) Summary() *application.GetTenantFinancialSummary { return m.summaryUC }
+
+// PaymentRepo expõe o repositório para uso cruzado (dashboard admin).
+func (m *Module) PaymentRepo() domain.PaymentRepository { return m.paymentRepo }

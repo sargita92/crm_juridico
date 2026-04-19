@@ -116,3 +116,6 @@ func (noopPaymentRepo) ListOverdueCandidates(context.Context, time.Time) ([]doma
 func (noopPaymentRepo) Summary(context.Context, string, time.Time) (*domain.Summary, error) {
 	return &domain.Summary{}, nil
 }
+func (noopPaymentRepo) GlobalSummary(context.Context, time.Time) (*domain.GlobalSummary, error) {
+	return &domain.GlobalSummary{}, nil
+}
