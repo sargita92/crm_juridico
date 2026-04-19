@@ -48,11 +48,23 @@ func toModel(t *domain.Tenant) *tenantModel {
 		Plano:              t.Plano,
 		ValorCobrancaCents: t.ValorCobrancaCents,
 		DiaVencimento:      t.DiaVencimento,
-		DataInicioCobranca: t.DataInicioCobranca,
+		DataInicioCobranca: normalizeDateToLocal(t.DataInicioCobranca),
 		ExibirPagamentos:   t.ExibirPagamentos,
 		CreatedAt:          t.CreatedAt,
 		UpdatedAt:          t.UpdatedAt,
 	}
+}
+
+// normalizeDateToLocal rebuilds d at local midnight preserving its Y/M/D so
+// the MySQL DATE column roundtrip (driver applies session TZ) does not shift
+// the logical date. The input is expected to be at midnight-in-some-TZ from
+// a form date parse or a UTC construction.
+func normalizeDateToLocal(d *time.Time) *time.Time {
+	if d == nil {
+		return nil
+	}
+	out := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.Local)
+	return &out
 }
 
 func toDomain(m *tenantModel) *domain.Tenant {
