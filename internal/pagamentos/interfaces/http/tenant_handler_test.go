@@ -130,7 +130,7 @@ func TestTenant_List_ComPermissao_OK(t *testing.T) {
 	e.seedAvulso(t, e.tenantID, "Setup", 15000, time.Date(2026, 5, 10, 0, 0, 0, 0, time.UTC))
 
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos", tokenCookie(e.userToken(t, userID))))
+	e.router.ServeHTTP(w, getReq("/tenant/payment", tokenCookie(e.userToken(t, userID))))
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 	assert.Contains(t, w.Body.String(), "Setup")
 }
@@ -139,7 +139,7 @@ func TestTenant_List_SemPermissao_403(t *testing.T) {
 	e := setupTenant(t, "mensal", true)
 	userID := uuid.NewString() // sem allow
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos", tokenCookie(e.userToken(t, userID))))
+	e.router.ServeHTTP(w, getReq("/tenant/payment", tokenCookie(e.userToken(t, userID))))
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
@@ -148,7 +148,7 @@ func TestTenant_List_ExibirPagamentosFalse_404(t *testing.T) {
 	userID := uuid.NewString()
 	e.perm.allow[userID+":"+e.tenantID] = true
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos", tokenCookie(e.userToken(t, userID))))
+	e.router.ServeHTTP(w, getReq("/tenant/payment", tokenCookie(e.userToken(t, userID))))
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
@@ -157,7 +157,7 @@ func TestTenant_List_PlanoVitalicio_404(t *testing.T) {
 	userID := uuid.NewString()
 	e.perm.allow[userID+":"+e.tenantID] = true
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos", tokenCookie(e.userToken(t, userID))))
+	e.router.ServeHTTP(w, getReq("/tenant/payment", tokenCookie(e.userToken(t, userID))))
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
@@ -166,14 +166,14 @@ func TestTenant_List_PlanoExterno_404(t *testing.T) {
 	userID := uuid.NewString()
 	e.perm.allow[userID+":"+e.tenantID] = true
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos", tokenCookie(e.userToken(t, userID))))
+	e.router.ServeHTTP(w, getReq("/tenant/payment", tokenCookie(e.userToken(t, userID))))
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
 func TestTenant_List_SemAuth_401(t *testing.T) {
 	e := setupTenant(t, "mensal", true)
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos"))
+	e.router.ServeHTTP(w, getReq("/tenant/payment"))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
@@ -182,7 +182,7 @@ func TestTenant_List_PlanoAnual_Permitido(t *testing.T) {
 	userID := uuid.NewString()
 	e.perm.allow[userID+":"+e.tenantID] = true
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos", tokenCookie(e.userToken(t, userID))))
+	e.router.ServeHTTP(w, getReq("/tenant/payment", tokenCookie(e.userToken(t, userID))))
 	assert.Equal(t, http.StatusOK, w.Code, w.Body.String())
 }
 
@@ -203,7 +203,7 @@ func TestTenant_List_IsolamentoEntreTenants(t *testing.T) {
 
 	// usuario do tenant A nao deve ver SegredoB
 	w := httptest.NewRecorder()
-	e.router.ServeHTTP(w, getReq("/pagamentos", tokenCookie(e.userToken(t, userID))))
+	e.router.ServeHTTP(w, getReq("/tenant/payment", tokenCookie(e.userToken(t, userID))))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.NotContains(t, w.Body.String(), "SegredoB")
 }

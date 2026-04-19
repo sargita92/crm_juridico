@@ -6,73 +6,73 @@
 @paymentId = 22222222-2222-2222-2222-222222222222
 
 ### Listagem global (admin)
-GET {{host}}/admin/pagamentos
+GET {{host}}/admin/payment
 Cookie: token=ADMIN_TOKEN
 
 ### Listagem global filtrada por status
-GET {{host}}/admin/pagamentos?status=atrasado
+GET {{host}}/admin/payment?status=atrasado
 Cookie: token=ADMIN_TOKEN
 
 ### Listagem global com todos os filtros
-GET {{host}}/admin/pagamentos?status=pendente&data_inicial=2026-01-01&data_final=2026-12-31&tenant_id={{tenantId}}&page=1
+GET {{host}}/admin/payment?status=pendente&data_inicial=2026-01-01&data_final=2026-12-31&tenant_id={{tenantId}}&page=1
 Cookie: token=ADMIN_TOKEN
 
 ### Aba Pagamentos do tenant (admin)
-GET {{host}}/admin/tenants/{{tenantId}}/pagamentos
+GET {{host}}/admin/tenants/{{tenantId}}/payment
 Cookie: token=ADMIN_TOKEN
 
 ### Resumo financeiro (HTMX partial)
-GET {{host}}/admin/tenants/{{tenantId}}/pagamentos/resumo
+GET {{host}}/admin/tenants/{{tenantId}}/payment/resumo
 Cookie: token=ADMIN_TOKEN
 
 ### Form novo lancamento avulso (modal HTMX)
-GET {{host}}/admin/tenants/{{tenantId}}/pagamentos/novo
+GET {{host}}/admin/tenants/{{tenantId}}/payment/novo
 Cookie: token=ADMIN_TOKEN
 
 ### Criar lancamento avulso
-POST {{host}}/admin/tenants/{{tenantId}}/pagamentos
+POST {{host}}/admin/tenants/{{tenantId}}/payment
 Cookie: token=ADMIN_TOKEN
 Content-Type: application/x-www-form-urlencoded
 
 descricao=Consultoria&valor=150.00&data_vencimento=2026-05-20&observacao=Contrato avulso
 
 ### Marcar pagamento como pago
-POST {{host}}/admin/pagamentos/{{paymentId}}/pagar
+POST {{host}}/admin/payment/{{paymentId}}/pagar
 Cookie: token=ADMIN_TOKEN
 
 ### Cancelar pagamento (motivo obrigatorio)
-POST {{host}}/admin/pagamentos/{{paymentId}}/cancelar
+POST {{host}}/admin/payment/{{paymentId}}/cancelar
 Cookie: token=ADMIN_TOKEN
 Content-Type: application/x-www-form-urlencoded
 
 motivo=Duplicado
 
 ### Portal tenant (owner ou usuario com payments:view)
-GET {{host}}/pagamentos
+GET {{host}}/tenant/payment
 Cookie: token=TENANT_TOKEN
 
 ### ---- OWASP / erros esperados ----
 
 ### Sem cookie -> 401
-GET {{host}}/admin/pagamentos
+GET {{host}}/admin/payment
 
 ### Usuario nao-admin -> 403
-GET {{host}}/admin/pagamentos
+GET {{host}}/admin/payment
 Cookie: token=USER_TOKEN
 
 ### Tenant vitalicio no portal -> 404
-GET {{host}}/pagamentos
+GET {{host}}/tenant/payment
 Cookie: token=TENANT_VITALICIO_TOKEN
 
 ### Usuario sem permissao -> 403
-GET {{host}}/pagamentos
+GET {{host}}/tenant/payment
 Cookie: token=USER_SEM_PERM_TOKEN
 
 ### Cancelar sem motivo -> 422
-POST {{host}}/admin/pagamentos/{{paymentId}}/cancelar
+POST {{host}}/admin/payment/{{paymentId}}/cancelar
 Cookie: token=ADMIN_TOKEN
 Content-Type: application/x-www-form-urlencoded
 
 ### ID invalido -> 404
-POST {{host}}/admin/pagamentos/missing/pagar
+POST {{host}}/admin/payment/missing/pagar
 Cookie: token=ADMIN_TOKEN

@@ -8,12 +8,12 @@
     <td class="row-actions">
         {{if .Row.PodeMarcarPago}}
         <button class="btn btn-success"
-                hx-post="/admin/pagamentos/{{.Row.ID}}/pagar"
+                hx-post="/admin/payment/{{.Row.ID}}/pagar"
                 hx-target="#payment-{{.Row.ID}}"
                 hx-swap="outerHTML">Marcar pago</button>
         {{end}}
         {{if .Row.PodeCancelar}}
-        <form hx-post="/admin/pagamentos/{{.Row.ID}}/cancelar"
+        <form hx-post="/admin/payment/{{.Row.ID}}/cancelar"
               hx-target="#payment-{{.Row.ID}}"
               hx-swap="outerHTML"
               style="display:inline">

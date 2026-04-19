@@ -18,7 +18,7 @@ func (h *Handler) registerTenantPortalRoutes(router *gin.Engine, mw module.Middl
 		// sem middleware de portal, nao expomos as rotas (seguranca em primeiro lugar)
 		return
 	}
-	g := router.Group("/pagamentos")
+	g := router.Group("/tenant/payment")
 	g.Use(mw.Auth, mw.Tenant, h.portalMw)
 	g.GET("", h.TenantList)
 }

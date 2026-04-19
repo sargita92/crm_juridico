@@ -16,7 +16,7 @@ type PermissionChecker interface {
 	HasPermission(ctx context.Context, userID, tenantID, resource, action string) (bool, error)
 }
 
-// PortalAccessChecker autoriza /pagamentos no portal do tenant verificando:
+// PortalAccessChecker autoriza /tenant/payment no portal do tenant verificando:
 //  1. tenant tem plano cobravel e exibir_pagamentos = true (caso contrario 404)
 //  2. usuario atual tem "payments:view" (ou e owner/admin via Resolver).
 type PortalAccessChecker struct {
