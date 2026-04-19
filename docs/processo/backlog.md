@@ -35,7 +35,7 @@
 |---|---------|--------|-------------|------------|
 | F08 | [Usuários e Permissões](../features/F08-usuarios-permissoes.md) | concluído | F07 | média |
 | F09 | [Automações](../features/F09-automacoes.md) | concluído | F07 | média |
-| F10 | [Produtos](../features/F10-produtos.md) | em andamento | F07 | alta |
+| F10 | [Produtos](../features/F10-produtos.md) | concluído | F07 | alta |
 
 ## Épico 5: Gestão de Arquivos
 

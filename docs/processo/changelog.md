@@ -4,6 +4,14 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-19] F10 — Fechamento de Produtos
+
+- **Cobertura HTTP elevada** de 32.7% → 93.7% em `internal/product/interfaces/http` via `handler_flow_test.go`: happy-path + fallbacks para priority inválida, listers com erro, repo error, toggle/link/unlink/priority/associate/disassociate (admin + tenant).
+- **Sub-item "especialista vinculado a produto"** reclassificado: já entregue em F16 (`SpecialistRouter` + tabela `specialist_products`), portanto marcado como concluído no spec.
+- Feature marcada `concluído` no backlog e no spec; cobertura final: domain 100%, application 88.8%, http 93.7%.
+
+---
+
 ## [2026-04-18] F09 Step 8 — Telas de Notificações (HTMX)
 
 Fecha o loop de UX do Step 4.1: todo lead atribuído via load balance agora é visto pelo responsável em tempo real através de toast + badge + dropdown + página dedicada.

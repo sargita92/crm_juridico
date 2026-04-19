@@ -6,7 +6,7 @@ Implementar o cadastro de produtos e associação automática/manual a leads.
 ## Pré-requisitos
 - F07 (funis/kanban)
 
-## Status: em andamento
+## Status: concluído
 
 ## Steps
 
@@ -25,7 +25,7 @@ Implementar o cadastro de produtos e associação automática/manual a leads.
 - [x] ao receber primeira mensagem, analisar conteúdo para detectar produto
 - [x] formas de detecção:
   - [x] palavras-chave cadastradas no produto (case-insensitive)
-  - [ ] especialista vinculado a produto específico (F08)
+  - [x] especialista vinculado a produto específico (entregue em F16: `SpecialistRouter` + `specialist_products`)
   - [x] número de WhatsApp de entrada (product_phone_numbers — preparado para Meta Business API)
 - [x] se detectado → associar automaticamente
 - [x] se não detectado → lead fica sem produto (associação manual depois)
@@ -57,4 +57,4 @@ Um produto pode estar vinculado a um ou mais funis. Ao criar um lead por detecç
 - [x] associação automática por palavras-chave funciona
 - [x] associação manual funciona
 - [x] filtro por produto no kanban
-- [ ] cobertura >= 80% (validar)
+- [x] cobertura >= 80% (domain 100%, application 88.8%, http 93.7%)
