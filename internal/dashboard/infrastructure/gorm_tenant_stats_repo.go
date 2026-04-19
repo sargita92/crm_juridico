@@ -21,6 +21,17 @@ func NewGormTenantStatsRepo(db *gorm.DB) *GormTenantStatsRepo {
 // Compile-time check: GormTenantStatsRepo implements the application provider.
 var _ application.TenantStatsProvider = (*GormTenantStatsRepo)(nil)
 
+// applyLeadUserScope adiciona o filtro de responsible_user_id quando userID != nil.
+// Usado pelos blocos do dashboard tenant para escopar resultados ao usuário comum.
+// O argumento leadAlias permite usar o helper com queries que aliasam a tabela leads
+// (ex: "l") ou que usam o nome direto (passar "leads").
+func applyLeadUserScope(q *gorm.DB, userID *string, leadAlias string) *gorm.DB {
+	if userID == nil {
+		return q
+	}
+	return q.Where(leadAlias+".responsible_user_id = ?", *userID)
+}
+
 // FunilBlock — Bloco 1: status totals + colunas + conversão + novos hoje/semana.
 // Filtro opcional por responsible_user_id quando userID != nil.
 // Retorna também o nome do funil ativo (default do tenant).
@@ -244,10 +255,88 @@ func (r *GormTenantStatsRepo) WhatsAppBlock(ctx context.Context, tenantID string
 	return out, nil
 }
 
+// ResponsaveisBlock — Bloco 3: leads agrupados por responsible_user_id (LEFT JOIN users
+// para obter o nome). Leads sem responsável são excluídos. Ordenado por total DESC.
+// Filtro opcional por responsible_user_id quando userID != nil (resulta em até 1 linha).
 func (r *GormTenantStatsRepo) ResponsaveisBlock(ctx context.Context, tenantID string, userID *string) ([]domain.ResponsiblePerformance, error) {
-	return nil, nil
+	type row struct {
+		UserID string
+		Name   string
+		Total  int64
+		Won    int64
+		Lost   int64
+	}
+	var rows []row
+	q := r.db.WithContext(ctx).Table("leads AS l").
+		Select(`l.responsible_user_id AS user_id, u.name AS name,
+				COUNT(l.id) AS total,
+				SUM(CASE WHEN l.status='won' THEN 1 ELSE 0 END) AS won,
+				SUM(CASE WHEN l.status='lost' THEN 1 ELSE 0 END) AS lost`).
+		Joins("LEFT JOIN users u ON u.id = l.responsible_user_id").
+		Where("l.tenant_id = ? AND l.responsible_user_id IS NOT NULL", tenantID)
+	q = applyLeadUserScope(q, userID, "l")
+	if err := q.Group("l.responsible_user_id, u.name").Order("total DESC").Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]domain.ResponsiblePerformance, 0, len(rows))
+	for _, rr := range rows {
+		out = append(out, domain.ResponsiblePerformance{
+			UserID:   rr.UserID,
+			UserName: rr.Name,
+			Total:    rr.Total,
+			Won:      rr.Won,
+			Lost:     rr.Lost,
+		})
+	}
+	return out, nil
 }
 
+// TempoFunilBlock — Bloco 4: tempo médio (em horas) que cada lead permanece na coluna atual
+// e quantos estão "parados" há mais de 7 dias (status='open'). Limita-se ao funil default
+// do tenant; quando o tenant não possui funil default, retorna (nil, nil).
+// Filtro opcional por responsible_user_id quando userID != nil.
 func (r *GormTenantStatsRepo) TempoFunilBlock(ctx context.Context, tenantID string, userID *string, now time.Time) ([]domain.ColumnDwell, error) {
-	return nil, nil
+	// Funil default
+	var f struct{ ID string }
+	if err := r.db.WithContext(ctx).Table("funnels").
+		Select("id").
+		Where("tenant_id = ? AND is_default = ?", tenantID, true).
+		Take(&f).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	funnelID := f.ID
+
+	sevenDaysAgo := now.Add(-7 * 24 * time.Hour)
+	type row struct {
+		ColumnID   string
+		Name       string
+		OrderIndex int
+		AvgHours   float64
+		Stuck      int64
+	}
+	var rows []row
+	q := r.db.WithContext(ctx).Table("leads AS l").
+		Select(`c.id AS column_id, c.name AS name, c.order_index AS order_index,
+				AVG(TIMESTAMPDIFF(HOUR, l.column_entered_at, ?)) AS avg_hours,
+				SUM(CASE WHEN l.column_entered_at < ? AND l.status='open' THEN 1 ELSE 0 END) AS stuck`, now, sevenDaysAgo).
+		Joins("JOIN funnel_columns c ON c.id = l.column_id").
+		Where("l.tenant_id = ? AND l.funnel_id = ?", tenantID, funnelID)
+	q = applyLeadUserScope(q, userID, "l")
+	if err := q.Group("c.id, c.name, c.order_index").Order("c.order_index").Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	out := make([]domain.ColumnDwell, 0, len(rows))
+	for _, rr := range rows {
+		out = append(out, domain.ColumnDwell{
+			ColumnID:       rr.ColumnID,
+			ColumnName:     rr.Name,
+			OrderIndex:     rr.OrderIndex,
+			AvgHours:       rr.AvgHours,
+			StuckOver7Days: rr.Stuck,
+		})
+	}
+	return out, nil
 }

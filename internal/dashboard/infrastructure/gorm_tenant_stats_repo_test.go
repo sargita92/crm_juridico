@@ -412,6 +412,17 @@ func leadConversationID(t *testing.T, db *gorm.DB, leadID string) string {
 	return convID
 }
 
+// seedUser inserts a user row and returns its ID. Usado para o JOIN com users.name em ResponsaveisBlock.
+func seedUser(t *testing.T, db *gorm.DB, name string) string {
+	t.Helper()
+	id := uuid.New().String()
+	err := db.Exec(`INSERT INTO users (id, name, email, password_hash, role, status, created_at, updated_at)
+		VALUES (?, ?, ?, 'x', 'user', 'active', NOW(), NOW())`,
+		id, name, id+"@test.local").Error
+	require.NoError(t, err)
+	return id
+}
+
 // ---------- WhatsAppBlock tests ----------
 
 func TestWhatsAppBlock_CountsAndActive(t *testing.T) {
@@ -506,4 +517,124 @@ func TestWhatsAppBlock_UserScope_FiltersByLeadResponsible(t *testing.T) {
 	assert.Equal(t, int64(1), got.IncomingMessages)
 	assert.Equal(t, int64(1), got.OutgoingMessages)
 	assert.InDelta(t, 60.0, got.FirstResponseAvgSec, 0.5)
+}
+
+// ---------- ResponsaveisBlock tests ----------
+
+func TestResponsaveisBlock_Owner(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	funnelID := seedFunnelDefault(t, db, tenantID, "F")
+	columnID := seedColumn(t, db, funnelID, "Novos", 0, "entry")
+
+	u1 := seedUser(t, db, "Maria")
+	u2 := seedUser(t, db, "João")
+	u3 := seedUser(t, db, "Ana")
+
+	// 5 leads para u1 (3 open, 1 won, 1 lost)
+	for i := 0; i < 3; i++ {
+		seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "open", responsible: &u1})
+	}
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "won", responsible: &u1})
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "lost", responsible: &u1})
+	// 3 leads para u2 (1 open, 2 won)
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "open", responsible: &u2})
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "won", responsible: &u2})
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "won", responsible: &u2})
+	// 1 lead para u3
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "open", responsible: &u3})
+	// 1 lead sem responsible (não deve aparecer)
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "open", responsible: nil})
+
+	got, err := repo.ResponsaveisBlock(ctx, tenantID, nil)
+	require.NoError(t, err)
+	require.Len(t, got, 3)
+	// ordenado por total DESC: u1(5), u2(3), u3(1)
+	assert.Equal(t, u1, got[0].UserID)
+	assert.Equal(t, "Maria", got[0].UserName)
+	assert.Equal(t, int64(5), got[0].Total)
+	assert.Equal(t, int64(1), got[0].Won)
+	assert.Equal(t, int64(1), got[0].Lost)
+	assert.Equal(t, u2, got[1].UserID)
+	assert.Equal(t, int64(3), got[1].Total)
+	assert.Equal(t, int64(2), got[1].Won)
+	assert.Equal(t, u3, got[2].UserID)
+	assert.Equal(t, int64(1), got[2].Total)
+}
+
+func TestResponsaveisBlock_UserScope(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	funnelID := seedFunnelDefault(t, db, tenantID, "F")
+	columnID := seedColumn(t, db, funnelID, "Novos", 0, "entry")
+	u1 := seedUser(t, db, "Maria")
+	u2 := seedUser(t, db, "João")
+
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "open", responsible: &u1})
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "won", responsible: &u1})
+	seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: columnID, status: "open", responsible: &u2})
+
+	got, err := repo.ResponsaveisBlock(ctx, tenantID, &u1)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, u1, got[0].UserID)
+	assert.Equal(t, int64(2), got[0].Total)
+	assert.Equal(t, int64(1), got[0].Won)
+}
+
+// ---------- TempoFunilBlock tests ----------
+
+func TestTempoFunilBlock_AvgHours(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	funnelID := seedFunnelDefault(t, db, tenantID, "F")
+	colA := seedColumn(t, db, funnelID, "A", 0, "entry")
+	colB := seedColumn(t, db, funnelID, "B", 1, "intermediate")
+
+	now := time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC)
+	// 2 leads na coluna A: column_entered_at = now-2h e now-4h → media 3h
+	leadA1 := seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: colA, status: "open", createdAt: now})
+	leadA2 := seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: colA, status: "open", createdAt: now})
+	require.NoError(t, db.Exec(`UPDATE leads SET column_entered_at = ? WHERE id = ?`, now.Add(-2*time.Hour), leadA1).Error)
+	require.NoError(t, db.Exec(`UPDATE leads SET column_entered_at = ? WHERE id = ?`, now.Add(-4*time.Hour), leadA2).Error)
+	// 1 lead na coluna B com 1h
+	leadB := seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: colB, status: "open", createdAt: now})
+	require.NoError(t, db.Exec(`UPDATE leads SET column_entered_at = ? WHERE id = ?`, now.Add(-1*time.Hour), leadB).Error)
+
+	got, err := repo.TempoFunilBlock(ctx, tenantID, nil, now)
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	// Ordenado por order_index: A(0) primeiro, B(1) depois
+	assert.Equal(t, colA, got[0].ColumnID)
+	assert.InDelta(t, 3.0, got[0].AvgHours, 0.01)
+	assert.Equal(t, int64(0), got[0].StuckOver7Days)
+	assert.Equal(t, colB, got[1].ColumnID)
+	assert.InDelta(t, 1.0, got[1].AvgHours, 0.01)
+}
+
+func TestTempoFunilBlock_StuckOver7Days(t *testing.T) {
+	repo, db := setupStatsRepo(t)
+	ctx := context.Background()
+	tenantID := seedTenant(t, db)
+	funnelID := seedFunnelDefault(t, db, tenantID, "F")
+	colA := seedColumn(t, db, funnelID, "A", 0, "entry")
+
+	now := time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC)
+	// Lead aberto há 10 dias
+	leadStuck := seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: colA, status: "open", createdAt: now})
+	require.NoError(t, db.Exec(`UPDATE leads SET column_entered_at = ? WHERE id = ?`, now.Add(-10*24*time.Hour), leadStuck).Error)
+	// Lead aberto há 3 dias (não stuck)
+	leadFresh := seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: colA, status: "open", createdAt: now})
+	require.NoError(t, db.Exec(`UPDATE leads SET column_entered_at = ? WHERE id = ?`, now.Add(-3*24*time.Hour), leadFresh).Error)
+	// Lead pago há 10 dias (won → não stuck mesmo se velho)
+	leadWon := seedLead(t, db, leadOpts{tenantID: tenantID, funnelID: funnelID, columnID: colA, status: "won", createdAt: now})
+	require.NoError(t, db.Exec(`UPDATE leads SET column_entered_at = ? WHERE id = ?`, now.Add(-10*24*time.Hour), leadWon).Error)
+
+	got, err := repo.TempoFunilBlock(ctx, tenantID, nil, now)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, int64(1), got[0].StuckOver7Days) // só leadStuck
 }
