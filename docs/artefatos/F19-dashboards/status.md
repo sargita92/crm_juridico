@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 6/20 concluída)
+**Status**: 🟡 em andamento (Task 7/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -26,7 +26,7 @@
 | 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ✅ | f4579bb |
 | 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ✅ | 92a604f + 2ace7a8 |
 | 6 | Tenant stats repo (bloco 2 — WhatsApp) | ✅ | 87e2010 |
-| 7 | Tenant stats repo (blocos 3, 4 — responsáveis/tempo) | ⬜ | — |
+| 7 | Tenant stats repo (blocos 3, 4 — responsáveis/tempo) | ✅ | bcccd05 + 8d45e72 |
 | 8 | Admin stats repo (blocos 1, 2, 3 — tenants/uso/health) | ⬜ | — |
 | 9 | Admin stats repo (blocos 5, 6 — especialistas/financeiro) | ⬜ | — |
 | 10 | PrometheusStatsProvider (bloco 4 admin) | ⬜ | — |
@@ -115,3 +115,7 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 6 — adaptação real**: `seedLead` cria contact+conversation internamente (não recebe IDs). Adicionado `leadConversationID(t, db, leadID)` para recuperar a conversa criada. Helper `seedMessage` novo.
 - **Task 6 — predicado de user-scope duplicado em 3 lugares** (active count join, message count join, raw SQL `IN (SELECT...)`). Se Task 7 adicionar mais um, considerar extrair helper `applyUserLeadScope(q, tenantID, userID)`. Sinalizar no Task 7 dispatch.
 - **Task 6 — testes de borda recomendados** (incluir em Task 7 ou follow-up): (1) tenant sem conversas → todos os campos zero; (2) conversa só com incoming → `FirstResponseAvgSec=0`; (3) lead com `responsible_user_id IS NULL` filtrado fora em user-scope.
+- **Task 7 — bugs do plano (mesmos de Task 5) corrigidos**: (1) `JOIN columns` → `JOIN funnel_columns`; (2) `Row().Scan` → `Take(...).Error` + `errors.Is(err, gorm.ErrRecordNotFound)`.
+- **Task 7 — helper `applyLeadUserScope` extraído**: usado nos 2 novos métodos. Existing methods (FunilBlock, ProdutosBlock, WhatsAppBlock) NÃO foram refatorados — clean follow-up antes de Task 11 (mecânico, ~10 linhas).
+- **Task 7 — contrato de retorno locked down (testes 13-15)**: `(emptyTenant)` → slice vazio não-nil; `TempoFunilBlock(noDefaultFunnel)` → nil; `TempoFunilBlock(funnelExists, noLeads)` → slice vazio não-nil. Handlers (Task 12) precisam tratar `nil` vs `empty slice` como estados distintos.
+- **Task 7 — observação para Task 13 (handlers)**: `TempoFunilBlock` retornar nil-sem-erro é "sem funnel default" — handler/template renderiza mensagem "configure um funil"; `FunilBlock` mesma semântica.
