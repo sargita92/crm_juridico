@@ -25,7 +25,8 @@ A varredura transversal em F08/F09 entregou o mínimo: OTel span por handler HTT
 - [ ] buckets customizados por operação (não usar `DefBuckets` cegamente)
 
 ### Step 3: Métricas complementares
-- [ ] `invites_total{outcome=sent|accepted|expired|revoked}`
+- [ ] `invites_total{outcome=sent|accepted|expired|revoked}` — `expired` ainda não existe, fechar o ciclo de vida
+- [ ] adicionar scope `load_balance` a `crm_permission_changes_total` — uso: incrementar em `auth/application/manage_load_balance.go::SetByGroup` (uso cross-module adiado no escopo mínimo)
 - [ ] `load_balance_fallback_total{reason}` — quando o load balance cai para outro algoritmo
 - [ ] `notification_read_total{type}` — para medir engajamento
 - [ ] `automation_rate_limited_total{type}` — quantas automações foram bloqueadas pelo rate limiter
