@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS payments (
+    id CHAR(36) PRIMARY KEY,
+    tenant_id CHAR(36) NOT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    descricao VARCHAR(255) NULL,
+    valor_cents BIGINT NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    competencia DATE NULL,
+    data_vencimento DATE NOT NULL,
+    data_pagamento DATETIME NULL,
+    paid_by_user_id CHAR(36) NULL,
+    cancelled_at DATETIME NULL,
+    cancelled_by_user_id CHAR(36) NULL,
+    observacao TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_payments_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+    UNIQUE KEY uniq_recorrente (tenant_id, tipo, competencia),
+    KEY idx_status_vencimento (status, data_vencimento),
+    KEY idx_tenant_status (tenant_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
