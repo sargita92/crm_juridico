@@ -1,0 +1,58 @@
+{{define "pagamentos/admin_list_global.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamentos — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "pagamentos")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <h1>Pagamentos</h1>
+        </div>
+
+        <form class="filters" method="get" action="/admin/pagamentos">
+            <input type="search" name="tenant_id" placeholder="ID do tenant" value="{{.Filters.TenantID}}">
+            <select name="status">
+                <option value="">Todos os status</option>
+                <option value="pendente"  {{if eq .Filters.Status "pendente"}}selected{{end}}>Pendente</option>
+                <option value="pago"      {{if eq .Filters.Status "pago"}}selected{{end}}>Pago</option>
+                <option value="atrasado"  {{if eq .Filters.Status "atrasado"}}selected{{end}}>Atrasado</option>
+                <option value="cancelado" {{if eq .Filters.Status "cancelado"}}selected{{end}}>Cancelado</option>
+            </select>
+            <input type="date" name="data_inicial" value="{{.Filters.DataInicial}}">
+            <input type="date" name="data_final"   value="{{.Filters.DataFinal}}">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </form>
+
+        <table class="payments-table">
+            <thead>
+                <tr>
+                    <th>Tenant</th>
+                    <th>Tipo</th>
+                    <th>Descrição/Comp.</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Items}}
+                    {{template "pagamentos/partials/row_admin.html" .}}
+                {{else}}
+                    <tr><td colspan="7" class="empty">Nenhum lançamento encontrado.</td></tr>
+                {{end}}
+            </tbody>
+        </table>
+        <p class="table-footer">Total: {{.Total}}</p>
+    </main>
+</div>
+</body>
+</html>
+{{end}}

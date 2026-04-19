@@ -1,0 +1,60 @@
+{{define "pagamentos/admin_list_tenant.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamentos do tenant — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "tenants")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <div class="breadcrumb">
+                    <a href="/admin/tenants">Tenants</a>
+                    <span>/</span>
+                    <a href="/admin/tenants/{{.TenantID}}">Tenant</a>
+                    <span>/</span>
+                    Pagamentos
+                </div>
+                <h1>Pagamentos</h1>
+            </div>
+            <button class="btn btn-primary"
+                    hx-get="/admin/tenants/{{.TenantID}}/pagamentos/novo"
+                    hx-target="#modal"
+                    hx-swap="innerHTML">+ Novo lançamento</button>
+        </div>
+
+        {{template "pagamentos/partials/resumo_financeiro.html" (dict "Summary" .Summary)}}
+
+        <table class="payments-table">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Descrição/Comp.</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Items}}
+                    {{template "pagamentos/partials/payment_row.html" (dict "Row" .)}}
+                {{else}}
+                    <tr><td colspan="6" class="empty">Nenhum lançamento para este tenant.</td></tr>
+                {{end}}
+            </tbody>
+        </table>
+        <p class="table-footer">Total: {{.Total}}</p>
+
+        <div id="modal"></div>
+    </main>
+</div>
+</body>
+</html>
+{{end}}

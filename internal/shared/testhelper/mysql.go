@@ -142,6 +142,17 @@ func TemplatesPath() string {
 	return filepath.Join(projectRoot(), "web", "templates", "**", "*.html")
 }
 
+// TemplateGlobs returns the set of globs needed to load all HTML templates,
+// since Go's filepath.Glob does not support `**` as recursive matching.
+func TemplateGlobs() []string {
+	root := filepath.Join(projectRoot(), "web", "templates")
+	return []string{
+		filepath.Join(root, "*.html"),
+		filepath.Join(root, "*", "*.html"),
+		filepath.Join(root, "*", "*", "*.html"),
+	}
+}
+
 func TemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
 		"add":                 func(a, b int) int { return a + b },
@@ -194,7 +205,15 @@ func TemplateFuncMap() template.FuncMap {
 }
 
 func ParseTemplates() *template.Template {
-	return template.Must(template.New("").Funcs(TemplateFuncMap()).ParseGlob(TemplatesPath()))
+	tmpl := template.New("").Funcs(TemplateFuncMap())
+	for _, pattern := range TemplateGlobs() {
+		matches, _ := filepath.Glob(pattern)
+		if len(matches) == 0 {
+			continue
+		}
+		tmpl = template.Must(tmpl.ParseGlob(pattern))
+	}
+	return tmpl
 }
 
 func NewMySQLContainerForMain(ctx context.Context) *MySQLContainer {

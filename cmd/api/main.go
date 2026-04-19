@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -358,7 +359,18 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 			return p.Format("2006-01-02")
 		},
 	}
-	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("web/templates/**/*.html"))
+	tmpl := template.New("").Funcs(funcMap)
+	for _, pattern := range []string{
+		"web/templates/*.html",
+		"web/templates/*/*.html",
+		"web/templates/*/*/*.html",
+	} {
+		matches, _ := filepath.Glob(pattern)
+		if len(matches) == 0 {
+			continue
+		}
+		tmpl = template.Must(tmpl.ParseGlob(pattern))
+	}
 	router.SetHTMLTemplate(tmpl)
 	router.Static("/static", "web/static")
 
