@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 2/20 concluída)
+**Status**: 🟡 em andamento (Task 3/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -22,7 +22,7 @@
 | Preflight | Branch, spec v2, status, plano | ✅ | 573634f |
 | 1 | Domain outputs (TenantStats, AdminStats) | ✅ | 746ebb5 |
 | 2 | GetTenantDashboard UC + fakes + testes | ✅ | b03a730 + bb57a7e |
-| 3 | GetAdminDashboard UC + testes | ⬜ | — |
+| 3 | GetAdminDashboard UC + testes | ✅ | e311e15 |
 | 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ⬜ | — |
 | 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ⬜ | — |
 | 6 | Tenant stats repo (bloco 2 — WhatsApp) | ⬜ | — |
@@ -98,3 +98,7 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 2 — follow-up (commit `bb57a7e`)**: code review pediu cobertura adicional (fan-out do filtro em todos os 5 blocos, `ErrUserRequired`, propagação de erro por bloco). Production code intocado. Mesmo padrão deve ser aplicado em Task 3 (admin UC) — fake captura por método + tabela de erros.
 - **Task 2 — observação para Task 17 (obs)**: `users.UserName` falha silenciosa por design (header degrada graceful). Adicionar `slog.WarnContext` quando Task 17 chegar para não cegar debug em prod.
 - **Task 2 — observação para Task 17 (obs)**: providers retornam erro sem `fmt.Errorf("...%w", err)` (segue convenção pagamentos). Quando Task 17 entrar, adicionar log estruturado com `block=funil|whatsapp|...` para identificar bloco que falhou em prod sem quebrar a convenção sentinel-unwrapped.
+- **Task 3 — cobertura proativa**: padrão fan-out + propagação de erro replicado (table-driven com 6 sub-tests). Coverage da application 98.3% (1.7% restante = `SystemClock.Now`, intencionalmente sem teste).
+- **Task 3 — observação para Task 8/9 (admin SQL providers)**: cada bloco admin é potencial agregação cross-tenant. Cuidado com N+1 — fold "active/inactive/blocked" em um único `GROUP BY status`.
+- **Task 3 — observação para Task 10**: receiver value de `fakeInfraProvider` é só do teste; `PrometheusStatsProvider` real provavelmente precisa pointer (cliente Prometheus + lazy init).
+- **Task 3 — observação para Task 12/13 (handlers)**: admin dashboard tende a ser endpoint mais lento; setar timeout generoso (5-10s). Se p95 doer, refatorar `Execute` para `errgroup.WithContext` (6 chamadas em paralelo).
