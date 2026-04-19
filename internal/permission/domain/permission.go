@@ -14,6 +14,7 @@ var ValidPermissions = map[string][]string{
 	"whatsapp":    {"view", "send"},
 	"settings":    {"manage"},
 	"files":       {"view"},
+	"payments":    {"view"},
 }
 
 type Permission struct {

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/notification"
 	notifdomain "github.com/sasrgita/crm-juridico/internal/notification/domain"
 	notifhttp "github.com/sasrgita/crm-juridico/internal/notification/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/pagamentos"
 	"github.com/sasrgita/crm-juridico/internal/permission"
 	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/product"
@@ -226,7 +228,23 @@ func main() {
 	)
 	funnelMod.SetResponsiblePicker(picker)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod}
+	pagLoc, locErr := time.LoadLocation(cfg.Billing.Timezone)
+	if locErr != nil {
+		log.Warn("billing timezone invalido, usando UTC", zap.String("tz", cfg.Billing.Timezone), zap.Error(locErr))
+		pagLoc = time.UTC
+	}
+	pagamentosMod := pagamentos.NewModule(db, log, pagamentos.Config{
+		CronSpec:  cfg.Billing.Cron,
+		GraceDays: cfg.Billing.GraceDays,
+		Location:  pagLoc,
+	})
+	pagamentosMod.SetPermissionChecker(permissionMod.Resolver())
+	if err := pagamentosMod.StartScheduler(); err != nil {
+		log.Fatal("start billing scheduler", zap.Error(err))
+	}
+	defer pagamentosMod.StopScheduler()
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod}
 
 	// Token provider is used for the auth middleware and admin login route
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
@@ -323,8 +341,37 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 				return fmt.Sprintf("%d B", size)
 			}
 		},
+		"formatValor": func(c *int64) string {
+			if c == nil {
+				return ""
+			}
+			return fmt.Sprintf("%.2f", float64(*c)/100.0)
+		},
+		"uint8Or": func(p *uint8, fallback uint8) uint8 {
+			if p == nil {
+				return fallback
+			}
+			return *p
+		},
+		"dateOr": func(p *time.Time) string {
+			if p == nil {
+				return ""
+			}
+			return p.Format("2006-01-02")
+		},
 	}
-	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("web/templates/**/*.html"))
+	tmpl := template.New("").Funcs(funcMap)
+	for _, pattern := range []string{
+		"web/templates/*.html",
+		"web/templates/*/*.html",
+		"web/templates/*/*/*.html",
+	} {
+		matches, _ := filepath.Glob(pattern)
+		if len(matches) == 0 {
+			continue
+		}
+		tmpl = template.Must(tmpl.ParseGlob(pattern))
+	}
 	router.SetHTMLTemplate(tmpl)
 	router.Static("/static", "web/static")
 

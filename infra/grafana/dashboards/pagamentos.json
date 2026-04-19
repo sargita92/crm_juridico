@@ -1,0 +1,82 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "Pagamentos (F11)",
+  "uid": "pagamentos-f11",
+  "version": 1,
+  "schemaVersion": 38,
+  "tags": ["pagamentos", "billing", "f11"],
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "1m",
+  "links": [],
+  "panels": [
+    {
+      "title": "Cron runs (success vs error)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        { "expr": "sum by (status) (rate(pagamentos_cron_runs_total[10m]))", "legendFormat": "{{status}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+    },
+    {
+      "title": "Cron duration p95 (s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(pagamentos_cron_duration_seconds_bucket[1h])))", "legendFormat": "p95" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    },
+    {
+      "title": "Recorrentes gerados (24h)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [{ "expr": "increase(pagamentos_recorrentes_gerados_total[24h])" }]
+    },
+    {
+      "title": "Atualizados atrasado (24h)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [{ "expr": "increase(pagamentos_atualizados_atrasado_total[24h])" }]
+    },
+    {
+      "title": "Lancamentos avulsos (24h)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [{ "expr": "increase(pagamentos_lancados_avulso_total[24h])" }]
+    },
+    {
+      "title": "Marcados pago (24h)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [{ "expr": "increase(pagamentos_marcados_pago_total[24h])" }]
+    },
+    {
+      "title": "Cancelados (24h)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [{ "expr": "increase(pagamentos_cancelados_total[24h])" }]
+    },
+    {
+      "title": "HTTP p95 rotas admin pagamentos (s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_seconds_bucket{path=~\"/admin/pagamentos.*|/admin/tenants/.+/pagamentos.*|/pagamentos.*\"}[5m])))", "legendFormat": "{{path}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+    }
+  ]
+}

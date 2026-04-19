@@ -2,6 +2,7 @@ package domain
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -196,4 +197,36 @@ func TestTenant_Update_InvalidType_ReturnsError(t *testing.T) {
 
 	assert.ErrorIs(t, err, ErrInvalidTenantType)
 	assert.Equal(t, TenantTypePF, tenant.Type)
+}
+
+func TestNewTenant_BillingDefaults(t *testing.T) {
+	tn, err := NewTenant("id-1", "Nome", TenantTypePJ, "doc")
+	require.NoError(t, err)
+	assert.Equal(t, "mensal", tn.Plano)
+	assert.True(t, tn.ExibirPagamentos)
+	assert.Nil(t, tn.ValorCobrancaCents)
+	assert.Nil(t, tn.DiaVencimento)
+	assert.Nil(t, tn.DataInicioCobranca)
+}
+
+func TestSetBillingConfig_Mensal(t *testing.T) {
+	tn, _ := NewTenant("id-1", "Nome", TenantTypePJ, "doc")
+	valor := int64(50000)
+	dia := uint8(10)
+	start := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
+	tn.SetBillingConfig("mensal", &valor, &dia, &start, true)
+	assert.Equal(t, "mensal", tn.Plano)
+	require.NotNil(t, tn.ValorCobrancaCents)
+	assert.Equal(t, int64(50000), *tn.ValorCobrancaCents)
+	require.NotNil(t, tn.DiaVencimento)
+	assert.Equal(t, uint8(10), *tn.DiaVencimento)
+	assert.True(t, tn.ExibirPagamentos)
+}
+
+func TestSetBillingConfig_Vitalicio_KeepsExibir(t *testing.T) {
+	tn, _ := NewTenant("id-1", "Nome", TenantTypePJ, "doc")
+	tn.SetBillingConfig("vitalicio", nil, nil, nil, false)
+	assert.Equal(t, "vitalicio", tn.Plano)
+	assert.Nil(t, tn.ValorCobrancaCents)
+	assert.False(t, tn.ExibirPagamentos)
 }

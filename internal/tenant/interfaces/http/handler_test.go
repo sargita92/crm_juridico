@@ -315,6 +315,112 @@ func TestHandleUpdate_Success(t *testing.T) {
 	assert.Contains(t, w.Header().Get("HX-Redirect"), "/admin/tenants/"+tenant.ID)
 }
 
+func TestHandleUpdate_BillingMensal_PersistsFields(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	tenant := env.seedTenant(t, "Billing Mensal", "61.111.111/0001-61")
+
+	w := httptest.NewRecorder()
+	req := putForm("/admin/tenants/"+tenant.ID, url.Values{
+		"name":                 {"Billing Mensal"},
+		"type":                 {"PJ"},
+		"document":             {"61.111.111/0001-61"},
+		"plano":                {"mensal"},
+		"valor_cobranca":       {"50.00"},
+		"dia_vencimento":       {"10"},
+		"data_inicio_cobranca": {"2026-04-01"},
+		"exibir_pagamentos":    {"true"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	assert.Contains(t, w.Header().Get("HX-Redirect"), "/admin/tenants/"+tenant.ID)
+
+	saved, err := env.tenantRepo.FindByID(context.Background(), tenant.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "mensal", saved.Plano)
+	require.NotNil(t, saved.ValorCobrancaCents)
+	assert.Equal(t, int64(5000), *saved.ValorCobrancaCents)
+	require.NotNil(t, saved.DiaVencimento)
+	assert.Equal(t, uint8(10), *saved.DiaVencimento)
+	require.NotNil(t, saved.DataInicioCobranca)
+	assert.True(t, saved.ExibirPagamentos)
+}
+
+func TestHandleUpdate_BillingMensalSemValor_ReturnsFormError(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	tenant := env.seedTenant(t, "Billing No Valor", "62.222.222/0001-62")
+
+	w := httptest.NewRecorder()
+	req := putForm("/admin/tenants/"+tenant.ID, url.Values{
+		"name":                 {"Billing No Valor"},
+		"type":                 {"PJ"},
+		"document":             {"62.222.222/0001-62"},
+		"plano":                {"mensal"},
+		"dia_vencimento":       {"10"},
+		"data_inicio_cobranca": {"2026-04-01"},
+		"exibir_pagamentos":    {"true"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Header().Get("HX-Redirect"))
+	assert.Contains(t, w.Body.String(), "maior que zero")
+}
+
+func TestHandleUpdate_BillingVitalicio_IgnoresValorFields(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	tenant := env.seedTenant(t, "Vitalicio", "63.333.333/0001-63")
+
+	w := httptest.NewRecorder()
+	req := putForm("/admin/tenants/"+tenant.ID, url.Values{
+		"name":           {"Vitalicio"},
+		"type":           {"PJ"},
+		"document":       {"63.333.333/0001-63"},
+		"plano":          {"vitalicio"},
+		"valor_cobranca": {"999.00"},
+		"dia_vencimento": {"10"},
+		// no exibir_pagamentos → unchecked (false)
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	assert.Contains(t, w.Header().Get("HX-Redirect"), "/admin/tenants/"+tenant.ID)
+
+	saved, err := env.tenantRepo.FindByID(context.Background(), tenant.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "vitalicio", saved.Plano)
+	assert.Nil(t, saved.ValorCobrancaCents)
+	assert.Nil(t, saved.DiaVencimento)
+	assert.Nil(t, saved.DataInicioCobranca)
+	assert.False(t, saved.ExibirPagamentos)
+}
+
+func TestHandleUpdate_BillingDiaInvalido_ReturnsFormError(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	tenant := env.seedTenant(t, "Dia Invalido", "64.444.444/0001-64")
+
+	w := httptest.NewRecorder()
+	req := putForm("/admin/tenants/"+tenant.ID, url.Values{
+		"name":                 {"Dia Invalido"},
+		"type":                 {"PJ"},
+		"document":             {"64.444.444/0001-64"},
+		"plano":                {"mensal"},
+		"valor_cobranca":       {"50.00"},
+		"dia_vencimento":       {"31"},
+		"data_inicio_cobranca": {"2026-04-01"},
+		"exibir_pagamentos":    {"true"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Header().Get("HX-Redirect"))
+	assert.Contains(t, w.Body.String(), "entre 1 e 28")
+}
+
 func TestHandleUpdate_DuplicateDocument(t *testing.T) {
 	env := setupTestEnv(t)
 	token := env.adminToken(t)

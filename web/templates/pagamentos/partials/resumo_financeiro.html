@@ -1,0 +1,10 @@
+{{define "pagamentos/partials/resumo_financeiro.html"}}
+<section class="resumo-financeiro">
+    <span class="badge badge-{{.Summary.Badge}}">{{.Summary.BadgeText}}</span>
+    <ul class="metricas">
+        <li><span class="label">Pago no ano</span><span class="valor">{{.Summary.TotalPagoAno}}</span></li>
+        <li><span class="label">Pendente</span><span class="valor">{{.Summary.TotalPendente}}</span></li>
+        <li><span class="label">Atrasado</span><span class="valor">{{.Summary.TotalAtrasado}}</span></li>
+    </ul>
+</section>
+{{end}}

@@ -1,29 +1,78 @@
-### Registrar pagamento manual
-POST {{base_url}}/api/admin/tenants/{{tenant_id}}/payments
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### F11 — Pagamentos (Admin) e Portal Tenant
+### Requer cookie "token" do usuario logado (admin ou tenant).
 
-{
-  "valor": 299.90,
-  "tipo": "manual",
-  "referencia": "PIX 2026-04",
-  "observacao": "Pagamento mensal abril/2026",
-  "data_pagamento": "2026-04-05"
-}
+@host = {{base_url}}
+@tenantId = 11111111-1111-1111-1111-111111111111
+@paymentId = 22222222-2222-2222-2222-222222222222
 
-### Listar pagamentos de um tenant
-GET {{base_url}}/api/admin/tenants/{{tenant_id}}/payments?page=1&per_page=20
-Authorization: Bearer {{token}}
+### Listagem global (admin)
+GET {{host}}/admin/pagamentos
+Cookie: token=ADMIN_TOKEN
 
-### Alterar status de pagamento
-PATCH {{base_url}}/api/admin/payments/{{payment_id}}/status
-Authorization: Bearer {{token}}
-Content-Type: application/json
+### Listagem global filtrada por status
+GET {{host}}/admin/pagamentos?status=atrasado
+Cookie: token=ADMIN_TOKEN
 
-{
-  "status": "pago"
-}
+### Listagem global com todos os filtros
+GET {{host}}/admin/pagamentos?status=pendente&data_inicial=2026-01-01&data_final=2026-12-31&tenant_id={{tenantId}}&page=1
+Cookie: token=ADMIN_TOKEN
 
-### Consultar situação financeira do tenant
-GET {{base_url}}/api/admin/tenants/{{tenant_id}}/financial-status
-Authorization: Bearer {{token}}
+### Aba Pagamentos do tenant (admin)
+GET {{host}}/admin/tenants/{{tenantId}}/pagamentos
+Cookie: token=ADMIN_TOKEN
+
+### Resumo financeiro (HTMX partial)
+GET {{host}}/admin/tenants/{{tenantId}}/pagamentos/resumo
+Cookie: token=ADMIN_TOKEN
+
+### Form novo lancamento avulso (modal HTMX)
+GET {{host}}/admin/tenants/{{tenantId}}/pagamentos/novo
+Cookie: token=ADMIN_TOKEN
+
+### Criar lancamento avulso
+POST {{host}}/admin/tenants/{{tenantId}}/pagamentos
+Cookie: token=ADMIN_TOKEN
+Content-Type: application/x-www-form-urlencoded
+
+descricao=Consultoria&valor=150.00&data_vencimento=2026-05-20&observacao=Contrato avulso
+
+### Marcar pagamento como pago
+POST {{host}}/admin/pagamentos/{{paymentId}}/pagar
+Cookie: token=ADMIN_TOKEN
+
+### Cancelar pagamento (motivo obrigatorio)
+POST {{host}}/admin/pagamentos/{{paymentId}}/cancelar
+Cookie: token=ADMIN_TOKEN
+Content-Type: application/x-www-form-urlencoded
+
+motivo=Duplicado
+
+### Portal tenant (owner ou usuario com payments:view)
+GET {{host}}/pagamentos
+Cookie: token=TENANT_TOKEN
+
+### ---- OWASP / erros esperados ----
+
+### Sem cookie -> 401
+GET {{host}}/admin/pagamentos
+
+### Usuario nao-admin -> 403
+GET {{host}}/admin/pagamentos
+Cookie: token=USER_TOKEN
+
+### Tenant vitalicio no portal -> 404
+GET {{host}}/pagamentos
+Cookie: token=TENANT_VITALICIO_TOKEN
+
+### Usuario sem permissao -> 403
+GET {{host}}/pagamentos
+Cookie: token=USER_SEM_PERM_TOKEN
+
+### Cancelar sem motivo -> 422
+POST {{host}}/admin/pagamentos/{{paymentId}}/cancelar
+Cookie: token=ADMIN_TOKEN
+Content-Type: application/x-www-form-urlencoded
+
+### ID invalido -> 404
+POST {{host}}/admin/pagamentos/missing/pagar
+Cookie: token=ADMIN_TOKEN

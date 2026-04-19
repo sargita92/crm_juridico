@@ -1,0 +1,18 @@
+{{define "pagamentos/partials/row_admin.html"}}
+<tr id="payment-{{.ID}}">
+    <td><a href="/admin/tenants/{{.TenantID}}/pagamentos">{{.TenantID}}</a></td>
+    <td>{{.Tipo}}</td>
+    <td>{{if .Descricao}}{{.Descricao}}{{else}}{{.Competencia}}{{end}}</td>
+    <td>{{.Valor}}</td>
+    <td>{{.DataVencimento}}</td>
+    <td><span class="{{.StatusBadge}}">{{.Status}}</span></td>
+    <td class="row-actions">
+        {{if .PodeMarcarPago}}
+        <button class="btn btn-success"
+                hx-post="/admin/pagamentos/{{.ID}}/pagar"
+                hx-target="#payment-{{.ID}}"
+                hx-swap="outerHTML">Pagar</button>
+        {{end}}
+    </td>
+</tr>
+{{end}}
