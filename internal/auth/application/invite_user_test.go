@@ -5,9 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	infra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
 )
 
@@ -25,7 +27,9 @@ func TestGenerateInvite_Success(t *testing.T) {
 	uc, inviteRepo, _, _ := setupInviteUC()
 	ctx := context.Background()
 
+	before := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("sent"))
 	out, err := uc.GenerateInvite(ctx, "tenant-1", "user-admin", []string{"group-1"}, 7)
+	after := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("sent"))
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, out.ID)
@@ -35,6 +39,9 @@ func TestGenerateInvite_Success(t *testing.T) {
 
 	// Verify it was persisted
 	assert.Len(t, inviteRepo.tokens, 1)
+
+	// Counter must have incremented by exactly 1
+	assert.Equal(t, before+1, after)
 }
 
 func TestGenerateInvite_DefaultExpiry(t *testing.T) {
@@ -60,7 +67,9 @@ func TestAcceptInvite_Success_NewUser(t *testing.T) {
 	inviteRepo.tokens[invite.ID] = invite
 	inviteRepo.byToken[invite.Token] = invite
 
+	before := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("accepted"))
 	out, err := uc.AcceptInvite(ctx, invite.Token, "Maria", "maria@email.com", "senha123")
+	after := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("accepted"))
 
 	require.NoError(t, err)
 	assert.NotEmpty(t, out.UserID)
@@ -79,6 +88,9 @@ func TestAcceptInvite_Success_NewUser(t *testing.T) {
 	usedInvite := inviteRepo.tokens[invite.ID]
 	assert.True(t, usedInvite.IsUsed())
 	assert.Equal(t, out.UserID, usedInvite.UsedBy)
+
+	// Counter must have incremented by exactly 1
+	assert.Equal(t, before+1, after)
 }
 
 func TestAcceptInvite_Success_ExistingUser(t *testing.T) {
@@ -98,7 +110,9 @@ func TestAcceptInvite_Success_ExistingUser(t *testing.T) {
 	inviteRepo.tokens[invite.ID] = invite
 	inviteRepo.byToken[invite.Token] = invite
 
+	before := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("accepted"))
 	out, err := uc.AcceptInvite(ctx, invite.Token, "João", "joao@email.com", "irrelevant")
+	after := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("accepted"))
 
 	require.NoError(t, err)
 	assert.Equal(t, "existing-user-1", out.UserID)
@@ -107,6 +121,9 @@ func TestAcceptInvite_Success_ExistingUser(t *testing.T) {
 	ut, assocErr := userTenantRepo.FindByUserAndTenant(ctx, "existing-user-1", "tenant-1")
 	assert.NoError(t, assocErr)
 	assert.NotNil(t, ut)
+
+	// Counter must have incremented by exactly 1
+	assert.Equal(t, before+1, after)
 }
 
 func TestAcceptInvite_ExpiredToken(t *testing.T) {
@@ -177,8 +194,13 @@ func TestRevokeInvite_Success(t *testing.T) {
 	inviteRepo.tokens[inv.ID] = inv
 	inviteRepo.byToken[inv.Token] = inv
 
+	before := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("revoked"))
 	err := uc.RevokeInvite(ctx, "inv-1")
+	after := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("revoked"))
 
 	require.NoError(t, err)
 	assert.Empty(t, inviteRepo.tokens)
+
+	// Counter must have incremented by exactly 1
+	assert.Equal(t, before+1, after)
 }

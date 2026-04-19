@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	"github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 )
 
 var ErrUserAlreadyInTenant = errors.New("user is already associated to this tenant")
@@ -71,6 +72,7 @@ func (uc *InviteUserUseCase) GenerateInvite(
 		return nil, err
 	}
 
+	infrastructure.InvitesTotal.WithLabelValues("sent").Inc()
 	return &InviteOutput{
 		ID:        invite.ID,
 		Token:     invite.Token,
@@ -145,6 +147,7 @@ func (uc *InviteUserUseCase) AcceptInvite(
 		return nil, err
 	}
 
+	infrastructure.InvitesTotal.WithLabelValues("accepted").Inc()
 	return &AcceptOutput{
 		UserID:   userID,
 		GroupIDs: invite.GroupIDs,
@@ -172,5 +175,9 @@ func (uc *InviteUserUseCase) ListInvites(ctx context.Context, tenantID string) (
 
 // RevokeInvite deletes an invite token by ID.
 func (uc *InviteUserUseCase) RevokeInvite(ctx context.Context, id string) error {
-	return uc.inviteRepo.Delete(ctx, id)
+	if err := uc.inviteRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+	infrastructure.InvitesTotal.WithLabelValues("revoked").Inc()
+	return nil
 }
