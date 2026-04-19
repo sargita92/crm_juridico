@@ -45,6 +45,9 @@ Métricas obrigatórias:
 | `crm_automation_executions_total` | Counter | Automações executadas (labels: `type` ∈ 6 executors, `outcome` ∈ success/error) |
 | `crm_permission_changes_total` | Counter | Alterações de escopo de permissão (labels: `scope` ∈ group/user/funnel/view_profile, `action` = updated) |
 | `crm_auth_invites_total` | Counter | Ciclo de vida de convites (label: `outcome` ∈ sent/accepted/revoked) |
+| `crm_files_stored_total` | Counter | Arquivos capturados do WhatsApp (labels: `media_type` ∈ image/document/audio/video/other, `direction` ∈ inbound/outbound) |
+| `crm_files_downloads_total` | Counter | Downloads bem-sucedidos (label: `media_type`) |
+| `crm_files_stored_bytes_total` | Counter | Bytes totais capturados desde o boot (para monitorar crescimento do storage) |
 | `specialist_responses_total` | Counter | Respostas de especialistas IA |
 | `specialist_response_duration_seconds` | Histogram | Latência de resposta do especialista |
 | `crm_ai_reset_commands_total` | Counter | Conversas reiniciadas via `/reset` (labels: tenant_id, specialist_id, source=command\|playground) |

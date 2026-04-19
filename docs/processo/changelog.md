@@ -4,6 +4,26 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-19] F14 — Arquivos por Lead
+
+Captura automática de mídia do WhatsApp (imagem/documento/áudio/vídeo/sticker) com aba dedicada `/tenant/files` e integração com o detalhe do lead.
+
+- **Módulo novo `internal/files/`** (DDD completo): `domain` (entidade `File`, `MediaType`/`Direction` enums, `SanitizeFileName`, `DetectMediaType`, ports `FileRepository`/`Storage`/`LeadLookup`), `infrastructure` (`GormFileRepository` com LIKE seguro + `LocalDiskStorage` com resolução confinada à raiz e escrita atômica via temp+rename), `application` (`StoreFileUseCase`, `ListFilesUseCase`, `GetFileUseCase`, `DownloadFileUseCase`, `LeadFilesSummaryUseCase`, `WhatsAppFileAdapter`), `interfaces/http` (Handler + 6 endpoints).
+- **Integração whatsapp**: `whatsmeow_provider` estendido para detectar `ImageMessage|DocumentMessage|AudioMessage|VideoMessage|StickerMessage` e baixar bytes via `client.Download`; `MessageType` enum cresce para `image/document/audio/video/sticker/other` (content opcional para mídia); `ReceiveMessageUseCase.SetFileStorer` persiste `Message` + invoca `FileStorer.StoreInbound` (best-effort — falha de storage não derruba ingestão).
+- **Integração funnel**: `FileLeadLookupAdapter` resolve `lead_id` a partir da conversa respeitando tenant; `lead_drawer.html` ganha seção "Arquivos (N)" carregada via HTMX lazy-load com os 6 mais recentes + link "Ver todos".
+- **UI/HTMX**: aba "Arquivos" na sidebar do tenant; página `/tenant/files` com filtros (busca, tipo, período — presets `today`/`7d`/`30d`/`custom`, `lead_id` pré-filtro do detalhe do lead) em um único `<form>` com debounce e `hx-push-url`; drawer lateral para preview (imagem inline, player `<audio>`, ícone+metadados para outros); lightbox full-screen; `files.js` com 3 funções mínimas (`openFileDrawer`, `closeFileDrawer`, `openLightbox` + ESC handler).
+- **Segurança**: download com `Content-Disposition: attachment; filename*=UTF-8''<escaped>` + `X-Content-Type-Options: nosniff` + `Cache-Control: private`; thumbnail **só** para `media_type=image` (404 para outros — evita polyglot inline); cross-tenant retorna 404 (não 403, para não vazar existência); LIKE com `ESCAPE '\\'` + `escapeLike` (wildcards `%`/`_` do usuário tratados como literais); storage key sempre UUID; `resolve()` recusa chaves com `..`/absolute.
+- **Permissão**: novo resource `files:view` em `ValidPermissions` + UI admin (`groupPermActions` e `groupPermAvailable`); middleware `requirePerm("files", "view")` em todas as rotas.
+- **Observabilidade**: métricas `crm_files_stored_total{media_type,direction}`, `crm_files_downloads_total{media_type}`, `crm_files_stored_bytes_total`; OTel spans `files.*`; logs estruturados de download (tenant_id, user_id, file_id, media_type) e falha de storage (tenant_id, conversation_id, message_id, size, mime).
+- **Config**: `FILES_STORAGE_ROOT` (default `storage/files`) e `FILES_MAX_BYTES` (default 50 MB) via Viper.
+- **Migrations**: `000052_create_files_table` (índices por tenant, lead, conversation, `tenant+created_at`, `tenant+media_type`) + `000053_extend_message_types` (ALTER `messages.type` para aceitar os novos enums).
+- **Outbound media**: `StoreOutbound` implementado e coberto por testes unitários, mas ainda não exercitado — aguardando F06 estender `SendMessage` para mídia. Não bloqueia F14.
+- **Cobertura final**: domain 100%, application 94.2%, infrastructure 91%, interfaces/http 86.9%. Suite total: 1562 curtos + 504 integração (incl. testcontainers-mysql).
+- **Artefatos**: `docs/artefatos/F14-arquivos/{po-stories,uiux-wireframes,arquiteto-design,qa-cenarios,qa-validacao,seguranca-review}/v1.md` + `status.md`. `rest/12-arquivos.http` reescrito com rotas reais e casos negativos OWASP.
+- **Follow-ups (não bloqueantes)**: retenção/cleanup, quota por tenant, tabela de auditoria de downloads, thumbnail com resize server-side.
+
+---
+
 ## [2026-04-19] F10 — Fechamento de Produtos
 
 - **Cobertura HTTP elevada** de 32.7% → 93.7% em `internal/product/interfaces/http` via `handler_flow_test.go`: happy-path + fallbacks para priority inválida, listers com erro, repo error, toggle/link/unlink/priority/associate/disassociate (admin + tenant).
