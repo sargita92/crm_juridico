@@ -3,6 +3,8 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 )
 
@@ -33,6 +35,9 @@ func NewGetTenantFinancialSummary(payments domain.PaymentRepository, billing dom
 }
 
 func (uc *GetTenantFinancialSummary) Execute(ctx context.Context, tenantID string) (*FinancialSummaryOutput, error) {
+	ctx, span := tracer.Start(ctx, "GetTenantFinancialSummary")
+	defer span.End()
+	span.SetAttributes(attribute.String("tenant_id", tenantID))
 	tb, err := uc.billing.GetByID(ctx, tenantID)
 	if err != nil {
 		return nil, err

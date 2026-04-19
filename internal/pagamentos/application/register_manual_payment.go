@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 )
 
@@ -30,6 +32,12 @@ func NewRegisterManualPayment(repo domain.PaymentRepository, idGen IDGenerator, 
 }
 
 func (uc *RegisterManualPayment) Execute(ctx context.Context, in RegisterManualPaymentInput) (*RegisterManualPaymentOutput, error) {
+	ctx, span := tracer.Start(ctx, "RegisterManualPayment")
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("tenant_id", in.TenantID),
+		attribute.Int64("valor_cents", in.ValorCents),
+	)
 	p, err := domain.NewAvulsoPayment(uc.idGen.NewID(), in.TenantID, in.Descricao, in.ValorCents, in.DataVencimento, in.Observacao)
 	if err != nil {
 		return nil, err

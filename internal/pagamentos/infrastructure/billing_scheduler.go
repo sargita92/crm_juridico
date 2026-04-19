@@ -6,10 +6,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/application"
 )
+
+var schedulerTracer = otel.Tracer("pagamentos/billing_scheduler")
 
 // BillingScheduler roda diariamente os UCs do cron de pagamentos:
 // GenerateRecurringPayments e RefreshOverdueStatuses. Expõe RunOnce para
@@ -61,6 +65,9 @@ func (s *BillingScheduler) runOnce() {
 
 func (s *BillingScheduler) runWithCtx(ctx context.Context) (int, int, error) {
 	requestID := "cron-billing-" + uuid.NewString()
+	ctx, span := schedulerTracer.Start(ctx, "billing_cron_run")
+	defer span.End()
+	span.SetAttributes(attribute.String("request_id", requestID))
 	log := s.log.With(zap.String("request_id", requestID))
 	start := time.Now()
 
@@ -88,6 +95,7 @@ func (s *BillingScheduler) runWithCtx(ctx context.Context) (int, int, error) {
 
 	CronRunsTotal.WithLabelValues("success").Inc()
 	CronDurationSeconds.Observe(time.Since(start).Seconds())
+	span.SetAttributes(attribute.Int("generated", nGen), attribute.Int("overdue", nRef))
 	log.Info("billing cron run",
 		zap.Int("generated", nGen),
 		zap.Int("overdue", nRef),

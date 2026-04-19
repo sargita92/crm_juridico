@@ -125,3 +125,31 @@ Dashboards sugeridos:
 - traces devem cobrir o caminho completo (HTTP → use case → repo → external)
 - dashboards devem existir antes de ir para produção
 - alertas devem existir para cenários críticos
+
+## F11 — Pagamentos (Admin)
+
+**Métricas Prometheus** (`/metrics`):
+
+- `pagamentos_cron_runs_total{status="success|error"}` — contadores das execuções do cron diário
+- `pagamentos_cron_duration_seconds` — histograma de duração das execuções
+- `pagamentos_recorrentes_gerados_total` — total de lançamentos recorrentes criados pelo cron
+- `pagamentos_atualizados_atrasado_total` — lançamentos que transitaram para status `atrasado`
+- `pagamentos_marcados_pago_total` — cliques em "marcar como pago" (admin)
+- `pagamentos_lancados_avulso_total` — lançamentos avulsos criados
+- `pagamentos_cancelados_total` — lançamentos cancelados
+
+**Traces OpenTelemetry** (tracer `pagamentos`):
+
+- `RegisterManualPayment`, `MarkPaymentAsPaid`, `CancelPayment` com atributos `tenant_id`, `payment_id`, `user_id`, `valor_cents`
+- `GenerateRecurringPayments`, `RefreshOverdueStatuses` com `today`, `created`, `updated`
+- `GetTenantFinancialSummary` com `tenant_id`
+- `billing_cron_run` (tracer `pagamentos/billing_scheduler`) com `request_id`, `generated`, `overdue`
+
+**Logs estruturados**: o scheduler gera um `request_id = "cron-billing-<uuid>"` por execução e o usa como chave de correlação em todos os logs daquela iteração (generate + refresh).
+
+**Dashboard**: `infra/grafana/dashboards/pagamentos.json` (UID `pagamentos-f11`). Painéis de cron health/duração, contadores diários e latência p95 das rotas admin/portal.
+
+**Alertas sugeridos** (não configurados em código — definir no Grafana/Alertmanager conforme SLA):
+
+- `pagamentos_cron_runs_total{status="error"}` > 0 em janelas de 10m (cron diário falhou)
+- `histogram_quantile(0.95, rate(pagamentos_cron_duration_seconds_bucket[1h]))` > 60s (cron demorando demais)

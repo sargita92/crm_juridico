@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 )
 
@@ -20,7 +22,10 @@ func NewGenerateRecurringPayments(payments domain.PaymentRepository, billing dom
 }
 
 func (uc *GenerateRecurringPayments) Execute(ctx context.Context) (int, error) {
+	ctx, span := tracer.Start(ctx, "GenerateRecurringPayments")
+	defer span.End()
 	today := truncateDay(uc.clock.Now())
+	span.SetAttributes(attribute.String("today", today.Format("2006-01-02")))
 	tenants, err := uc.billing.ListActiveBillable(ctx)
 	if err != nil {
 		return 0, err
@@ -56,6 +61,7 @@ func (uc *GenerateRecurringPayments) Execute(ctx context.Context) (int, error) {
 			created++
 		}
 	}
+	span.SetAttributes(attribute.Int("created", created))
 	return created, nil
 }
 

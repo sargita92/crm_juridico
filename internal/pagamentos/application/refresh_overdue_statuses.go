@@ -3,6 +3,8 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 )
 
@@ -18,6 +20,8 @@ func NewRefreshOverdueStatuses(repo domain.PaymentRepository, cal domain.Holiday
 }
 
 func (uc *RefreshOverdueStatuses) Execute(ctx context.Context) (int, error) {
+	ctx, span := tracer.Start(ctx, "RefreshOverdueStatuses")
+	defer span.End()
 	today := truncateDay(uc.clock.Now())
 	candidates, err := uc.repo.ListOverdueCandidates(ctx, today)
 	if err != nil {
@@ -39,5 +43,6 @@ func (uc *RefreshOverdueStatuses) Execute(ctx context.Context) (int, error) {
 			updated++
 		}
 	}
+	span.SetAttributes(attribute.Int("updated", updated))
 	return updated, nil
 }

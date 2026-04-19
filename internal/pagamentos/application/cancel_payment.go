@@ -3,6 +3,8 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 )
 
@@ -16,6 +18,9 @@ func NewCancelPayment(repo domain.PaymentRepository, clock Clock) *CancelPayment
 }
 
 func (uc *CancelPayment) Execute(ctx context.Context, paymentID, userID, motivo string) error {
+	ctx, span := tracer.Start(ctx, "CancelPayment")
+	defer span.End()
+	span.SetAttributes(attribute.String("payment_id", paymentID), attribute.String("user_id", userID))
 	p, err := uc.repo.FindByIDAdmin(ctx, paymentID)
 	if err != nil {
 		return err
