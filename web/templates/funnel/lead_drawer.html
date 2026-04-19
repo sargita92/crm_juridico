@@ -64,6 +64,18 @@ details > summary::-webkit-details-marker { display: none; }
                 {{end}}
             </details>
 
+            <!-- Arquivos do lead (F14) -->
+            <details class="lead-detail-section" id="lead-files-section" open>
+                <summary style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;cursor:pointer;user-select:none;margin-bottom:0.5rem;font-weight:700;list-style:none;display:flex;align-items:center;gap:0.375rem">
+                    <span style="transition:transform 0.2s;display:inline-block" class="collapse-arrow">&#9656;</span> Arquivos
+                </summary>
+                <div hx-get="/tenant/leads/{{.Lead.ID}}/files-summary"
+                     hx-trigger="revealed once"
+                     hx-swap="outerHTML">
+                    <p style="font-size:0.8125rem;color:#9ca3af">Carregando arquivos…</p>
+                </div>
+            </details>
+
             <!-- Anotacoes -->
             <details class="lead-detail-section" id="lead-notes-section">
                 <summary style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;letter-spacing:0.05em;cursor:pointer;user-select:none;margin-bottom:0.5rem;font-weight:700;list-style:none;display:flex;align-items:center;gap:0.375rem">
