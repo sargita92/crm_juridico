@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 1/20 concluída)
+**Status**: 🟡 em andamento (Task 2/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -21,7 +21,7 @@
 |---|---|---|---|
 | Preflight | Branch, spec v2, status, plano | ✅ | 573634f |
 | 1 | Domain outputs (TenantStats, AdminStats) | ✅ | 746ebb5 |
-| 2 | GetTenantDashboard UC + fakes + testes | ⬜ | — |
+| 2 | GetTenantDashboard UC + fakes + testes | ✅ | b03a730 + bb57a7e |
 | 3 | GetAdminDashboard UC + testes | ⬜ | — |
 | 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ⬜ | — |
 | 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ⬜ | — |
@@ -95,3 +95,6 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 1 — naming dos sentinel errors**: o plano usa `ErrTenantRequired` / `ErrUserRequired`, mas o restante do projeto (funnel, pagamentos) usa `ErrTenantIDRequired` / `ErrUserIDRequired`. Mantido como no plano para não desviar; se incomodar em Task 2 (UC retorna esses erros), avaliar rename antes do wiring.
 - **Task 1 — observação para Task 11/12 (infra)**: `Infrastructure.APILatencyMs` zero-value não distingue "Prometheus indisponível" de "sem requests". Considerar flag `PrometheusUp` ou tratar no template.
 - **Task 1 — observação para Task 2 (UC tenant)**: lembrar de popular `ScopeIsUser`, `CurrentUserName`, `ActiveFunnelName` em `TenantStats` e cobrir com teste explícito.
+- **Task 2 — follow-up (commit `bb57a7e`)**: code review pediu cobertura adicional (fan-out do filtro em todos os 5 blocos, `ErrUserRequired`, propagação de erro por bloco). Production code intocado. Mesmo padrão deve ser aplicado em Task 3 (admin UC) — fake captura por método + tabela de erros.
+- **Task 2 — observação para Task 17 (obs)**: `users.UserName` falha silenciosa por design (header degrada graceful). Adicionar `slog.WarnContext` quando Task 17 chegar para não cegar debug em prod.
+- **Task 2 — observação para Task 17 (obs)**: providers retornam erro sem `fmt.Errorf("...%w", err)` (segue convenção pagamentos). Quando Task 17 entrar, adicionar log estruturado com `block=funil|whatsapp|...` para identificar bloco que falhou em prod sem quebrar a convenção sentinel-unwrapped.
