@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 12/20 concluída)
+**Status**: 🟡 em andamento (Task 13/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -32,7 +32,7 @@
 | 10 | PrometheusStatsProvider (bloco 4 admin) | ✅ | 643c3d5 |
 | 11 | Wiring `dashboard.Module` + `cmd/api/main.go` | ✅ | 20f66f2 |
 | 12 | Handlers HTTP tenant | ✅ | a4d0ae5 |
-| 13 | Handlers HTTP admin | ⬜ | — |
+| 13 | Handlers HTTP admin | ✅ | dd3fb9d |
 | 14 | Chart.js + `dashboard.css` + layouts | ⬜ | — |
 | 15 | Templates tenant (5 blocos) | ⬜ | — |
 | 16 | Templates admin (6 blocos) | ⬜ | — |
@@ -138,3 +138,5 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 12 — adaptações reais ao plano**: (1) `UserTenantRepository` interface real usa `Associate/FindTenantIDsByUserID/FindByTenantID/FindByUserAndTenant/UpdateIsOwner/UpdateWhatsAppID/RemoveFromTenant/IsOwner` (não os nomes CRUD do plano); (2) middleware expõe `SetClaimsForTest`/`SetTenantIDForTest` (não `SetClaims`/`SetTenantID`); (3) `GetClaims`/`GetTenantID` recebem `ctx`, não `gin.Context`.
 - **Task 12 — TenantView shape**: Task 15 (templates tenant) precisa usar `vm.Bloco1_Funil.{Open,Won,Lost,Total}`, `vm.Bloco1_Funil.ConversionPct` (string), `vm.Bloco2_WhatsApp.FirstResponseAvg` (string), etc. Conversão de PT-BR já no view model (R$, %, h).
 - **Task 12 — admin handler bodies inalterados**: Task 13 substitui `adminPage`/`adminFragment` (estão como placeholders Task 11).
+- **Task 13 — `AdminView` shape**: templates Task 16 usam `vm.Bloco1_Tenants.{Active,Inactive,Blocked,Total,NewThisMonth,Last6Months[]}`, `vm.Bloco4_Infra.{APILatencyMs,Error5xxRate (já formatado),ServicesStatus[]}`, `vm.Bloco6_Financeiro.{ReceitaAno,PendenteTotal,AtrasadoTotal (BRL),PlanDist.{Mensal,Anual,Vitalicio,Externo,Total},TopOverdue[]}`.
+- **Task 13 — 401 path** não testado nos handler tests (covered por `internal/shared/middleware/auth_test.go`).
