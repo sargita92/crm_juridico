@@ -73,6 +73,12 @@ Suporte interno, não faz parte do produto final.
 | F17 | [Fluxo de teste manual (/reset)](../features/F17-fluxo-teste-manual.md) | concluído | F16 | baixa |
 | F17 | [AI Playground](../features/F17-ai-playground.md) | concluído | F16 | baixa |
 
+## Épico 10: Dashboards e Analytics
+
+| # | Feature | Status | Dependência | Prioridade |
+|---|---------|--------|-------------|------------|
+| F19 | [Dashboards (Admin + Tenant)](../features/F19-dashboards.md) | backlog | F06, F07, F08, F10 | média |
+
 ---
 
 ## Ordem sugerida de execução
@@ -94,6 +100,7 @@ Iteração 13: F15 (MCP interno para especialistas)
 Iteração 14: F11 (pagamentos)
 Iteração 15: F12 (logs)
 Iteração 16: F13 (landing page)
+Iteração 17: F19 (dashboards admin + tenant)
 ```
 
 ## Notas
