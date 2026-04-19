@@ -8,7 +8,7 @@
 - PO: ✅ (brainstorming 2026-04-19 — 8 decisões consolidadas na spec)
 - UI/UX: ✅ (decisões no spec §8; templates serão escritos nas Tasks 14-15)
 - Arquiteto: ✅ (plano de 19 tasks em `docs/superpowers/plans/`)
-- Dev Backend: 🟡 **em andamento — Tasks 1–6 concluídas, 7–19 pendentes**
+- Dev Backend: 🟡 **em andamento — Tasks 1–7 concluídas, 8–19 pendentes**
 - Dev Front-end: pendente
 - QA: pendente
 - Segurança: pendente
@@ -25,14 +25,14 @@
 | 4 | Migrations `054` (tenants billing) + `055` (payments) | `3401154` |
 | 5 | `GormPaymentRepository` + 15 testes de integração | `2018d99` |
 | 6 | Extensão do tenant (5 campos de cobrança) + `GormTenantBillingRepository` | `d85bc70` |
+| 7 | UI do tenant: form com fieldset de cobrança + parsing no handler + UC estendido | (pending) |
 
-**Cobertura atual**: 188 testes passando em `internal/tenant/...` + `internal/pagamentos/...` (domain + infra). `go build ./...` e `go vet` limpos.
+**Cobertura atual**: 136 testes passando em `internal/tenant/...` (incluindo 4 novos handler tests e 4 UC tests para billing). `go build ./...` e `go vet` limpos.
 
 ## Tasks pendentes (retomar nesta ordem)
 
 | Task | Descrição | Dependências |
 |---|---|---|
-| 7 | UI do tenant com campos de cobrança (form.html + handler) | 6 |
 | 8 | UCs mutação: RegisterManualPayment / MarkAsPaid / Cancel | 5 |
 | 9 | UCs leitura: ListTenantPayments / ListAllPayments / FinancialSummary | 5, 6 |
 | 10 | UCs do cron: GenerateRecurringPayments / RefreshOverdueStatuses | 6, 8 |
@@ -73,6 +73,7 @@
 - **Task 5**: `ExistsRecorrente` precisa usar `competencia = DATE(?)` para contornar mismatch DATE/DATETIME quando DSN usa `loc=Local`. Já aplicado em `2018d99`.
 - **Task 6**: remover struct tag `default:true` do GORM em `ExibirPagamentos` — Gorm trata `false` como "unset" e deixa o MySQL default sobrescrever. Mantido `not null`; default fica no nível do banco (migration 054). Já aplicado em `d85bc70`.
 - **Task 6**: validação de `BillingConfig` continua centralizada em `pagamentos/domain`; o tenant expõe apenas o setter `SetBillingConfig` (sem acoplar `tenant/domain` a `pagamentos/domain`). Cuidado ao implementar Task 7 — o handler/UC de update do tenant é quem vai validar via `pagamentos/domain.NewBillingConfig(...)` antes de chamar `SetBillingConfig`.
+- **Task 7**: fieldset de cobrança exibido apenas no modo edição (não no create) para evitar defaults parciais. Erros de validação (parse ou domínio) retornam 200 + form error (convenção HTMX existente), não 422 como sugerido no plano. Helpers `formatValor/uint8Or/dateOr` duplicados em `cmd/api/main.go` e `internal/shared/testhelper/mysql.go`.
 
 ## Observação
 

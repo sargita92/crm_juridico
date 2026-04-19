@@ -323,6 +323,24 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 				return fmt.Sprintf("%d B", size)
 			}
 		},
+		"formatValor": func(c *int64) string {
+			if c == nil {
+				return ""
+			}
+			return fmt.Sprintf("%.2f", float64(*c)/100.0)
+		},
+		"uint8Or": func(p *uint8, fallback uint8) uint8 {
+			if p == nil {
+				return fallback
+			}
+			return *p
+		},
+		"dateOr": func(p *time.Time) string {
+			if p == nil {
+				return ""
+			}
+			return p.Format("2006-01-02")
+		},
 	}
 	tmpl := template.Must(template.New("").Funcs(funcMap).ParseGlob("web/templates/**/*.html"))
 	router.SetHTMLTemplate(tmpl)

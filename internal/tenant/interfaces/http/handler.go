@@ -4,9 +4,12 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
+	pagdomain "github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 	"github.com/sasrgita/crm-juridico/internal/tenant/application"
 	"github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
@@ -118,7 +121,11 @@ func (h *Handler) HandleCreate(c *gin.Context) {
 
 	output, err := h.createUC.Execute(c.Request.Context(), input)
 	if err != nil {
-		h.renderFormError(c, false, input.Name, input.Type, input.Document, "", mapDomainError(err))
+		h.renderFormError(c, false, &application.GetTenantOutput{
+			Name:     input.Name,
+			Type:     input.Type,
+			Document: input.Document,
+		}, mapDomainError(err))
 		return
 	}
 
@@ -168,16 +175,27 @@ func (h *Handler) RenderEditForm(c *gin.Context) {
 func (h *Handler) HandleUpdate(c *gin.Context) {
 	id := c.Param("id")
 
+	name := c.PostForm("name")
+	typ := c.PostForm("type")
+	doc := c.PostForm("document")
+
+	billing, formTenant, billErr := parseBillingForm(c, id, name, typ, doc)
+	if billErr != "" {
+		h.renderFormError(c, true, formTenant, billErr)
+		return
+	}
+
 	input := application.UpdateTenantInput{
 		ID:       id,
-		Name:     c.PostForm("name"),
-		Type:     c.PostForm("type"),
-		Document: c.PostForm("document"),
+		Name:     name,
+		Type:     typ,
+		Document: doc,
+		Billing:  billing,
 	}
 
 	_, err := h.updateUC.Execute(c.Request.Context(), input)
 	if err != nil {
-		h.renderFormError(c, true, input.Name, input.Type, input.Document, id, mapDomainError(err))
+		h.renderFormError(c, true, formTenant, mapDomainError(err))
 		return
 	}
 
@@ -279,19 +297,73 @@ func (h *Handler) renderDetailAfterAction(c *gin.Context, id, successMsg string)
 	})
 }
 
-func (h *Handler) renderFormError(c *gin.Context, isEdit bool, name, typ, doc, id, errMsg string) {
-	tenant := &application.GetTenantOutput{
-		ID:       id,
-		Name:     name,
-		Type:     typ,
-		Document: doc,
-	}
-
+func (h *Handler) renderFormError(c *gin.Context, isEdit bool, tenant *application.GetTenantOutput, errMsg string) {
 	c.HTML(http.StatusOK, "tenant/form.html", gin.H{
 		"IsEdit": isEdit,
 		"Tenant": tenant,
 		"Error":  errMsg,
 	})
+}
+
+// parseBillingForm reads the billing fields from the POST form. It returns the
+// UpdateTenantBilling pointer (nil if plano is empty), a GetTenantOutput that
+// mirrors the submitted values for re-rendering the form, and a non-empty
+// errMsg when the raw inputs cannot be parsed.
+func parseBillingForm(c *gin.Context, id, name, typ, doc string) (*application.UpdateTenantBilling, *application.GetTenantOutput, string) {
+	plano := c.PostForm("plano")
+	valorStr := c.PostForm("valor_cobranca")
+	diaStr := c.PostForm("dia_vencimento")
+	dataStr := c.PostForm("data_inicio_cobranca")
+	exibir := c.PostForm("exibir_pagamentos") == "true"
+
+	formTenant := &application.GetTenantOutput{
+		ID: id, Name: name, Type: typ, Document: doc,
+		Plano: plano, ExibirPagamentos: exibir,
+	}
+
+	if plano == "" {
+		return nil, formTenant, ""
+	}
+
+	var valorCents *int64
+	if valorStr != "" && (plano == "mensal" || plano == "anual") {
+		f, err := strconv.ParseFloat(strings.ReplaceAll(valorStr, ",", "."), 64)
+		if err != nil {
+			return nil, formTenant, "Valor de cobrança inválido"
+		}
+		v := int64(f * 100)
+		valorCents = &v
+		formTenant.ValorCobrancaCents = valorCents
+	}
+
+	var dia *uint8
+	if diaStr != "" && (plano == "mensal" || plano == "anual") {
+		n, err := strconv.Atoi(diaStr)
+		if err != nil || n < 1 || n > 28 {
+			return nil, formTenant, "Dia de vencimento deve estar entre 1 e 28"
+		}
+		u := uint8(n)
+		dia = &u
+		formTenant.DiaVencimento = dia
+	}
+
+	var dataInicio *time.Time
+	if dataStr != "" && (plano == "mensal" || plano == "anual") {
+		t, err := time.Parse("2006-01-02", dataStr)
+		if err != nil {
+			return nil, formTenant, "Data de início inválida"
+		}
+		dataInicio = &t
+		formTenant.DataInicioCobranca = dataInicio
+	}
+
+	return &application.UpdateTenantBilling{
+		Plano:              plano,
+		ValorCobrancaCents: valorCents,
+		DiaVencimento:      dia,
+		DataInicioCobranca: dataInicio,
+		ExibirPagamentos:   exibir,
+	}, formTenant, ""
 }
 
 func mapDomainError(err error) string {
@@ -318,6 +390,10 @@ func mapDomainError(err error) string {
 		return "Tenant está inativo"
 	case errors.Is(err, domain.ErrTenantNotFound):
 		return "Tenant não encontrado"
+	case errors.Is(err, pagdomain.ErrInvalidPlano):
+		return "Configuração de cobrança inválida: plano mensal/anual requer valor, dia (1-28) e data de início"
+	case errors.Is(err, pagdomain.ErrValorInvalido):
+		return "Valor de cobrança deve ser maior que zero"
 	default:
 		return "Erro interno"
 	}

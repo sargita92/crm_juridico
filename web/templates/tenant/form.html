@@ -63,6 +63,44 @@
                                value="{{if .Tenant}}{{.Tenant.Document}}{{end}}"
                                required>
                     </div>
+                    {{if .IsEdit}}
+                    <fieldset class="form-billing">
+                        <legend>Cobrança</legend>
+                        <div class="form-group">
+                            <label for="plano">Plano</label>
+                            <select id="plano" name="plano" onchange="toggleBillingFields(this.value)">
+                                <option value="mensal"    {{if eq .Tenant.Plano "mensal"}}selected{{end}}>Mensal</option>
+                                <option value="anual"     {{if eq .Tenant.Plano "anual"}}selected{{end}}>Anual</option>
+                                <option value="vitalicio" {{if eq .Tenant.Plano "vitalicio"}}selected{{end}}>Vitalício</option>
+                                <option value="externo"   {{if eq .Tenant.Plano "externo"}}selected{{end}}>Externo</option>
+                            </select>
+                        </div>
+                        <div id="billing-fields">
+                            <div class="form-group">
+                                <label for="valor_cobranca">Valor da cobrança (R$)</label>
+                                <input id="valor_cobranca" name="valor_cobranca" type="number" step="0.01" min="0"
+                                       value="{{ formatValor .Tenant.ValorCobrancaCents }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="dia_vencimento">Dia de vencimento</label>
+                                <input id="dia_vencimento" name="dia_vencimento" type="number" min="1" max="28"
+                                       value="{{ uint8Or .Tenant.DiaVencimento 10 }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="data_inicio_cobranca">Data de início da cobrança</label>
+                                <input id="data_inicio_cobranca" name="data_inicio_cobranca" type="date"
+                                       value="{{ dateOr .Tenant.DataInicioCobranca }}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox">
+                                <input type="checkbox" name="exibir_pagamentos" value="true"
+                                       {{if .Tenant.ExibirPagamentos}}checked{{end}}>
+                                Exibir aba de pagamentos para o tenant
+                            </label>
+                        </div>
+                    </fieldset>
+                    {{end}}
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">
                             <span class="btn-text">{{if .IsEdit}}Salvar{{else}}Criar{{end}}</span>
@@ -94,6 +132,21 @@ function updateDocPlaceholder() {
     }
 }
 document.addEventListener("DOMContentLoaded", updateDocPlaceholder);
+
+function toggleBillingFields(plano) {
+    var box = document.getElementById("billing-fields");
+    if (!box) return;
+    var enable = plano === "mensal" || plano === "anual";
+    var inputs = box.querySelectorAll("input");
+    for (var i = 0; i < inputs.length; i++) {
+        inputs[i].disabled = !enable;
+    }
+    box.style.opacity = enable ? "1" : "0.5";
+}
+document.addEventListener("DOMContentLoaded", function() {
+    var sel = document.getElementById("plano");
+    if (sel) toggleBillingFields(sel.value);
+});
 </script>
 </body>
 </html>
