@@ -15,24 +15,54 @@ type fakeTenantProvider struct {
 	tempo     []domain.ColumnDwell
 	prod      []domain.ProductLeadsCount
 
-	// captura filtros passados
-	lastUserFilter *string
+	// captura filtros passados — um por método para validar fan-out
+	lastUserFilter      *string
+	lastUserFilterWhats *string
+	lastUserFilterResp  *string
+	lastUserFilterTempo *string
+	lastUserFilterProd  *string
+
+	// injeção de erros — um por método para validar propagação
+	errFunil error
+	errWhats error
+	errResp  error
+	errTempo error
+	errProd  error
 }
 
 func (f *fakeTenantProvider) FunilBlock(ctx context.Context, tenantID string, userID *string, now time.Time) (*domain.FunilBlock, string, error) {
 	f.lastUserFilter = userID
+	if f.errFunil != nil {
+		return nil, "", f.errFunil
+	}
 	return f.funil, f.funilName, nil
 }
 func (f *fakeTenantProvider) WhatsAppBlock(ctx context.Context, _ string, userID *string) (*domain.WhatsAppStats, error) {
+	f.lastUserFilterWhats = userID
+	if f.errWhats != nil {
+		return nil, f.errWhats
+	}
 	return f.whats, nil
 }
 func (f *fakeTenantProvider) ResponsaveisBlock(ctx context.Context, _ string, userID *string) ([]domain.ResponsiblePerformance, error) {
+	f.lastUserFilterResp = userID
+	if f.errResp != nil {
+		return nil, f.errResp
+	}
 	return f.resp, nil
 }
 func (f *fakeTenantProvider) TempoFunilBlock(ctx context.Context, _ string, userID *string, now time.Time) ([]domain.ColumnDwell, error) {
+	f.lastUserFilterTempo = userID
+	if f.errTempo != nil {
+		return nil, f.errTempo
+	}
 	return f.tempo, nil
 }
 func (f *fakeTenantProvider) ProdutosBlock(ctx context.Context, _ string, userID *string) ([]domain.ProductLeadsCount, error) {
+	f.lastUserFilterProd = userID
+	if f.errProd != nil {
+		return nil, f.errProd
+	}
 	return f.prod, nil
 }
 
