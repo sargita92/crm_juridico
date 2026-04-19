@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 10/20 concluída)
+**Status**: 🟡 em andamento (Task 11/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -30,7 +30,7 @@
 | 8 | Admin stats repo (blocos 1, 2, 3 — tenants/uso/health) | ✅ | 3c59e1b + 8e160b6 |
 | 9 | Admin stats repo (blocos 5, 6 — especialistas/financeiro) | ✅ | a736dbb |
 | 10 | PrometheusStatsProvider (bloco 4 admin) | ✅ | 643c3d5 |
-| 11 | Wiring `dashboard.Module` + `cmd/api/main.go` | ⬜ | — |
+| 11 | Wiring `dashboard.Module` + `cmd/api/main.go` | ✅ | 20f66f2 |
 | 12 | Handlers HTTP tenant | ⬜ | — |
 | 13 | Handlers HTTP admin | ⬜ | — |
 | 14 | Chart.js + `dashboard.css` + layouts | ⬜ | — |
@@ -131,3 +131,7 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 10 — observação para Task 11 (wiring)**: passar `prometheus.DefaultGatherer` (mesmo registry do middleware) + slice de `ServiceCheck`. MySQL: `func(ctx) { return "mysql", db.PingContext(ctx) == nil }`. WhatsApp: `func(ctx) { return "whatsapp", waClient.IsConnected() }`. Evitar checks com I/O pesado (eles entram no tempo de resposta do dashboard).
 - **Task 10 — observação para Task 13 (template Bloco 4)**: agregação de latência é platform-wide (média sobre TODOS endpoints+labels). Um endpoint lento domina a média — admin vê o blend, não p99. Se PO quiser p95 por endpoint, precisa de query Prometheus diferente (não cabe aqui).
 - **Task 10 — silent-degrade em métrica renomeada**: se `http_requests_total` ou `http_request_duration_seconds` forem renomeados em `internal/shared/middleware/prometheus.go`, o dashboard mostra 0/0 sem erro. Considerar test de regressão futuro que cubra metric-renamed.
+- **Task 11 — bugs do plano corrigidos**: (1) `Row().Scan` do `gorm_user_lookup` → `Take` + `errors.Is`; (2) `NewModule` não recebe `users authDomain.UserRepository` (parâmetro era unused); (3) handler stub criado com 4 rotas + bodies placeholder para Tasks 12/13 substituírem só o body.
+- **Task 11 — `adminGroup` removido**: era usado só pelo stub `/admin/dashboard`. Outras rotas admin têm seus próprios groups dentro dos módulos. Bloco inteiro de `cmd/api/main.go:442-447` removido.
+- **Task 11 — observação para Task 12/13**: tenant routes em `mw.Auth + mw.Tenant`; admin routes em `mw.Auth + mw.Admin`. Handler já recebe `userTenants authDomain.UserTenantRepository` no constructor — usar para determinar `IsOwner` (campo `is_owner` em `user_tenants`).
+- **Task 11 — `admin/dashboard.html` template antigo** ainda existe e é referenciado por sidebar/docs legacy. Task 16 (templates admin) substitui ou Task 13 (handler admin) renderiza um template novo.
