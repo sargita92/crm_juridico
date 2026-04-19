@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 5/20 concluída)
+**Status**: 🟡 em andamento (Task 6/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -25,7 +25,7 @@
 | 3 | GetAdminDashboard UC + testes | ✅ | e311e15 |
 | 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ✅ | f4579bb |
 | 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ✅ | 92a604f + 2ace7a8 |
-| 6 | Tenant stats repo (bloco 2 — WhatsApp) | ⬜ | — |
+| 6 | Tenant stats repo (bloco 2 — WhatsApp) | ✅ | 87e2010 |
 | 7 | Tenant stats repo (blocos 3, 4 — responsáveis/tempo) | ⬜ | — |
 | 8 | Admin stats repo (blocos 1, 2, 3 — tenants/uso/health) | ⬜ | — |
 | 9 | Admin stats repo (blocos 5, 6 — especialistas/financeiro) | ⬜ | — |
@@ -112,3 +112,6 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 5 — interface guard**: `var _ application.TenantStatsProvider = (*GormTenantStatsRepo)(nil)` adicionado para fail-fast em Tasks 6/7/11.
 - **Task 5 — observação para Task 6**: `seedConversation` já existe; criar `seedMessage`. Cleanup de `messages`/`conversations` já está em ordem FK.
 - **Task 5 — observação para Task 7**: criar `seedUser`/`seedUserTenant`. `responsible_user_id` já é plumbado via `leadOpts.responsible`.
+- **Task 6 — adaptação real**: `seedLead` cria contact+conversation internamente (não recebe IDs). Adicionado `leadConversationID(t, db, leadID)` para recuperar a conversa criada. Helper `seedMessage` novo.
+- **Task 6 — predicado de user-scope duplicado em 3 lugares** (active count join, message count join, raw SQL `IN (SELECT...)`). Se Task 7 adicionar mais um, considerar extrair helper `applyUserLeadScope(q, tenantID, userID)`. Sinalizar no Task 7 dispatch.
+- **Task 6 — testes de borda recomendados** (incluir em Task 7 ou follow-up): (1) tenant sem conversas → todos os campos zero; (2) conversa só com incoming → `FirstResponseAvgSec=0`; (3) lead com `responsible_user_id IS NULL` filtrado fora em user-scope.
