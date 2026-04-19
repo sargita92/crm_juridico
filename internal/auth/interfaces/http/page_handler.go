@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/application"
@@ -87,11 +88,17 @@ type modalPerm struct {
 
 // RedirectToUsers handles GET /tenant/team.
 func (h *PageHandler) RedirectToUsers(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.redirect_users")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	c.Redirect(http.StatusFound, "/tenant/team/users")
 }
 
 // UsersPage renders the shell + users tab.
 func (h *PageHandler) UsersPage(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.users")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	users, err := h.manageUsers.ListTenantUsers(c.Request.Context(), tenantID)
@@ -117,6 +124,9 @@ func (h *PageHandler) UsersPage(c *gin.Context) {
 
 // UsersTable renders only the users + invites table fragment (for HTMX refreshes).
 func (h *PageHandler) UsersTable(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.users_table")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	users, err := h.manageUsers.ListTenantUsers(c.Request.Context(), tenantID)
@@ -136,6 +146,9 @@ func (h *PageHandler) UsersTable(c *gin.Context) {
 
 // InviteNewModal renders the "Convidar Usuário" modal with the list of groups.
 func (h *PageHandler) InviteNewModal(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.invite_modal")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	groups, err := h.listGroupsUC.Execute(c.Request.Context(), tenantID)
@@ -150,6 +163,9 @@ func (h *PageHandler) InviteNewModal(c *gin.Context) {
 
 // CreateInvite handles POST /tenant/team/invites — form submission from the modal.
 func (h *PageHandler) CreateInvite(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.create_invite")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	claims := middleware.GetClaims(c.Request.Context())
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
@@ -185,6 +201,9 @@ func (h *PageHandler) CreateInvite(c *gin.Context) {
 
 // UserPermissionsModal renders the individual-permissions modal for a user.
 func (h *PageHandler) UserPermissionsModal(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.user_permissions_modal")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	userID := c.Param("id")
 
@@ -217,6 +236,9 @@ func (h *PageHandler) UserPermissionsModal(c *gin.Context) {
 // SetUserPermissionsHTML handles POST /tenant/team/users/:id/permissions.
 // Form field `perms` carries values like "resource:action".
 func (h *PageHandler) SetUserPermissionsHTML(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.set_user_permissions")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	userID := c.Param("id")
 
@@ -242,6 +264,9 @@ func (h *PageHandler) SetUserPermissionsHTML(c *gin.Context) {
 
 // UserWhatsAppModal renders the WhatsApp-edit modal for a given user.
 func (h *PageHandler) UserWhatsAppModal(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.user_whatsapp_modal")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	userID := c.Param("id")
 
@@ -268,6 +293,9 @@ func (h *PageHandler) UserWhatsAppModal(c *gin.Context) {
 
 // SetUserWhatsApp handles POST /tenant/team/users/:id/whatsapp.
 func (h *PageHandler) SetUserWhatsApp(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.set_user_whatsapp")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	userID := c.Param("id")
 

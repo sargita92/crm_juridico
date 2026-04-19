@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/application"
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
@@ -12,6 +13,9 @@ import (
 
 // handleGenerateInvite handles POST /tenant/invites.
 func (m *Module) handleGenerateInvite(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.invite.generate")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	claims := middleware.GetClaims(c.Request.Context())
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	if claims == nil {
@@ -44,6 +48,9 @@ func (m *Module) handleGenerateInvite(c *gin.Context) {
 
 // handleListInvites handles GET /tenant/invites.
 func (m *Module) handleListInvites(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.invite.list")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	invites, err := m.inviteUC.ListInvites(c.Request.Context(), tenantID)
@@ -57,6 +64,9 @@ func (m *Module) handleListInvites(c *gin.Context) {
 
 // handleRevokeInvite handles DELETE /tenant/invites/:id.
 func (m *Module) handleRevokeInvite(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.invite.revoke")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invite id is required"})
@@ -74,6 +84,9 @@ func (m *Module) handleRevokeInvite(c *gin.Context) {
 // handleGetInviteInfo handles GET /invite/:token — public.
 // Returns basic info about the invite (non-sensitive). Full validation happens on accept.
 func (m *Module) handleGetInviteInfo(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.invite.get_info")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	token := c.Param("token")
 	if token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token is required"})
@@ -86,6 +99,9 @@ func (m *Module) handleGetInviteInfo(c *gin.Context) {
 
 // handleAcceptInvite handles POST /invite/:token/accept — public.
 func (m *Module) handleAcceptInvite(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.invite.accept")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	token := c.Param("token")
 	if token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token is required"})
@@ -125,6 +141,9 @@ func (m *Module) handleAcceptInvite(c *gin.Context) {
 
 // handleListTenantUsers handles GET /tenant/users.
 func (m *Module) handleListTenantUsers(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.users.list")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	users, err := m.manageUsersUC.ListTenantUsers(c.Request.Context(), tenantID)
@@ -138,6 +157,9 @@ func (m *Module) handleListTenantUsers(c *gin.Context) {
 
 // handleRemoveUser handles DELETE /tenant/users/:id.
 func (m *Module) handleRemoveUser(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.users.remove")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	userID := c.Param("id")
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
@@ -160,6 +182,9 @@ func (m *Module) handleRemoveUser(c *gin.Context) {
 
 // handleSetWhatsAppID handles PUT /tenant/users/:id/whatsapp.
 func (m *Module) handleSetWhatsAppID(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.users.set_whatsapp")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	userID := c.Param("id")
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
