@@ -41,7 +41,7 @@
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
-| F14 | [Arquivos por Lead](../features/F14-arquivos.md) | backlog | F06, F07 | média |
+| F14 | [Arquivos por Lead](../features/F14-arquivos.md) | concluído | F06, F07 | média |
 
 ## Épico 6: Admin — Financeiro e Operacional
 
