@@ -4,6 +4,24 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-19] F11 — Pagamentos (Admin)
+
+Controle financeiro multi-tenant com cron diário de recorrentes, UI admin e portal tenant read-only. Step 3 da spec original (gateway externo Stripe/Mercado Pago) deferido para F11.1.
+
+- **Domínio novo `internal/pagamentos/`** (DDD completo): `domain` (entidade `Payment` com enums `PaymentType`/`PaymentStatus`, `BillingConfig` do tenant com enum `Plan {mensal|anual|vitalicio|externo}`, `BrazilHolidayCalendar` thread-safe com cache por ano + Páscoa Meeus/Jones/Butcher, ports `PaymentRepository`/`TenantBillingRepository`/`HolidayCalendar`), `application` (UCs `RegisterManualPayment`/`MarkPaymentAsPaid`/`CancelPayment`, `ListTenantPayments`/`ListAllPayments`/`GetTenantFinancialSummary`, `GenerateRecurringPayments`/`RefreshOverdueStatuses` + helpers `Clock`/`IDGenerator`), `infrastructure` (`GormPaymentRepository` + `GormTenantBillingRepository` lendo direto de `tenants` sem acoplar ao pacote `tenant`, `BillingScheduler` com `robfig/cron/v3`), `interfaces/http` (admin + portal tenant).
+- **Migrations**: `054_alter_tenants_billing` (plano, valor_cobranca_cents BIGINT, dia_vencimento TINYINT, data_inicio_cobranca DATE, exibir_pagamentos BOOL) e `055_create_payments` (tabela payments com tipo/status/competência/vencimento + FK tenants + auditoria `paid_by_user_id`/`paid_at`/`cancelled_*` + unique `(tenant_id, tipo=recorrente, competencia)`).
+- **Extensão tenant**: `Tenant` ganha `SetBillingConfig` (sem acoplar `tenant/domain` a `pagamentos/domain`); UC `UpdateTenant` valida combinações via `pagamentos/domain.NewBillingConfig` antes de persistir. Form de edição do tenant com fieldset "Cobrança" e JS de toggle (habilita valor/dia/data apenas para mensal/anual).
+- **Cron**: `BillingScheduler` com `BILLING_CRON` (default `0 3 * * *`), TZ `BILLING_TZ` (default `America/Sao_Paulo`), carência `BILLING_GRACE_DAYS` (default 1) em dias úteis. Gera competências faltantes respeitando `DataInicioCobranca` (skip futuro) e prorroga vencimento para próximo dia útil via calendário BR. Idempotente via `ExistsRecorrente(tenant, comp)` com `competencia = DATE(?)`. Fix de DATE-roundtrip: tenant `toModel` normaliza `DataInicioCobranca` para local-midnight preservando Y/M/D (evita duplicar competências por shift TZ com DSN `loc=Local`).
+- **UI admin**: menu global `/admin/pagamentos` com filtros + aba `/admin/tenants/:id/pagamentos` com resumo financeiro (badge `em_dia`/`pendente`/`atrasado`/`sem_cobranca` + total pago no ano + pendente + atrasado). Modal HTMX para lançamento avulso; botões pagar/cancelar via `hx-post` com swap `outerHTML` da linha. Templates em `web/templates/pagamentos/` + partials + CSS em `web/static/css/main.css`.
+- **Portal tenant**: rota `/pagamentos` read-only com middleware `PortalAccessChecker` que valida (1) plano cobrável + `exibir_pagamentos=true` (senão 404) e (2) permissão via `permission.Resolver` — que inclui owner bypass + admin bypass + `payments:view`. Tenants vitalício/externo e com flag desabilitada não veem o menu nem acessam o endpoint.
+- **Permissões**: novo resource `payments` com ação `view` em `ValidPermissions`.
+- **Observabilidade**: 7 métricas Prometheus (`pagamentos_cron_runs_total{status}`, `pagamentos_cron_duration_seconds`, `pagamentos_recorrentes_gerados_total`, `pagamentos_atualizados_atrasado_total`, `pagamentos_marcados_pago_total`, `pagamentos_lancados_avulso_total`, `pagamentos_cancelados_total`); traces OTel no tracer `pagamentos` em todos UCs + `billing_cron_run` com `request_id` de correlação; dashboard Grafana `infra/grafana/dashboards/pagamentos.json`.
+- **Testes**: 152 testes em `internal/pagamentos/...` — domain 98.2%, application 92.4%, infrastructure 82.7% (integração MySQL via testcontainers), interfaces/http 80.8% (inclui 14 testes OWASP: 401/403/404, isolamento tenant, SQLi em status/data/tenant_id e XSS em descricao).
+- **Wiring**: `cmd/api/main.go` instancia o módulo, conecta o `permissionMod.Resolver` tardiamente (quebra ciclo), inicia o scheduler e para no shutdown graceful. `rest/10-pagamentos.http` com todos os endpoints + exemplos de erros. Sidebars admin e tenant ganham item "Pagamentos".
+- **Loader de templates**: `web/templates/**/*.html` agora carregado via múltiplos globs (1, 2 e 3 níveis) porque `filepath.Glob` do Go não suporta `**` recursivo. Aplica-se a `cmd/api/main.go` e `internal/shared/testhelper/mysql.go`.
+
+---
+
 ## [2026-04-19] F14 — Arquivos por Lead
 
 Captura automática de mídia do WhatsApp (imagem/documento/áudio/vídeo/sticker) com aba dedicada `/tenant/files` e integração com o detalhe do lead.

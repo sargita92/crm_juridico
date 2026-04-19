@@ -1,14 +1,19 @@
 # Status F11 — Pagamentos (Admin)
 
 **Branch**: `feature/F11-pagamentos`
+**Status**: ✅ **concluído** (aguardando QA manual + review de Segurança antes do merge)
+**Artefato**: [v1.md](v1.md)
 **Spec**: [../../superpowers/specs/2026-04-19-F11-pagamentos-admin-design.md](../../superpowers/specs/2026-04-19-F11-pagamentos-admin-design.md)
 **Plano**: [../../superpowers/plans/2026-04-19-F11-pagamentos-admin.md](../../superpowers/plans/2026-04-19-F11-pagamentos-admin.md)
 
 ## Fluxo de agentes
 - PO: ✅ (brainstorming 2026-04-19 — 8 decisões consolidadas na spec)
-- UI/UX: ✅ (decisões no spec §8; templates serão escritos nas Tasks 14-15)
+- UI/UX: ✅ (templates pagamentos/* + ajuste form tenant)
 - Arquiteto: ✅ (plano de 19 tasks em `docs/superpowers/plans/`)
-- Dev Backend: 🟡 **em andamento — Tasks 1–7 concluídas, 8–19 pendentes**
+- Dev Backend: ✅ **concluído (Tasks 1–19)**
+- Dev Front-end: ✅ (HTMX + templates + CSS)
+- QA: 🟡 pendente — rodar smoke tests manuais via `rest/10-pagamentos.http`
+- Segurança: 🟡 pendente — review do middleware portal e testes OWASP
 - Dev Front-end: pendente
 - QA: pendente
 - Segurança: pendente
