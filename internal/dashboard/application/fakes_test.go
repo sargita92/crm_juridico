@@ -78,3 +78,61 @@ func (f fakeUserLookup) UserName(_ context.Context, userID string) (string, erro
 type fixedClock struct{ t time.Time }
 
 func (c fixedClock) Now() time.Time { return c.t }
+
+type fakeAdminProvider struct {
+	tenants *domain.TenantsBlock
+	usage   *domain.UsageBlock
+	health  *domain.HealthBlock
+	spec    *domain.SpecialistsBlock
+	fin     *domain.FinancialBlock
+
+	// injeção de erros — um por método para validar propagação
+	errTenants error
+	errUsage   error
+	errHealth  error
+	errSpec    error
+	errFin     error
+}
+
+func (f *fakeAdminProvider) TenantsBlock(_ context.Context, _ time.Time) (*domain.TenantsBlock, error) {
+	if f.errTenants != nil {
+		return nil, f.errTenants
+	}
+	return f.tenants, nil
+}
+func (f *fakeAdminProvider) UsageBlock(_ context.Context) (*domain.UsageBlock, error) {
+	if f.errUsage != nil {
+		return nil, f.errUsage
+	}
+	return f.usage, nil
+}
+func (f *fakeAdminProvider) HealthBlock(_ context.Context, _ time.Time) (*domain.HealthBlock, error) {
+	if f.errHealth != nil {
+		return nil, f.errHealth
+	}
+	return f.health, nil
+}
+func (f *fakeAdminProvider) EspecialistasBlock(_ context.Context) (*domain.SpecialistsBlock, error) {
+	if f.errSpec != nil {
+		return nil, f.errSpec
+	}
+	return f.spec, nil
+}
+func (f *fakeAdminProvider) FinanceiroBlock(_ context.Context, _ time.Time) (*domain.FinancialBlock, error) {
+	if f.errFin != nil {
+		return nil, f.errFin
+	}
+	return f.fin, nil
+}
+
+type fakeInfraProvider struct {
+	infra       *domain.Infrastructure
+	errSnapshot error
+}
+
+func (f fakeInfraProvider) Snapshot(_ context.Context) (*domain.Infrastructure, error) {
+	if f.errSnapshot != nil {
+		return nil, f.errSnapshot
+	}
+	return f.infra, nil
+}
