@@ -99,3 +99,24 @@ func TestParseFiltersFromQuery_DefaultsPage1(t *testing.T) {
 	_, _, _, page := parseFiltersFromQuery(stubQuery{})
 	assert.Equal(t, 1, page)
 }
+
+func TestStatusBadgeClass_TodosOsStatus(t *testing.T) {
+	cases := []struct {
+		s    domain.PaymentStatus
+		want string
+	}{
+		{domain.StatusPago, "badge badge-success"},
+		{domain.StatusPendente, "badge badge-warning"},
+		{domain.StatusAtrasado, "badge badge-danger"},
+		{domain.StatusCancelado, "badge badge-muted"},
+		{"desconhecido", "badge"},
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.want, statusBadgeClass(c.s), string(c.s))
+	}
+}
+
+func TestParseDate_InvalidRetornaErro(t *testing.T) {
+	_, err := parseDate("nao-e-data")
+	assert.Error(t, err)
+}

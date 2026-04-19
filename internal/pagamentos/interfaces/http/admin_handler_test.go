@@ -293,6 +293,92 @@ func TestAdmin_NoToken_401(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestAdminTenantSummary_ReturnsResumoPartial(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	w := httptest.NewRecorder()
+	e.router.ServeHTTP(w, getReq("/admin/tenants/"+e.tenantID+"/pagamentos/resumo", tokenCookie(token)))
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "Pago no ano")
+	assert.Contains(t, body, "badge")
+}
+
+func TestAdminTenantSummary_TenantInexistente_404(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	w := httptest.NewRecorder()
+	e.router.ServeHTTP(w, getReq("/admin/tenants/naoexiste/pagamentos/resumo", tokenCookie(token)))
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestAdminCreateAvulso_DataInvalida_422(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	w := httptest.NewRecorder()
+	req := postForm("/admin/tenants/"+e.tenantID+"/pagamentos", url.Values{
+		"descricao":       {"X"},
+		"valor":           {"50.00"},
+		"data_vencimento": {"nao-e-data"},
+	}, tokenCookie(token))
+	e.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	assert.Contains(t, w.Body.String(), "Data")
+}
+
+func TestAdminListTenant_Inexistente_404(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	w := httptest.NewRecorder()
+	e.router.ServeHTTP(w, getReq("/admin/tenants/naoexiste/pagamentos", tokenCookie(token)))
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestAdminCreateAvulso_DescricaoVazia_422(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	w := httptest.NewRecorder()
+	req := postForm("/admin/tenants/"+e.tenantID+"/pagamentos", url.Values{
+		"descricao":       {""},
+		"valor":           {"50.00"},
+		"data_vencimento": {"2026-05-20"},
+	}, tokenCookie(token))
+	e.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+}
+
+func TestAdminCancel_AlreadyCancelled_409(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	id := e.seedAvulso(t, "Cancel", 10000, time.Date(2026, 5, 10, 0, 0, 0, 0, time.UTC))
+	p, _ := e.repo.FindByIDAdmin(context.Background(), id)
+	require.NoError(t, p.Cancel("u0", "razao"))
+	require.NoError(t, e.repo.Update(context.Background(), p))
+
+	w := httptest.NewRecorder()
+	e.router.ServeHTTP(w, postForm("/admin/pagamentos/"+id+"/cancelar",
+		url.Values{"motivo": {"nova"}}, tokenCookie(token)))
+	assert.Equal(t, http.StatusConflict, w.Code)
+}
+
+func TestAdminCancel_NotFound_404(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	w := httptest.NewRecorder()
+	e.router.ServeHTTP(w, postForm("/admin/pagamentos/missing/cancelar",
+		url.Values{"motivo": {"x"}}, tokenCookie(token)))
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestAdminFormNovo_RenderizaModal(t *testing.T) {
+	e := setup(t)
+	token := e.adminToken(t)
+	w := httptest.NewRecorder()
+	e.router.ServeHTTP(w, getReq("/admin/tenants/"+e.tenantID+"/pagamentos/novo", tokenCookie(token)))
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Novo lan")
+}
+
 func TestAdmin_UserRole_403(t *testing.T) {
 	e := setup(t)
 	token := e.userToken(t)
