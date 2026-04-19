@@ -16,7 +16,14 @@ type Config struct {
 	JWT      JWTConfig
 	AI       AIConfigEnv
 	Files    FilesConfig
+	Billing  BillingConfig
 	Env      string // "development", "test", "production"
+}
+
+type BillingConfig struct {
+	Cron      string // cron spec (default "0 3 * * *")
+	GraceDays int    // dias uteis de carencia antes de marcar atrasado
+	Timezone  string // IANA tz (default "America/Sao_Paulo")
 }
 
 type FilesConfig struct {
@@ -103,6 +110,13 @@ func Load() (*Config, error) {
 	_ = viper.BindEnv("files.storageroot", "FILES_STORAGE_ROOT")
 	_ = viper.BindEnv("files.maxbytes", "FILES_MAX_BYTES")
 
+	viper.SetDefault("billing.cron", "0 3 * * *")
+	viper.SetDefault("billing.gracedays", 1)
+	viper.SetDefault("billing.timezone", "America/Sao_Paulo")
+	_ = viper.BindEnv("billing.cron", "BILLING_CRON")
+	_ = viper.BindEnv("billing.gracedays", "BILLING_GRACE_DAYS")
+	_ = viper.BindEnv("billing.timezone", "BILLING_TZ")
+
 	_ = viper.BindEnv("env", "ENV")
 	_ = viper.BindEnv("openai.apikey", "OPENAI_API_KEY")
 	_ = viper.BindEnv("ai.playgroundenabled", "AI_PLAYGROUND_ENABLED")
@@ -152,6 +166,11 @@ func Load() (*Config, error) {
 		Files: FilesConfig{
 			StorageRoot: viper.GetString("files.storageroot"),
 			MaxBytes:    viper.GetInt64("files.maxbytes"),
+		},
+		Billing: BillingConfig{
+			Cron:      viper.GetString("billing.cron"),
+			GraceDays: viper.GetInt("billing.gracedays"),
+			Timezone:  viper.GetString("billing.timezone"),
 		},
 		Env: viper.GetString("env"),
 	}

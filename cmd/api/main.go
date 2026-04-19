@@ -29,6 +29,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/notification"
 	notifdomain "github.com/sasrgita/crm-juridico/internal/notification/domain"
 	notifhttp "github.com/sasrgita/crm-juridico/internal/notification/interfaces/http"
+	"github.com/sasrgita/crm-juridico/internal/pagamentos"
 	"github.com/sasrgita/crm-juridico/internal/permission"
 	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/product"
@@ -226,7 +227,22 @@ func main() {
 	)
 	funnelMod.SetResponsiblePicker(picker)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod}
+	pagLoc, locErr := time.LoadLocation(cfg.Billing.Timezone)
+	if locErr != nil {
+		log.Warn("billing timezone invalido, usando UTC", zap.String("tz", cfg.Billing.Timezone), zap.Error(locErr))
+		pagLoc = time.UTC
+	}
+	pagamentosMod := pagamentos.NewModule(db, log, pagamentos.Config{
+		CronSpec:  cfg.Billing.Cron,
+		GraceDays: cfg.Billing.GraceDays,
+		Location:  pagLoc,
+	})
+	if err := pagamentosMod.StartScheduler(); err != nil {
+		log.Fatal("start billing scheduler", zap.Error(err))
+	}
+	defer pagamentosMod.StopScheduler()
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod}
 
 	// Token provider is used for the auth middleware and admin login route
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
