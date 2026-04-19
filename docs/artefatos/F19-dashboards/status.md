@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Tasks 15+16/20 concluídas)
+**Status**: 🟡 em andamento (Task 17/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -36,7 +36,7 @@
 | 14 | Chart.js + `dashboard.css` + layouts | ✅ | cce50d2 |
 | 15 | Templates tenant (5 blocos) | ✅ | b28663b |
 | 16 | Templates admin (6 blocos) | ✅ | b28663b |
-| 17 | Observabilidade (metrics/spans/logs) | ⬜ | — |
+| 17 | Observabilidade (metrics/spans/logs) | ✅ | cc8caee |
 | 18 | Testes OWASP + cobertura ≥ 80% | ⬜ | — |
 | 19 | `rest/11-dashboard.http` + menus + changelog | ⬜ | — |
 | 20 | Fechamento (backlog, status, PR) | ⬜ | — |
@@ -146,3 +146,4 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Tasks 15+16 — desvio real do plano**: JSON fields no view model usam `template.JS` (não `string`) — `html/template` em contexto `<script type="application/json">` faz double-encode (JSON virou string JSON dentro de string JSON). `template.JS` emite verbatim. Justificável: view model já é presentation layer (BRL, %, h formatados).
 - **Tasks 15+16 — guards defensivos**: Bloco1 funil chart só renderiza se `len(ColumnTotals) > 0` (evita `JSON.parse('null').map()` throw em tenant sem funil configurado).
 - **Tasks 15+16 — `partials/sidebar.html` `toggleSidebar()` em `/static/js/admin.js`** — admin page mantém esse script.
+- **Task 17 — métricas + spans + logs**: `dashboard_render_duration_seconds{scope}` (histogram), `dashboard_load_total{scope, outcome}` (counter), spans HTTP `dashboard.http.tenant`/`dashboard.http.admin` (parent dos spans UC), log `dashboard_rendered` com `scope/tenant_id/user_id/took`. Coverage: application 98.3%, infrastructure 84.6%, interfaces/http 84.6% (todos > 80%).
