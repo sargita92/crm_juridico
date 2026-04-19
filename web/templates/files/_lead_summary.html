@@ -1,0 +1,29 @@
+{{define "files/_lead_summary.html"}}
+<section class="lead-files-summary">
+    <div class="summary-header">
+        <strong>Arquivos ({{.Total}})</strong>
+        {{if gt .Total 0}}
+        <a href="/tenant/files?lead_id={{.LeadID}}" class="link-all">Ver todos →</a>
+        {{end}}
+    </div>
+    {{if not .Recent}}
+    <p class="empty">Nenhum arquivo associado a este lead ainda.</p>
+    {{else}}
+    <ul class="summary-grid">
+        {{range .Recent}}
+        <li hx-get="/tenant/files/{{.ID}}/preview"
+            hx-target="#file-drawer"
+            hx-swap="innerHTML"
+            onclick="openFileDrawer()"
+            title="{{.Name}}">
+            {{if .IsImage}}
+                <img src="/tenant/files/{{.ID}}/thumbnail" alt="{{.Name}}" loading="lazy">
+            {{else}}
+                <span class="file-emoji">{{.Icon}}</span>
+            {{end}}
+        </li>
+        {{end}}
+    </ul>
+    {{end}}
+</section>
+{{end}}

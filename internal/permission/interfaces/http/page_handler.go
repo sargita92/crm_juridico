@@ -72,8 +72,8 @@ type pageUsersListUC interface {
 	ListTenantUsers(ctx context.Context, tenantID string) ([]authapp.UserOutput, error)
 }
 
-var groupPermActions = []string{"read", "create", "update", "delete", "manage", "customize"}
-var groupPermResources = []string{"leads", "users", "groups", "funnels", "automations", "products", "specialists", "invites", "settings"}
+var groupPermActions = []string{"view", "read", "create", "update", "delete", "manage", "customize"}
+var groupPermResources = []string{"leads", "users", "groups", "funnels", "automations", "products", "specialists", "files", "invites", "settings"}
 var groupPermAvailable = map[string]map[string]bool{
 	"leads":       {"read": true, "create": true, "update": true, "delete": true},
 	"users":       {"read": true, "update": true, "delete": true},
@@ -82,6 +82,7 @@ var groupPermAvailable = map[string]map[string]bool{
 	"automations": {"manage": true},
 	"products":    {"manage": true},
 	"specialists": {"manage": true},
+	"files":       {"view": true},
 	"invites":     {"create": true, "read": true, "delete": true},
 	"settings":    {"manage": true},
 }

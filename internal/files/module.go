@@ -10,20 +10,22 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/files/application"
 	"github.com/sasrgita/crm-juridico/internal/files/domain"
 	"github.com/sasrgita/crm-juridico/internal/files/infrastructure"
+	fileshttp "github.com/sasrgita/crm-juridico/internal/files/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	whatsappdomain "github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
 type Module struct {
-	repo         domain.FileRepository
-	storage      domain.Storage
-	storeUC      *application.StoreFileUseCase
-	listUC       *application.ListFilesUseCase
-	getUC        *application.GetFileUseCase
-	downloadUC   *application.DownloadFileUseCase
-	summaryUC    *application.LeadFilesSummaryUseCase
-	adapter      *application.WhatsAppFileAdapter
-	log          *zap.Logger
+	repo       domain.FileRepository
+	storage    domain.Storage
+	storeUC    *application.StoreFileUseCase
+	listUC     *application.ListFilesUseCase
+	getUC      *application.GetFileUseCase
+	downloadUC *application.DownloadFileUseCase
+	summaryUC  *application.LeadFilesSummaryUseCase
+	adapter    *application.WhatsAppFileAdapter
+	handler    *fileshttp.Handler
+	log        *zap.Logger
 }
 
 // NewModule wires the files module. `storageRoot` is the directory where
@@ -54,6 +56,8 @@ func NewModule(
 	summaryUC := application.NewLeadFilesSummaryUseCase(repo)
 	adapter := application.NewWhatsAppFileAdapter(storeUC)
 
+	handler := fileshttp.NewHandler(listUC, getUC, downloadUC, summaryUC, log)
+
 	return &Module{
 		repo:       repo,
 		storage:    storage,
@@ -63,15 +67,16 @@ func NewModule(
 		downloadUC: downloadUC,
 		summaryUC:  summaryUC,
 		adapter:    adapter,
+		handler:    handler,
 		log:        log,
 	}, nil
 }
 
 func (m *Module) Name() string { return "files" }
 
-// RegisterRoutes is a placeholder until the HTTP layer is wired in step 5.
-// Kept for compatibility with the module.Module interface.
-func (m *Module) RegisterRoutes(_ *gin.Engine, _ module.Middlewares) {}
+func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
+	m.handler.RegisterRoutes(router, mw.Auth, mw.Tenant, mw.RequirePermission)
+}
 
 // FileStorer exposes the whatsapp-facing port.
 func (m *Module) FileStorer() whatsappdomain.FileStorer { return m.adapter }

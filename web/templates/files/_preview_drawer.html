@@ -1,0 +1,41 @@
+{{define "files/_preview_drawer.html"}}
+{{if .Error}}
+<div class="drawer-inner drawer-error">
+    <button class="drawer-close" onclick="closeFileDrawer()" aria-label="Fechar">×</button>
+    <p>{{.Error}}</p>
+</div>
+{{else}}
+{{with .File}}
+<div class="drawer-inner" role="dialog" aria-label="Detalhe do arquivo">
+    <header class="drawer-header">
+        <h3 title="{{.Name}}">{{.Name}}</h3>
+        <button class="drawer-close" onclick="closeFileDrawer()" aria-label="Fechar">×</button>
+    </header>
+    <div class="drawer-body">
+        <div class="drawer-preview">
+            {{if .IsImage}}
+                <img src="/tenant/files/{{.ID}}/thumbnail" alt="{{.Name}}" onclick="openLightbox('/tenant/files/{{.ID}}/thumbnail')">
+            {{else if eq .MediaType "audio"}}
+                <audio controls src="/tenant/files/{{.ID}}/download"></audio>
+            {{else}}
+                <span class="file-emoji-lg">{{.Icon}}</span>
+            {{end}}
+        </div>
+        <dl class="drawer-meta">
+            <dt>Tipo</dt><dd>{{.MimeType}}</dd>
+            <dt>Tamanho</dt><dd>{{formatFileSize .SizeBytes}}</dd>
+            <dt>Direção</dt><dd>{{.DirectionLabel}}</dd>
+            {{if .ContactName}}<dt>Contato</dt><dd>{{.ContactName}}</dd>{{end}}
+            <dt>Data</dt><dd>{{.CreatedAt.Format "02/01/2006 15:04"}}</dd>
+        </dl>
+        <div class="drawer-actions">
+            <a class="btn btn-primary" href="/tenant/files/{{.ID}}/download">↓ Baixar</a>
+            {{if .ConversationID}}
+            <a class="btn" href="/tenant/whatsapp?conversation={{.ConversationID}}{{if .MessageID}}#msg-{{.MessageID}}{{end}}">💬 Abrir conversa</a>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}
+{{end}}
+{{end}}

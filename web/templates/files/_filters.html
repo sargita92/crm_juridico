@@ -1,0 +1,31 @@
+{{define "files/_filters.html"}}
+<form class="files-filters" hx-get="/tenant/files/list" hx-target="#files-list" hx-push-url="true" hx-trigger="change, keyup from:input[name=q] delay:300ms changed">
+    <input type="search" name="q" placeholder="Buscar por nome..." value="{{.Query}}">
+    <select name="type">
+        <option value="" {{if eq .Type ""}}selected{{end}}>Todos os tipos</option>
+        <option value="image"    {{if eq .Type "image"}}selected{{end}}>Imagem</option>
+        <option value="document" {{if eq .Type "document"}}selected{{end}}>Documento</option>
+        <option value="audio"    {{if eq .Type "audio"}}selected{{end}}>Áudio</option>
+        <option value="video"    {{if eq .Type "video"}}selected{{end}}>Vídeo</option>
+        <option value="other"    {{if eq .Type "other"}}selected{{end}}>Outro</option>
+    </select>
+    <select name="period">
+        <option value=""     {{if eq .Period ""}}selected{{end}}>Todo o período</option>
+        <option value="today" {{if eq .Period "today"}}selected{{end}}>Hoje</option>
+        <option value="7d"    {{if eq .Period "7d"}}selected{{end}}>Últ. 7 dias</option>
+        <option value="30d"   {{if eq .Period "30d"}}selected{{end}}>Últ. 30 dias</option>
+        <option value="custom" {{if eq .Period "custom"}}selected{{end}}>Personalizado</option>
+    </select>
+    {{if eq .Period "custom"}}
+    <input type="date" name="from" value="{{.From}}">
+    <input type="date" name="to"   value="{{.To}}">
+    {{end}}
+    {{if .LeadID}}<input type="hidden" name="lead_id" value="{{.LeadID}}">{{end}}
+    {{if .Filters}}
+    <div class="active-filters">
+        {{range .Filters}}<span class="chip">{{.}}</span>{{end}}
+        <a class="chip-clear" href="/tenant/files">limpar filtros</a>
+    </div>
+    {{end}}
+</form>
+{{end}}

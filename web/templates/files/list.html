@@ -1,0 +1,29 @@
+{{define "files/list.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    {{template "partials/tenant_head.html" (dict "Title" "Arquivos")}}
+    <link rel="stylesheet" href="/static/css/files.css">
+</head>
+<body class="no-auto-close-modals">
+<div class="admin-layout">
+    {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "files")}}
+    {{template "partials/notification_bell.html" .}}
+    <main class="admin-content">
+        <div class="page-header">
+            <div>
+                <h1>Arquivos</h1>
+                <small>{{.Total}} arquivos</small>
+            </div>
+        </div>
+        {{template "files/_filters.html" .}}
+        <div id="files-list">
+            {{template "files/_list_fragment.html" .}}
+        </div>
+    </main>
+</div>
+<div id="file-drawer" class="file-drawer" aria-hidden="true"></div>
+<script src="/static/js/files.js"></script>
+</body>
+</html>
+{{end}}

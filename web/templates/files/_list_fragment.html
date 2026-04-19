@@ -1,0 +1,68 @@
+{{define "files/_list_fragment.html"}}
+{{if not .Items}}
+    <div class="empty-state">
+        {{if .Filters}}
+            <p>Nenhum arquivo encontrado com esses filtros.</p>
+            <a href="/tenant/files" class="btn btn-link">Limpar filtros</a>
+        {{else}}
+            <p>Ainda não há arquivos nesse tenant.</p>
+            <small>Quando você enviar ou receber mídia pelo WhatsApp, os arquivos aparecerão aqui.</small>
+        {{end}}
+    </div>
+{{else}}
+<ul class="files-list">
+    {{range .Items}}
+    <li class="file-row"
+        hx-get="/tenant/files/{{.ID}}/preview"
+        hx-target="#file-drawer"
+        hx-swap="innerHTML"
+        onclick="openFileDrawer()">
+        <div class="file-icon">
+            {{if .IsImage}}
+                <img src="/tenant/files/{{.ID}}/thumbnail" alt="{{.Name}}" loading="lazy">
+            {{else}}
+                <span class="file-emoji">{{.Icon}}</span>
+            {{end}}
+        </div>
+        <div class="file-info">
+            <div class="file-name" title="{{.Name}}">{{.Name}}</div>
+            <div class="file-meta">
+                <span>{{.MimeType}}</span>
+                <span>·</span>
+                <span>{{formatFileSize .SizeBytes}}</span>
+                <span>·</span>
+                <span>{{.DirectionLabel}}</span>
+                {{if .ContactName}}
+                    <span>·</span>
+                    <span>{{.ContactName}}</span>
+                {{end}}
+            </div>
+        </div>
+        <div class="file-time">{{.RelTime}}</div>
+        <div class="file-actions">
+            <a href="/tenant/files/{{.ID}}/download" title="Baixar" onclick="event.stopPropagation()">↓</a>
+            {{if .ConversationID}}
+            <a href="/tenant/whatsapp?conversation={{.ConversationID}}{{if .MessageID}}#msg-{{.MessageID}}{{end}}" title="Abrir conversa" onclick="event.stopPropagation()">💬</a>
+            {{end}}
+        </div>
+    </li>
+    {{end}}
+</ul>
+
+{{if gt .TotalPages 1}}
+<nav class="pagination">
+    {{if gt .Page 1}}
+    <a hx-get="/tenant/files/list?page={{sub .Page 1}}{{if .Query}}&q={{.Query}}{{end}}{{if .Type}}&type={{.Type}}{{end}}{{if .Period}}&period={{.Period}}{{end}}{{if .From}}&from={{.From}}{{end}}{{if .To}}&to={{.To}}{{end}}{{if .LeadID}}&lead_id={{.LeadID}}{{end}}"
+       hx-target="#files-list"
+       hx-push-url="true">◀ anterior</a>
+    {{end}}
+    <span>página {{.Page}} / {{.TotalPages}}</span>
+    {{if lt .Page .TotalPages}}
+    <a hx-get="/tenant/files/list?page={{add .Page 1}}{{if .Query}}&q={{.Query}}{{end}}{{if .Type}}&type={{.Type}}{{end}}{{if .Period}}&period={{.Period}}{{end}}{{if .From}}&from={{.From}}{{end}}{{if .To}}&to={{.To}}{{end}}{{if .LeadID}}&lead_id={{.LeadID}}{{end}}"
+       hx-target="#files-list"
+       hx-push-url="true">próxima ▶</a>
+    {{end}}
+</nav>
+{{end}}
+{{end}}
+{{end}}
