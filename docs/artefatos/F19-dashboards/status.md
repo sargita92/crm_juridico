@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 14/20 concluída)
+**Status**: 🟡 em andamento (Tasks 15+16/20 concluídas)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -34,8 +34,8 @@
 | 12 | Handlers HTTP tenant | ✅ | a4d0ae5 |
 | 13 | Handlers HTTP admin | ✅ | dd3fb9d |
 | 14 | Chart.js + `dashboard.css` + layouts | ✅ | cce50d2 |
-| 15 | Templates tenant (5 blocos) | ⬜ | — |
-| 16 | Templates admin (6 blocos) | ⬜ | — |
+| 15 | Templates tenant (5 blocos) | ✅ | b28663b |
+| 16 | Templates admin (6 blocos) | ✅ | b28663b |
 | 17 | Observabilidade (metrics/spans/logs) | ⬜ | — |
 | 18 | Testes OWASP + cobertura ≥ 80% | ⬜ | — |
 | 19 | `rest/11-dashboard.http` + menus + changelog | ⬜ | — |
@@ -142,3 +142,7 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 13 — 401 path** não testado nos handler tests (covered por `internal/shared/middleware/auth_test.go`).
 - **Task 14 — SRI hash do Chart.js**: omitido (path (b) do dispatch). TODO inline no `tenant.html`: `TODO(F19): adicionar SRI hash verificado para chart.js@4.4.1`. Script carrega via HTTPS + `crossorigin=anonymous` — aceitável para v1, mas P2 antes de prod.
 - **Task 14 — admin layout**: `web/templates/admin/dashboard.html` é self-contained e será SUBSTITUÍDO em Task 16 (que inclui CSS + Chart.js diretamente nos templates novos).
+- **Tasks 15+16 — combined dispatch** (15 templates total): tenant 5 blocos + admin 6 blocos + delete `admin/dashboard.html` antigo.
+- **Tasks 15+16 — desvio real do plano**: JSON fields no view model usam `template.JS` (não `string`) — `html/template` em contexto `<script type="application/json">` faz double-encode (JSON virou string JSON dentro de string JSON). `template.JS` emite verbatim. Justificável: view model já é presentation layer (BRL, %, h formatados).
+- **Tasks 15+16 — guards defensivos**: Bloco1 funil chart só renderiza se `len(ColumnTotals) > 0` (evita `JSON.parse('null').map()` throw em tenant sem funil configurado).
+- **Tasks 15+16 — `partials/sidebar.html` `toggleSidebar()` em `/static/js/admin.js`** — admin page mantém esse script.
