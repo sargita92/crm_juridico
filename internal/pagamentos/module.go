@@ -66,7 +66,7 @@ func NewModule(db *gorm.DB, log *zap.Logger, cfg Config) *Module {
 	scheduler := infrastructure.NewBillingScheduler(cfg.CronSpec, genUC, refUC, log, cfg.Location)
 
 	handler := pagamentoshttp.NewHandler(
-		listTenantUC, listAllUC, summaryUC, registerUC, payUC, cancelUC, billingRepo, log,
+		listTenantUC, listAllUC, summaryUC, registerUC, payUC, cancelUC, billingRepo, paymentRepo, log,
 	)
 
 	return &Module{
