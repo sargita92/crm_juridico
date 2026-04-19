@@ -42,7 +42,9 @@ Métricas obrigatórias:
 | `whatsapp_message_processing_duration_seconds` | Histogram | Tempo de processamento de mensagem |
 | `leads_created_total` | Counter | Leads criados (por funil) |
 | `leads_moved_total` | Counter | Leads movidos entre colunas |
-| `automation_executions_total` | Counter | Automações executadas (por tipo, sucesso/erro) |
+| `crm_automation_executions_total` | Counter | Automações executadas (labels: `type` ∈ 6 executors, `outcome` ∈ success/error) |
+| `crm_permission_changes_total` | Counter | Alterações de escopo de permissão (labels: `scope` ∈ group/user/funnel/view_profile, `action` = updated) |
+| `crm_auth_invites_total` | Counter | Ciclo de vida de convites (label: `outcome` ∈ sent/accepted/revoked) |
 | `specialist_responses_total` | Counter | Respostas de especialistas IA |
 | `specialist_response_duration_seconds` | Histogram | Latência de resposta do especialista |
 | `crm_ai_reset_commands_total` | Counter | Conversas reiniciadas via `/reset` (labels: tenant_id, specialist_id, source=command\|playground) |

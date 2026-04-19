@@ -6,6 +6,8 @@ Implementar o sistema de automações configuráveis por funil e coluna, com int
 ## Pré-requisitos
 - F07 (funis/kanban)
 
+## Status: concluído
+
 ## Steps
 
 ### Step 1: Domínio de automações
@@ -69,12 +71,13 @@ Implementar o sistema de automações configuráveis por funil e coluna, com int
 - [x] seleção de tipo com formulário dinâmico por tipo
 - [x] ativar/desativar automação
 - [x] permissionamento: visível apenas para quem tem permissão
-- [ ] configurável se só admin ou tenant pode criar automações
+- [x] configurável se só admin ou tenant pode criar automações (via permissão `automations.manage` no grupo do usuário)
 
 ## Critérios de aceite
-- todos os 7 tipos de automação funcionam (exclusão, mover funil, mensagem, anotação, trocar especialista, rate limit, detectar produto)
-- automações são configuráveis pela interface
-- motor executa automações na movimentação de leads
-- interface simples e intuitiva
-- permissionamento funciona
-- cobertura >= 80%
+- [x] todos os 7 tipos de automação funcionam (exclusão, mover funil, mensagem, anotação, trocar especialista, rate limit, detectar produto)
+- [x] automações são configuráveis pela interface
+- [x] motor executa automações na movimentação de leads
+- [x] interface simples e intuitiva
+- [x] permissionamento funciona
+- [x] cobertura >= 80%
+- [x] observabilidade mínima: OTel spans nos 17 handlers + `crm_automation_executions_total{type,outcome}` incrementado no engine e no ticker de expiração (histogramas de duração e dashboards em [F18](F18-observabilidade-avancada.md))

@@ -6,6 +6,8 @@ Implementar o sistema de usuários, grupos de permissão, perfis de visualizaç�
 ## Pré-requisitos
 - F07 (funis/kanban)
 
+## Status: concluído
+
 ## Steps
 
 ### Step 1: Grupos de permissão
@@ -62,10 +64,11 @@ Implementar o sistema de usuários, grupos de permissão, perfis de visualizaç�
 - [x] interações via HTMX
 
 ## Critérios de aceite
-- grupos de permissão funcionam e controlam acesso
-- perfis filtram colunas visíveis no kanban
-- load balance distribui leads automaticamente
-- todo lead tem um responsável humano associado
-- responsável é notificado em eventos relevantes (criação, movimentação, handoff, qualificação)
-- owner tem permissão máxima no tenant
-- cobertura >= 80%
+- [x] grupos de permissão funcionam e controlam acesso
+- [x] perfis filtram colunas visíveis no kanban
+- [x] load balance distribui leads automaticamente
+- [x] todo lead tem um responsável humano associado
+- [x] responsável é notificado em eventos relevantes (criação, movimentação, handoff, qualificação)
+- [x] owner tem permissão máxima no tenant
+- [x] cobertura >= 80%
+- [x] observabilidade mínima: OTel spans nos handlers de team/invites/users + `crm_auth_invites_total{outcome}` + `crm_permission_changes_total{scope,action}` (histogramas de duração e dashboards em [F18](F18-observabilidade-avancada.md))
