@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/automation/application"
@@ -24,6 +25,9 @@ func NewHandler(crudUC *application.CRUDUseCase, log *zap.Logger) *Handler {
 
 // ListByFunnel handles GET /tenant/leads/funnels/:id/automations.
 func (h *Handler) ListByFunnel(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.list_by_funnel")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Param("id")
 
@@ -39,6 +43,9 @@ func (h *Handler) ListByFunnel(c *gin.Context) {
 
 // Create handles POST /tenant/leads/funnels/:id/automations.
 func (h *Handler) Create(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.create")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Param("id")
 
@@ -72,6 +79,9 @@ func (h *Handler) Create(c *gin.Context) {
 
 // GetDetail handles GET /tenant/leads/automations/:id.
 func (h *Handler) GetDetail(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.get_detail")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	out, err := h.crudUC.GetByID(c.Request.Context(), id)
@@ -86,6 +96,9 @@ func (h *Handler) GetDetail(c *gin.Context) {
 
 // Update handles PUT /tenant/leads/automations/:id.
 func (h *Handler) Update(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.update")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	var req struct {
@@ -114,6 +127,9 @@ func (h *Handler) Update(c *gin.Context) {
 
 // Delete handles DELETE /tenant/leads/automations/:id.
 func (h *Handler) Delete(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.delete")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	if err := h.crudUC.Delete(c.Request.Context(), id); err != nil {
@@ -127,6 +143,9 @@ func (h *Handler) Delete(c *gin.Context) {
 
 // Toggle handles POST /tenant/leads/automations/:id/toggle.
 func (h *Handler) Toggle(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.toggle")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	if err := h.crudUC.Toggle(c.Request.Context(), id); err != nil {
@@ -140,6 +159,9 @@ func (h *Handler) Toggle(c *gin.Context) {
 
 // GetLogs handles GET /tenant/leads/automations/:id/logs.
 func (h *Handler) GetLogs(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.get_logs")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	limit := 20

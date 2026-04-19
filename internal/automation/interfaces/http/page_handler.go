@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/automation/application"
@@ -138,6 +139,9 @@ func buildConfig(automationType string, form url.Values) map[string]interface{} 
 
 // ListPage handles GET /tenant/automations — renders the full page.
 func (h *PageHandler) ListPage(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.list")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 
 	funnels, err := h.listFunnelsUC.Execute(c.Request.Context(), tenantID)
@@ -169,6 +173,9 @@ func (h *PageHandler) ListPage(c *gin.Context) {
 
 // RenderTable handles GET /tenant/automations/table — returns table fragment.
 func (h *PageHandler) RenderTable(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.table")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Query("funnel_id")
 	if funnelID == "" {
@@ -184,6 +191,9 @@ func (h *PageHandler) RenderTable(c *gin.Context) {
 
 // RenderCreateForm handles GET /tenant/automations/new/form — returns modal form for creation.
 func (h *PageHandler) RenderCreateForm(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.create_form")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Query("funnel_id")
 	if funnelID == "" {
@@ -276,6 +286,9 @@ var validFieldTypes = map[string]bool{
 }
 
 func (h *PageHandler) RenderFields(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.fields")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	automationType := c.Query("type")
 	if !validFieldTypes[automationType] {
@@ -334,6 +347,9 @@ func (h *PageHandler) loadSpecialists(c *gin.Context, tenantID string) []special
 // --- Edit Form ---
 
 func (h *PageHandler) RenderEditForm(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.edit_form")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
 
@@ -400,6 +416,9 @@ func (h *PageHandler) addConfigData(data gin.H, automationType string, config ma
 // --- Create / Update ---
 
 func (h *PageHandler) HandleCreate(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.handle_create")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	funnelID := c.Query("funnel_id")
 	if funnelID == "" {
@@ -440,6 +459,9 @@ func (h *PageHandler) HandleCreate(c *gin.Context) {
 }
 
 func (h *PageHandler) HandleUpdate(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.handle_update")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	id := c.Param("id")
 
@@ -480,6 +502,9 @@ func (h *PageHandler) HandleUpdate(c *gin.Context) {
 // --- Delete / Toggle ---
 
 func (h *PageHandler) HandleDelete(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.handle_delete")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	if err := h.crudUC.Delete(c.Request.Context(), id); err != nil {
@@ -492,6 +517,9 @@ func (h *PageHandler) HandleDelete(c *gin.Context) {
 }
 
 func (h *PageHandler) HandleToggle(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.handle_toggle")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	if err := h.crudUC.Toggle(c.Request.Context(), id); err != nil {
@@ -514,6 +542,9 @@ type logView struct {
 }
 
 func (h *PageHandler) RenderLogs(c *gin.Context) {
+	ctx, span := otel.Tracer("automation").Start(c.Request.Context(), "automation.page.logs")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
 	id := c.Param("id")
 
 	limit := 20
