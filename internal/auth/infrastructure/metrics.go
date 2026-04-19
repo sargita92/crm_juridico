@@ -23,8 +23,20 @@ var (
 		},
 		[]string{"algorithm"},
 	)
+
+	// InvitesTotal counts invite token lifecycle events, by outcome.
+	// outcome ∈ {sent, accepted, revoked}
+	InvitesTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "auth",
+			Name:      "invites_total",
+			Help:      "Total invite token events, by outcome.",
+		},
+		[]string{"outcome"},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(pickerTotal, pickerDuration)
+	prometheus.MustRegister(pickerTotal, pickerDuration, InvitesTotal)
 }
