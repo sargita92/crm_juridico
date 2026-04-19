@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 7/20 concluída)
+**Status**: 🟡 em andamento (Task 8/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -27,7 +27,7 @@
 | 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ✅ | 92a604f + 2ace7a8 |
 | 6 | Tenant stats repo (bloco 2 — WhatsApp) | ✅ | 87e2010 |
 | 7 | Tenant stats repo (blocos 3, 4 — responsáveis/tempo) | ✅ | bcccd05 + 8d45e72 |
-| 8 | Admin stats repo (blocos 1, 2, 3 — tenants/uso/health) | ⬜ | — |
+| 8 | Admin stats repo (blocos 1, 2, 3 — tenants/uso/health) | ✅ | 3c59e1b + 8e160b6 |
 | 9 | Admin stats repo (blocos 5, 6 — especialistas/financeiro) | ⬜ | — |
 | 10 | PrometheusStatsProvider (bloco 4 admin) | ⬜ | — |
 | 11 | Wiring `dashboard.Module` + `cmd/api/main.go` | ⬜ | — |
@@ -119,3 +119,7 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 7 — helper `applyLeadUserScope` extraído**: usado nos 2 novos métodos. Existing methods (FunilBlock, ProdutosBlock, WhatsAppBlock) NÃO foram refatorados — clean follow-up antes de Task 11 (mecânico, ~10 linhas).
 - **Task 7 — contrato de retorno locked down (testes 13-15)**: `(emptyTenant)` → slice vazio não-nil; `TempoFunilBlock(noDefaultFunnel)` → nil; `TempoFunilBlock(funnelExists, noLeads)` → slice vazio não-nil. Handlers (Task 12) precisam tratar `nil` vs `empty slice` como estados distintos.
 - **Task 7 — observação para Task 13 (handlers)**: `TempoFunilBlock` retornar nil-sem-erro é "sem funnel default" — handler/template renderiza mensagem "configure um funil"; `FunilBlock` mesma semântica.
+- **Task 8 — bug do dispatch corrigido pelo implementer**: SQL `last_activity` com sentinel `'1970-01-01'` em GREATEST não fazia fallback para `t.created_at`. Redesenhada para per-branch `COALESCE(MAX(...), t.created_at)` + GREATEST flat 3-arg + `CAST AS DATETIME` (driver MySQL retorna `[]uint8` sem o cast).
+- **Task 8 — decisão de produto**: `Top10Active` inclui tenants `blocked`/`inactive` com leads — métrica é volume histórico, não status. Test de regressão `TestHealthBlock_Top10Active_IncludesBlockedTenants`.
+- **Task 8 — observação para Task 9**: (a) construtor de `GormAdminStatsRepo` precisará aceitar `payments` (quebra `setupAdminRepo`); (b) adicionar `DELETE FROM payments` em `setupStatsRepo` antes de seed de pagamentos para `FinanceiroBlock`; (c) `tenants.plano` é VARCHAR (não ENUM) — distribuição lê valores como string.
+- **Task 8 — perf annotations futuras**: `InactiveList` usa correlated subqueries (O(N) por tenant); `UsageBlock` faz 3 round-trips. Tudo aceitável agora; revisitar em Task 17 se p95 doer.
