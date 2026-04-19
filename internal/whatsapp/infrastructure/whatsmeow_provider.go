@@ -269,7 +269,15 @@ func (p *WhatsmeowProvider) handleIncomingMessage(tenantID string, msg *events.M
 			content = ext.GetText()
 		}
 	}
-	if content == "" {
+
+	// Try to extract media. If present, download via whatsmeow. Caption becomes
+	// the message content; text-only messages keep their existing behavior.
+	media, mediaCaption := p.extractMedia(tenantID, msg)
+	if media != nil && content == "" {
+		content = mediaCaption
+	}
+
+	if content == "" && media == nil {
 		return
 	}
 
@@ -284,7 +292,163 @@ func (p *WhatsmeowProvider) handleIncomingMessage(tenantID string, msg *events.M
 		Content:       content,
 		WhatsAppMsgID: msg.Info.ID,
 		Timestamp:     msg.Info.Timestamp,
+		Media:         media,
 	})
+}
+
+// extractMedia inspects the incoming whatsmeow message for media parts
+// (image/document/audio/video/sticker) and, if present, downloads the bytes
+// using the tenant's whatsmeow client. It returns the payload (or nil) and
+// the caption extracted from the media proto, if any.
+//
+// Download failures are logged and treated as "no media" — the caller may
+// still fall back to persisting the text content (which is typically empty
+// for media-only messages).
+func (p *WhatsmeowProvider) extractMedia(tenantID string, msg *events.Message) (*domain.MediaPayload, string) {
+	p.mu.RLock()
+	client, ok := p.clients[tenantID]
+	p.mu.RUnlock()
+	if !ok || client == nil {
+		return nil, ""
+	}
+
+	m := msg.Message
+	if m == nil {
+		return nil, ""
+	}
+
+	ctx := context.Background()
+
+	switch {
+	case m.ImageMessage != nil:
+		img := m.ImageMessage
+		bytes, err := client.Download(ctx, img)
+		if err != nil {
+			p.log.Error("whatsmeow: image download failed",
+				zap.String("tenant_id", tenantID),
+				zap.String("msg_id", msg.Info.ID),
+				zap.Error(err))
+			return nil, img.GetCaption()
+		}
+		name := fallbackMediaName(msg.Info.ID, img.GetMimetype(), "image")
+		return &domain.MediaPayload{
+			Type:     domain.MessageTypeImage,
+			Name:     name,
+			MimeType: img.GetMimetype(),
+			Content:  bytes,
+		}, img.GetCaption()
+
+	case m.DocumentMessage != nil:
+		doc := m.DocumentMessage
+		bytes, err := client.Download(ctx, doc)
+		if err != nil {
+			p.log.Error("whatsmeow: document download failed",
+				zap.String("tenant_id", tenantID),
+				zap.String("msg_id", msg.Info.ID),
+				zap.Error(err))
+			return nil, doc.GetCaption()
+		}
+		name := doc.GetFileName()
+		if name == "" {
+			name = fallbackMediaName(msg.Info.ID, doc.GetMimetype(), "document")
+		}
+		return &domain.MediaPayload{
+			Type:     domain.MessageTypeDocument,
+			Name:     name,
+			MimeType: doc.GetMimetype(),
+			Content:  bytes,
+		}, doc.GetCaption()
+
+	case m.AudioMessage != nil:
+		aud := m.AudioMessage
+		bytes, err := client.Download(ctx, aud)
+		if err != nil {
+			p.log.Error("whatsmeow: audio download failed",
+				zap.String("tenant_id", tenantID),
+				zap.String("msg_id", msg.Info.ID),
+				zap.Error(err))
+			return nil, ""
+		}
+		return &domain.MediaPayload{
+			Type:     domain.MessageTypeAudio,
+			Name:     fallbackMediaName(msg.Info.ID, aud.GetMimetype(), "audio"),
+			MimeType: aud.GetMimetype(),
+			Content:  bytes,
+		}, ""
+
+	case m.VideoMessage != nil:
+		vid := m.VideoMessage
+		bytes, err := client.Download(ctx, vid)
+		if err != nil {
+			p.log.Error("whatsmeow: video download failed",
+				zap.String("tenant_id", tenantID),
+				zap.String("msg_id", msg.Info.ID),
+				zap.Error(err))
+			return nil, vid.GetCaption()
+		}
+		return &domain.MediaPayload{
+			Type:     domain.MessageTypeVideo,
+			Name:     fallbackMediaName(msg.Info.ID, vid.GetMimetype(), "video"),
+			MimeType: vid.GetMimetype(),
+			Content:  bytes,
+		}, vid.GetCaption()
+
+	case m.StickerMessage != nil:
+		st := m.StickerMessage
+		bytes, err := client.Download(ctx, st)
+		if err != nil {
+			p.log.Error("whatsmeow: sticker download failed",
+				zap.String("tenant_id", tenantID),
+				zap.String("msg_id", msg.Info.ID),
+				zap.Error(err))
+			return nil, ""
+		}
+		return &domain.MediaPayload{
+			Type:     domain.MessageTypeSticker,
+			Name:     fallbackMediaName(msg.Info.ID, st.GetMimetype(), "sticker"),
+			MimeType: st.GetMimetype(),
+			Content:  bytes,
+		}, ""
+	}
+
+	return nil, ""
+}
+
+// fallbackMediaName builds a synthetic filename when whatsmeow does not
+// provide one (images, audios, videos, stickers). Extension is inferred from
+// MIME when possible; otherwise empty.
+func fallbackMediaName(msgID, mime, kind string) string {
+	ext := extFromMime(mime)
+	if msgID == "" {
+		return kind + ext
+	}
+	return kind + "-" + msgID + ext
+}
+
+func extFromMime(mime string) string {
+	switch strings.ToLower(strings.TrimSpace(mime)) {
+	case "image/jpeg":
+		return ".jpg"
+	case "image/png":
+		return ".png"
+	case "image/webp":
+		return ".webp"
+	case "image/gif":
+		return ".gif"
+	case "audio/ogg":
+		return ".ogg"
+	case "audio/mpeg":
+		return ".mp3"
+	case "audio/wav":
+		return ".wav"
+	case "video/mp4":
+		return ".mp4"
+	case "video/webm":
+		return ".webm"
+	case "application/pdf":
+		return ".pdf"
+	}
+	return ""
 }
 
 func isDirectMessage(chat types.JID) bool {

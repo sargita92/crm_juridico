@@ -19,6 +19,7 @@ type ReceiveMessageUseCase struct {
 	eventBus         events.EventBus
 	leadCreator      domain.LeadCreator
 	aiHandler        domain.AIHandler
+	fileStorer       domain.FileStorer
 	log              *zap.Logger
 }
 
@@ -49,14 +50,30 @@ func (uc *ReceiveMessageUseCase) SetAIHandler(handler domain.AIHandler) {
 	uc.aiHandler = handler
 }
 
+func (uc *ReceiveMessageUseCase) SetFileStorer(fs domain.FileStorer) {
+	uc.fileStorer = fs
+}
+
+// resolveMessageType maps the incoming media type (or text absence) to the
+// MessageType persisted on the Message row.
+func resolveMessageType(event domain.IncomingMessage) domain.MessageType {
+	if event.Media != nil {
+		if t := event.Media.Type; t != "" {
+			return t
+		}
+		return domain.MessageTypeOther
+	}
+	return domain.MessageTypeText
+}
+
 func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.IncomingMessage) error {
 	start := time.Now()
 	defer func() {
 		messageProcessingDuration.WithLabelValues("incoming").Observe(time.Since(start).Seconds())
 	}()
 
-	if event.Content == "" {
-		return nil // discard empty messages
+	if event.Content == "" && event.Media == nil {
+		return nil // discard empty messages with no media
 	}
 
 	// Dedup by WhatsAppMsgID
@@ -103,8 +120,9 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 		return err
 	}
 
-	// Create message
-	msg, err := domain.NewMessage(uuid.New().String(), conv.ID, domain.MessageDirectionIncoming, event.Content, domain.MessageTypeText, event.WhatsAppMsgID, event.Timestamp)
+	// Create message (caption for media; body for text). Media messages may
+	// have empty content — domain.NewMessage allows that for media types.
+	msg, err := domain.NewMessage(uuid.New().String(), conv.ID, domain.MessageDirectionIncoming, event.Content, resolveMessageType(event), event.WhatsAppMsgID, event.Timestamp)
 	if err != nil {
 		return err
 	}
@@ -125,6 +143,29 @@ func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.Incom
 	}
 
 	messagesReceivedTotal.WithLabelValues(event.TenantID).Inc()
+
+	// Persist media bytes separately (best-effort). A storage failure must not
+	// fail the message ingestion — the text/metadata has already been saved.
+	if event.Media != nil && uc.fileStorer != nil {
+		_, fsErr := uc.fileStorer.StoreInbound(ctx, domain.InboundMediaInput{
+			TenantID:       event.TenantID,
+			ConversationID: conv.ID,
+			ContactID:      contact.ID,
+			MessageID:      msg.ID,
+			Name:           event.Media.Name,
+			MimeType:       event.Media.MimeType,
+			Content:        event.Media.Content,
+		})
+		if fsErr != nil {
+			uc.log.Error("receive_message: media storage failed",
+				zap.String("tenant_id", event.TenantID),
+				zap.String("conversation_id", conv.ID),
+				zap.String("message_id", msg.ID),
+				zap.Int("size_bytes", len(event.Media.Content)),
+				zap.String("mime_type", event.Media.MimeType),
+				zap.Error(fsErr))
+		}
+	}
 
 	// Publish SSE events
 	uc.eventBus.Publish(events.Event{

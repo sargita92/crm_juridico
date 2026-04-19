@@ -12,8 +12,25 @@ const (
 type MessageType string
 
 const (
-	MessageTypeText MessageType = "text"
+	MessageTypeText     MessageType = "text"
+	MessageTypeImage    MessageType = "image"
+	MessageTypeDocument MessageType = "document"
+	MessageTypeAudio    MessageType = "audio"
+	MessageTypeVideo    MessageType = "video"
+	MessageTypeSticker  MessageType = "sticker"
+	MessageTypeOther    MessageType = "other"
 )
+
+// IsMediaType returns true for message types that reference binary media
+// (image/document/audio/video/sticker/other). For these, message content may
+// be empty (caption-only or no caption).
+func IsMediaType(t MessageType) bool {
+	switch t {
+	case MessageTypeImage, MessageTypeDocument, MessageTypeAudio, MessageTypeVideo, MessageTypeSticker, MessageTypeOther:
+		return true
+	}
+	return false
+}
 
 type MessageStatus string
 
@@ -41,7 +58,8 @@ func NewMessage(id, conversationID string, direction MessageDirection, content s
 	if conversationID == "" {
 		return nil, ErrConversationIDRequired
 	}
-	if content == "" {
+	// Media messages may carry no caption; require content only for text.
+	if content == "" && !IsMediaType(msgType) {
 		return nil, ErrMessageContentRequired
 	}
 	if len(content) > MaxMessageContentLength {

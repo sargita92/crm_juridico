@@ -21,6 +21,7 @@ import (
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/automation"
 	"github.com/sasrgita/crm-juridico/internal/document"
+	"github.com/sasrgita/crm-juridico/internal/files"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
 	funnelinfra "github.com/sasrgita/crm-juridico/internal/funnel/infrastructure"
 	landinghttp "github.com/sasrgita/crm-juridico/internal/landing/interfaces/http"
@@ -120,6 +121,15 @@ func main() {
 	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, sharedEventBus, nil, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
 
+	// Files module — captures WhatsApp media into a per-tenant store and
+	// exposes listing/preview/download. Wire the storer into whatsapp so
+	// inbound media is persisted automatically.
+	filesMod, err := files.NewModule(db, log, funnelMod.LeadLookupAdapter(), cfg.Files.StorageRoot, cfg.Files.MaxBytes)
+	if err != nil {
+		log.Fatal("failed to initialize files module", zap.Error(err))
+	}
+	whatsappMod.SetFileStorer(filesMod.FileStorer())
+
 	// Cross-module: product handler needs funnel lister for link form
 	funnelListerAdapter := productinfra.NewFunnelListerAdapter(funnelMod.ListFunnelsUC())
 	productMod.Handler().SetFunnelLister(funnelListerAdapter)
@@ -216,7 +226,7 @@ func main() {
 	)
 	funnelMod.SetResponsiblePicker(picker)
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, aiMod, permissionMod, notificationMod, automationMod}
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod}
 
 	// Token provider is used for the auth middleware and admin login route
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)

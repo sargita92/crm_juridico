@@ -32,7 +32,7 @@ type messageModel struct {
 	ConversationID string `gorm:"column:conversation_id;type:char(36);not null"`
 	Direction      string `gorm:"column:direction;type:enum('incoming','outgoing');not null"`
 	Content        string `gorm:"column:content;type:text;not null"`
-	Type           string `gorm:"column:type;type:enum('text');not null;default:'text'"`
+	Type           string `gorm:"column:type;type:varchar(20);not null;default:'text'"`
 	Status         string `gorm:"column:status;type:enum('pending','sent','failed');not null;default:'sent'"`
 	WhatsAppMsgID  *string `gorm:"column:whatsapp_msg_id;type:varchar(100)"`
 	Timestamp      time.Time

@@ -22,7 +22,17 @@ type IncomingMessage struct {
 	SenderJID     string
 	SenderName    string
 	SenderPhone   string
-	Content       string
+	Content       string // caption for media, body for text
 	WhatsAppMsgID string
 	Timestamp     time.Time
+	Media         *MediaPayload // non-nil for image/document/audio/video/sticker
+}
+
+// MediaPayload carries the bytes and metadata of a downloaded media message.
+// It is populated by the provider before invoking the IncomingMessageHandler.
+type MediaPayload struct {
+	Type     MessageType // image/document/audio/video/sticker/other
+	Name     string      // original or derived filename
+	MimeType string
+	Content  []byte
 }

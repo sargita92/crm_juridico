@@ -15,7 +15,13 @@ type Config struct {
 	Log      LogConfig
 	JWT      JWTConfig
 	AI       AIConfigEnv
+	Files    FilesConfig
 	Env      string // "development", "test", "production"
+}
+
+type FilesConfig struct {
+	StorageRoot string // where LocalDiskStorage persists captured media
+	MaxBytes    int64  // per-file ceiling; 0 = 50 MB default
 }
 
 type AIConfigEnv struct {
@@ -92,6 +98,10 @@ func Load() (*Config, error) {
 	viper.SetDefault("ai.tool_call_max_per_iteration", 10)
 	viper.SetDefault("ai.tool_execution_timeout", 10)
 	viper.SetDefault("ai.tool_result_max_length", 4000)
+	viper.SetDefault("files.storageroot", "storage/files")
+	viper.SetDefault("files.maxbytes", int64(50*1024*1024))
+	_ = viper.BindEnv("files.storageroot", "FILES_STORAGE_ROOT")
+	_ = viper.BindEnv("files.maxbytes", "FILES_MAX_BYTES")
 
 	_ = viper.BindEnv("env", "ENV")
 	_ = viper.BindEnv("openai.apikey", "OPENAI_API_KEY")
@@ -138,6 +148,10 @@ func Load() (*Config, error) {
 			ToolCallMaxPerIteration: viper.GetInt("ai.tool_call_max_per_iteration"),
 			ToolExecutionTimeout:    viper.GetInt("ai.tool_execution_timeout"),
 			ToolResultMaxLength:     viper.GetInt("ai.tool_result_max_length"),
+		},
+		Files: FilesConfig{
+			StorageRoot: viper.GetString("files.storageroot"),
+			MaxBytes:    viper.GetInt64("files.maxbytes"),
 		},
 		Env: viper.GetString("env"),
 	}

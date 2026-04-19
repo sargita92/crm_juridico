@@ -129,6 +129,13 @@ func (m *Module) FunnelRepo() domain.FunnelRepository {
 	return m.funnelRepo
 }
 
+// LeadLookupAdapter returns an adapter implementing the files module's
+// LeadLookup port. Used to associate captured WhatsApp media with the lead
+// owning the originating conversation.
+func (m *Module) LeadLookupAdapter() *infrastructure.FileLeadLookupAdapter {
+	return infrastructure.NewFileLeadLookupAdapter(m.leadRepo)
+}
+
 // SetAutomationTrigger wires an AutomationTrigger into both CreateLead and MoveLead
 // use cases so that automation rules are fired on lead events.
 func (m *Module) SetAutomationTrigger(t domain.AutomationTrigger) {

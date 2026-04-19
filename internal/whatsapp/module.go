@@ -68,6 +68,10 @@ func (m *Module) SetLeadCreator(lc domain.LeadCreator) {
 	m.receiveMessageUC.SetLeadCreator(lc)
 }
 
+func (m *Module) SetFileStorer(fs domain.FileStorer) {
+	m.receiveMessageUC.SetFileStorer(fs)
+}
+
 func (m *Module) ContactRepo() domain.ContactRepository {
 	return m.contactRepo
 }
