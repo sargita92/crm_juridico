@@ -277,6 +277,8 @@ func TestFunilBlock_NewTodayAndWeek(t *testing.T) {
 
 	// Use a fixed `now` that is a Wednesday so that now-2d is in the same week (Sunday-start week).
 	// Wednesday 2025-04-16 12:00:00 UTC. Local() to play nice with the MySQL TIMESTAMP local conversion.
+	// 12:00 escolhido para dar >=12h de cushion contra TZ skew Go-vs-MySQL.
+	// Quarta-feira 16/abr/2025 mantém now-2d (segunda) na mesma semana Sun-start.
 	now := time.Date(2025, 4, 16, 12, 0, 0, 0, time.Local)
 
 	// 1 lead created today

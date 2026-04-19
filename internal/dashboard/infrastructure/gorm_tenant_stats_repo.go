@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/sasrgita/crm-juridico/internal/dashboard/application"
 	"github.com/sasrgita/crm-juridico/internal/dashboard/domain"
 )
 
@@ -16,6 +17,9 @@ type GormTenantStatsRepo struct{ db *gorm.DB }
 func NewGormTenantStatsRepo(db *gorm.DB) *GormTenantStatsRepo {
 	return &GormTenantStatsRepo{db: db}
 }
+
+// Compile-time check: GormTenantStatsRepo implements the application provider.
+var _ application.TenantStatsProvider = (*GormTenantStatsRepo)(nil)
 
 // FunilBlock — Bloco 1: status totals + colunas + conversão + novos hoje/semana.
 // Filtro opcional por responsible_user_id quando userID != nil.
@@ -135,6 +139,7 @@ func (r *GormTenantStatsRepo) ProdutosBlock(
 				COUNT(l.id) AS total,
 				SUM(CASE WHEN l.status='won' THEN 1 ELSE 0 END) AS won,
 				SUM(CASE WHEN l.status='lost' THEN 1 ELSE 0 END) AS lost`).
+		// Leads sem product_id são excluídos do bloco por construção (INNER JOIN).
 		Joins("JOIN products p ON p.id = l.product_id").
 		Where("l.tenant_id = ?", tenantID)
 	if userID != nil {
