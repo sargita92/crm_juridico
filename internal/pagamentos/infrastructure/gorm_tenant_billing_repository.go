@@ -53,7 +53,15 @@ func (r *GormTenantBillingRepository) GetByID(ctx context.Context, tenantID stri
 		row.ExibirPagamentos,
 	)
 	if err != nil {
-		return nil, err
+		// Tenant existe mas billing está incompleto/inválido (ex: plano='mensal'
+		// sem valor/dia/data, comum em tenants ainda não configurados pelo admin).
+		// Em vez de propagar erro 500, devolvemos uma config "não cobrável" para que
+		// ShowsPortalMenu()/GenerateRecurring() retornem false e o middleware
+		// possa decidir naturalmente (404 no portal, sem cobrança no resumo).
+		cfg = &domain.BillingConfig{
+			Plano:            domain.PlanExterno,
+			ExibirPagamentos: row.ExibirPagamentos,
+		}
 	}
 	return &domain.TenantBilling{
 		TenantID: row.ID,

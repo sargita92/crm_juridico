@@ -47,7 +47,10 @@ func (c *PortalAccessChecker) Middleware() gin.HandlerFunc {
 			return
 		}
 		if !tb.Config.ShowsPortalMenu() {
-			gc.AbortWithStatus(http.StatusNotFound)
+			// Tenant existe mas pagamentos não está disponível (sem plano cobrável
+			// ou exibir_pagamentos=false). Render empty state em vez de 404 cru.
+			gc.Abort()
+			gc.HTML(http.StatusNotFound, "pagamentos/portal_unavailable.html", nil)
 			return
 		}
 
