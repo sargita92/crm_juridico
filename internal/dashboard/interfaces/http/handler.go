@@ -8,6 +8,7 @@ import (
 
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/dashboard/application"
+	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 )
 
@@ -52,13 +53,54 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	adminGroup.GET("/content", h.adminFragment)
 }
 
-// Stubs — Task 12/13 substitui.
 func (h *Handler) tenantPage(c *gin.Context) {
-	c.String(http.StatusOK, "tenant dashboard placeholder (Task 12)")
+	h.renderTenant(c, "tenant/dashboard/page.html")
 }
+
 func (h *Handler) tenantFragment(c *gin.Context) {
-	c.String(http.StatusOK, "tenant fragment placeholder (Task 12)")
+	h.renderTenant(c, "tenant/dashboard/content.html")
 }
+
+func (h *Handler) renderTenant(c *gin.Context, tmpl string) {
+	ctx := c.Request.Context()
+	claims := middleware.GetClaims(ctx)
+	if claims == nil {
+		c.String(http.StatusUnauthorized, "no claims")
+		return
+	}
+	tenantID := middleware.GetTenantID(ctx)
+	if tenantID == "" {
+		c.String(http.StatusBadRequest, "no tenant context")
+		return
+	}
+	isOwner, err := h.userTenants.IsOwner(ctx, claims.UserID, tenantID)
+	if err != nil {
+		h.log.Error("tenant dashboard: check owner", zap.Error(err))
+		c.String(http.StatusInternalServerError, "erro interno")
+		return
+	}
+	// Admins de plataforma também são tratados como owner para o dashboard do tenant.
+	if claims.Role == authdomain.UserRoleAdmin {
+		isOwner = true
+	}
+	stats, err := h.tenantUC.Execute(ctx, application.TenantInput{
+		TenantID: tenantID,
+		UserID:   claims.UserID,
+		IsOwner:  isOwner,
+	})
+	if err != nil {
+		h.log.Error("tenant dashboard: execute", zap.Error(err))
+		c.String(http.StatusInternalServerError, "erro ao carregar dashboard")
+		return
+	}
+	vm := ToTenantView(stats)
+	c.HTML(http.StatusOK, tmpl, gin.H{
+		"Stats":    vm,
+		"TenantID": tenantID,
+	})
+}
+
+// Stubs — Task 13 substitui.
 func (h *Handler) adminPage(c *gin.Context) {
 	c.String(http.StatusOK, "admin dashboard placeholder (Task 13)")
 }
