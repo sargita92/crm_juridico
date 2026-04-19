@@ -1,7 +1,7 @@
 # Status F19 — Dashboards (Tenant + Admin)
 
 **Branch**: `feature/F19-dashboards`
-**Status**: 🟡 em andamento (Task 3/20 concluída)
+**Status**: 🟡 em andamento (Task 4/20 concluída)
 **Spec**: [../../superpowers/specs/2026-04-07-dashboards-design.md](../../superpowers/specs/2026-04-07-dashboards-design.md) (v2 — revisada em 2026-04-19)
 **Plano**: [../../superpowers/plans/2026-04-19-F19-dashboards.md](../../superpowers/plans/2026-04-19-F19-dashboards.md)
 **Artefato aprovado**: [design-v1.md](design-v1.md)
@@ -23,7 +23,7 @@
 | 1 | Domain outputs (TenantStats, AdminStats) | ✅ | 746ebb5 |
 | 2 | GetTenantDashboard UC + fakes + testes | ✅ | b03a730 + bb57a7e |
 | 3 | GetAdminDashboard UC + testes | ✅ | e311e15 |
-| 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ⬜ | — |
+| 4 | `PaymentRepository.GlobalSummary` (integra F19 ↔ F11) | ✅ | f4579bb |
 | 5 | Tenant stats repo (blocos 1, 5 — funil/leads/produtos) | ⬜ | — |
 | 6 | Tenant stats repo (bloco 2 — WhatsApp) | ⬜ | — |
 | 7 | Tenant stats repo (blocos 3, 4 — responsáveis/tempo) | ⬜ | — |
@@ -102,3 +102,8 @@ _(Preencher conforme forem aparecendo divergências entre o plano e a realidade 
 - **Task 3 — observação para Task 8/9 (admin SQL providers)**: cada bloco admin é potencial agregação cross-tenant. Cuidado com N+1 — fold "active/inactive/blocked" em um único `GROUP BY status`.
 - **Task 3 — observação para Task 10**: receiver value de `fakeInfraProvider` é só do teste; `PrometheusStatsProvider` real provavelmente precisa pointer (cliente Prometheus + lazy init).
 - **Task 3 — observação para Task 12/13 (handlers)**: admin dashboard tende a ser endpoint mais lento; setar timeout generoso (5-10s). Se p95 doer, refatorar `Execute` para `errgroup.WithContext` (6 chamadas em paralelo).
+- **Task 4 — desvios reais do plano**: helpers `newRepoEnv`/`insertTenant`/`mustCreate`/`ptrTime` não existiam — usado `setupPaymentRepo` + novo `seedTenantWithName`. `Status`/`Tipo` são tipados (`PaymentStatus`/`PaymentType`), exige constantes (`domain.StatusPago` etc.) ao invés de literais string. IDs são UUIDs (não `"t1"`/`"t2"`).
+- **Task 4 — efeito colateral**: extender interface `PaymentRepository` forçou stub (3 linhas) em 2 mocks existentes (`application/mocks_test.go`, `infrastructure/billing_scheduler_test.go`). Inevitável em Go.
+- **Task 4 — testes de borda recomendados antes de Task 9** (consumer real): (1) DB vazio → `&GlobalSummary{}` sem panic; (2) `data_pagamento = 31/dez/ano-1` NÃO conta no `TotalPagoAnoCents` (timezone-prone); (3) tenant com mix de status → `TopOverdue` só soma `atrasado`. Adicionar quando Task 9 entrar.
+- **Task 4 — observação para Task 9**: `GlobalSummary` não cobre distribuição por plano (`Mensal/Anual/Vitalicio/Externo`). Task 9 precisa de query separada em `tenant_billings.plan` (ou estender `GlobalSummary` se ficar pesado).
+- **Task 4 — sem transação entre 2 queries**: dashboard tolera eventual consistency. Considerar comment one-liner em `GlobalSummary` se incomodar.
