@@ -115,15 +115,13 @@ func (r *GormAdminStatsRepo) UsageBlock(ctx context.Context) (*domain.UsageBlock
 
 // HealthBlock — Bloco 3: top 10 tenants por COUNT(leads) + lista de inativos h\u00e1 +30d.
 //
-// last_activity = COALESCE(GREATEST(MAX(lead.created_at), MAX(message.timestamp)), tenant.created_at)
-//
-// Sentinela '1970-01-01' dentro do COALESCE \u00e9 necess\u00e1ria porque GREATEST(NULL, X)
-// retorna NULL no MySQL — o sentinel garante que GREATEST sempre devolva a atividade real
-// quando existe, e o COALESCE externo cai em t.created_at apenas quando n\u00e3o h\u00e1 atividade
-// alguma (lead nem mensagem).
-//
-// LIMIT 50 \u00e9 defensivo — uma plataforma com milhares de tenants n\u00e3o deve renderizar
-// todos os inativos na dashboard.
+// last_activity = GREATEST de tr\u00eas ramos, cada um com COALESCE(MAX(...), t.created_at):
+// MAX(lead.created_at), MAX(message.timestamp) e t.created_at — quando o ramo n\u00e3o tem
+// linhas para o tenant, cai em t.created_at, e o GREATEST elege o instante mais recente
+// entre os tr\u00eas. CAST(... AS DATETIME) externo \u00e9 workaround do driver MySQL para a coluna
+// ser scaneada como time.Time em vez de []uint8. DaysInactive \u00e9 calculado em Go via
+// now.Sub(last_activity).Hours()/24 (truncamento inteiro; testes usam InDelta(2) para
+// absorver efeitos de hora-fronteira). LIMIT 50 \u00e9 defensivo.
 func (r *GormAdminStatsRepo) HealthBlock(ctx context.Context, now time.Time) (*domain.HealthBlock, error) {
 	out := &domain.HealthBlock{}
 
@@ -134,6 +132,9 @@ func (r *GormAdminStatsRepo) HealthBlock(ctx context.Context, now time.Time) (*d
 		Total      int64
 	}
 	var tops []topRow
+	// "Active" aqui refere-se a volume de leads (uso histórico), não ao status operacional do tenant.
+	// Tenants com status='blocked'/'inactive' aparecem se tiveram leads — admin precisa ver uso real.
+	// Se o template precisar destacar visualmente, fazer no template (não filtrar aqui).
 	if err := r.db.WithContext(ctx).
 		Table("leads AS l").
 		Select("l.tenant_id AS tenant_id, t.name AS tenant_name, COUNT(*) AS total").

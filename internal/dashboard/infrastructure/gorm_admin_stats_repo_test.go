@@ -165,6 +165,26 @@ func TestHealthBlock_Top10Active(t *testing.T) {
 	assert.Equal(t, int64(1), got.Top10Active[2].LeadCount)
 }
 
+func TestHealthBlock_Top10Active_IncludesBlockedTenants(t *testing.T) {
+	repo, db := setupAdminRepo(t)
+	ctx := context.Background()
+
+	tActive := seedTenantWithStatus(t, db, "T-active", "active", time.Now().AddDate(0, 0, -90))
+	tBlocked := seedTenantWithStatus(t, db, "T-blocked", "blocked", time.Now().AddDate(0, 0, -90))
+
+	seedLeadsForTenant(t, db, tActive, 2)
+	seedLeadsForTenant(t, db, tBlocked, 5) // mais leads que o ativo
+
+	got, err := repo.HealthBlock(ctx, time.Now())
+	require.NoError(t, err)
+	require.Len(t, got.Top10Active, 2)
+	// Blocked tenant deve aparecer em primeiro (5 leads > 2 leads), por design:
+	// "active" = volume de leads, não status operacional.
+	assert.Equal(t, tBlocked, got.Top10Active[0].TenantID)
+	assert.Equal(t, int64(5), got.Top10Active[0].LeadCount)
+	assert.Equal(t, tActive, got.Top10Active[1].TenantID)
+}
+
 func TestHealthBlock_InactiveOver30Days(t *testing.T) {
 	repo, db := setupAdminRepo(t)
 	ctx := context.Background()
