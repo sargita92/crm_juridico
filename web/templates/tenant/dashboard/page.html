@@ -4,11 +4,13 @@
 <head>
     {{template "partials/tenant_head.html" (dict "Title" "Dashboard")}}
     <link rel="stylesheet" href="/static/css/dashboard.css">
+    <!-- Chart.js (sem SRI por enquanto — TODO F19). Carregar no head para estar disponivel antes dos scripts inline dos blocos. -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
-<div class="tenant-layout">
+<div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "dashboard")}}
-    <main class="tenant-content">
+    <main class="admin-content">
         <div class="dashboard-page">
             <header class="dashboard-header">
                 <div>
@@ -27,8 +29,6 @@
         </div>
     </main>
 </div>
-<!-- Chart.js (sem SRI por enquanto — TODO F19) -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 </body>
 </html>
 {{end}}
