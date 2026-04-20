@@ -4,6 +4,30 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-19] F19 — Dashboards (Tenant + Admin)
+
+CRM ganha dois dashboards: tenant (5 blocos: funil, WhatsApp, responsáveis, tempo no funil, produtos) com filtro automático por usuário responsável quando o user é comum; admin (6 blocos: tenants, uso, health, infraestrutura, especialistas, financeiro com dados reais de F11). Chart.js via CDN, HTMX para refresh manual via fragmento, métricas Prometheus de duração e load_total, tracing OTel.
+
+**Highlights**
+- Novo módulo `internal/dashboard` (DDD + Clean Architecture, 5 packages, 72 testes incluindo 9 OWASP).
+- Cobertura: application 98.3%, infrastructure 84.6%, interfaces/http 84.6% (todos ≥ 80%).
+- `PaymentRepository.GlobalSummary` adicionado em F11 (consumo cruzado F11 → F19).
+- Templates self-contained com Chart.js (sem SRI por enquanto — TODO P2).
+- Métricas Prometheus: `dashboard_render_duration_seconds{scope}`, `dashboard_load_total{scope, outcome}`.
+- Spans OTel: `dashboard.http.{tenant,admin}` (parent dos spans dos UCs).
+
+**Decisões de produto**
+- Bloco 6 admin (Financeiro) consome dados reais de F11 — opção B aprovada em 2026-04-19.
+- Usuário comum vê **todos** os 5 blocos do tenant filtrados por `responsible_user_id` (não apenas o Bloco 3).
+- `Top10Active` admin inclui tenants `blocked`/`inactive` com leads históricos (decisão: métrica é volume, não status operacional).
+- `Qualifications` no Bloco 5 admin fica em 0 com TODO(F05) até o módulo de qualificações expor o contador.
+
+**Entregáveis**
+- Sidebar do tenant ganha item "Dashboard" como primeiro link.
+- `rest/16-dashboard.http` cobre páginas + fragmentos HTMX + casos OWASP (401 sem auth, 403 user comum em /admin, SQLi/XSS em querystring).
+
+---
+
 ## [2026-04-19] F11 — Pagamentos (Admin)
 
 Controle financeiro multi-tenant com cron diário de recorrentes, UI admin e portal tenant read-only. Step 3 da spec original (gateway externo Stripe/Mercado Pago) deferido para F11.1.

@@ -77,7 +77,7 @@ Suporte interno, não faz parte do produto final.
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
-| F19 | [Dashboards (Admin + Tenant)](../features/F19-dashboards.md) | backlog | F06, F07, F08, F10 | média |
+| F19 | [Dashboards (Admin + Tenant)](../features/F19-dashboards.md) | concluído | F06, F07, F08, F10 | média |
 
 ---
 

@@ -1,0 +1,31 @@
+{{define "admin/dashboard/_bloco1_tenants.html"}}
+<section class="dashboard-card">
+    <header><h2>Tenants</h2></header>
+    <div class="dashboard-counter-row">
+        <div class="dashboard-counter success"><span class="label">Ativos</span><span class="value">{{.Stats.Bloco1_Tenants.Active}}</span></div>
+        <div class="dashboard-counter"><span class="label">Inativos</span><span class="value">{{.Stats.Bloco1_Tenants.Inactive}}</span></div>
+        <div class="dashboard-counter danger"><span class="label">Bloqueados</span><span class="value">{{.Stats.Bloco1_Tenants.Blocked}}</span></div>
+        <div class="dashboard-counter"><span class="label">Total</span><span class="value">{{.Stats.Bloco1_Tenants.Total}}</span></div>
+        <div class="dashboard-counter"><span class="label">Novos no mês</span><span class="value">{{.Stats.Bloco1_Tenants.NewThisMonth}}</span></div>
+    </div>
+    {{if .Stats.Bloco1_Tenants.Last6Months}}
+    <canvas id="chart-bloco1-monthly" class="dashboard-chart"></canvas>
+    <script type="application/json" id="data-bloco1-monthly">{{.Stats.Bloco1_Tenants.MonthlyJSON}}</script>
+    <script>
+    (function(){
+        const months = JSON.parse(document.getElementById('data-bloco1-monthly').textContent);
+        new Chart(document.getElementById('chart-bloco1-monthly'), {
+            type: 'bar',
+            data: {
+                labels: months.map(m => m.Label),
+                datasets: [{ label: 'Novos tenants', data: months.map(m => m.Count), backgroundColor: '#4299e1' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    })();
+    </script>
+    {{else}}
+    <div class="dashboard-empty">Sem histórico mensal disponível.</div>
+    {{end}}
+</section>
+{{end}}

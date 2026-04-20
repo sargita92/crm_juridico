@@ -1,0 +1,23 @@
+{{define "tenant/dashboard/_bloco2_whatsapp.html"}}
+<section class="dashboard-card">
+    <header><h2>WhatsApp</h2></header>
+    <div class="dashboard-counter-row">
+        <div class="dashboard-counter"><span class="label">Recebidas</span><span class="value">{{.Stats.Bloco2_WhatsApp.IncomingMessages}}</span></div>
+        <div class="dashboard-counter"><span class="label">Enviadas</span><span class="value">{{.Stats.Bloco2_WhatsApp.OutgoingMessages}}</span></div>
+        <div class="dashboard-counter"><span class="label">Conversas ativas</span><span class="value">{{.Stats.Bloco2_WhatsApp.ActiveConversations}}</span></div>
+        <div class="dashboard-counter"><span class="label">1ª resposta média</span><span class="value">{{.Stats.Bloco2_WhatsApp.FirstResponseAvg}}</span></div>
+    </div>
+    <canvas id="chart-bloco2-msg" class="dashboard-chart"></canvas>
+    <script type="application/json" id="data-bloco2-msg">{{.Stats.Bloco2_WhatsApp.MessagesJSON}}</script>
+    <script>
+    (function(){
+        const d = JSON.parse(document.getElementById('data-bloco2-msg').textContent);
+        new Chart(document.getElementById('chart-bloco2-msg'), {
+            type: 'doughnut',
+            data: { labels: ['Recebidas','Enviadas'], datasets: [{ data: [d.in, d.out], backgroundColor: ['#4299e1','#48bb78'] }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    })();
+    </script>
+</section>
+{{end}}

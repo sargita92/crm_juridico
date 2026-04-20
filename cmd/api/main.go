@@ -21,6 +21,8 @@ import (
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/automation"
+	"github.com/sasrgita/crm-juridico/internal/dashboard"
+	dashboardinfra "github.com/sasrgita/crm-juridico/internal/dashboard/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/document"
 	"github.com/sasrgita/crm-juridico/internal/files"
 	"github.com/sasrgita/crm-juridico/internal/funnel"
@@ -244,7 +246,26 @@ func main() {
 	}
 	defer pagamentosMod.StopScheduler()
 
-	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod}
+	dashboardMod := dashboard.NewModule(
+		db,
+		authMod.UserTenantRepo(),
+		pagamentosMod.PaymentRepo(),
+		log,
+		dashboard.Config{
+			ServiceChecks: []dashboardinfra.ServiceCheck{
+				func(ctx context.Context) (string, bool) {
+					sqlDB, err := db.DB()
+					if err != nil {
+						return "mysql", false
+					}
+					return "mysql", sqlDB.PingContext(ctx) == nil
+				},
+				// WhatsApp check pode ser adicionado quando whatsappMod expor IsConnected().
+			},
+		},
+	)
+
+	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod, dashboardMod}
 
 	// Token provider is used for the auth middleware and admin login route
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
@@ -255,12 +276,23 @@ func main() {
 	tenantMw := middleware.RequireTenant()
 	adminMw := middleware.RequireAdmin()
 	requirePermMw := middleware.RequirePermission(permissionMod.Resolver())
+	// Sidebar UX flag: cookie ux_show_pagamentos lido por JS na sidebar.
+	sidebarMw := middleware.SidebarFlags(pagamentosMod.ShowsPortalForTenant)
 
 	mw := module.Middlewares{
 		Auth:              authMw,
 		Tenant:            tenantMw,
 		Admin:             adminMw,
 		RequirePermission: requirePermMw,
+	}
+
+	// Compose Tenant middleware to also stamp sidebar flags after auth/tenant resolution.
+	mw.Tenant = func(c *gin.Context) {
+		tenantMw(c)
+		if c.IsAborted() {
+			return
+		}
+		sidebarMw(c)
 	}
 
 	router, tmpl := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
@@ -437,13 +469,6 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 			return
 		}
 		c.Redirect(http.StatusFound, "/admin/dashboard")
-	})
-
-	// Admin authenticated routes
-	adminGroup := router.Group("/admin")
-	adminGroup.Use(mw.Auth, mw.Admin)
-	adminGroup.GET("/dashboard", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "admin/dashboard.html", gin.H{})
 	})
 
 	for _, mod := range modules {

@@ -1,0 +1,10 @@
+{{define "admin/dashboard/_bloco2_uso.html"}}
+<section class="dashboard-card">
+    <header><h2>Uso da plataforma</h2></header>
+    <div class="dashboard-counter-row">
+        <div class="dashboard-counter"><span class="label">Total de leads</span><span class="value">{{.Stats.Bloco2_Uso.TotalLeads}}</span></div>
+        <div class="dashboard-counter"><span class="label">Mensagens (30d)</span><span class="value">{{.Stats.Bloco2_Uso.TotalMessages}}</span></div>
+        <div class="dashboard-counter"><span class="label">Conversas ativas</span><span class="value">{{.Stats.Bloco2_Uso.ActiveConversations}}</span></div>
+    </div>
+</section>
+{{end}}

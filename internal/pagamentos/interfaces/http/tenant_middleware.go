@@ -16,7 +16,7 @@ type PermissionChecker interface {
 	HasPermission(ctx context.Context, userID, tenantID, resource, action string) (bool, error)
 }
 
-// PortalAccessChecker autoriza /pagamentos no portal do tenant verificando:
+// PortalAccessChecker autoriza /tenant/payment no portal do tenant verificando:
 //  1. tenant tem plano cobravel e exibir_pagamentos = true (caso contrario 404)
 //  2. usuario atual tem "payments:view" (ou e owner/admin via Resolver).
 type PortalAccessChecker struct {
@@ -47,7 +47,10 @@ func (c *PortalAccessChecker) Middleware() gin.HandlerFunc {
 			return
 		}
 		if !tb.Config.ShowsPortalMenu() {
-			gc.AbortWithStatus(http.StatusNotFound)
+			// Tenant existe mas pagamentos não está disponível (sem plano cobrável
+			// ou exibir_pagamentos=false). Render empty state em vez de 404 cru.
+			gc.Abort()
+			gc.HTML(http.StatusNotFound, "pagamentos/portal_unavailable.html", nil)
 			return
 		}
 

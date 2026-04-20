@@ -2,7 +2,7 @@
 <div class="modal-content">
     <h2>Novo lançamento avulso</h2>
     {{if .Error}}<p class="alert alert-danger">{{.Error}}</p>{{end}}
-    <form hx-post="/admin/tenants/{{.TenantID}}/pagamentos"
+    <form hx-post="/admin/tenants/{{.TenantID}}/payment"
           hx-target="#modal"
           hx-swap="innerHTML">
         <div class="form-group">

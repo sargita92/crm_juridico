@@ -285,7 +285,8 @@ func TestProtectedEndpoints_WithoutToken_Return401(t *testing.T) {
 		{http.MethodGet, "/select-tenant"},
 		{http.MethodPost, "/select-tenant"},
 		{http.MethodPost, "/logout"},
-		{http.MethodGet, "/dashboard"},
+		// /dashboard removido daqui: rota pertence agora ao módulo dashboard (F19),
+		// que mantém seu próprio conjunto de testes OWASP de auth/tenant boundary.
 	}
 
 	for _, ep := range endpoints {
@@ -295,21 +296,6 @@ func TestProtectedEndpoints_WithoutToken_Return401(t *testing.T) {
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code, "expected 401 for %s %s", ep.method, ep.path)
 	}
-}
-
-// --- Dashboard requires tenant ---
-
-func TestDashboard_WithoutTenant_Returns403(t *testing.T) {
-	env := setupTestEnv(t)
-
-	token, _ := env.provider.Generate(domain.TokenClaims{UserID: "user-1", Role: domain.UserRoleUser})
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
-	req.AddCookie(&http.Cookie{Name: "token", Value: token})
-	env.router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
 // --- Logout ---
@@ -370,23 +356,6 @@ func TestRenderSelectTenant_AdminSeesAllTenants(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "Tenant X")
 	assert.Contains(t, w.Body.String(), "Tenant Y")
-}
-
-// --- Dashboard renders ---
-
-func TestDashboard_WithTenant_RendersHTML(t *testing.T) {
-	env := setupTestEnv(t)
-
-	token, _ := env.provider.Generate(domain.TokenClaims{UserID: "user-1", Role: domain.UserRoleUser, TenantID: "tenant-1"})
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
-	req.AddCookie(&http.Cookie{Name: "token", Value: token})
-	env.router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "Dashboard")
-	assert.Contains(t, w.Body.String(), "Bem-vindo")
 }
 
 // --- Render login ---

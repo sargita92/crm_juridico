@@ -1,0 +1,111 @@
+### F19 — Dashboards (Tenant + Admin)
+### Requer cookie "token" do usuario logado.
+### Para o teste OWASP de admin, gere o cookie autenticando com um usuario nao-admin
+### (sobrescreve {{token}}) ou substitua manualmente por outro cookie.
+
+@host = {{base_url}}
+
+### Dashboard Tenant — pagina completa
+GET {{host}}/dashboard
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("Dashboard tenant retorna 200", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+        client.assert(response.body.includes("dashboard-grid"), "HTML deve conter grid de blocos");
+    });
+%}
+
+### Dashboard Tenant — fragmento HTMX (refresh manual)
+GET {{host}}/dashboard/content
+Cookie: token={{token}}
+HX-Request: true
+Accept: text/html
+
+> {%
+    client.test("Fragmento tenant retorna 200", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+        client.assert(!response.body.includes("<html>"), "fragmento nao deve trazer <html>");
+    });
+%}
+
+### Dashboard Admin — pagina completa
+GET {{host}}/admin/dashboard
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("Dashboard admin retorna 200", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+    });
+%}
+
+### Dashboard Admin — fragmento HTMX
+GET {{host}}/admin/dashboard/content
+Cookie: token={{token}}
+HX-Request: true
+Accept: text/html
+
+> {%
+    client.test("Fragmento admin retorna 200", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+    });
+%}
+
+### ---- OWASP / erros esperados ----
+
+### Sem cookie -> 401 (dashboard tenant)
+GET {{host}}/dashboard
+Accept: text/html
+
+> {%
+    client.test("Sem auth no /dashboard retorna 401", function() {
+        client.assert(response.status === 401, "esperado 401, obtido " + response.status);
+    });
+%}
+
+### Sem cookie -> 401 (dashboard admin)
+GET {{host}}/admin/dashboard
+Accept: text/html
+
+> {%
+    client.test("Sem auth no /admin/dashboard retorna 401", function() {
+        client.assert(response.status === 401, "esperado 401, obtido " + response.status);
+    });
+%}
+
+### Usuario comum no /admin/dashboard -> 403
+### (autenticar com usuario nao-admin antes desta chamada para sobrescrever {{token}})
+GET {{host}}/admin/dashboard
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("User comum em /admin/dashboard retorna 403", function() {
+        client.assert(response.status === 403, "esperado 403, obtido " + response.status);
+    });
+%}
+
+### SQLi em querystring -> 200 (parametros sao ignorados, sem erro)
+GET {{host}}/dashboard?funnel=1%27%20OR%20%271%27%3D%271
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("SQLi nao quebra o handler", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+    });
+%}
+
+### XSS em querystring -> 200, sem reflexao bruta no HTML
+GET {{host}}/dashboard?x=%3Cscript%3Ealert(1)%3C/script%3E
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("XSS nao reflete sem escape", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+        client.assert(!response.body.includes("<script>alert(1)</script>"), "payload XSS reflete sem escape");
+    });
+%}

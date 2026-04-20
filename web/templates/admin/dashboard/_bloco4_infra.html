@@ -1,0 +1,21 @@
+{{define "admin/dashboard/_bloco4_infra.html"}}
+<section class="dashboard-card">
+    <header><h2>Infraestrutura</h2></header>
+    <div class="dashboard-counter-row">
+        <div class="dashboard-counter"><span class="label">Latência API</span><span class="value">{{.Stats.Bloco4_Infra.APILatencyMs}}</span></div>
+        <div class="dashboard-counter danger"><span class="label">Erros 5xx</span><span class="value">{{.Stats.Bloco4_Infra.Error5xxRate}}</span></div>
+    </div>
+    {{if .Stats.Bloco4_Infra.ServicesStatus}}
+    <div class="dashboard-services">
+        {{range .Stats.Bloco4_Infra.ServicesStatus}}
+        <div class="dashboard-service {{if .Up}}up{{else}}down{{end}}">
+            <span><span class="status-dot"></span> {{.Name}}</span>
+            <span>{{if .Up}}OK{{else}}DOWN{{end}}</span>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="dashboard-empty">Sem serviços monitorados.</div>
+    {{end}}
+</section>
+{{end}}

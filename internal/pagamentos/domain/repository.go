@@ -34,6 +34,21 @@ type Summary struct {
 	HasPendente        bool
 }
 
+// GlobalSummary agrega valores de todos os tenants para o dashboard admin.
+// Campos de ano usam data_pagamento; pendente/atrasado agregam pelo status.
+type GlobalSummary struct {
+	TotalPagoAnoCents  int64
+	TotalPendenteCents int64
+	TotalAtrasadoCents int64
+	TopOverdue         []TenantOverdue // até 10 tenants com maior valor atrasado
+}
+
+type TenantOverdue struct {
+	TenantID   string
+	TenantName string
+	ValorCents int64
+}
+
 type PaymentRepository interface {
 	Create(ctx context.Context, p *Payment) error
 	Update(ctx context.Context, p *Payment) error
@@ -44,4 +59,5 @@ type PaymentRepository interface {
 	ListAll(ctx context.Context, f ListFilters) (*ListResult, error)
 	ListOverdueCandidates(ctx context.Context, today time.Time) ([]Payment, error)
 	Summary(ctx context.Context, tenantID string, today time.Time) (*Summary, error)
+	GlobalSummary(ctx context.Context, now time.Time) (*GlobalSummary, error)
 }

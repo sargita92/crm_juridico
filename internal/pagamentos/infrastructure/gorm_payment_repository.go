@@ -173,3 +173,61 @@ func (r *GormPaymentRepository) Summary(ctx context.Context, tenantID string, to
 	}
 	return s, nil
 }
+
+func (r *GormPaymentRepository) GlobalSummary(ctx context.Context, now time.Time) (*domain.GlobalSummary, error) {
+	year := now.Year()
+	yearStart := time.Date(year, 1, 1, 0, 0, 0, 0, now.Location())
+	yearEnd := time.Date(year+1, 1, 1, 0, 0, 0, 0, now.Location())
+
+	type row struct {
+		Status string
+		Total  int64
+	}
+	var rows []row
+	err := r.db.WithContext(ctx).Model(&paymentModel{}).
+		Select("status, COALESCE(SUM(valor_cents), 0) AS total").
+		Where("(status = ? AND data_pagamento >= ? AND data_pagamento < ?) OR status IN (?, ?)",
+			string(domain.StatusPago), yearStart, yearEnd,
+			string(domain.StatusPendente), string(domain.StatusAtrasado)).
+		Group("status").Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	out := &domain.GlobalSummary{}
+	for _, rr := range rows {
+		switch domain.PaymentStatus(rr.Status) {
+		case domain.StatusPago:
+			out.TotalPagoAnoCents = rr.Total
+		case domain.StatusPendente:
+			out.TotalPendenteCents = rr.Total
+		case domain.StatusAtrasado:
+			out.TotalAtrasadoCents = rr.Total
+		}
+	}
+
+	// Top 10 tenants atrasados (join com tenants para buscar name)
+	type topRow struct {
+		TenantID   string
+		TenantName string
+		Total      int64
+	}
+	var tops []topRow
+	err = r.db.WithContext(ctx).
+		Table("payments AS p").
+		Select("p.tenant_id AS tenant_id, t.name AS tenant_name, COALESCE(SUM(p.valor_cents), 0) AS total").
+		Joins("JOIN tenants t ON t.id = p.tenant_id").
+		Where("p.status = ?", string(domain.StatusAtrasado)).
+		Group("p.tenant_id, t.name").
+		Order("total DESC").
+		Limit(10).
+		Scan(&tops).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, tr := range tops {
+		out.TopOverdue = append(out.TopOverdue, domain.TenantOverdue{
+			TenantID: tr.TenantID, TenantName: tr.TenantName, ValorCents: tr.Total,
+		})
+	}
+	return out, nil
+}

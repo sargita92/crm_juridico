@@ -1,0 +1,17 @@
+{{define "tenant/dashboard/_bloco5_produtos.html"}}
+<section class="dashboard-card">
+    <header><h2>Por produto</h2></header>
+    {{if .Stats.Bloco5_Produtos}}
+    <table class="dashboard-table">
+        <thead><tr><th>Produto</th><th>Total</th><th>Ganhos</th><th>Perdidos</th></tr></thead>
+        <tbody>
+            {{range .Stats.Bloco5_Produtos}}
+            <tr><td>{{.ProductName}}</td><td>{{.Total}}</td><td>{{.Won}}</td><td>{{.Lost}}</td></tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <div class="dashboard-empty">Sem leads vinculados a produtos.</div>
+    {{end}}
+</section>
+{{end}}

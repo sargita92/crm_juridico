@@ -15,8 +15,8 @@ import (
 )
 
 // Handler orquestra os endpoints HTTP do modulo pagamentos — admin global
-// (/admin/pagamentos), aba por tenant (/admin/tenants/:id/pagamentos) e
-// portal do tenant (/pagamentos).
+// (/admin/payment), aba por tenant (/admin/tenants/:id/payment) e
+// portal do tenant (/tenant/payment).
 type Handler struct {
 	listTenant  *application.ListTenantPayments
 	listAll     *application.ListAllPayments
@@ -174,7 +174,7 @@ func (h *Handler) AdminCreateAvulso(c *gin.Context) {
 		return
 	}
 	infrastructure.LancadosAvulsoTotal.Inc()
-	c.Header("HX-Redirect", "/admin/tenants/"+tenantID+"/pagamentos")
+	c.Header("HX-Redirect", "/admin/tenants/"+tenantID+"/payment")
 	c.Status(http.StatusOK)
 }
 

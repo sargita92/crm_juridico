@@ -66,6 +66,15 @@ func seedTenant(t *testing.T, db *gorm.DB) string {
 	return tn.ID
 }
 
+func seedTenantWithName(t *testing.T, db *gorm.DB, name string) string {
+	t.Helper()
+	repo := tenantInfra.NewGormTenantRepository(db)
+	tn, err := tenantDomain.NewTenant(uuid.New().String(), name, tenantDomain.TenantTypePJ, uuid.New().String()[:20])
+	require.NoError(t, err)
+	require.NoError(t, repo.Create(context.Background(), tn))
+	return tn.ID
+}
+
 func TestCreateAndFindByID(t *testing.T) {
 	repo, db := setupPaymentRepo(t)
 	tenantID := seedTenant(t, db)
@@ -257,6 +266,53 @@ func TestListOverdueCandidates(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, got, 1)
 	assert.Equal(t, old.ID, got[0].ID)
+}
+
+func TestGormPaymentRepository_GlobalSummary(t *testing.T) {
+	repo, db := setupPaymentRepo(t)
+	ctx := context.Background()
+	now := time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC)
+
+	t1 := seedTenantWithName(t, db, "Tenant Um")
+	t2 := seedTenantWithName(t, db, "Tenant Dois")
+
+	paidAt := now
+	// t1: pago no ano (200000), pendente 50000, atrasado 30000
+	require.NoError(t, repo.Create(ctx, &domain.Payment{
+		ID: uuid.NewString(), TenantID: t1, Tipo: domain.TypeAvulso, Descricao: "x",
+		ValorCents: 200000, Status: domain.StatusPago,
+		DataVencimento: now, DataPagamento: &paidAt,
+		CreatedAt: now, UpdatedAt: now,
+	}))
+	require.NoError(t, repo.Create(ctx, &domain.Payment{
+		ID: uuid.NewString(), TenantID: t1, Tipo: domain.TypeAvulso, Descricao: "y",
+		ValorCents: 50000, Status: domain.StatusPendente,
+		DataVencimento: now, CreatedAt: now, UpdatedAt: now,
+	}))
+	require.NoError(t, repo.Create(ctx, &domain.Payment{
+		ID: uuid.NewString(), TenantID: t1, Tipo: domain.TypeAvulso, Descricao: "z",
+		ValorCents: 30000, Status: domain.StatusAtrasado,
+		DataVencimento: now, CreatedAt: now, UpdatedAt: now,
+	}))
+	// t2: atrasado 80000 (maior, deve aparecer em primeiro no top)
+	require.NoError(t, repo.Create(ctx, &domain.Payment{
+		ID: uuid.NewString(), TenantID: t2, Tipo: domain.TypeAvulso, Descricao: "a",
+		ValorCents: 80000, Status: domain.StatusAtrasado,
+		DataVencimento: now, CreatedAt: now, UpdatedAt: now,
+	}))
+
+	got, err := repo.GlobalSummary(ctx, now)
+	require.NoError(t, err)
+	assert.Equal(t, int64(200000), got.TotalPagoAnoCents)
+	assert.Equal(t, int64(50000), got.TotalPendenteCents)
+	assert.Equal(t, int64(110000), got.TotalAtrasadoCents) // 30000 + 80000
+	require.Len(t, got.TopOverdue, 2)
+	assert.Equal(t, t2, got.TopOverdue[0].TenantID) // ordenado desc
+	assert.Equal(t, int64(80000), got.TopOverdue[0].ValorCents)
+	assert.Equal(t, "Tenant Dois", got.TopOverdue[0].TenantName)
+	assert.Equal(t, t1, got.TopOverdue[1].TenantID)
+	assert.Equal(t, int64(30000), got.TopOverdue[1].ValorCents)
+	assert.Equal(t, "Tenant Um", got.TopOverdue[1].TenantName)
 }
 
 func TestSummary(t *testing.T) {

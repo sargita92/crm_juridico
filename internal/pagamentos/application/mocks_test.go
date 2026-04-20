@@ -132,6 +132,10 @@ func (r *fakeRepo) Summary(_ context.Context, _ string, _ time.Time) (*domain.Su
 	return r.summaryResult, nil
 }
 
+func (r *fakeRepo) GlobalSummary(_ context.Context, _ time.Time) (*domain.GlobalSummary, error) {
+	return &domain.GlobalSummary{}, nil
+}
+
 type fakeBillingRepo struct {
 	byID   map[string]*domain.TenantBilling
 	listed []domain.TenantBilling
