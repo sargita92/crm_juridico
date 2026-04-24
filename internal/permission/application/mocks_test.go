@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
 )
@@ -441,4 +442,22 @@ func (m *mockUserRepo) ExistsByEmail(_ context.Context, email string) (bool, err
 		}
 	}
 	return false, nil
+}
+
+// --- spyAuditPublisher (F12 Step 7) ---
+//
+// Captura chamadas de Publish para asserts. Implementa auditapp.Publisher.
+// Se publishErr != nil, retorna o erro sem registrar a chamada — usado
+// para validar S1-C17 (falha de auditoria nao aborta operacao).
+type spyAuditPublisher struct {
+	calls      []auditapp.RegisterAuditLogInput
+	publishErr error
+}
+
+func (s *spyAuditPublisher) Publish(_ context.Context, in auditapp.RegisterAuditLogInput) error {
+	if s.publishErr != nil {
+		return s.publishErr
+	}
+	s.calls = append(s.calls, in)
+	return nil
 }

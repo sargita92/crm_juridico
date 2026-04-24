@@ -50,6 +50,15 @@ func IPFromContext(ctx context.Context) string {
 	return ""
 }
 
+// SetRequestMetaForTest injeta IP e User-Agent no context (apenas para
+// testes que nao subiram o middleware HTTP). Espelha
+// SetClaimsForTest do auth.middleware.
+func SetRequestMetaForTest(ctx context.Context, ip, userAgent string) context.Context {
+	ctx = context.WithValue(ctx, ipKey{}, ip)
+	ctx = context.WithValue(ctx, userAgentKey{}, userAgent)
+	return ctx
+}
+
 // UserAgentFromContext retorna o User-Agent injetado pelo middleware
 // RequestMeta. Quando o middleware nao foi aplicado, retorna string vazia.
 func UserAgentFromContext(ctx context.Context) string {

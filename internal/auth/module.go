@@ -116,12 +116,20 @@ func (m *Module) UserTenantRepo() authdomain.UserTenantRepository {
 }
 
 // SetAuditPublisher injects the audit publisher used by the admin login /
-// logout handlers (wired in cmd/api/main.go) to record auth events. The
-// publisher is optional — when nil, callers must skip publishing. This keeps
-// `auth` decoupled from `audit` at construction time and lets tests run
-// without a real publisher.
+// logout handlers (wired in cmd/api/main.go) to record auth events e
+// propaga para os UCs internos que tambem publicam (ManageUsers em F12
+// Step 7). The publisher is optional — when nil, callers must skip
+// publishing. This keeps `auth` decoupled from `audit` at construction
+// time and lets tests run without a real publisher.
 func (m *Module) SetAuditPublisher(p auditapp.Publisher) {
 	m.auditPublisher = p
+	// Propaga para o UC de admin users (F12 Step 7) — assim acoes
+	// user_admin.{created,updated,deactivated,blocked,unblocked} viram
+	// audit logs sem precisar passar o publisher pelo construtor (que
+	// criaria ciclo: auth -> audit -> ... -> auth via tenants).
+	if m.manageUsersUC != nil {
+		m.manageUsersUC.SetAuditPublisher(p)
+	}
 }
 
 // AuditPublisher returns the publisher injected via SetAuditPublisher (nil

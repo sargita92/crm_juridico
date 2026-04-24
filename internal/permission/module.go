@@ -5,6 +5,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	funnelapp "github.com/sasrgita/crm-juridico/internal/funnel/application"
@@ -58,6 +59,10 @@ func NewModule(
 	deleteGroupUC := application.NewDeleteGroupUseCase(groupRepo)
 	manageMembersUC := application.NewManageMembersUseCase(groupRepo, ugRepo, userRepo)
 	managePermsUC := application.NewManagePermissionsUseCase(permRepo)
+	// Injeta userRepo no UC de permissoes para que SetUserPermissions
+	// consiga distinguir alvo admin (publica audit) vs tenant user
+	// (nao publica) — F12 Step 7.
+	managePermsUC.SetUserRepo(userRepo)
 	manageVPUC := application.NewManageViewProfilesUseCase(vpRepo)
 	manageGFUC := application.NewManageGroupFunnelsUseCase(gfRepo)
 
@@ -136,4 +141,16 @@ func (m *Module) GroupFunnelRepo() permdomain.GroupFunnelRepository {
 // (e.g. auth's LoadBalancePicker, which needs to enumerate group members).
 func (m *Module) UserGroupRepo() permdomain.UserGroupRepository {
 	return m.userGroupRepo
+}
+
+// SetAuditPublisher injeta o publisher de auditoria nos UCs do modulo
+// que produzem eventos auditaveis (ManagePermissionsUseCase em F12
+// Step 7 — `permission.changed`).
+//
+// Wired pelo composition root em cmd/api/main.go apos o audit.Module
+// existir; nil-safe (UC cai pra NoopPublisher quando nao injetado).
+func (m *Module) SetAuditPublisher(p auditapp.Publisher) {
+	if m.managePermsUC != nil {
+		m.managePermsUC.SetAuditPublisher(p)
+	}
 }

@@ -32,9 +32,20 @@ import (
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/database"
+	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/testhelper"
 	tenantinfra "github.com/sasrgita/crm-juridico/internal/tenant/infrastructure"
 )
+
+// middlewareSetClaims envolve middleware.SetClaimsForTest reduzindo a
+// boilerplate dos testes desta suite.
+func middlewareSetClaims(ctx context.Context, actor *authdomain.User) context.Context {
+	return middleware.SetClaimsForTest(ctx, &authdomain.TokenClaims{
+		UserID: actor.ID,
+		Email:  actor.Email,
+		Role:   actor.Role,
+	})
+}
 
 var sharedContainer *testhelper.MySQLContainer
 
@@ -228,4 +239,45 @@ func TestAuthAudit_LoginFailure_UnknownEmail_PublishesUsuarioNaoEncontrado(t *te
 	assert.Nil(t, logs[0].UserID)
 	require.NotNil(t, logs[0].Metadata)
 	assert.Equal(t, "usuario_nao_encontrado", logs[0].Metadata["reason"])
+}
+
+// TestAuthAudit_CreateAdminUser_PublishesAuditLog cobre o Step 7 da F12:
+// criacao de usuario admin pelo ManageUsersUseCase deve gerar um log
+// `user_admin.created` no banco com tenant_id NULL.
+func TestAuthAudit_CreateAdminUser_PublishesAuditLog(t *testing.T) {
+	env := setupAuthAuditEnv(t)
+	ctx := context.Background()
+
+	// Seed um admin "ator" para popular o claim do publisher.
+	actor := env.seedAdmin(t, "33333333-3333-3333-3333-333333333333", "actor@crm.com", "any")
+	ctx = middlewareSetClaims(ctx, actor)
+	// O publisher real exige IP nao-vazio (S1-C21); fora do middleware
+	// HTTP precisamos popular manualmente.
+	ctx = middleware.SetRequestMetaForTest(ctx, "203.0.113.10", "test-agent")
+
+	manageUC := authapp.NewManageUsersUseCase(
+		authinfra.NewGormUserRepository(env.db),
+		authinfra.NewGormUserTenantRepository(env.db),
+	)
+	manageUC.SetAuditPublisher(env.publisher)
+
+	hash, err := env.hasher.Hash("strong-pass")
+	require.NoError(t, err)
+
+	out, err := manageUC.CreateAdminUser(ctx, authapp.CreateAdminUserInput{
+		Name:         "Nova Admin",
+		Email:        "nova.admin@crm.com",
+		PasswordHash: hash,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, out)
+
+	logs := env.listAuditLogs(t)
+	require.Len(t, logs, 1)
+	assert.Equal(t, auditdomain.ActionUserAdminCreated, logs[0].Action)
+	assert.Equal(t, "user_admin", logs[0].Entity)
+	require.NotNil(t, logs[0].EntityID)
+	assert.Equal(t, out.ID, *logs[0].EntityID)
+	assert.Nil(t, logs[0].TenantID, "user_admin.* tem tenant_id NULL")
+	assert.Equal(t, "actor@crm.com", logs[0].ActorEmail)
 }

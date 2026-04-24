@@ -276,6 +276,8 @@ func main() {
 	auditMod := audit.NewModule(db, log)
 	authMod.SetAuditPublisher(auditMod.Publisher)
 	tenantMod.SetAuditPublisher(auditMod.Publisher)
+	// F12 Step 7: permissao alterada de usuario admin produz audit log.
+	permissionMod.SetAuditPublisher(auditMod.Publisher)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod, dashboardMod}
 
