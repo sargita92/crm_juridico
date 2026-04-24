@@ -2,12 +2,14 @@ package application
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	auditdomain "github.com/sasrgita/crm-juridico/internal/audit/domain"
 	pagdomain "github.com/sasrgita/crm-juridico/internal/pagamentos/domain"
 	"github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
@@ -177,4 +179,93 @@ func TestUpdateTenantUseCase_DuplicateDocument_ReturnsError(t *testing.T) {
 	})
 
 	assert.ErrorIs(t, err, domain.ErrTenantDocumentExists)
+}
+
+func TestUpdateTenantUseCase_PublishesAuditWithDiff(t *testing.T) {
+	repo := newMockTenantRepo()
+	tenant, _ := domain.NewTenant("id-1", "Old", domain.TenantTypePF, "111")
+	repo.addTenant(tenant)
+
+	spy := &spyAuditPublisher{}
+	uc := NewUpdateTenantUseCase(repo)
+	uc.SetAuditPublisher(spy)
+
+	_, err := uc.Execute(ctxWithAdminClaims("admin-1", "admin@crm.com"), UpdateTenantInput{
+		ID: "id-1", Name: "New", Type: "PJ", Document: "222",
+	})
+	require.NoError(t, err)
+
+	require.Len(t, spy.calls, 1)
+	call := spy.calls[0]
+	assert.Equal(t, auditdomain.ActionTenantUpdated, call.Action)
+	assert.Equal(t, "tenant", call.Entity)
+	require.NotNil(t, call.EntityID)
+	assert.Equal(t, "id-1", *call.EntityID)
+	assert.Equal(t, "admin@crm.com", call.ActorEmail)
+
+	require.NotNil(t, call.Metadata)
+	diffRaw, ok := call.Metadata["diff"]
+	require.True(t, ok, "metadata.diff ausente")
+	diff, ok := diffRaw.(auditdomain.Metadata)
+	require.True(t, ok, "metadata.diff deve ser auditdomain.Metadata")
+
+	nameDiff, ok := diff["Name"].(map[string]any)
+	require.True(t, ok, "diff[Name] deve existir")
+	assert.Equal(t, "Old", nameDiff["antes"])
+	assert.Equal(t, "New", nameDiff["depois"])
+
+	typeDiff, ok := diff["Type"].(map[string]any)
+	require.True(t, ok, "diff[Type] deve existir")
+	assert.Equal(t, "PF", typeDiff["antes"])
+	assert.Equal(t, "PJ", typeDiff["depois"])
+}
+
+func TestUpdateTenantUseCase_NoChange_DoesNotPublish(t *testing.T) {
+	repo := newMockTenantRepo()
+	tenant, _ := domain.NewTenant("id-1", "Same", domain.TenantTypePJ, "111")
+	repo.addTenant(tenant)
+
+	spy := &spyAuditPublisher{}
+	uc := NewUpdateTenantUseCase(repo)
+	uc.SetAuditPublisher(spy)
+
+	// Sem mudanca real (mesmos valores)
+	_, err := uc.Execute(ctxWithAdminClaims("a", "a@x.com"), UpdateTenantInput{
+		ID: "id-1", Name: "Same", Type: "PJ", Document: "111",
+	})
+	require.NoError(t, err)
+	assert.Empty(t, spy.calls, "publish nao deve ocorrer quando diff e vazio")
+}
+
+func TestUpdateTenantUseCase_RepoFailure_DoesNotPublish(t *testing.T) {
+	repo := newMockTenantRepo()
+	tenant, _ := domain.NewTenant("id-1", "Old", domain.TenantTypePJ, "111")
+	repo.addTenant(tenant)
+	repo.updateErr = errors.New("db down")
+
+	spy := &spyAuditPublisher{}
+	uc := NewUpdateTenantUseCase(repo)
+	uc.SetAuditPublisher(spy)
+
+	_, err := uc.Execute(ctxWithAdminClaims("a", "a@x.com"), UpdateTenantInput{
+		ID: "id-1", Name: "New", Type: "PJ", Document: "222",
+	})
+	require.Error(t, err)
+	assert.Empty(t, spy.calls)
+}
+
+func TestUpdateTenantUseCase_PublisherError_DoesNotAbort(t *testing.T) {
+	repo := newMockTenantRepo()
+	tenant, _ := domain.NewTenant("id-1", "Old", domain.TenantTypePJ, "111")
+	repo.addTenant(tenant)
+
+	spy := &spyAuditPublisher{publishErr: errors.New("audit failure")}
+	uc := NewUpdateTenantUseCase(repo)
+	uc.SetAuditPublisher(spy)
+
+	out, err := uc.Execute(ctxWithAdminClaims("a", "a@x.com"), UpdateTenantInput{
+		ID: "id-1", Name: "New", Type: "PJ", Document: "222",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, out)
 }

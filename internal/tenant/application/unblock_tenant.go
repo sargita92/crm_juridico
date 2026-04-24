@@ -5,6 +5,9 @@ import (
 
 	"github.com/google/uuid"
 
+	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
+	auditdomain "github.com/sasrgita/crm-juridico/internal/audit/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
 
@@ -17,10 +20,21 @@ type UnblockTenantInput struct {
 type UnblockTenantUseCase struct {
 	repo        domain.TenantRepository
 	historyRepo domain.BlockHistoryRepository
+	publisher   auditapp.Publisher
 }
 
 func NewUnblockTenantUseCase(repo domain.TenantRepository, historyRepo domain.BlockHistoryRepository) *UnblockTenantUseCase {
-	return &UnblockTenantUseCase{repo: repo, historyRepo: historyRepo}
+	return &UnblockTenantUseCase{repo: repo, historyRepo: historyRepo, publisher: auditapp.NoopPublisher{}}
+}
+
+// SetAuditPublisher injeta o publisher de auditoria. Quando nil, usa
+// NoopPublisher (UC continua funcional sem audit em testes antigos).
+func (uc *UnblockTenantUseCase) SetAuditPublisher(p auditapp.Publisher) {
+	if p == nil {
+		uc.publisher = auditapp.NoopPublisher{}
+		return
+	}
+	uc.publisher = p
 }
 
 func (uc *UnblockTenantUseCase) Execute(ctx context.Context, input UnblockTenantInput) error {
@@ -42,5 +56,30 @@ func (uc *UnblockTenantUseCase) Execute(ctx context.Context, input UnblockTenant
 		return err
 	}
 
-	return uc.historyRepo.Save(ctx, entry)
+	if err := uc.historyRepo.Save(ctx, entry); err != nil {
+		return err
+	}
+
+	uc.publishUnblocked(ctx, input)
+	return nil
+}
+
+func (uc *UnblockTenantUseCase) publishUnblocked(ctx context.Context, input UnblockTenantInput) {
+	actorEmail, actorID := actorFromContext(ctx)
+	id := input.ID
+	if actorID == nil && input.PerformedBy != "" {
+		pb := input.PerformedBy
+		actorID = &pb
+	}
+	_ = uc.publisher.Publish(ctx, auditapp.RegisterAuditLogInput{
+		TenantID:   &id,
+		UserID:     actorID,
+		ActorEmail: actorEmail,
+		Action:     auditdomain.ActionTenantUnblocked,
+		Entity:     "tenant",
+		EntityID:   &id,
+		IP:         middleware.IPFromContext(ctx),
+		UserAgent:  middleware.UserAgentFromContext(ctx),
+		Metadata:   auditdomain.Metadata{"reason": input.Reason},
+	})
 }

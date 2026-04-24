@@ -275,6 +275,7 @@ func main() {
 	// (Step 8 wires /admin/logs); for now we just expose the Publisher.
 	auditMod := audit.NewModule(db, log)
 	authMod.SetAuditPublisher(auditMod.Publisher)
+	tenantMod.SetAuditPublisher(auditMod.Publisher)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod, dashboardMod}
 
