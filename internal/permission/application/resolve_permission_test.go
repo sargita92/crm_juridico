@@ -6,6 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
 
 const (
@@ -145,4 +148,29 @@ func TestResolvePermission_IndividualOverridesEmptyGroup(t *testing.T) {
 	okDenied, err := uc.HasPermission(context.Background(), userA, tenantA, "settings", "manage")
 	require.NoError(t, err)
 	assert.False(t, okDenied, "user should be denied for resources with no permission")
+}
+
+// TestResolvePermission_CreatesSpan verifies that HasPermission emits the
+// expected OpenTelemetry span.
+func TestResolvePermission_CreatesSpan(t *testing.T) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(tp)
+
+	permRepo := newMockPermissionRepo()
+	ugRepo := newMockUserGroupRepo()
+	ownerChecker := newMockOwnerChecker()
+	ownerChecker.setOwner(userA, tenantA)
+	adminChecker := newMockAdminChecker()
+
+	uc := buildUseCase(permRepo, ugRepo, ownerChecker, adminChecker)
+
+	_, err := uc.HasPermission(context.Background(), userA, tenantA, "leads", "manage")
+	require.NoError(t, err)
+
+	names := []string{}
+	for _, s := range sr.Ended() {
+		names = append(names, s.Name())
+	}
+	assert.Contains(t, names, "permission.usecase.check", "check span should be present")
 }

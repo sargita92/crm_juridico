@@ -4,9 +4,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // GroupFunnelInput is the data required to associate a group with a funnel.
@@ -35,6 +37,12 @@ func NewManageGroupFunnelsUseCase(funnels domain.GroupFunnelRepository) *ManageG
 
 // SetGroupFunnel creates or updates the funnel association for the given group.
 func (uc *ManageGroupFunnelsUseCase) SetGroupFunnel(ctx context.Context, input GroupFunnelInput) error {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.set_group_funnel",
+		attribute.String("group.id", input.GroupID),
+		attribute.String("funnel.id", input.FunnelID),
+	)
+	defer span.End()
+
 	gf, err := domain.NewGroupFunnel(uuid.New().String(), input.GroupID, input.FunnelID, input.ColumnIDs)
 	if err != nil {
 		return err
@@ -48,6 +56,11 @@ func (uc *ManageGroupFunnelsUseCase) SetGroupFunnel(ctx context.Context, input G
 
 // ListByGroup returns all funnel associations for the given group.
 func (uc *ManageGroupFunnelsUseCase) ListByGroup(ctx context.Context, groupID string) ([]GroupFunnelOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.list_group_funnels",
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	list, err := uc.funnels.FindByGroupID(ctx, groupID)
 	if err != nil {
 		return nil, err
@@ -66,5 +79,11 @@ func (uc *ManageGroupFunnelsUseCase) ListByGroup(ctx context.Context, groupID st
 
 // RemoveGroupFunnel deletes a group-funnel association by groupID and funnelID.
 func (uc *ManageGroupFunnelsUseCase) RemoveGroupFunnel(ctx context.Context, groupID, funnelID string) error {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.remove_group_funnel",
+		attribute.String("group.id", groupID),
+		attribute.String("funnel.id", funnelID),
+	)
+	defer span.End()
+
 	return uc.funnels.Delete(ctx, groupID, funnelID)
 }

@@ -3,7 +3,10 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // UpdateGroupInput holds the data required to update an existing group.
@@ -24,6 +27,12 @@ func NewUpdateGroupUseCase(groups domain.PermissionGroupRepository) *UpdateGroup
 }
 
 func (uc *UpdateGroupUseCase) Execute(ctx context.Context, input UpdateGroupInput) (*GroupOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.update_group",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("group.id", input.ID),
+	)
+	defer span.End()
+
 	group, err := uc.groups.FindByIDAndTenantID(ctx, input.ID, input.TenantID)
 	if err != nil {
 		return nil, err

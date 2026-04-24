@@ -176,3 +176,80 @@ Dashboards sugeridos:
 - Latência p50/p95/p99 por escopo: `histogram_quantile(0.95, sum(rate(dashboard_render_duration_seconds_bucket[5m])) by (le, scope))`.
 - Taxa de erro por escopo: `sum(rate(dashboard_load_total{outcome="error"}[5m])) by (scope) / sum(rate(dashboard_load_total[5m])) by (scope)`.
 - Volume de carregamentos: `sum(rate(dashboard_load_total[5m])) by (scope)`.
+
+## F18 — Observabilidade Avançada (estado final)
+
+### Helpers `internal/shared/observability/`
+
+- `StartSpan(ctx, name, attrs...) (ctx, span)`: cria spans na camada de aplicação. Nomenclatura: `<module>.<usecase|engine|executor>.<action>` (ex.: `automation.engine.on_lead_event`, `permission.usecase.check`, `ai.usecase.respond`). Sempre com `defer span.End()`.
+- `LoggerFromContext(ctx, base *zap.Logger) *zap.Logger`: retorna o logger base com `trace_id`/`span_id` injetados quando há span ativo no contexto. Usar no lugar de `uc.logger` dentro do caso de uso.
+- `InitTracer(serviceName)`: registra o TracerProvider global. Seleciona exporter via `OTEL_EXPORTER_OTLP_ENDPOINT` — OTLP gRPC quando setado (insecure, aponta para Tempo), stdout pretty quando vazio (dev local sem Tempo).
+
+### Registradores centrais (`metrics.go`)
+
+- `PermissionCheckDuration` (histograma, label `scope`): observado pelo middleware `RequirePermission`.
+- `SpecialistResponseDuration` (histograma, label `outcome`): observado no motor IA (`ai.usecase.respond`).
+
+Prefixo Prometheus: métricas novas transversais usam `Namespace: "crm"`. Módulos antigos (`pagamentos`, `whatsapp`, HTTP middleware) mantêm o prefixo/convenção histórica para não quebrar dashboards existentes.
+
+### Spans adicionados (Tasks 6–11)
+
+| Módulo | Spans |
+|--------|-------|
+| automation | `automation.engine.on_lead_event`, `automation.engine.trigger_by_id`, `automation.executor.<type>` (6 tipos) |
+| permission | `permission.usecase.<action>` (resolver, CRUD de grupos/perfis/funnels) |
+| auth | `auth.usecase.<action>` (login, invites, tenants, load balance) |
+| notification | `notification.usecase.<action>` (create/list/count_unread/mark_read/mark_all_read/preferences) |
+| funnel | `funnel.usecase.<action>` (move_lead, CRUD de funis/colunas/leads, kanban) |
+| whatsapp | `whatsapp.usecase.<action>` (connect, disconnect, status, list/send/receive) |
+| ai | `ai.usecase.respond` (com atributos `ai.provider`/`ai.model`) |
+
+Spans existentes em `pagamentos/` e `dashboard/` (PascalCase) **não foram renomeados** — preservam rastros históricos.
+
+### Métricas novas de negócio (Tasks 12–18)
+
+- `crm_automation_execution_duration_seconds{type,outcome}` — histograma dos 6 executors (buckets 0.01–10s).
+- `crm_automation_rate_limited_total{type}` — counter (registrado; sem call site ainda, aguardando rate limiter).
+- `crm_load_balance_fallback_total{reason}` — counter em `load_balance_picker.fallbackToOwner`.
+- `crm_permission_changes_total{scope="load_balance"}` — novo valor de label em `SetByGroup`.
+- `invites_total{outcome="expired"}` — incrementado em `AcceptInvite` quando `Validate()` retorna `ErrInviteTokenExpired`.
+- `crm_notifications_read_total{type}` — label `type` = `single` (MarkRead) ou `all` (MarkAllRead), 1 incremento por chamada.
+
+### Infra (docker-compose.dev.yml.dist)
+
+- `tempo` (grafana/tempo:2.5.0): porta 3200 HTTP, 4317 OTLP gRPC, 4318 OTLP HTTP. Retenção 7 dias.
+- `alertmanager` (prom/alertmanager:v0.27.0): porta 9093. Receiver `null` em dev; Slack/email via env em prod (`ALERTMANAGER_SLACK_URL`, `ALERTMANAGER_EMAIL_TO`).
+- `prometheus`: retenção 15d (`--storage.tsdb.retention.time=15d`), carrega `alerts.yml` e aponta `alertmanager:9093`.
+- `grafana`: datasource Tempo provisionado (`infra/grafana/provisioning/datasources/tempo.yml`).
+
+### Dashboards (`infra/grafana/dashboards/`)
+
+| Dashboard | UID | Foco |
+|-----------|-----|------|
+| overview | `crm-overview` | HTTP requests/s, p95/p99, 5xx ratio, top endpoints |
+| whatsapp | `crm-whatsapp` | mensagens in/out, latência de processamento |
+| leads-kanban | `crm-leads-kanban` | automações por tipo, rate-limited, taxa de erro |
+| especialistas | `crm-especialistas` | respostas/min, p95/p99, taxa de erro |
+| equipe | `crm-equipe` | convites por outcome, permissões por scope, load balance fallbacks |
+| pagamentos | `pagamentos-f11` | (F11 pré-existente) |
+
+### Alertas (`infra/prometheus/alerts.yml`) e runbooks
+
+Regras validadas via `promtool test rules` em CI (`.github/workflows/ci.yml`):
+
+| Alerta | Severidade | Runbook |
+|--------|------------|---------|
+| `HighHTTPErrorRate` | critical | [http-5xx-alto](../operacoes/runbooks/http-5xx-alto.md) |
+| `HighHTTPLatency` | warning | [http-latencia-alta](../operacoes/runbooks/http-latencia-alta.md) |
+| `SpecialistFailing` | critical | [especialista-falhando](../operacoes/runbooks/especialista-falhando.md) |
+| `AutomationFailing` | warning | [automacao-falhando](../operacoes/runbooks/automacao-falhando.md) |
+
+`WhatsAppDisconnected` e `SlowDatabase` estavam previstos no escopo original mas foram descartados porque as métricas-fonte (`crm_whatsapp_sessions_active`, `crm_db_query_duration_seconds`) não existem — follow-up separado.
+
+### Padrões para novas features
+
+1. **Spans**: toda função pública de use case que recebe `context.Context` deve abrir um span com `observability.StartSpan`. Nome: `<module>.usecase.<action>` em snake_case. Atributos: `tenant.id`, `user.id`, entidade.id quando disponíveis no input.
+2. **Logger**: dentro do use case, obter via `observability.LoggerFromContext(ctx, uc.logger)` para que os logs carreguem `trace_id`/`span_id`.
+3. **Histograma de duração**: operação de negócio relevante (execute, respond, check, query externa) deve ter um histograma `<dominio>_<action>_duration_seconds{outcome}` com observação via `defer` para capturar também o caminho de erro.
+4. **Counter de evento**: eventos discretos (sent/accepted/expired/blocked/…) viram counter `<dominio>_<evento>_total{label}` com labels de cardinalidade baixa.
+5. **Alerta novo**: regra em `alerts.yml` com `runbook_url` apontando para `docs/operacoes/runbooks/<nome>.md` + teste em `alerts_test.yml` com par disparar/não-disparar.

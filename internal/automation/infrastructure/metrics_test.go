@@ -43,3 +43,50 @@ func TestExecutionsTotal_Registered(t *testing.T) {
 	joined := strings.Join(names, "\n")
 	assert.Contains(t, joined, "crm_automation_executions_total")
 }
+
+func TestExecutionDuration_ObservesAcrossTypes(t *testing.T) {
+	types := []string{"move_funnel", "auto_note", "switch_specialist", "detect_product", "auto_message", "expiration"}
+	for _, tp := range types {
+		ExecutionDuration.WithLabelValues(tp, "success").Observe(0.05)
+		ExecutionDuration.WithLabelValues(tp, "error").Observe(0.1)
+	}
+	// The vector should expose at least one series per (type, outcome) pair we
+	// observed (6 types × 2 outcomes = 12). Other outcomes already observed in
+	// other tests may push the count higher, so just require the lower bound.
+	assert.GreaterOrEqual(t, testutil.CollectAndCount(ExecutionDuration), 12)
+}
+
+func TestExecutionDuration_Registered(t *testing.T) {
+	// Touch the histogram so the family appears in the registry.
+	ExecutionDuration.WithLabelValues("auto_message", "success").Observe(0.01)
+
+	metrics, err := prometheus.DefaultGatherer.Gather()
+	assert.NoError(t, err)
+
+	var names []string
+	for _, m := range metrics {
+		names = append(names, m.GetName())
+	}
+	joined := strings.Join(names, "\n")
+	assert.Contains(t, joined, "crm_automation_execution_duration_seconds")
+}
+
+// Smoke test for RateLimitedTotal: the counter has no call sites yet (see
+// metrics.go) so we only assert registration and zero-baseline.
+func TestRateLimitedTotal_RegisteredAndZero(t *testing.T) {
+	// Touch at zero to force the family to appear in the gatherer; does not
+	// affect test order because all other tests ignore this metric.
+	RateLimitedTotal.WithLabelValues("auto_message").Add(0)
+
+	assert.Equal(t, float64(0), testutil.ToFloat64(RateLimitedTotal.WithLabelValues("auto_message")),
+		"no call site exists yet — counter must remain at 0 by default")
+
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	assert.NoError(t, err)
+	var names []string
+	for _, m := range mfs {
+		names = append(names, m.GetName())
+	}
+	joined := strings.Join(names, "\n")
+	assert.Contains(t, joined, "crm_automation_rate_limited_total")
+}

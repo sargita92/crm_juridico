@@ -4,9 +4,11 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 type GetLeadDetailInput struct {
@@ -110,6 +112,12 @@ func NewGetLeadDetailUseCase(
 }
 
 func (uc *GetLeadDetailUseCase) Execute(ctx context.Context, input GetLeadDetailInput) (*LeadDetailOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.get_lead_detail",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("lead.id", input.LeadID),
+	)
+	defer span.End()
+
 	lead, err := uc.leadRepo.FindByID(ctx, input.LeadID)
 	if err != nil {
 		return nil, err

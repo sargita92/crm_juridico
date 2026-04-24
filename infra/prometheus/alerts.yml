@@ -1,0 +1,61 @@
+groups:
+  - name: crm_http
+    rules:
+      - alert: HighHTTPErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+          sum(rate(http_requests_total[5m]))
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Taxa de erro HTTP 5xx acima de 5% nos últimos 5m"
+          description: "Requests 5xx representam mais de 5% do tráfego total. Verifique logs e dashboards."
+          runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/http-5xx-alto.md"
+
+      - alert: HighHTTPLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latência HTTP p95 > 2s nos últimos 5m"
+          description: "p95 global de http_request_duration_seconds excede 2s."
+          runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/http-latencia-alta.md"
+
+  - name: crm_specialist
+    rules:
+      - alert: SpecialistFailing
+        expr: |
+          sum(rate(crm_specialist_response_duration_seconds_count{outcome="error"}[5m]))
+            /
+          sum(rate(crm_specialist_response_duration_seconds_count[5m]))
+            > 0.10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Especialistas falhando acima de 10% nos últimos 5m"
+          description: "Proporção de respostas do motor de especialistas com outcome=error excede 10%."
+          runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/especialista-falhando.md"
+
+  - name: crm_automation
+    rules:
+      - alert: AutomationFailing
+        expr: |
+          sum(rate(crm_automation_execution_duration_seconds_count{outcome="error"}[5m]))
+            /
+          sum(rate(crm_automation_execution_duration_seconds_count[5m]))
+            > 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Automações falhando acima de 10% nos últimos 5m"
+          description: "Proporção de execuções de automação com outcome=error excede 10%."
+          runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/automacao-falhando.md"

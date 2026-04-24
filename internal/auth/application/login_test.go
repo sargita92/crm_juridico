@@ -6,6 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
 	tenantdomain "github.com/sasrgita/crm-juridico/internal/tenant/domain"
@@ -130,4 +133,31 @@ func TestLoginUseCase_InactiveUser_ReturnsError(t *testing.T) {
 
 	_, err := uc.Execute(context.Background(), LoginInput{Email: "joao@email.com", Password: "secret123"})
 	assert.ErrorIs(t, err, domain.ErrInvalidCredentials)
+}
+
+// TestLoginUseCase_CreatesSpan verifies that Login emits the expected
+// OpenTelemetry span.
+func TestLoginUseCase_CreatesSpan(t *testing.T) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(tp)
+
+	uc, userRepo, userTenantRepo, tenantRepo, _ := setupLoginUC()
+	ctx := context.Background()
+
+	user := &domain.User{ID: "user-1", Name: "João", Email: "joao@email.com", PasswordHash: "hashed:secret123", Role: domain.UserRoleUser, Status: domain.UserStatusActive}
+	userRepo.users[user.Email] = user
+
+	tenant := &tenantdomain.Tenant{ID: "tenant-1", Name: "Escritório", Status: tenantdomain.TenantStatusActive}
+	tenantRepo.tenants[tenant.ID] = tenant
+	userTenantRepo.associations[user.ID] = []string{tenant.ID}
+
+	_, err := uc.Execute(ctx, LoginInput{Email: "joao@email.com", Password: "secret123"})
+	require.NoError(t, err)
+
+	names := []string{}
+	for _, s := range sr.Ended() {
+		names = append(names, s.Name())
+	}
+	assert.Contains(t, names, "auth.usecase.login", "login span should be present")
 }

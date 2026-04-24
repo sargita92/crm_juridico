@@ -5,9 +5,11 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // ErrPickerNotConfigured indicates the ResponsiblePicker was never wired into
@@ -71,6 +73,13 @@ func (uc *CreateLeadUseCase) SetPicker(p domain.ResponsiblePicker) {
 }
 
 func (uc *CreateLeadUseCase) Execute(ctx context.Context, input CreateLeadInput) error {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.create_lead",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("contact.id", input.ContactID),
+		attribute.String("conversation.id", input.ConversationID),
+	)
+	defer span.End()
+
 	// Check if lead already exists for this contact+tenant
 	_, err := uc.leadRepo.FindByContactAndTenant(ctx, input.TenantID, input.ContactID)
 	if err == nil {

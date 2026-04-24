@@ -6,11 +6,15 @@ import (
 	"testing"
 	"time"
 
-	infra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	"github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/sasrgita/crm-juridico/internal/automation/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
+	"github.com/sasrgita/crm-juridico/internal/automation/domain"
+	infra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 )
 
 func makeAutomation(id, tenantID, funnelID, columnID string, t domain.AutomationType) domain.Automation {
@@ -145,4 +149,30 @@ func TestEngine_OnLeadEvent_AsyncExecution(t *testing.T) {
 	last := logRepo.last()
 	require.NotNil(t, last)
 	assert.Equal(t, domain.StatusSuccess, last.Status)
+}
+
+// TestEngine_OnLeadEvent_CreatesSpan verifies that OnLeadEvent emits the expected span
+// (and that the executor emits its own span as a child).
+func TestEngine_OnLeadEvent_CreatesSpan(t *testing.T) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(tp)
+
+	autoRepo := &mockAutoRepo{}
+	logRepo := &mockLogRepo{}
+
+	a := makeAutomation("auto-span", "tenant-1", "funnel-1", "col-1", domain.TypeAutoNote)
+	require.NoError(t, autoRepo.Create(context.Background(), &a))
+
+	exec := &mockExecutor{}
+	engine := NewAutomationEngine(autoRepo, logRepo)
+	engine.RegisterExecutor(domain.TypeAutoNote, exec)
+
+	require.NoError(t, engine.OnLeadEvent(context.Background(), "tenant-1", "lead-1", "col-1"))
+
+	names := []string{}
+	for _, s := range sr.Ended() {
+		names = append(names, s.Name())
+	}
+	assert.Contains(t, names, "automation.engine.on_lead_event", "engine span should be present")
 }

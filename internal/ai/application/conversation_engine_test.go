@@ -5,11 +5,17 @@ import (
 	"errors"
 	"testing"
 
-	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
-	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
+
+	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
+	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 )
 
 // --- mock implementations for ConversationEngine ---
@@ -156,6 +162,41 @@ func TestConversationEngine_BasicFlow(t *testing.T) {
 	assert.True(t, sender.sent, "message should have been sent")
 	assert.Equal(t, "Olá, como posso ajudar?", sender.content)
 	assert.NotNil(t, stateRepo.updated, "state should have been updated")
+}
+
+// TestConversationEngine_ObservesSpecialistResponseDuration confirms every
+// HandleMessages call feeds the cross-module SpecialistResponseDuration
+// histogram (used by SLO alerts / tenant-wide dashboards).
+func TestConversationEngine_ObservesSpecialistResponseDuration(t *testing.T) {
+	before := testutil.CollectAndCount(observability.SpecialistResponseDuration)
+
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	engine, _, _ := buildEngineFixtures(t, state, nil)
+
+	require.NoError(t, engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"olá"}))
+
+	after := testutil.CollectAndCount(observability.SpecialistResponseDuration)
+	assert.GreaterOrEqual(t, after, before, "histogram should keep or add series after HandleMessages")
+	assert.GreaterOrEqual(t, after, 1, "{outcome=ok} series must exist after a successful call")
+}
+
+// TestConversationEngine_CreatesSpan verifies that HandleMessages emits the
+// expected OpenTelemetry span.
+func TestConversationEngine_CreatesSpan(t *testing.T) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(tp)
+
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	engine, _, _ := buildEngineFixtures(t, state, nil)
+
+	require.NoError(t, engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"olá"}))
+
+	names := []string{}
+	for _, s := range sr.Ended() {
+		names = append(names, s.Name())
+	}
+	assert.Contains(t, names, "ai.usecase.respond", "respond span should be present")
 }
 
 func TestConversationEngine_HandoffActive_NoMessageSent(t *testing.T) {

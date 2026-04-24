@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 var ErrCannotRemoveOwner = errors.New("cannot remove the tenant owner")
@@ -37,6 +40,11 @@ func NewManageUsersUseCase(
 
 // ListTenantUsers returns all users belonging to the given tenant.
 func (uc *ManageUsersUseCase) ListTenantUsers(ctx context.Context, tenantID string) ([]UserOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.list_tenant_users",
+		attribute.String("tenant.id", tenantID),
+	)
+	defer span.End()
+
 	userTenants, err := uc.userTenantRepo.FindByTenantID(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -63,6 +71,12 @@ func (uc *ManageUsersUseCase) ListTenantUsers(ctx context.Context, tenantID stri
 
 // RemoveFromTenant removes a user from the tenant. Returns an error if the user is the owner.
 func (uc *ManageUsersUseCase) RemoveFromTenant(ctx context.Context, userID, tenantID string) error {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.remove_from_tenant",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+	)
+	defer span.End()
+
 	isOwner, err := uc.userTenantRepo.IsOwner(ctx, userID, tenantID)
 	if err != nil {
 		return err
@@ -76,5 +90,11 @@ func (uc *ManageUsersUseCase) RemoveFromTenant(ctx context.Context, userID, tena
 
 // SetWhatsAppID updates the WhatsApp number linked to a user within a tenant.
 func (uc *ManageUsersUseCase) SetWhatsAppID(ctx context.Context, userID, tenantID, whatsAppID string) error {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.set_whatsapp_id",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+	)
+	defer span.End()
+
 	return uc.userTenantRepo.UpdateWhatsAppID(ctx, userID, tenantID, whatsAppID)
 }

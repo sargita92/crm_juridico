@@ -35,8 +35,24 @@ var (
 		},
 		[]string{"outcome"},
 	)
+
+	// NotificationReadTotal counts mark-read operations broken down by type.
+	//
+	// Semantics: one increment per call, not per notification. The "type"
+	// label value is "single" for MarkRead(id) and "all" for MarkAllRead —
+	// the actual NotificationType is not emitted to avoid an extra DB read
+	// on a hot UI path (mark-as-read is clicked frequently).
+	NotificationReadTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "notifications",
+			Name:      "read_total",
+			Help:      "Total mark-read calls on notifications, by type (single|all).",
+		},
+		[]string{"type"},
+	)
 )
 
 func init() {
-	prometheus.MustRegister(NotificationsDeliveredTotal, SSEActiveStreams, SSEEventsEmittedTotal)
+	prometheus.MustRegister(NotificationsDeliveredTotal, SSEActiveStreams, SSEEventsEmittedTotal, NotificationReadTotal)
 }

@@ -1,14 +1,22 @@
-package observability
+// This file lives in the external test package `observability_test` so it can
+// import cross-module infrastructure packages (automation/infrastructure,
+// funnel/...) without creating an import cycle with the `observability`
+// package itself. The funnel use case layer legitimately imports
+// observability, so anything that transitively depends on funnel/application
+// cannot be imported back into package observability — only into
+// observability_test.
+package observability_test
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/assert"
+
 	autinfra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestAllF08F09MetricsRegistered(t *testing.T) {
@@ -30,11 +38,11 @@ func TestAllF08F09MetricsRegistered(t *testing.T) {
 	}
 	for _, name := range required {
 		assert.True(t, found[name], "expected metric %s to be registered; have: %s",
-			name, strings.Join(keys(found), ", "))
+			name, strings.Join(keysFromFoundMap(found), ", "))
 	}
 }
 
-func keys(m map[string]bool) []string {
+func keysFromFoundMap(m map[string]bool) []string {
 	out := make([]string, 0, len(m))
 	for k := range m {
 		out = append(out, k)

@@ -8,10 +8,12 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // --- Logger middleware ---
@@ -172,6 +174,32 @@ func TestRequirePermission_Allowed_CallsNext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+// TestRequirePermission_RecordsDuration asserts every invocation — even the
+// unauthorized ones — feeds the PermissionCheckDuration histogram tagged by
+// the action label so slow checks surface in alerts regardless of outcome.
+func TestRequirePermission_RecordsDuration(t *testing.T) {
+	before := testutil.CollectAndCount(observability.PermissionCheckDuration)
+
+	// Allowed path: records on the "read" scope.
+	claims := domain.TokenClaims{UserID: "u1", Role: domain.UserRoleUser, TenantID: "t1"}
+	router := buildPermRouter(&fakePermChecker{has: true}, &claims, "t1")
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Denied path: still records.
+	router2 := buildPermRouter(&fakePermChecker{has: false}, &claims, "t1")
+	w2 := httptest.NewRecorder()
+	router2.ServeHTTP(w2, req)
+	assert.Equal(t, http.StatusForbidden, w2.Code)
+
+	after := testutil.CollectAndCount(observability.PermissionCheckDuration)
+	assert.GreaterOrEqual(t, after, before, "permission_check_duration_seconds should receive observations")
+	// The series for {scope=read} must now exist in the registry.
+	assert.GreaterOrEqual(t, after, 1)
 }
 
 // --- SetTenantIDForTest ---

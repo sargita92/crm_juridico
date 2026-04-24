@@ -7,12 +7,38 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
+
+// TestMoveLead_CreatesSpan verifies that the Execute method emits the
+// expected OpenTelemetry span.
+func TestMoveLead_CreatesSpan(t *testing.T) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(tp)
+
+	uc, _, _, _, _, lead, _, col2 := setupMoveLeadTest(t)
+
+	err := uc.Execute(context.Background(), MoveLeadInput{
+		TenantID: "tenant-1",
+		LeadID:   lead.ID,
+		ColumnID: col2.ID,
+	})
+	require.NoError(t, err)
+
+	names := []string{}
+	for _, s := range sr.Ended() {
+		names = append(names, s.Name())
+	}
+	assert.Contains(t, names, "funnel.usecase.move_lead", "move_lead span should be present")
+}
 
 func setupMoveLeadTest(t *testing.T) (*MoveLeadUseCase, *mockFunnelRepo, *mockColumnRepo, *mockLeadRepo, *mockLeadMovementRepo, *domain.Lead, *domain.Column, *domain.Column) {
 	t.Helper()

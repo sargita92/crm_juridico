@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -48,6 +50,12 @@ func NewSendMessageUseCase(
 }
 
 func (uc *SendMessageUseCase) Execute(ctx context.Context, input SendMessageInput) (*SendMessageOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "whatsapp.usecase.send_message",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("conversation.id", input.ConversationID),
+	)
+	defer span.End()
+
 	start := time.Now()
 	defer func() {
 		messageProcessingDuration.WithLabelValues("outgoing").Observe(time.Since(start).Seconds())

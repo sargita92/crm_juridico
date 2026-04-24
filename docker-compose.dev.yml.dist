@@ -37,13 +37,38 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.53.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
     ports:
       - "${PROMETHEUS_PORT:-9190}:9090"
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus-data:/prometheus
     depends_on:
       - app
+      - alertmanager
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./infra/alertmanager/config.yml:/etc/alertmanager/alertmanager.yml:ro
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
     restart: unless-stopped
 
   grafana:
@@ -61,6 +86,7 @@ services:
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - tempo
     restart: unless-stopped
 
 volumes:
@@ -69,3 +95,4 @@ volumes:
   go-build-cache:
   prometheus-data:
   grafana-data:
+  tempo-data:

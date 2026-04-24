@@ -234,6 +234,7 @@ func (p *LoadBalancePicker) applyAlgorithm(ctx context.Context, tenantID string,
 }
 
 func (p *LoadBalancePicker) fallbackToOwner(ctx context.Context, tenantID, reason string) (funneldomain.PickResult, error) {
+	LoadBalanceFallbackTotal.WithLabelValues(reason).Inc()
 	uts, err := p.userTenantRepo.FindByTenantID(ctx, tenantID)
 	if err != nil {
 		return funneldomain.PickResult{}, err

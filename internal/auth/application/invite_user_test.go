@@ -136,9 +136,16 @@ func TestAcceptInvite_ExpiredToken(t *testing.T) {
 	inviteRepo.tokens[invite.ID] = invite
 	inviteRepo.byToken[invite.Token] = invite
 
+	before := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("expired"))
+
 	_, err = uc.AcceptInvite(ctx, invite.Token, "Ana", "ana@email.com", "senha")
 
 	assert.ErrorIs(t, err, domain.ErrInviteTokenExpired)
+
+	// Counter for outcome=expired must increment by exactly 1 on the
+	// redemption-time observation of the expired token.
+	after := testutil.ToFloat64(infra.InvitesTotal.WithLabelValues("expired"))
+	assert.Equal(t, before+1, after, "invites_total{outcome=expired} should increment once")
 }
 
 func TestAcceptInvite_UsedToken(t *testing.T) {

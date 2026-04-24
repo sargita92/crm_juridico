@@ -6,6 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
 	events "github.com/sasrgita/crm-juridico/internal/shared/events"
@@ -111,4 +114,32 @@ func TestNotifyService_Notify_EmptyTenantID(t *testing.T) {
 	)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, domain.ErrTenantIDRequired)
+}
+
+// TestNotifyService_Notify_CreatesSpan verifies that Notify emits the expected
+// OpenTelemetry span.
+func TestNotifyService_Notify_CreatesSpan(t *testing.T) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(tp)
+
+	repo := newMockNotificationRepo()
+	prefRepo := newMockPreferenceRepo()
+	bus := newMockEventBus()
+
+	svc := NewNotifyService(repo, prefRepo, bus)
+
+	require.NoError(t, svc.Notify(
+		context.Background(),
+		"user-1", "tenant-1",
+		domain.TypeLeadAssigned,
+		"Title", "body",
+		nil,
+	))
+
+	names := []string{}
+	for _, s := range sr.Ended() {
+		names = append(names, s.Name())
+	}
+	assert.Contains(t, names, "notification.usecase.create", "create span should be present")
 }
