@@ -3,8 +3,11 @@ package observability
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -13,12 +16,14 @@ import (
 )
 
 func InitTracer(serviceName string) (*sdktrace.TracerProvider, error) {
-	exporter, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	ctx := context.Background()
+
+	exporter, err := newSpanExporter(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stdout exporter: %w", err)
+		return nil, err
 	}
 
-	res, err := resource.New(context.Background(),
+	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(serviceName),
 		),
@@ -39,4 +44,23 @@ func InitTracer(serviceName string) (*sdktrace.TracerProvider, error) {
 	))
 
 	return tp, nil
+}
+
+func newSpanExporter(ctx context.Context) (sdktrace.SpanExporter, error) {
+	if endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"); endpoint != "" {
+		exp, err := otlptrace.New(ctx, otlptracegrpc.NewClient(
+			otlptracegrpc.WithInsecure(),
+			otlptracegrpc.WithEndpoint(endpoint),
+		))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create OTLP exporter: %w", err)
+		}
+		return exp, nil
+	}
+
+	exp, err := stdouttrace.New(stdouttrace.WithPrettyPrint())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stdout exporter: %w", err)
+	}
+	return exp, nil
 }

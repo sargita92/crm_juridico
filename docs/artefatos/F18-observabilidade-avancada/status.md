@@ -1,7 +1,7 @@
 # Status F18 — Observabilidade Avançada
 
 **Branch**: `feature/F18-observabilidade-avancada`
-**Status**: em andamento — **pausada em 2026-04-24 após Task 3** (3/23 concluídas, próxima: Task 4)
+**Status**: em andamento — Task 4 concluída em 2026-04-24 (4/23 concluídas, próxima: Task 5)
 **Spec**: [`../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md`](../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md) (gitignored — local)
 **Plano**: [`../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`](../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md) (gitignored — local)
 **Inventário**: [`inventario.md`](inventario.md)
@@ -18,8 +18,8 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 | 1 | `observability.StartSpan` helper com testes | `4de9eeb` ✅ |
 | 2 | `observability.LoggerFromContext` com testes | `dcc0c8c` ✅ |
 | 3 | Registradores centrais (`metrics.go`) | `abe1a3e` ✅ |
-| 4 | `InitTracer` suporta OTLP via env | — **← RETOMAR AQUI** |
-| 5 | Infra: tempo + alertmanager no compose | — |
+| 4 | `InitTracer` suporta OTLP via env | (este commit) ✅ |
+| 5 | Infra: tempo + alertmanager no compose | — **← RETOMAR AQUI** |
 | 6 | Spans em `automation` | — |
 | 7 | Spans em `permission` + `auth` | — |
 | 8 | Spans em `notification` | — |
@@ -48,6 +48,7 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 5. **Namespace Prometheus `crm`** para métricas transversais novas (Task 3 já fez). Módulos que historicamente usam sem prefixo (`pagamentos`, `whatsapp`) continuam sem prefixo para não quebrar dashboards existentes.
 6. **HTTP middleware** (`internal/shared/middleware/prometheus.go`) usa `http_requests_total` e `http_request_duration_seconds` **SEM prefixo `crm_`**. Regras de alerta (Task 21) devem refletir isso.
 7. **Descartar drive-by changes**: subagents podem rodar `goimports` e modificar arquivos fora do escopo da task (aconteceu em Task 3 com `metrics_registered_test.go`). Rodar `git status` depois de cada task e `git checkout --` no que não pertence.
+8. **`go mod tidy` quebra com `storage/files` permission denied** (diretório criado pelo container Docker como root). Workaround: editar `go.mod` à mão para promover novas deps do bloco `// indirect` para o bloco direto, e validar com `go build ./cmd/... ./internal/...` em vez de `./...`. (Aplicado na Task 4 com `otlptrace`/`otlptracegrpc`.)
 
 ## Decisões-chave
 
@@ -84,4 +85,4 @@ git checkout feature/F18-observabilidade-avancada && \
   go test ./internal/shared/observability/... -v | tail -10
 ```
 
-Esperado: 4 commits listados; 6 testes PASS (2 em `tracing`, 2 em `logging`, 2 em `metrics`).
+Esperado: 5 commits listados; 9 testes PASS (2 `tracing`, 2 `logging`, 3 `metrics` + `metrics_registered`, 2 `otel`).
