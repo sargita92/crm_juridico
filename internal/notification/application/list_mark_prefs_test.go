@@ -4,10 +4,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
+	notifinfra "github.com/sasrgita/crm-juridico/internal/notification/infrastructure"
 )
 
 // ---- ListNotificationsUseCase ----
@@ -112,6 +114,29 @@ func TestMarkRead_MarkAllRead(t *testing.T) {
 	assert.True(t, repo.items[0].Read)
 	assert.True(t, repo.items[1].Read)
 	assert.False(t, repo.items[2].Read) // u2 should not be affected
+}
+
+// TestMarkRead_IncrementsReadTotalCounters covers both MarkRead (single) and
+// MarkAllRead (all) paths, asserting exactly one increment per call. The
+// per-notification count in MarkAllRead is intentionally NOT observed — see
+// mark_read.go for the rationale.
+func TestMarkRead_IncrementsReadTotalCounters(t *testing.T) {
+	n1 := domain.Notification{ID: "notif-1", TenantID: "t1", UserID: "u1", Read: false}
+	n2 := domain.Notification{ID: "notif-2", TenantID: "t1", UserID: "u1", Read: false}
+	repo := newMockNotificationRepo(n1, n2)
+	uc := NewMarkReadUseCase(repo)
+
+	beforeSingle := testutil.ToFloat64(notifinfra.NotificationReadTotal.WithLabelValues("single"))
+	beforeAll := testutil.ToFloat64(notifinfra.NotificationReadTotal.WithLabelValues("all"))
+
+	require.NoError(t, uc.MarkRead(context.Background(), "notif-1"))
+	require.NoError(t, uc.MarkAllRead(context.Background(), "t1", "u1"))
+
+	afterSingle := testutil.ToFloat64(notifinfra.NotificationReadTotal.WithLabelValues("single"))
+	afterAll := testutil.ToFloat64(notifinfra.NotificationReadTotal.WithLabelValues("all"))
+
+	assert.Equal(t, beforeSingle+1, afterSingle, "single counter should +1 after MarkRead")
+	assert.Equal(t, beforeAll+1, afterAll, "all counter should +1 after MarkAllRead (call-count, not per-notification)")
 }
 
 // ---- ManagePreferencesUseCase ----
