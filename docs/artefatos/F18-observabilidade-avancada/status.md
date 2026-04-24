@@ -1,7 +1,7 @@
 # Status F18 — Observabilidade Avançada
 
 **Branch**: `feature/F18-observabilidade-avancada`
-**Status**: em andamento — Task 17 concluída em 2026-04-24 (17/23 concluídas, próxima: Task 18)
+**Status**: em andamento — Task 18 concluída em 2026-04-24 (18/23 concluídas, próxima: Task 19)
 **Spec**: [`../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md`](../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md) (gitignored — local)
 **Plano**: [`../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`](../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md) (gitignored — local)
 **Inventário**: [`inventario.md`](inventario.md)
@@ -31,8 +31,8 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 | 14 | Histograma `specialist_response_duration_seconds` | (commit anterior) ✅ |
 | 15 | `invites_total{outcome=expired}` | (commit anterior) ✅ |
 | 16 | `load_balance_fallback_total` + scope load_balance | (commit anterior) ✅ |
-| 17 | `notification_read_total{type}` | (este commit) ✅ |
-| 18 | `automation_rate_limited_total{type}` | — |
+| 17 | `notification_read_total{type}` | (commit anterior) ✅ |
+| 18 | `automation_rate_limited_total{type}` | (este commit) ✅ |
 | 19 | Dashboards: overview + whatsapp | — |
 | 20 | Dashboards: leads-kanban + especialistas + equipe | — |
 | 21 | `alerts.yml` + testes promtool no CI | — |

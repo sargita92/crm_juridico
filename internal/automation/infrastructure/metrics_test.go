@@ -70,3 +70,23 @@ func TestExecutionDuration_Registered(t *testing.T) {
 	joined := strings.Join(names, "\n")
 	assert.Contains(t, joined, "crm_automation_execution_duration_seconds")
 }
+
+// Smoke test for RateLimitedTotal: the counter has no call sites yet (see
+// metrics.go) so we only assert registration and zero-baseline.
+func TestRateLimitedTotal_RegisteredAndZero(t *testing.T) {
+	// Touch at zero to force the family to appear in the gatherer; does not
+	// affect test order because all other tests ignore this metric.
+	RateLimitedTotal.WithLabelValues("auto_message").Add(0)
+
+	assert.Equal(t, float64(0), testutil.ToFloat64(RateLimitedTotal.WithLabelValues("auto_message")),
+		"no call site exists yet — counter must remain at 0 by default")
+
+	mfs, err := prometheus.DefaultGatherer.Gather()
+	assert.NoError(t, err)
+	var names []string
+	for _, m := range mfs {
+		names = append(names, m.GetName())
+	}
+	joined := strings.Join(names, "\n")
+	assert.Contains(t, joined, "crm_automation_rate_limited_total")
+}
