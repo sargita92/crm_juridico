@@ -139,10 +139,20 @@ func SanitizeMetadata(in Metadata) Metadata {
 	}
 	out := make(Metadata, len(in))
 	for k, v := range in {
-		if _, banned := forbiddenMetadataKeys[strings.ToLower(k)]; banned {
+		if IsForbiddenMetadataKey(k) {
 			continue
 		}
 		out[k] = v
 	}
 	return out
+}
+
+// IsForbiddenMetadataKey informa se uma chave esta na blocklist (case-insensitive).
+//
+// Exposto para reuso por helpers da camada de aplicacao (ex.: `BuildDiff`)
+// que precisam aplicar a mesma politica de redaction sem duplicar a lista.
+// Para sanitizar um Metadata inteiro, prefira `SanitizeMetadata`.
+func IsForbiddenMetadataKey(key string) bool {
+	_, banned := forbiddenMetadataKeys[strings.ToLower(key)]
+	return banned
 }
