@@ -8,10 +8,37 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
+
+// TestSendMessage_CreatesSpan verifies that Execute emits the expected
+// OpenTelemetry span.
+func TestSendMessage_CreatesSpan(t *testing.T) {
+	sr := tracetest.NewSpanRecorder()
+	tp := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
+	otel.SetTracerProvider(tp)
+
+	uc, convRepo, _, contactRepo, _, _ := setupSendMessageTest()
+	conv, _ := createTestConvAndContact(t, convRepo, contactRepo)
+
+	_, err := uc.Execute(context.Background(), SendMessageInput{
+		TenantID:       "tenant-1",
+		ConversationID: conv.ID,
+		Content:        "oi",
+	})
+	require.NoError(t, err)
+
+	names := []string{}
+	for _, s := range sr.Ended() {
+		names = append(names, s.Name())
+	}
+	assert.Contains(t, names, "whatsapp.usecase.send_message", "send_message span should be present")
+}
 
 func setupSendMessageTest() (*SendMessageUseCase, *mockConversationRepo, *mockMessageRepo, *mockContactRepo, *mockProvider, *mockEventBus) {
 	convRepo := newMockConversationRepo()

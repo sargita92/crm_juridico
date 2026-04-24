@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -67,6 +69,12 @@ func resolveMessageType(event domain.IncomingMessage) domain.MessageType {
 }
 
 func (uc *ReceiveMessageUseCase) Execute(ctx context.Context, event domain.IncomingMessage) error {
+	ctx, span := observability.StartSpan(ctx, "whatsapp.usecase.receive_message",
+		attribute.String("tenant.id", event.TenantID),
+		attribute.String("whatsapp.msg_id", event.WhatsAppMsgID),
+	)
+	defer span.End()
+
 	start := time.Now()
 	defer func() {
 		messageProcessingDuration.WithLabelValues("incoming").Observe(time.Since(start).Seconds())

@@ -1,7 +1,7 @@
 # Status F18 — Observabilidade Avançada
 
 **Branch**: `feature/F18-observabilidade-avancada`
-**Status**: em andamento — Task 9 concluída em 2026-04-24 (9/23 concluídas, próxima: Task 10)
+**Status**: em andamento — Task 10 concluída em 2026-04-24 (10/23 concluídas, próxima: Task 11)
 **Spec**: [`../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md`](../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md) (gitignored — local)
 **Plano**: [`../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`](../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md) (gitignored — local)
 **Inventário**: [`inventario.md`](inventario.md)
@@ -23,8 +23,8 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 | 6 | Spans em `automation` | (commit anterior) ✅ |
 | 7 | Spans em `permission` + `auth` | (commit anterior) ✅ |
 | 8 | Spans em `notification` | (commit anterior) ✅ |
-| 9 | Spans em `funnel` | (este commit) ✅ |
-| 10 | Spans em `whatsapp` | — |
+| 9 | Spans em `funnel` | (commit anterior) ✅ |
+| 10 | Spans em `whatsapp` | (este commit) ✅ |
 | 11 | Span em `ai.usecase.respond` (motor IA) | — |
 | 12 | Histograma `automation_execution_duration_seconds` | — |
 | 13 | Histograma `permission_check_duration_seconds` | — |

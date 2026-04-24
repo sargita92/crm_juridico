@@ -3,6 +3,9 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -18,7 +21,12 @@ func NewGetConnectionStatusUseCase(provider domain.WhatsAppProvider) *GetConnect
 	return &GetConnectionStatusUseCase{provider: provider}
 }
 
-func (uc *GetConnectionStatusUseCase) Execute(_ context.Context, tenantID string) (*ConnectionStatus, error) {
+func (uc *GetConnectionStatusUseCase) Execute(ctx context.Context, tenantID string) (*ConnectionStatus, error) {
+	_, span := observability.StartSpan(ctx, "whatsapp.usecase.get_connection_status",
+		attribute.String("tenant.id", tenantID),
+	)
+	defer span.End()
+
 	return &ConnectionStatus{
 		Connected: uc.provider.IsConnected(tenantID),
 	}, nil

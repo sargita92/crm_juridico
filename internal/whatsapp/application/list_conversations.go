@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
@@ -39,6 +42,11 @@ func NewListConversationsUseCase(conversationRepo domain.ConversationRepository)
 }
 
 func (uc *ListConversationsUseCase) Execute(ctx context.Context, input ListConversationsInput) (*ListConversationsOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "whatsapp.usecase.list_conversations",
+		attribute.String("tenant.id", input.TenantID),
+	)
+	defer span.End()
+
 	result, err := uc.conversationRepo.FindByTenantID(ctx, input.TenantID, domain.ConversationFilter{
 		Search: input.Search,
 		Page:   input.Page,
