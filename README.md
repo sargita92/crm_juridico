@@ -86,10 +86,13 @@ Estratégia completa em [docs/engenharia/testes.md](docs/engenharia/testes.md).
 
 ## Observabilidade
 
-- **Logs**: Zap estruturado com `request_id`, `tenant_id`, `user_id`
-- **Métricas**: Prometheus em `:9190/metrics`
-- **Traces**: OpenTelemetry end-to-end
-- **Dashboards**: Grafana em `:3100`
+- **Logs**: Zap estruturado com `request_id`, `tenant_id`, `user_id`, `trace_id`, `span_id` (via `observability.LoggerFromContext`).
+- **Métricas**: Prometheus em `:9190/metrics` — histogramas de duração de negócio (`crm_automation_execution_duration_seconds`, `crm_permission_check_duration_seconds`, `crm_specialist_response_duration_seconds`) + counters de eventos (`invites_total`, `crm_notifications_read_total`, `crm_load_balance_fallback_total`, …).
+- **Traces**: OpenTelemetry end-to-end com exporter configurável via `OTEL_EXPORTER_OTLP_ENDPOINT` (Tempo em dev, stdout quando vazio).
+- **Tempo** em `:3200` (OTLP gRPC em `:4317`) — retenção 7d.
+- **Dashboards**: Grafana em `:3100` — `overview`, `whatsapp`, `leads-kanban`, `especialistas`, `equipe`, `pagamentos`.
+- **Alertmanager** em `:9093` — 4 regras em `infra/prometheus/alerts.yml` validadas no CI com `promtool test rules`.
+- **Runbooks** operacionais em [docs/operacoes/runbooks/](docs/operacoes/runbooks/README.md).
 
 Detalhes em [docs/engenharia/observabilidade.md](docs/engenharia/observabilidade.md).
 
@@ -113,6 +116,7 @@ Detalhes em [docs/engenharia/observabilidade.md](docs/engenharia/observabilidade
 | F15 | [MCP Interno](docs/features/F15-mcp-interno-especialistas.md) | IA |
 | F16 | [Motor de IA dos Especialistas](docs/features/F16-motor-ia-especialistas.md) | IA |
 | F17 | [Fluxo de Teste Manual + Playground](docs/features/F17-fluxo-teste-manual.md) | IA |
+| F18 | [Observabilidade Avançada](docs/features/F18-observabilidade-avancada.md) | Plataforma |
 | F19 | [Dashboards (Admin + Tenant)](docs/features/F19-dashboards.md) | Analytics |
 
 Backlog completo e status atualizado em [docs/processo/backlog.md](docs/processo/backlog.md).
