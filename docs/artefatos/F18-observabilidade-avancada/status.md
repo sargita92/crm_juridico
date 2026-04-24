@@ -1,7 +1,7 @@
 # Status F18 — Observabilidade Avançada
 
 **Branch**: `feature/F18-observabilidade-avancada`
-**Status**: em andamento — Task 13 concluída em 2026-04-24 (13/23 concluídas, próxima: Task 14)
+**Status**: em andamento — Task 14 concluída em 2026-04-24 (14/23 concluídas, próxima: Task 15)
 **Spec**: [`../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md`](../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md) (gitignored — local)
 **Plano**: [`../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`](../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md) (gitignored — local)
 **Inventário**: [`inventario.md`](inventario.md)
@@ -27,8 +27,8 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 | 10 | Spans em `whatsapp` | (commit anterior) ✅ |
 | 11 | Span em `ai.usecase.respond` (motor IA) | (commit anterior) ✅ |
 | 12 | Histograma `automation_execution_duration_seconds` | (commit anterior) ✅ |
-| 13 | Histograma `permission_check_duration_seconds` | (este commit) ✅ |
-| 14 | Histograma `specialist_response_duration_seconds` | — |
+| 13 | Histograma `permission_check_duration_seconds` | (commit anterior) ✅ |
+| 14 | Histograma `specialist_response_duration_seconds` | (este commit) ✅ |
 | 15 | `invites_total{outcome=expired}` | — |
 | 16 | `load_balance_fallback_total` + scope load_balance | — |
 | 17 | `notification_read_total{type}` | — |

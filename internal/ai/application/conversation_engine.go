@@ -103,13 +103,25 @@ func (e *ConversationEngine) HandleMessages(
 	ctx context.Context,
 	tenantID, conversationID, specialistID, productID string,
 	messages []string,
-) error {
+) (err error) {
 	ctx, span := observability.StartSpan(ctx, "ai.usecase.respond",
 		attribute.String("tenant.id", tenantID),
 		attribute.String("conversation.id", conversationID),
 		attribute.String("specialist.id", specialistID),
 	)
 	defer span.End()
+
+	// Emit the cross-module latency histogram on every exit path so dashboards
+	// can trend specialist responsiveness independently of the AI-module-local
+	// aiRequestDuration (which is labeled by provider/model).
+	reqStart := time.Now()
+	defer func() {
+		outcome := "ok"
+		if err != nil {
+			outcome = "error"
+		}
+		observability.SpecialistResponseDuration.WithLabelValues(outcome).Observe(time.Since(reqStart).Seconds())
+	}()
 
 	// 0. Intercept /reset command before any state loading.
 	if e.resetCommandEnabled && e.resetUC != nil && IsResetCommand(messages) {
