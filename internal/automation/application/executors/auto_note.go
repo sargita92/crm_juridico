@@ -2,10 +2,12 @@ package executors
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
+	"github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
@@ -18,13 +20,22 @@ func NewAutoNoteExecutor(n domain.NoteSaver) *AutoNoteExecutor {
 	return &AutoNoteExecutor{noteSaver: n}
 }
 
-func (e *AutoNoteExecutor) Execute(ctx context.Context, a *domain.Automation, leadID, tenantID string) error {
+func (e *AutoNoteExecutor) Execute(ctx context.Context, a *domain.Automation, leadID, tenantID string) (err error) {
 	ctx, span := observability.StartSpan(ctx, "automation.executor.auto_note",
 		attribute.String("tenant.id", tenantID),
 		attribute.String("lead.id", leadID),
 		attribute.String("automation.id", a.ID),
 	)
 	defer span.End()
+
+	start := time.Now()
+	defer func() {
+		outcome := "success"
+		if err != nil {
+			outcome = "error"
+		}
+		infrastructure.ExecutionDuration.WithLabelValues("auto_note", outcome).Observe(time.Since(start).Seconds())
+	}()
 
 	template := a.ConfigString("template")
 	if template == "" {

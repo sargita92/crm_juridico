@@ -43,3 +43,30 @@ func TestExecutionsTotal_Registered(t *testing.T) {
 	joined := strings.Join(names, "\n")
 	assert.Contains(t, joined, "crm_automation_executions_total")
 }
+
+func TestExecutionDuration_ObservesAcrossTypes(t *testing.T) {
+	types := []string{"move_funnel", "auto_note", "switch_specialist", "detect_product", "auto_message", "expiration"}
+	for _, tp := range types {
+		ExecutionDuration.WithLabelValues(tp, "success").Observe(0.05)
+		ExecutionDuration.WithLabelValues(tp, "error").Observe(0.1)
+	}
+	// The vector should expose at least one series per (type, outcome) pair we
+	// observed (6 types × 2 outcomes = 12). Other outcomes already observed in
+	// other tests may push the count higher, so just require the lower bound.
+	assert.GreaterOrEqual(t, testutil.CollectAndCount(ExecutionDuration), 12)
+}
+
+func TestExecutionDuration_Registered(t *testing.T) {
+	// Touch the histogram so the family appears in the registry.
+	ExecutionDuration.WithLabelValues("auto_message", "success").Observe(0.01)
+
+	metrics, err := prometheus.DefaultGatherer.Gather()
+	assert.NoError(t, err)
+
+	var names []string
+	for _, m := range metrics {
+		names = append(names, m.GetName())
+	}
+	joined := strings.Join(names, "\n")
+	assert.Contains(t, joined, "crm_automation_execution_duration_seconds")
+}
