@@ -1,0 +1,142 @@
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  # ---------------------------------------------------------------
+  # HighHTTPErrorRate: dispara quando 5xx/total > 5% por 5m
+  # ---------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'http_requests_total{method="GET",path="/x",status="500"}'
+        values: '0+10x10'
+      - series: 'http_requests_total{method="GET",path="/x",status="200"}'
+        values: '0+10x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: HighHTTPErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "Taxa de erro HTTP 5xx acima de 5% nos últimos 5m"
+              description: "Requests 5xx representam mais de 5% do tráfego total. Verifique logs e dashboards."
+              runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/http-5xx-alto.md"
+
+  - interval: 1m
+    input_series:
+      - series: 'http_requests_total{method="GET",path="/x",status="500"}'
+        values: '0+1x10'
+      - series: 'http_requests_total{method="GET",path="/x",status="200"}'
+        values: '0+100x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: HighHTTPErrorRate
+        exp_alerts: []
+
+  # ---------------------------------------------------------------
+  # HighHTTPLatency: dispara quando p95 > 2s
+  # Duas séries de buckets: bucket le=5 permanece menor que total -> p95 alto
+  # ---------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{le="0.5"}'
+        values: '0+0x10'
+      - series: 'http_request_duration_seconds_bucket{le="1"}'
+        values: '0+0x10'
+      - series: 'http_request_duration_seconds_bucket{le="2"}'
+        values: '0+0x10'
+      - series: 'http_request_duration_seconds_bucket{le="5"}'
+        values: '0+10x10'
+      - series: 'http_request_duration_seconds_bucket{le="+Inf"}'
+        values: '0+10x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: HighHTTPLatency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Latência HTTP p95 > 2s nos últimos 5m"
+              description: "p95 global de http_request_duration_seconds excede 2s."
+              runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/http-latencia-alta.md"
+
+  - interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{le="0.5"}'
+        values: '0+10x10'
+      - series: 'http_request_duration_seconds_bucket{le="1"}'
+        values: '0+10x10'
+      - series: 'http_request_duration_seconds_bucket{le="2"}'
+        values: '0+10x10'
+      - series: 'http_request_duration_seconds_bucket{le="5"}'
+        values: '0+10x10'
+      - series: 'http_request_duration_seconds_bucket{le="+Inf"}'
+        values: '0+10x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: HighHTTPLatency
+        exp_alerts: []
+
+  # ---------------------------------------------------------------
+  # SpecialistFailing: dispara quando outcome=error / total > 10%
+  # ---------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'crm_specialist_response_duration_seconds_count{outcome="error"}'
+        values: '0+5x10'
+      - series: 'crm_specialist_response_duration_seconds_count{outcome="success"}'
+        values: '0+10x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: SpecialistFailing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "Especialistas falhando acima de 10% nos últimos 5m"
+              description: "Proporção de respostas do motor de especialistas com outcome=error excede 10%."
+              runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/especialista-falhando.md"
+
+  - interval: 1m
+    input_series:
+      - series: 'crm_specialist_response_duration_seconds_count{outcome="error"}'
+        values: '0+1x10'
+      - series: 'crm_specialist_response_duration_seconds_count{outcome="success"}'
+        values: '0+100x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: SpecialistFailing
+        exp_alerts: []
+
+  # ---------------------------------------------------------------
+  # AutomationFailing: dispara quando outcome=error / total > 10%
+  # ---------------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'crm_automation_execution_duration_seconds_count{type="auto_note",outcome="error"}'
+        values: '0+5x10'
+      - series: 'crm_automation_execution_duration_seconds_count{type="auto_note",outcome="success"}'
+        values: '0+10x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: AutomationFailing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "Automações falhando acima de 10% nos últimos 5m"
+              description: "Proporção de execuções de automação com outcome=error excede 10%."
+              runbook_url: "https://github.com/sargita92/crm_juridico/blob/main/docs/operacoes/runbooks/automacao-falhando.md"
+
+  - interval: 1m
+    input_series:
+      - series: 'crm_automation_execution_duration_seconds_count{type="auto_note",outcome="error"}'
+        values: '0+1x10'
+      - series: 'crm_automation_execution_duration_seconds_count{type="auto_note",outcome="success"}'
+        values: '0+100x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: AutomationFailing
+        exp_alerts: []

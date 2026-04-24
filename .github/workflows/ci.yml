@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  promtool:
+    name: Validate Prometheus alert rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run promtool test rules
+        run: |
+          docker run --rm \
+            --entrypoint promtool \
+            -v "${{ github.workspace }}/infra/prometheus:/etc/prometheus" \
+            -w /etc/prometheus \
+            prom/prometheus:v2.53.0 \
+            test rules alerts_test.yml
