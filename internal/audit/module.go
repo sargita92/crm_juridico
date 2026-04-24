@@ -11,10 +11,10 @@ import (
 
 // Module e o composition root do dominio audit (F12).
 //
-// Estado atual (Step 3): expoe o RegisterUC, o Publisher default e o
-// repositorio para outras features injetarem nas suas use cases. Os
-// handlers HTTP, ListUC e GetUC ficam para Steps 4 e 8 — quando esses
-// existirem, este struct cresce e o `RegisterRoutes` aparece.
+// Estado atual (Step 4): expoe RegisterUC, ListUC, GetUC, o Publisher
+// default e o repositorio para outras features injetarem nas suas use
+// cases. Os handlers HTTP ficam para o Step 8 — quando existirem, este
+// struct ganha o `RegisterRoutes`.
 //
 // Fluxo de uso (futuro Step 5):
 //
@@ -22,6 +22,8 @@ import (
 //	authModule.SetAuditPublisher(mod.Publisher)
 type Module struct {
 	RegisterUC *application.RegisterAuditLogUseCase
+	ListUC     *application.ListAuditLogsUseCase
+	GetUC      *application.GetAuditLogUseCase
 	Publisher  application.Publisher
 	Repo       domain.Repository
 }
@@ -39,10 +41,14 @@ func NewModule(db *gorm.DB, logger *zap.Logger) *Module {
 
 	repo := infrastructure.NewGormAuditLogRepository(db)
 	registerUC := application.NewRegisterAuditLogUseCase(repo, logger)
+	listUC := application.NewListAuditLogsUseCase(repo, logger)
+	getUC := application.NewGetAuditLogUseCase(repo, logger)
 	publisher := application.NewPublisher(registerUC, logger)
 
 	return &Module{
 		RegisterUC: registerUC,
+		ListUC:     listUC,
+		GetUC:      getUC,
 		Publisher:  publisher,
 		Repo:       repo,
 	}
