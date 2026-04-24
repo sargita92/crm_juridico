@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // PreferenceOutput is the read model for notification preferences.
@@ -31,6 +33,12 @@ func NewManagePreferencesUseCase(repo domain.PreferenceRepository) *ManagePrefer
 
 // GetPreferences returns all preferences for a user in a tenant.
 func (uc *ManagePreferencesUseCase) GetPreferences(ctx context.Context, userID, tenantID string) ([]PreferenceOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "notification.usecase.get_preferences",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+	)
+	defer span.End()
+
 	items, err := uc.repo.FindByUser(ctx, userID, tenantID)
 	if err != nil {
 		return nil, err
@@ -44,6 +52,13 @@ func (uc *ManagePreferencesUseCase) GetPreferences(ctx context.Context, userID, 
 
 // SetPreference creates or updates a notification preference for a specific channel.
 func (uc *ManagePreferencesUseCase) SetPreference(ctx context.Context, userID, tenantID string, channel domain.Channel, enabled bool) error {
+	ctx, span := observability.StartSpan(ctx, "notification.usecase.set_preference",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+		attribute.String("notification.channel", string(channel)),
+	)
+	defer span.End()
+
 	// Try to find existing preference.
 	existing, err := uc.repo.FindByUserAndChannel(ctx, userID, tenantID, channel)
 	if err != nil && err != domain.ErrPreferenceNotFound {

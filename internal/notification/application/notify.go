@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
 	notifinfra "github.com/sasrgita/crm-juridico/internal/notification/infrastructure"
 	events "github.com/sasrgita/crm-juridico/internal/shared/events"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // NotifyService creates a notification and publishes an in-app event.
@@ -37,6 +39,13 @@ func (s *NotifyService) Notify(
 	title, body string,
 	metadata map[string]string,
 ) error {
+	ctx, span := observability.StartSpan(ctx, "notification.usecase.create",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+		attribute.String("notification.type", string(notifType)),
+	)
+	defer span.End()
+
 	notif, err := domain.NewNotification(uuid.New().String(), tenantID, userID, notifType, title, body, metadata)
 	if err != nil {
 		return err

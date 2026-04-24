@@ -1,7 +1,7 @@
 # Status F18 — Observabilidade Avançada
 
 **Branch**: `feature/F18-observabilidade-avancada`
-**Status**: em andamento — Task 7 concluída em 2026-04-24 (7/23 concluídas, próxima: Task 8)
+**Status**: em andamento — Task 8 concluída em 2026-04-24 (8/23 concluídas, próxima: Task 9)
 **Spec**: [`../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md`](../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md) (gitignored — local)
 **Plano**: [`../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`](../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md) (gitignored — local)
 **Inventário**: [`inventario.md`](inventario.md)
@@ -21,8 +21,8 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 | 4 | `InitTracer` suporta OTLP via env | `76e7bff` ✅ |
 | 5 | Infra: tempo + alertmanager no compose | (commit anterior) ✅ |
 | 6 | Spans em `automation` | (commit anterior) ✅ |
-| 7 | Spans em `permission` + `auth` | (este commit) ✅ |
-| 8 | Spans em `notification` | — |
+| 7 | Spans em `permission` + `auth` | (commit anterior) ✅ |
+| 8 | Spans em `notification` | (este commit) ✅ |
 | 9 | Spans em `funnel` | — |
 | 10 | Spans em `whatsapp` | — |
 | 11 | Span em `ai.usecase.respond` (motor IA) | — |

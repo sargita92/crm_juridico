@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // NotificationOutput is the read model returned to callers.
@@ -31,6 +34,13 @@ func NewListNotificationsUseCase(repo domain.NotificationRepository) *ListNotifi
 
 // Execute lists notifications for the given user with optional unread filter and pagination.
 func (uc *ListNotificationsUseCase) Execute(ctx context.Context, tenantID, userID string, onlyUnread bool, limit, offset int) ([]NotificationOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "notification.usecase.list",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+		attribute.Bool("notification.only_unread", onlyUnread),
+	)
+	defer span.End()
+
 	items, err := uc.repo.FindByUserID(ctx, tenantID, userID, onlyUnread, limit, offset)
 	if err != nil {
 		return nil, err
@@ -44,6 +54,12 @@ func (uc *ListNotificationsUseCase) Execute(ctx context.Context, tenantID, userI
 
 // CountUnread returns the number of unread notifications for the given user.
 func (uc *ListNotificationsUseCase) CountUnread(ctx context.Context, tenantID, userID string) (int64, error) {
+	ctx, span := observability.StartSpan(ctx, "notification.usecase.count_unread",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+	)
+	defer span.End()
+
 	return uc.repo.CountUnread(ctx, tenantID, userID)
 }
 
