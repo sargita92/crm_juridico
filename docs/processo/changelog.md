@@ -4,6 +4,39 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-24] F18 — Observabilidade Avançada
+
+Fecha o gap de instrumentação deixado por F08/F09: spans em camada de aplicação, histogramas de duração, dashboards Grafana novos, regras de alerta com testes promtool no CI e runbooks operacionais.
+
+**Highlights**
+- Novos helpers em `internal/shared/observability/`: `StartSpan(ctx, name, attrs...)`, `LoggerFromContext(ctx, base)` e `InitTracer` com suporte a OTLP gRPC via `OTEL_EXPORTER_OTLP_ENDPOINT` (fallback stdout em dev).
+- Spans em 7 módulos — `automation` (engine + 6 executors), `permission`, `auth`, `notification`, `funnel`, `whatsapp`, `ai.usecase.respond` — todos com atributos `tenant.id`/`lead.id`/`user.id` quando aplicável.
+- 3 histogramas novos: `crm_automation_execution_duration_seconds{type,outcome}`, `crm_permission_check_duration_seconds{scope}`, `crm_specialist_response_duration_seconds{outcome}`.
+- 4 counters novos: `crm_load_balance_fallback_total{reason}`, `crm_notifications_read_total{type}`, `crm_automation_rate_limited_total{type}` (registrado sem call site) e novo outcome `expired` em `invites_total`, mais scope `load_balance` em `permission_changes_total`.
+- Infra: Tempo e Alertmanager adicionados ao `docker-compose.dev.yml.dist`. Retenção 15d (Prometheus) / 7d (Tempo). Datasource Tempo provisionado no Grafana.
+- 5 dashboards em `infra/grafana/dashboards/` — overview (atualizado), whatsapp, leads-kanban, especialistas, equipe.
+- 4 regras em `infra/prometheus/alerts.yml` — `HighHTTPErrorRate`, `HighHTTPLatency`, `SpecialistFailing`, `AutomationFailing` — com testes `promtool test rules` rodando no CI (`.github/workflows/ci.yml`).
+- 4 runbooks em `docs/operacoes/runbooks/` + README índice.
+- Cobertura de `internal/shared/observability`: **86.2%**.
+
+**Decisões técnicas**
+- Trace exporter: Grafana Tempo via OTLP gRPC; stdout quando `OTEL_EXPORTER_OTLP_ENDPOINT` vazio.
+- Alertmanager dev: receiver `null`; Slack/email via `ALERTMANAGER_SLACK_URL`/`ALERTMANAGER_EMAIL_TO` em prod.
+- Namespace Prometheus: métricas transversais novas com prefixo `crm_`; middleware HTTP e módulos legados (`pagamentos`, `whatsapp`) mantêm o que já publicam.
+- Spans pré-existentes em `pagamentos` e `dashboard` não foram renomeados (preservam rastros históricos).
+- Nomenclatura dos spans novos: `<module>.<usecase|engine|executor>.<action>` em snake_case.
+
+**Fora do escopo (follow-up)**
+- Alertas `WhatsAppDisconnected` e `SlowDatabase` removidos — dependem de métricas inexistentes (gauge de sessão WhatsApp e histograma de query Gorm). Tickets separados para criar essas métricas.
+- `automation_rate_limited_total` está registrado mas não incrementado — módulo `automation` ainda não tem rate limiter.
+- Validação ponta-a-ponta do stack Tempo + Alertmanager no compose é smoke manual; CI valida apenas as regras via promtool.
+
+**Entregáveis**
+- 23 tasks do plano, 26 commits na branch `feature/F18-observabilidade-avancada`.
+- Build/vet limpos; `go test ./internal/...` verde (66 pacotes).
+
+---
+
 ## [2026-04-19] F19 — Dashboards (Tenant + Admin)
 
 CRM ganha dois dashboards: tenant (5 blocos: funil, WhatsApp, responsáveis, tempo no funil, produtos) com filtro automático por usuário responsável quando o user é comum; admin (6 blocos: tenants, uso, health, infraestrutura, especialistas, financeiro com dados reais de F11). Chart.js via CDN, HTMX para refresh manual via fragmento, métricas Prometheus de duração e load_total, tracing OTel.
