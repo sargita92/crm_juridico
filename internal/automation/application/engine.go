@@ -5,8 +5,11 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
 	"github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // AsyncTypes lists the automation types that must be executed asynchronously.
@@ -38,6 +41,13 @@ func (e *AutomationEngine) RegisterExecutor(t domain.AutomationType, exec domain
 // OnLeadEvent finds and dispatches all active automations for the given column,
 // running async types in goroutines and sync types inline.
 func (e *AutomationEngine) OnLeadEvent(ctx context.Context, tenantID, leadID, columnID string) error {
+	ctx, span := observability.StartSpan(ctx, "automation.engine.on_lead_event",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("lead.id", leadID),
+		attribute.String("funnel.column.id", columnID),
+	)
+	defer span.End()
+
 	automations, err := e.autoRepo.FindByTenantAndColumn(ctx, tenantID, columnID)
 	if err != nil {
 		return err
@@ -61,6 +71,13 @@ func (e *AutomationEngine) OnLeadEvent(ctx context.Context, tenantID, leadID, co
 // It is intended for manual/AI-initiated triggers (e.g., via the trigger_automation tool).
 // Returns a human-readable summary or an error if the automation or its executor is missing.
 func (e *AutomationEngine) TriggerByID(ctx context.Context, tenantID, automationID, leadID string) (string, error) {
+	ctx, span := observability.StartSpan(ctx, "automation.engine.trigger_by_id",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("automation.id", automationID),
+		attribute.String("lead.id", leadID),
+	)
+	defer span.End()
+
 	auto, err := e.autoRepo.FindByID(ctx, automationID)
 	if err != nil {
 		return "", fmt.Errorf("automation_engine: find automation %s: %w", automationID, err)

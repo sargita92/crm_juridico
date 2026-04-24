@@ -1,7 +1,7 @@
 # Status F18 — Observabilidade Avançada
 
 **Branch**: `feature/F18-observabilidade-avancada`
-**Status**: em andamento — Task 5 concluída em 2026-04-24 (5/23 concluídas, próxima: Task 6)
+**Status**: em andamento — Task 6 concluída em 2026-04-24 (6/23 concluídas, próxima: Task 7)
 **Spec**: [`../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md`](../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md) (gitignored — local)
 **Plano**: [`../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`](../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md) (gitignored — local)
 **Inventário**: [`inventario.md`](inventario.md)
@@ -19,8 +19,8 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 | 2 | `observability.LoggerFromContext` com testes | `dcc0c8c` ✅ |
 | 3 | Registradores centrais (`metrics.go`) | `abe1a3e` ✅ |
 | 4 | `InitTracer` suporta OTLP via env | `76e7bff` ✅ |
-| 5 | Infra: tempo + alertmanager no compose | (este commit) ✅ |
-| 6 | Spans em `automation` | — |
+| 5 | Infra: tempo + alertmanager no compose | (commit anterior) ✅ |
+| 6 | Spans em `automation` | (este commit) ✅ |
 | 7 | Spans em `permission` + `auth` | — |
 | 8 | Spans em `notification` | — |
 | 9 | Spans em `funnel` | — |

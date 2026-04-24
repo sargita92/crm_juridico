@@ -4,7 +4,10 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // ExpirationExecutor handles leads that have been in a column longer than the configured duration.
@@ -31,6 +34,13 @@ func NewExpirationExecutor(
 }
 
 func (e *ExpirationExecutor) Execute(ctx context.Context, a *domain.Automation, leadID, tenantID string) error {
+	ctx, span := observability.StartSpan(ctx, "automation.executor.expiration",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("lead.id", leadID),
+		attribute.String("automation.id", a.ID),
+	)
+	defer span.End()
+
 	action := a.ConfigString("action")
 	lead, err := e.leadFinder.FindByID(ctx, leadID)
 	if err != nil {
