@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 type MoveLeadInput struct {
@@ -63,6 +65,13 @@ func (uc *MoveLeadUseCase) audit() *zap.Logger {
 }
 
 func (uc *MoveLeadUseCase) Execute(ctx context.Context, input MoveLeadInput) error {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.move_lead",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("lead.id", input.LeadID),
+		attribute.String("funnel.column.id", input.ColumnID),
+	)
+	defer span.End()
+
 	lead, err := uc.leadRepo.FindByID(ctx, input.LeadID)
 	if err != nil {
 		return err

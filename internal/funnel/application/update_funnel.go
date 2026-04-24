@@ -3,7 +3,10 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 type UpdateFunnelInput struct {
@@ -22,6 +25,12 @@ func NewUpdateFunnelUseCase(funnelRepo domain.FunnelRepository) *UpdateFunnelUse
 }
 
 func (uc *UpdateFunnelUseCase) Execute(ctx context.Context, input UpdateFunnelInput) (*FunnelOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.update_funnel",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("funnel.id", input.FunnelID),
+	)
+	defer span.End()
+
 	funnel, err := uc.funnelRepo.FindByID(ctx, input.FunnelID)
 	if err != nil {
 		return nil, err

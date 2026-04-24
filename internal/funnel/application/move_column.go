@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 var ErrInvalidDirection = errors.New("direction must be 'up' or 'down'")
@@ -27,6 +30,14 @@ func NewMoveColumnUseCase(funnelRepo domain.FunnelRepository, columnRepo domain.
 }
 
 func (uc *MoveColumnUseCase) Execute(ctx context.Context, input MoveColumnInput) error {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.move_column",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("funnel.id", input.FunnelID),
+		attribute.String("funnel.column.id", input.ColumnID),
+		attribute.String("funnel.direction", input.Direction),
+	)
+	defer span.End()
+
 	if input.Direction != "up" && input.Direction != "down" {
 		return ErrInvalidDirection
 	}

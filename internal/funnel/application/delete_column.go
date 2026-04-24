@@ -3,7 +3,10 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 type DeleteColumnInput struct {
@@ -22,6 +25,12 @@ func NewDeleteColumnUseCase(funnelRepo domain.FunnelRepository, columnRepo domai
 }
 
 func (uc *DeleteColumnUseCase) Execute(ctx context.Context, input DeleteColumnInput) error {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.delete_column",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("funnel.column.id", input.ColumnID),
+	)
+	defer span.End()
+
 	col, err := uc.columnRepo.FindByID(ctx, input.ColumnID)
 	if err != nil {
 		return err

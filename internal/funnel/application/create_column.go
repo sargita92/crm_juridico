@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 type CreateColumnInput struct {
@@ -26,6 +28,12 @@ func NewCreateColumnUseCase(funnelRepo domain.FunnelRepository, columnRepo domai
 }
 
 func (uc *CreateColumnUseCase) Execute(ctx context.Context, input CreateColumnInput) (*ColumnOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.create_column",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("funnel.id", input.FunnelID),
+	)
+	defer span.End()
+
 	funnel, err := uc.funnelRepo.FindByID(ctx, input.FunnelID)
 	if err != nil {
 		return nil, err

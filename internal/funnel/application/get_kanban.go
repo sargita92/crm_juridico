@@ -3,7 +3,10 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 type GetKanbanInput struct {
@@ -52,6 +55,12 @@ func NewGetKanbanUseCase(funnelRepo domain.FunnelRepository, columnRepo domain.C
 }
 
 func (uc *GetKanbanUseCase) Execute(ctx context.Context, input GetKanbanInput) (*KanbanOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "funnel.usecase.get_kanban",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("funnel.id", input.FunnelID),
+	)
+	defer span.End()
+
 	var funnel *domain.Funnel
 	var err error
 
