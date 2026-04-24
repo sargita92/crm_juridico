@@ -1,0 +1,17 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'null'
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 12h
+
+receivers:
+  - name: 'null'
+  # Em prod, ativar via env vars ALERTMANAGER_SLACK_URL / ALERTMANAGER_EMAIL_TO:
+  # - name: 'slack'
+  #   slack_configs:
+  #     - api_url: '${ALERTMANAGER_SLACK_URL}'
+  #       channel: '#alerts'
