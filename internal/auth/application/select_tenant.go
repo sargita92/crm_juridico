@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	tenantdomain "github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
 
@@ -39,6 +42,12 @@ func NewSelectTenantUseCase(
 }
 
 func (uc *SelectTenantUseCase) Execute(ctx context.Context, input SelectTenantInput) (*SelectTenantOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.select_tenant",
+		attribute.String("tenant.id", input.TenantID),
+		attribute.String("user.id", input.UserID),
+	)
+	defer span.End()
+
 	tenant, err := uc.tenantRepo.FindByID(ctx, input.TenantID)
 	if err != nil {
 		return nil, err

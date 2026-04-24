@@ -4,9 +4,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // PermissionInput describes a resource+action pair to be assigned.
@@ -35,6 +37,12 @@ func NewManagePermissionsUseCase(permissions domain.PermissionRepository) *Manag
 // It validates every input first, deletes existing permissions per resource, then
 // creates the new set.
 func (uc *ManagePermissionsUseCase) SetGroupPermissions(ctx context.Context, tenantID, groupID string, inputs []PermissionInput) error {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.set_group_permissions",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	// Validate all inputs before making any changes.
 	for _, inp := range inputs {
 		if _, err := domain.NewPermission(uuid.New().String(), tenantID, groupID, "", inp.Resource, inp.Action); err != nil {
@@ -64,6 +72,12 @@ func (uc *ManagePermissionsUseCase) SetGroupPermissions(ctx context.Context, ten
 
 // SetUserPermissions replaces all permissions for the given user inside tenantID.
 func (uc *ManagePermissionsUseCase) SetUserPermissions(ctx context.Context, tenantID, userID string, inputs []PermissionInput) error {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.set_user_permissions",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+	)
+	defer span.End()
+
 	// Validate all inputs before making any changes.
 	for _, inp := range inputs {
 		if _, err := domain.NewPermission(uuid.New().String(), tenantID, "", userID, inp.Resource, inp.Action); err != nil {
@@ -92,6 +106,11 @@ func (uc *ManagePermissionsUseCase) SetUserPermissions(ctx context.Context, tena
 
 // GetGroupPermissions returns all permissions currently assigned to a group.
 func (uc *ManagePermissionsUseCase) GetGroupPermissions(ctx context.Context, groupID string) ([]PermissionOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.get_group_permissions",
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	list, err := uc.permissions.FindByGroupID(ctx, groupID)
 	if err != nil {
 		return nil, err
@@ -102,6 +121,12 @@ func (uc *ManagePermissionsUseCase) GetGroupPermissions(ctx context.Context, gro
 // GetUserPermissions returns all individual permissions assigned to a user
 // within a tenant.
 func (uc *ManagePermissionsUseCase) GetUserPermissions(ctx context.Context, tenantID, userID string) ([]PermissionOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.get_user_permissions",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+	)
+	defer span.End()
+
 	list, err := uc.permissions.FindByUserID(ctx, tenantID, userID)
 	if err != nil {
 		return nil, err

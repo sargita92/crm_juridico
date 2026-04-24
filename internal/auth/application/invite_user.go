@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 var ErrUserAlreadyInTenant = errors.New("user is already associated to this tenant")
@@ -57,6 +60,12 @@ func (uc *InviteUserUseCase) GenerateInvite(
 	groupIDs []string,
 	expiresInDays int,
 ) (*InviteOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.generate_invite",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", createdBy),
+	)
+	defer span.End()
+
 	if expiresInDays <= 0 {
 		expiresInDays = 7
 	}
@@ -87,6 +96,11 @@ func (uc *InviteUserUseCase) AcceptInvite(
 	ctx context.Context,
 	token, name, email, password string,
 ) (*AcceptOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.accept_invite",
+		attribute.String("auth.email", email),
+	)
+	defer span.End()
+
 	invite, err := uc.inviteRepo.FindByToken(ctx, token)
 	if err != nil {
 		return nil, err
@@ -156,6 +170,11 @@ func (uc *InviteUserUseCase) AcceptInvite(
 
 // ListInvites returns all invite tokens for the given tenant.
 func (uc *InviteUserUseCase) ListInvites(ctx context.Context, tenantID string) ([]InviteOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.list_invites",
+		attribute.String("tenant.id", tenantID),
+	)
+	defer span.End()
+
 	invites, err := uc.inviteRepo.FindByTenantID(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -175,6 +194,11 @@ func (uc *InviteUserUseCase) ListInvites(ctx context.Context, tenantID string) (
 
 // RevokeInvite deletes an invite token by ID.
 func (uc *InviteUserUseCase) RevokeInvite(ctx context.Context, id string) error {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.revoke_invite",
+		attribute.String("invite.id", id),
+	)
+	defer span.End()
+
 	if err := uc.inviteRepo.Delete(ctx, id); err != nil {
 		return err
 	}

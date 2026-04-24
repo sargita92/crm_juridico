@@ -5,7 +5,10 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // GroupTenantChecker validates that a group belongs to the given tenant.
@@ -49,6 +52,12 @@ func (uc *ManageLoadBalanceUseCase) SetOverlapChecker(checker GroupColumnOverlap
 }
 
 func (uc *ManageLoadBalanceUseCase) GetByGroup(ctx context.Context, tenantID, groupID string) (*domain.LoadBalanceConfig, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.get_load_balance_by_group",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	ok, err := uc.groupChecker.BelongsToTenant(ctx, tenantID, groupID)
 	if err != nil {
 		return nil, err
@@ -60,6 +69,12 @@ func (uc *ManageLoadBalanceUseCase) GetByGroup(ctx context.Context, tenantID, gr
 }
 
 func (uc *ManageLoadBalanceUseCase) SetByGroup(ctx context.Context, in SetLoadBalanceInput) (*domain.LoadBalanceConfig, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.set_load_balance_by_group",
+		attribute.String("tenant.id", in.TenantID),
+		attribute.String("group.id", in.GroupID),
+	)
+	defer span.End()
+
 	ok, err := uc.groupChecker.BelongsToTenant(ctx, in.TenantID, in.GroupID)
 	if err != nil {
 		return nil, err

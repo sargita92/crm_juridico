@@ -4,9 +4,11 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // MemberOutput is the read model for a user-group membership.
@@ -40,6 +42,13 @@ func NewManageMembersUseCase(
 // AddMember adds a user to a group, verifying the group exists and the user is
 // not already a member.
 func (uc *ManageMembersUseCase) AddMember(ctx context.Context, userID, groupID, tenantID string) error {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.add_member",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	if _, err := uc.groups.FindByID(ctx, groupID); err != nil {
 		return err
 	}
@@ -59,11 +68,22 @@ func (uc *ManageMembersUseCase) AddMember(ctx context.Context, userID, groupID, 
 
 // RemoveMember removes a user from a group.
 func (uc *ManageMembersUseCase) RemoveMember(ctx context.Context, userID, groupID string) error {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.remove_member",
+		attribute.String("user.id", userID),
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	return uc.userGroups.Delete(ctx, userID, groupID)
 }
 
 // ListMembers returns all members of the given group with full user details.
 func (uc *ManageMembersUseCase) ListMembers(ctx context.Context, groupID string) ([]MemberOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.list_members",
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	list, err := uc.userGroups.FindByGroupID(ctx, groupID)
 	if err != nil {
 		return nil, err

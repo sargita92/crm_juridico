@@ -3,7 +3,10 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // ResolvePermissionUseCase checks whether a user has a given permission via
@@ -36,6 +39,14 @@ func NewResolvePermissionUseCase(
 //  3. Individual (user-level) permissions
 //  4. Group permissions (union across all groups the user belongs to)
 func (uc *ResolvePermissionUseCase) HasPermission(ctx context.Context, userID, tenantID, resource, action string) (bool, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.check",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("user.id", userID),
+		attribute.String("permission.resource", resource),
+		attribute.String("permission.action", action),
+	)
+	defer span.End()
+
 	// 1. Owner bypass
 	isOwner, err := uc.ownerCheck.IsOwner(ctx, userID, tenantID)
 	if err != nil {

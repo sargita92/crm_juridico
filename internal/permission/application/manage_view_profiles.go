@@ -5,9 +5,11 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
 // ViewProfileInput is the data required to set a view profile for a group.
@@ -38,6 +40,12 @@ func NewManageViewProfilesUseCase(profiles domain.ViewProfileRepository) *Manage
 // SetViewProfile creates or updates the view profile for the given group+funnel
 // combination.
 func (uc *ManageViewProfilesUseCase) SetViewProfile(ctx context.Context, input ViewProfileInput) error {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.set_view_profile",
+		attribute.String("group.id", input.GroupID),
+		attribute.String("funnel.id", input.FunnelID),
+	)
+	defer span.End()
+
 	existing, err := uc.profiles.FindByGroupAndFunnel(ctx, input.GroupID, input.FunnelID)
 	if err != nil && !errors.Is(err, domain.ErrViewProfileNotFound) {
 		return err
@@ -65,6 +73,11 @@ func (uc *ManageViewProfilesUseCase) SetViewProfile(ctx context.Context, input V
 
 // ListByGroup returns all view profiles associated with the given group.
 func (uc *ManageViewProfilesUseCase) ListByGroup(ctx context.Context, groupID string) ([]ViewProfileOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.list_view_profiles",
+		attribute.String("group.id", groupID),
+	)
+	defer span.End()
+
 	list, err := uc.profiles.FindByGroupID(ctx, groupID)
 	if err != nil {
 		return nil, err
@@ -85,6 +98,12 @@ func (uc *ManageViewProfilesUseCase) ListByGroup(ctx context.Context, groupID st
 // groups and funnel. A nil return value means "show all" (no restrictions
 // found). An empty non-nil slice means no columns are visible.
 func (uc *ManageViewProfilesUseCase) ResolveVisibleColumns(ctx context.Context, groupIDs []string, funnelID string) ([]string, error) {
+	ctx, span := observability.StartSpan(ctx, "permission.usecase.resolve_visible_columns",
+		attribute.String("funnel.id", funnelID),
+		attribute.Int("groups.count", len(groupIDs)),
+	)
+	defer span.End()
+
 	if len(groupIDs) == 0 {
 		return nil, nil
 	}

@@ -3,7 +3,10 @@ package application
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	tenantdomain "github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
 
@@ -45,6 +48,11 @@ func NewLoginUseCase(
 }
 
 func (uc *LoginUseCase) Execute(ctx context.Context, input LoginInput) (*LoginOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.login",
+		attribute.String("auth.email", input.Email),
+	)
+	defer span.End()
+
 	user, err := uc.userRepo.FindByEmail(ctx, input.Email)
 	if err != nil {
 		return nil, domain.ErrInvalidCredentials
