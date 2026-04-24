@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
+	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
-	"go.uber.org/zap"
 )
 
 // ConfigResolver resolves the AI configuration for a given specialist.
@@ -102,6 +104,13 @@ func (e *ConversationEngine) HandleMessages(
 	tenantID, conversationID, specialistID, productID string,
 	messages []string,
 ) error {
+	ctx, span := observability.StartSpan(ctx, "ai.usecase.respond",
+		attribute.String("tenant.id", tenantID),
+		attribute.String("conversation.id", conversationID),
+		attribute.String("specialist.id", specialistID),
+	)
+	defer span.End()
+
 	// 0. Intercept /reset command before any state loading.
 	if e.resetCommandEnabled && e.resetUC != nil && IsResetCommand(messages) {
 		return e.resetUC.Execute(ctx, tenantID, conversationID, "command")
@@ -132,6 +141,10 @@ func (e *ConversationEngine) HandleMessages(
 
 	// 3. Resolve config.
 	cfg := e.configResolver.Resolve(ctx, specialistID)
+	span.SetAttributes(
+		attribute.String("ai.provider", cfg.Provider),
+		attribute.String("ai.model", cfg.Model),
+	)
 
 	// 4. Build AI request context.
 	req, err := e.contextBuilder.Build(ctx, state, productID, 20)
