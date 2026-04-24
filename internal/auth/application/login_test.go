@@ -45,6 +45,23 @@ func TestLoginUseCase_ValidCredentials_OneTenant(t *testing.T) {
 	assert.Len(t, output.Tenants, 1)
 	// With 1 tenant, token should include tenant_id
 	assert.Equal(t, "tenant-1", tokenProvider.lastClaims.TenantID)
+	// F12: token claim must carry the user email so audit publish has actor_email
+	// without an extra DB hit.
+	assert.Equal(t, "joao@email.com", tokenProvider.lastClaims.Email)
+}
+
+func TestLoginUseCase_PopulatesEmailInClaims(t *testing.T) {
+	uc, userRepo, _, _, tokenProvider := setupLoginUC()
+	ctx := context.Background()
+
+	admin := &domain.User{ID: "admin-1", Name: "Admin", Email: "admin@example.com", PasswordHash: "hashed:secret", Role: domain.UserRoleAdmin, Status: domain.UserStatusActive}
+	userRepo.users[admin.Email] = admin
+
+	_, err := uc.Execute(ctx, LoginInput{Email: "admin@example.com", Password: "secret"})
+
+	require.NoError(t, err)
+	assert.Equal(t, "admin-1", tokenProvider.lastClaims.UserID)
+	assert.Equal(t, "admin@example.com", tokenProvider.lastClaims.Email)
 }
 
 func TestLoginUseCase_ValidCredentials_MultipleTenants(t *testing.T) {

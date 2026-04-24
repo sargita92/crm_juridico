@@ -16,6 +16,7 @@ func TestJWTProvider_Generate_And_Validate(t *testing.T) {
 
 	claims := domain.TokenClaims{
 		UserID:   "user-123",
+		Email:    "joao@example.com",
 		Role:     domain.UserRoleUser,
 		TenantID: "tenant-456",
 	}
@@ -27,8 +28,27 @@ func TestJWTProvider_Generate_And_Validate(t *testing.T) {
 	result, err := provider.Validate(tokenStr)
 	require.NoError(t, err)
 	assert.Equal(t, "user-123", result.UserID)
+	assert.Equal(t, "joao@example.com", result.Email)
 	assert.Equal(t, domain.UserRoleUser, result.Role)
 	assert.Equal(t, "tenant-456", result.TenantID)
+}
+
+func TestJWTProvider_Generate_WithoutEmail_RoundTrips(t *testing.T) {
+	// Tokens emitidos antes da F12 (sem email) devem continuar validos:
+	// o claim e omitempty no JSON, entao deserializa como string vazia.
+	provider := NewJWTProvider("test-secret", 24*time.Hour)
+
+	claims := domain.TokenClaims{
+		UserID: "user-123",
+		Role:   domain.UserRoleUser,
+	}
+
+	tokenStr, err := provider.Generate(claims)
+	require.NoError(t, err)
+
+	result, err := provider.Validate(tokenStr)
+	require.NoError(t, err)
+	assert.Empty(t, result.Email)
 }
 
 func TestJWTProvider_Generate_WithoutTenantID(t *testing.T) {
