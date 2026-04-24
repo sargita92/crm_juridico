@@ -107,6 +107,13 @@ func (uc *InviteUserUseCase) AcceptInvite(
 	}
 
 	if err := invite.Validate(); err != nil {
+		if errors.Is(err, domain.ErrInviteTokenExpired) {
+			// We learn about expiration lazily: the counter is incremented on
+			// the first redemption attempt against an already-expired token.
+			// No background job sweeps and expires tokens today, so this is the
+			// only observable signal available.
+			infrastructure.InvitesTotal.WithLabelValues("expired").Inc()
+		}
 		return nil, err
 	}
 
