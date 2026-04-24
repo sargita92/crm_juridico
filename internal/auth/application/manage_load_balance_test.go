@@ -5,11 +5,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 )
 
 type mockGroupChecker struct{ mock.Mock }
@@ -62,12 +64,19 @@ func TestSetByGroup_CreatesWhenMissing(t *testing.T) {
 	repo.On("FindByGroupID", mock.Anything, "t1", "g1").Return(nil, domain.ErrLoadBalanceNotFound)
 	repo.On("CreateOrUpdate", mock.Anything, mock.Anything).Return(nil)
 
+	before := testutil.ToFloat64(perminfra.ChangesTotal.WithLabelValues("load_balance", "updated"))
+
 	cfg, err := uc.SetByGroup(context.Background(), SetLoadBalanceInput{
 		TenantID: "t1", GroupID: "g1", Algorithm: domain.AlgorithmRoundRobin, Active: true,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, domain.AlgorithmRoundRobin, cfg.Algorithm)
 	assert.True(t, cfg.Active)
+
+	// A successful SetByGroup must register itself under scope=load_balance
+	// in the shared permission-changes counter.
+	after := testutil.ToFloat64(perminfra.ChangesTotal.WithLabelValues("load_balance", "updated"))
+	assert.Equal(t, before+1, after, "permission_changes_total{scope=load_balance,action=updated} should increment once")
 }
 
 func TestSetByGroup_UpdatesExisting(t *testing.T) {

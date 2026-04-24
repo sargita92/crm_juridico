@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 )
 
@@ -120,5 +121,9 @@ func (uc *ManageLoadBalanceUseCase) SetByGroup(ctx context.Context, in SetLoadBa
 	if err := uc.repo.CreateOrUpdate(ctx, cfg); err != nil {
 		return nil, err
 	}
+	// Surface load-balance policy changes in the shared permission-changes
+	// counter so the observability/permission_changes_total dashboard captures
+	// them alongside group/user/funnel/view_profile edits.
+	perminfra.ChangesTotal.WithLabelValues("load_balance", "updated").Inc()
 	return cfg, nil
 }
