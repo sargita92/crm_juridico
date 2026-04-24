@@ -49,7 +49,7 @@
 |---|---------|--------|-------------|------------|
 | F11 | [Pagamentos](../features/F11-pagamentos-admin.md) | concluído | F03 | média |
 | F12 | [Logs](../features/F12-logs-admin.md) | backlog | F01 | baixa |
-| F18 | [Observabilidade Avançada](../features/F18-observabilidade-avancada.md) | backlog | F08, F09 | média |
+| F18 | [Observabilidade Avançada](../features/F18-observabilidade-avancada.md) | concluído | F08, F09 | média |
 
 ## Épico 7: IA e MCP
 
