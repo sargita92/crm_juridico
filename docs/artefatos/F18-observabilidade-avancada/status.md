@@ -1,7 +1,7 @@
 # Status F18 — Observabilidade Avançada
 
 **Branch**: `feature/F18-observabilidade-avancada`
-**Status**: em andamento
+**Status**: em andamento — **pausada em 2026-04-24 após Task 3** (3/23 concluídas, próxima: Task 4)
 **Spec**: [`../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md`](../../superpowers/specs/2026-04-24-F18-observabilidade-avancada-design.md) (gitignored — local)
 **Plano**: [`../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`](../../superpowers/plans/2026-04-24-F18-observabilidade-avancada.md) (gitignored — local)
 **Inventário**: [`inventario.md`](inventario.md)
@@ -14,11 +14,11 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 
 | Task | Descrição | Commit |
 |------|-----------|--------|
-| Preflight | Branch + artefatos + inventário | — |
-| 1 | `observability.StartSpan` helper com testes | — |
-| 2 | `observability.LoggerFromContext` com testes | — |
-| 3 | Registradores centrais (`metrics.go`) | — |
-| 4 | `InitTracer` suporta OTLP via env | — |
+| Preflight | Branch + artefatos + inventário | `f1556a2` ✅ |
+| 1 | `observability.StartSpan` helper com testes | `4de9eeb` ✅ |
+| 2 | `observability.LoggerFromContext` com testes | `dcc0c8c` ✅ |
+| 3 | Registradores centrais (`metrics.go`) | `abe1a3e` ✅ |
+| 4 | `InitTracer` suporta OTLP via env | — **← RETOMAR AQUI** |
 | 5 | Infra: tempo + alertmanager no compose | — |
 | 6 | Spans em `automation` | — |
 | 7 | Spans em `permission` + `auth` | — |
@@ -39,6 +39,16 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 | 22 | 6 runbooks | — |
 | 23 | Docs final + PR | — |
 
+## Lições aprendidas (aplicar nas próximas tasks)
+
+1. **Module path é `github.com/sasrgita/crm-juridico`** (não `crm_juridico`). Usar esse prefix em TODOS os imports.
+2. **NÃO cachear `otel.Tracer(name)` em package-level `var tracer = ...`**. Quebra testes que usam `otel.SetTracerProvider(...)` para registrar um `tracetest.SpanRecorder`, porque a referência cacheada fica vinculada ao provider default (noop) na hora do `init`. A Task 1 tentou a otimização e teve que reverter. Chamar `otel.Tracer(tracerName)` dentro da função é correto — o OTel SDK já cacheia internamente.
+3. **Pattern de teste OTel estabelecido**: helper `newInMemoryTracer(t)` em `internal/shared/observability/tracing_test.go` cria `tracetest.SpanRecorder` e registra como provider global. Reutilizar nos testes do mesmo package `observability_test` (já é reusado em `logging_test.go`).
+4. **Spans existentes não renomear**: `internal/pagamentos/application/` usa `otel.Tracer("pagamentos").Start(ctx, "RegisterManualPayment")` (PascalCase). `internal/dashboard/application/` também. F18 só adiciona spans onde não existem; não altera nomenclatura dos existentes.
+5. **Namespace Prometheus `crm`** para métricas transversais novas (Task 3 já fez). Módulos que historicamente usam sem prefixo (`pagamentos`, `whatsapp`) continuam sem prefixo para não quebrar dashboards existentes.
+6. **HTTP middleware** (`internal/shared/middleware/prometheus.go`) usa `http_requests_total` e `http_request_duration_seconds` **SEM prefixo `crm_`**. Regras de alerta (Task 21) devem refletir isso.
+7. **Descartar drive-by changes**: subagents podem rodar `goimports` e modificar arquivos fora do escopo da task (aconteceu em Task 3 com `metrics_registered_test.go`). Rodar `git status` depois de cada task e `git checkout --` no que não pertence.
+
 ## Decisões-chave
 
 - **Trace exporter**: Grafana Tempo via OTLP gRPC; fallback stdout quando `OTEL_EXPORTER_OTLP_ENDPOINT` vazio.
@@ -58,7 +68,20 @@ PO (inline) → UI/UX (não aplicável) → Arquiteto (inline) → QA (promtool 
 ## Como retomar
 
 1. `git checkout feature/F18-observabilidade-avancada`
-2. Abrir o plano (gitignored, local): `docs/superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`
-3. Identificar a primeira task `- [ ]` não marcada
-4. Executar via subagent-driven-development (implementer → spec-reviewer → code-quality-reviewer)
-5. Ao concluir cada task, atualizar este `status.md` e commitar
+2. Confirmar estado: `git log --oneline main..HEAD` — esperar 4 commits: preflight + Tasks 1, 2, 3.
+3. Rodar `go test ./internal/shared/observability/... -v` — deve passar (sanity check).
+4. Abrir o plano (gitignored, local): `docs/superpowers/plans/2026-04-24-F18-observabilidade-avancada.md`.
+5. **Retomar na Task 4** (`InitTracer` suporta OTLP via env). O plano tem o conteúdo completo. Antes de começar, ler `internal/shared/observability/otel.go` atual para ver a assinatura exata de `InitTracer` (hoje é `InitTracer(serviceName string) (*sdktrace.TracerProvider, error)`).
+6. Seguir fluxo subagent-driven-development para cada task (implementer → spec-reviewer → code-quality-reviewer). Para tasks muito pequenas (Task 4, 15, 17, 18) dá pra fazer spec review inline e pular o code quality review — como foi feito em Tasks 2 e 3.
+7. Ao concluir cada task, atualizar este `status.md` (preencher coluna `Commit` + mover o marcador **← RETOMAR AQUI**) e commitar.
+8. **Atenção às Lições aprendidas acima** — elas encaixam direto em várias tasks.
+
+## Comando rápido para retomar
+
+```bash
+git checkout feature/F18-observabilidade-avancada && \
+  git log --oneline main..HEAD && \
+  go test ./internal/shared/observability/... -v | tail -10
+```
+
+Esperado: 4 commits listados; 6 testes PASS (2 em `tracing`, 2 em `logging`, 2 em `metrics`).
