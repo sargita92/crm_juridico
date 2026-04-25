@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
+	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
 	"github.com/sasrgita/crm-juridico/internal/auth/application"
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
@@ -26,6 +27,12 @@ type Module struct {
 	loadBalanceUC   *application.ManageLoadBalanceUseCase
 	loadBalanceRepo authdomain.LoadBalanceConfigRepository
 	userTenantRepo  authdomain.UserTenantRepository
+
+	// auditPublisher e injetado pelo composition root via SetAuditPublisher
+	// apos o audit.Module existir. Nil-safe: callers (handlers de admin
+	// login/logout) checam antes de publicar para nao acoplar testes
+	// antigos a um publisher real.
+	auditPublisher auditapp.Publisher
 }
 
 // NewModule builds and returns a fully wired auth Module.
@@ -106,6 +113,30 @@ func (m *Module) LoadBalanceRepo() authdomain.LoadBalanceConfigRepository {
 // tenant membership and owner fallback without duplicating the gorm instance.
 func (m *Module) UserTenantRepo() authdomain.UserTenantRepository {
 	return m.userTenantRepo
+}
+
+// SetAuditPublisher injects the audit publisher used by the admin login /
+// logout handlers (wired in cmd/api/main.go) to record auth events e
+// propaga para os UCs internos que tambem publicam (ManageUsers em F12
+// Step 7). The publisher is optional — when nil, callers must skip
+// publishing. This keeps `auth` decoupled from `audit` at construction
+// time and lets tests run without a real publisher.
+func (m *Module) SetAuditPublisher(p auditapp.Publisher) {
+	m.auditPublisher = p
+	// Propaga para o UC de admin users (F12 Step 7) — assim acoes
+	// user_admin.{created,updated,deactivated,blocked,unblocked} viram
+	// audit logs sem precisar passar o publisher pelo construtor (que
+	// criaria ciclo: auth -> audit -> ... -> auth via tenants).
+	if m.manageUsersUC != nil {
+		m.manageUsersUC.SetAuditPublisher(p)
+	}
+}
+
+// AuditPublisher returns the publisher injected via SetAuditPublisher (nil
+// if none was wired). Exposed for the admin login handler in main.go that
+// needs to publish auth.login.success / failure / logout events.
+func (m *Module) AuditPublisher() auditapp.Publisher {
+	return m.auditPublisher
 }
 
 // SetLoadBalanceOverlapChecker injects the cross-module overlap checker into

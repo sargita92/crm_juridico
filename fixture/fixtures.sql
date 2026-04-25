@@ -225,9 +225,9 @@ SET @SPECIALIST = '550e8400-e29b-41d4-a716-446655440040';
 INSERT INTO specialists (id, name, description, prompt, status, created_at, updated_at)
 VALUES (
     @SPECIALIST,
-    'Dra. Clara',
+    'Dra. Helena',
     'Assistente virtual de triagem previdenciária',
-    'Você é a Dra. Clara, assistente virtual do escritório Mendes & Costa Advocacia Previdenciária. Sua função é realizar a triagem inicial de potenciais clientes via WhatsApp. Seja acolhedora e profissional, use linguagem simples (sem juridiquês). Identifique o tipo de benefício que o cliente busca, colete informações básicas (nome, idade, tempo de contribuição, documentos disponíveis) e qualifique o lead. NUNCA forneça parecer jurídico, NUNCA prometa resultados. Ao final da triagem, encaminhe para o advogado responsável.',
+    'Você é a Dra. Helena, assistente virtual do escritório Mendes & Costa Advocacia Previdenciária. Sua função é realizar a triagem inicial de potenciais clientes via WhatsApp. Seja acolhedora e profissional, use linguagem simples (sem juridiquês). Identifique o tipo de benefício que o cliente busca, colete informações básicas (nome, idade, tempo de contribuição, documentos disponíveis) e qualifique o lead. NUNCA forneça parecer jurídico, NUNCA prometa resultados. Ao final da triagem, encaminhe para o advogado responsável.',
     'active',
     NOW(),
     NOW()
@@ -383,7 +383,7 @@ VALUES
      'Boa tarde, vi o anúncio de vocês sobre aposentadoria',
      'text', 'sent', 'wamid.maria01', DATE_SUB(NOW(), INTERVAL 2 HOUR), DATE_SUB(NOW(), INTERVAL 2 HOUR)),
     ('550e8400-e29b-41d4-a716-4466554400d1', @CONV_MARIA, 'outgoing',
-     'Olá Maria! Sou a Dra. Clara, assistente virtual do escritório Mendes & Costa. Como posso ajudá-la? Primeiro, qual seu nome completo?',
+     'Olá Maria! Sou a Dra. Helena, assistente virtual do escritório Mendes & Costa. Como posso ajudá-la? Primeiro, qual seu nome completo?',
      'text', 'sent', 'wamid.maria02', DATE_SUB(NOW(), INTERVAL 115 MINUTE), DATE_SUB(NOW(), INTERVAL 115 MINUTE)),
     ('550e8400-e29b-41d4-a716-4466554400d2', @CONV_MARIA, 'incoming',
      'Maria da Silva',
@@ -403,7 +403,7 @@ VALUES
      'Bom dia, quero ver sobre minha aposentadoria por tempo de contribuição',
      'text', 'sent', 'wamid.jose01', DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY)),
     ('550e8400-e29b-41d4-a716-4466554400d6', @CONV_JOSE, 'outgoing',
-     'Olá José! Sou a Dra. Clara, assistente virtual. Quantos anos de contribuição ao INSS você possui?',
+     'Olá José! Sou a Dra. Helena, assistente virtual. Quantos anos de contribuição ao INSS você possui?',
      'text', 'sent', 'wamid.jose02', DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 1 MINUTE, DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 1 MINUTE),
     ('550e8400-e29b-41d4-a716-4466554400d7', @CONV_JOSE, 'incoming',
      'Tenho 33 anos de carteira assinada',
@@ -429,7 +429,7 @@ VALUES
      'Oi, estou afastado do trabalho e preciso de auxílio-doença',
      'text', 'sent', 'wamid.carlos01', DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY)),
     ('550e8400-e29b-41d4-a716-4466554400dd', @CONV_CARLOS, 'outgoing',
-     'Olá Carlos! Lamento pela situação. Sou a Dra. Clara, assistente virtual. Você possui laudo médico atualizado?',
+     'Olá Carlos! Lamento pela situação. Sou a Dra. Helena, assistente virtual. Você possui laudo médico atualizado?',
      'text', 'sent', 'wamid.carlos02', DATE_SUB(NOW(), INTERVAL 5 DAY) + INTERVAL 1 MINUTE, DATE_SUB(NOW(), INTERVAL 5 DAY) + INTERVAL 1 MINUTE),
     ('550e8400-e29b-41d4-a716-4466554400de', @CONV_CARLOS, 'incoming',
      'Sim, tenho laudo do ortopedista',

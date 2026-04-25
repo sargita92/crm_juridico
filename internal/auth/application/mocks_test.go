@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 
+	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
 	tenantdomain "github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
@@ -10,7 +11,9 @@ import (
 // --- Mock UserRepository ---
 
 type mockUserRepo struct {
-	users map[string]*domain.User
+	users     map[string]*domain.User
+	createErr error
+	updateErr error
 }
 
 func newMockUserRepo() *mockUserRepo {
@@ -18,6 +21,24 @@ func newMockUserRepo() *mockUserRepo {
 }
 
 func (m *mockUserRepo) Create(_ context.Context, user *domain.User) error {
+	if m.createErr != nil {
+		return m.createErr
+	}
+	m.users[user.Email] = user
+	return nil
+}
+
+func (m *mockUserRepo) Update(_ context.Context, user *domain.User) error {
+	if m.updateErr != nil {
+		return m.updateErr
+	}
+	// preservar o lookup por email se o email mudou
+	for k, u := range m.users {
+		if u.ID == user.ID {
+			delete(m.users, k)
+			break
+		}
+	}
 	m.users[user.Email] = user
 	return nil
 }
@@ -267,4 +288,22 @@ func (m *mockTokenProvider) Validate(token string) (*domain.TokenClaims, error) 
 		return m.lastClaims, nil
 	}
 	return nil, domain.ErrInvalidCredentials
+}
+
+// --- spyAuditPublisher (F12 Step 7) ---
+//
+// Captura chamadas de Publish para asserts. Implementa auditapp.Publisher.
+// Se publishErr != nil, retorna o erro sem registrar a chamada — usado
+// para validar S1-C17 (falha de auditoria nao aborta operacao).
+type spyAuditPublisher struct {
+	calls      []auditapp.RegisterAuditLogInput
+	publishErr error
+}
+
+func (s *spyAuditPublisher) Publish(_ context.Context, in auditapp.RegisterAuditLogInput) error {
+	if s.publishErr != nil {
+		return s.publishErr
+	}
+	s.calls = append(s.calls, in)
+	return nil
 }

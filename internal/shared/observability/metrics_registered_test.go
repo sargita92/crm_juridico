@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 
+	auditinfra "github.com/sasrgita/crm-juridico/internal/audit/infrastructure"
 	autinfra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
@@ -24,11 +25,15 @@ func TestAllF08F09MetricsRegistered(t *testing.T) {
 	autinfra.ExecutionsTotal.WithLabelValues("auto_message", "success").Add(0)
 	perminfra.ChangesTotal.WithLabelValues("group", "updated").Add(0)
 	authinfra.InvitesTotal.WithLabelValues("sent").Add(0)
+	auditinfra.AuditLogsRegisteredTotal.WithLabelValues("auth.login", "success").Add(0)
+	auditinfra.AuditLogsListDuration.WithLabelValues().Observe(0)
 
 	required := []string{
 		"crm_automation_executions_total",
 		"crm_permission_changes_total",
 		"crm_auth_invites_total",
+		"crm_audit_logs_registered_total",
+		"crm_audit_logs_list_duration_seconds",
 	}
 	mfs, err := prometheus.DefaultGatherer.Gather()
 	assert.NoError(t, err)

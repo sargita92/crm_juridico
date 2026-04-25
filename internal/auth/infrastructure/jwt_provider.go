@@ -25,6 +25,7 @@ func NewJWTProvider(secret string, expiration time.Duration) *JWTProvider {
 
 type jwtClaims struct {
 	UserID   string `json:"user_id"`
+	Email    string `json:"email,omitempty"`
 	Role     string `json:"role"`
 	TenantID string `json:"tenant_id,omitempty"`
 	jwt.RegisteredClaims
@@ -34,6 +35,7 @@ func (p *JWTProvider) Generate(claims domain.TokenClaims) (string, error) {
 	now := time.Now()
 	c := jwtClaims{
 		UserID:   claims.UserID,
+		Email:    claims.Email,
 		Role:     string(claims.Role),
 		TenantID: claims.TenantID,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -64,6 +66,7 @@ func (p *JWTProvider) Validate(tokenString string) (*domain.TokenClaims, error) 
 
 	return &domain.TokenClaims{
 		UserID:   claims.UserID,
+		Email:    claims.Email,
 		Role:     domain.UserRole(claims.Role),
 		TenantID: claims.TenantID,
 	}, nil

@@ -4,6 +4,11 @@ import "context"
 
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
+	// Update persiste alteracoes em campos mutaveis do usuario (Name, Email,
+	// Status). Adicionado em F12 Step 7 para suportar UCs de admin user
+	// (update/deactivate/block/unblock); nao altera invariantes do
+	// dominio.
+	Update(ctx context.Context, user *User) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByID(ctx context.Context, id string) (*User, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)

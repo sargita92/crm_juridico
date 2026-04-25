@@ -111,6 +111,7 @@ Detalhes em [docs/engenharia/observabilidade.md](docs/engenharia/observabilidade
 | F09 | [Automações](docs/features/F09-automacoes.md) | Tenant |
 | F10 | [Produtos](docs/features/F10-produtos.md) | Tenant |
 | F11 | [Pagamentos](docs/features/F11-pagamentos-admin.md) | Admin |
+| F12 | [Logs (Admin)](docs/features/F12-logs-admin.md) | Admin |
 | F13 | [Landing Page](docs/features/F13-landing-page.md) | Público |
 | F14 | [Arquivos por Lead](docs/features/F14-arquivos.md) | Tenant |
 | F15 | [MCP Interno](docs/features/F15-mcp-interno-especialistas.md) | IA |

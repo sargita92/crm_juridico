@@ -4,6 +4,43 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-04-24] F12 — Logs (Admin)
+
+Auditoria centralizada de ações admin e de segurança: login (sucesso e falha), CRUD de tenants, CRUD de usuários admin, bloqueio/desbloqueio de tenant e alteração de permissões. Consulta com filtros (tenant, usuário, ação, período) + paginação + detalhe. Rota `/admin/logs` restrita ao admin global; usuários não-admin recebem 404 genérico (sem revelar a existência da rota). Sem exportação CSV no MVP; retenção ilimitada.
+
+**Highlights**
+- Novo módulo `internal/audit/` (DDD + Clean Architecture): `domain` (entidade `AuditLog`, enum `Action` com 14 ações, value object `Filter`, erros), `application` (`RegisterAuditLogUseCase`, `ListAuditLogsUseCase`, `GetAuditLogUseCase`, `Publisher` com `NoopPublisher` e default que engole erro com WARN, helper `BuildDiff`), `infrastructure` (`GormAuditLogRepository` com 4 índices, métricas Prometheus, adapters `tenant_lister` e `admin_user_lister`), `interfaces/http` (`Handler` para fragmentos HTMX, `PageHandler` para full page, OWASP suite).
+- Migration `000056_create_audit_logs` com índices `idx_audit_created_at`, `idx_audit_tenant_created`, `idx_audit_user_created`, `idx_audit_action_created`. JSON metadata. Imutável (sem update/delete).
+- Captura via `AuditPublisher` injetável em casos de uso (não middleware HTTP) — eventos auditáveis são de domínio. Falha de auditoria **não** quebra a operação de negócio (WARN + métrica `status="error"`).
+- Integração com 3 módulos: `auth` (`login.success`/`login.failure`/`logout` + claim `Email` no JWT), `tenant` (5 actions com diff em update e motivo em block/unblock), `auth.ManageUsers` + `permission` (5 actions de `user_admin.*` + `permission.changed` quando alvo é admin).
+- Sanitização: chaves proibidas (`password`, `password_hash`, `token`, `secret`, `authorization`, `hash`) removidas de `Metadata` no domínio (`IsForbiddenMetadataKey`) e ignoradas em `BuildDiff`. Diff também ignora `updated_at`.
+- Middleware `AdminOr404` + `AdminPageAuth`: não autenticado → 302 redirect HTML para `/admin/login?return=...`; autenticado mas não-admin → 404 genérico (mesma página de id inexistente, sem vazar existência — OWASP A01).
+- Filtros via querystring com **clamp** de `page_size` (default 10, max 100), rejeição 400 em `action` fora do enum, rejeição 400 em `from > to`. Botão "Voltar" no detalhe preserva filtros via `?return=...`.
+- UI HTMX consistente com painel admin: tabela em desktop, cartões em mobile, date pickers nativos, escape automático via `html/template`. Sem JavaScript custom.
+- 2 métricas Prometheus: `crm_audit_logs_registered_total{action,status}` (counter) e `crm_audit_logs_list_duration_seconds` (histogram). Spans OTel `audit.list`/`audit.get`. Smoke test em `internal/shared/observability/metrics_registered_test.go`.
+
+**Decisões de produto**
+- Escopo reduzido a admin/segurança no MVP (sem CRUD operacional de tenant — leads, kanban, produtos, automações, arquivos ficam fora).
+- Retenção ilimitada (sem expurgo no MVP).
+- Sem exportação CSV (cortado por YAGNI — F18 já cobre observabilidade operacional via Grafana).
+- Logs imutáveis (sem botão editar/excluir nas telas).
+- `permission.changed` só para alvo admin no MVP (`tenant_id` sempre NULL para esta ação).
+- `access.denied` (auditoria de tentativa de acesso negado) ficou fora do MVP — pode ser reativado em revisão de Segurança futura.
+
+**Cobertura final** (todos ≥ 80%):
+- `internal/audit/domain`: 100%
+- `internal/audit/application`: 91.9%
+- `internal/audit/infrastructure`: ~87%
+- `internal/audit/interfaces/http`: 89.4%
+- `internal/shared/middleware/admin_or_404.go`: 100%
+
+**Entregáveis**
+- 10 steps, 10 commits atômicos na branch `feature/F12-logs-admin` (`654448b` → `a132f9b`).
+- Artefatos: `docs/artefatos/F12-logs-admin/{po-stories,uiux-wireframes,arquiteto-design,qa-cenarios}/v1.md` + `status.md`.
+- `rest/11-logs.http` cobre listagem (sem filtro / com filtro / paginação), detalhe e cenários OWASP (sem token → 302, id inexistente → 404, token tenant → 404 genérico).
+
+---
+
 ## [2026-04-24] F18 — Observabilidade Avançada
 
 Fecha o gap de instrumentação deixado por F08/F09: spans em camada de aplicação, histogramas de duração, dashboards Grafana novos, regras de alerta com testes promtool no CI e runbooks operacionais.

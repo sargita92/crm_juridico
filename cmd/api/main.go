@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -17,8 +19,13 @@ import (
 
 	"github.com/sasrgita/crm-juridico/internal/ai"
 	aiapp "github.com/sasrgita/crm-juridico/internal/ai/application"
+	"github.com/sasrgita/crm-juridico/internal/audit"
+	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
+	auditdomain "github.com/sasrgita/crm-juridico/internal/audit/domain"
+	auditinfra "github.com/sasrgita/crm-juridico/internal/audit/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/auth"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
+	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/automation"
 	"github.com/sasrgita/crm-juridico/internal/dashboard"
@@ -265,11 +272,30 @@ func main() {
 		},
 	)
 
+	// Audit module (F12) — sits at the end of wiring so all other modules can
+	// inject the publisher into their use cases. Step 8 wires /admin/logs
+	// via auditMod.RegisterRoutes (apos setupRouter retornar o engine).
+	auditMod := audit.NewModule(db, log)
+	authMod.SetAuditPublisher(auditMod.Publisher)
+	tenantMod.SetAuditPublisher(auditMod.Publisher)
+	// F12 Step 7: permissao alterada de usuario admin produz audit log.
+	permissionMod.SetAuditPublisher(auditMod.Publisher)
+
+	// F12 Step 8: adapters para os dropdowns de filtro da Tela 1.
+	// TenantLister usa o repo ja existente; AdminUserLister usa o gorm
+	// db direto (decisao do design — view de leitura especifica do
+	// painel admin de auditoria, fora do dominio de auth).
+	auditMod.AttachFilters(
+		auditinfra.NewTenantListerAdapter(tenantMod.TenantRepo()),
+		auditinfra.NewAdminUserListerAdapter(db),
+	)
+
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod, dashboardMod}
 
 	// Token provider is used for the auth middleware and admin login route
 	tokenProvider := authinfra.NewJWTProvider(cfg.JWT.Secret, cfg.JWT.Expiration)
 	loginUC := authMod.LoginUseCase()
+	auditPublisher := auditMod.Publisher
 
 	// Middlewares
 	authMw := middleware.Auth(tokenProvider)
@@ -295,8 +321,14 @@ func main() {
 		sidebarMw(c)
 	}
 
-	router, tmpl := setupRouter(log, authMod, modules, loginUC, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
+	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
 	notificationMod.SetRenderer(notifhttp.NewToastRenderer(tmpl))
+
+	// F12 Step 8: rotas /admin/logs e /admin/logs/:id.
+	// Registradas fora do for-modules porque o audit.Module nao
+	// implementa module.Module (assinatura RegisterRoutes diferente —
+	// recebe tokenProvider para o middleware AdminPageAuth especifico).
+	auditMod.RegisterRoutes(router, tokenProvider)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -328,6 +360,61 @@ func main() {
 	log.Info("server exited gracefully")
 }
 
+// publishAuthEvent enriquece o input com IP/UA do contexto e publica no
+// audit publisher, se houver. Nil-safe (publisher pode nao estar wired em
+// testes antigos).
+//
+// Erros sao engolidos pelo proprio publisher (decisao do design F12 secao
+// 4.1: auditoria nao quebra a operacao).
+func publishAuthEvent(ctx context.Context, p auditapp.Publisher, in auditapp.RegisterAuditLogInput) {
+	if p == nil {
+		return
+	}
+	in.IP = middleware.IPFromContext(ctx)
+	in.UserAgent = middleware.UserAgentFromContext(ctx)
+	_ = p.Publish(ctx, in)
+}
+
+// publishLoginFailure mapeia o erro do LoginUseCase para um motivo legivel
+// no metadata do log de auditoria. ErrUserNotFound e tratado a parte para
+// que o operador veja em /admin/logs a diferenca entre senha errada e email
+// que nao existe (S1-C12 / S1-C13 dos cenarios de QA).
+func publishLoginFailure(ctx context.Context, p auditapp.Publisher, email string, err error) {
+	if p == nil {
+		return
+	}
+	reason := classifyLoginErr(err)
+	publishAuthEvent(ctx, p, auditapp.RegisterAuditLogInput{
+		Action:     auditdomain.ActionLoginFailure,
+		ActorEmail: email,
+		Entity:     "session",
+		Metadata:   auditdomain.Metadata{"reason": reason},
+	})
+}
+
+// classifyLoginErr converte erros tipados do LoginUseCase em strings curtas
+// usadas como `metadata.reason` no audit log. Nomes em PT-BR sem acento
+// para alinhar com o id do enum no banco.
+func classifyLoginErr(err error) string {
+	switch {
+	case err == nil:
+		return ""
+	case errors.Is(err, authdomain.ErrUserNotFound):
+		return "usuario_nao_encontrado"
+	case errors.Is(err, authdomain.ErrInvalidCredentials):
+		return "credenciais_invalidas"
+	default:
+		return "erro_inesperado"
+	}
+}
+
+// ptrString retorna um *string apontando para s. Pequeno helper de
+// conveniencia para os campos opcionais de RegisterAuditLogInput. Nao trata
+// vazio especialmente — o caller decide quando passar nil vs ponteiro de "".
+func ptrString(s string) *string {
+	return &s
+}
+
 func renderAdminLoginError(c *gin.Context) {
 	tmpl := "admin/login.html"
 	if c.GetHeader("HX-Request") == "true" {
@@ -336,7 +423,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool) (*gin.Engine, *template.Template) {
+func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, auditPublisher auditapp.Publisher, tokenProvider authdomain.TokenProvider, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool) (*gin.Engine, *template.Template) {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -391,6 +478,27 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 			}
 			return p.Format("2006-01-02")
 		},
+		// deref dereferencia *string com fallback "" para nil. Usado em
+		// templates de F12 (audit) que recebem TenantID/UserID/EntityID
+		// nullable da entidade.
+		"deref": func(p *string) string {
+			if p == nil {
+				return ""
+			}
+			return *p
+		},
+		// prettyJSON converte qualquer valor para uma string JSON
+		// formatada e escapada por html/template. Usado no detalhe do
+		// audit log (F12 S4-C17) — substitui exibir o JSON cru de
+		// `metadata` por algo legivel sem usar template.HTML (a regra de
+		// seguranca proibe executar HTML cru de dado de log).
+		"prettyJSON": func(v interface{}) string {
+			b, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("%v", v)
+			}
+			return string(b)
+		},
 	}
 	tmpl := template.New("").Funcs(funcMap)
 	for _, pattern := range []string{
@@ -409,6 +517,10 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestID())
+	// RequestMeta extrai IP/User-Agent e injeta no context — usado pelo
+	// publisher de auditoria (F12) e por qualquer feature futura que precise
+	// desses metadados sem reler headers.
+	router.Use(middleware.RequestMeta())
 	router.Use(middleware.Prometheus())
 	router.Use(middleware.Logger(log))
 
@@ -440,6 +552,7 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 		c.HTML(http.StatusOK, "admin/login.html", gin.H{"Error": ""})
 	})
 	router.POST("/admin/login", func(c *gin.Context) {
+		ctx := c.Request.Context()
 		email := c.PostForm("email")
 		password := c.PostForm("password")
 
@@ -448,18 +561,52 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 			return
 		}
 
-		output, err := loginUC.Execute(c.Request.Context(), authapp.LoginInput{
+		output, err := loginUC.Execute(ctx, authapp.LoginInput{
 			Email:    email,
 			Password: password,
 		})
 		if err != nil {
+			publishLoginFailure(ctx, auditPublisher, email, err)
 			renderAdminLoginError(c)
 			return
 		}
 
+		// F12: publish auth.login.success — best effort, swallowed on error.
+		publishAuthEvent(ctx, auditPublisher, auditapp.RegisterAuditLogInput{
+			Action:     auditdomain.ActionLoginSuccess,
+			ActorEmail: email,
+			UserID:     ptrString(output.UserID),
+			Entity:     "session",
+			EntityID:   ptrString(output.UserID),
+		})
+
 		c.SetSameSite(http.SameSiteLaxMode)
 		c.SetCookie("token", output.Token, 86400, "/", "", secureCookie, true)
 		c.Header("HX-Redirect", "/admin/dashboard")
+		c.Status(http.StatusOK)
+	})
+
+	// /admin/logout: limpa o cookie e publica auth.logout no audit log.
+	// Existe em paralelo ao /logout do auth handler (que serve usuarios de
+	// tenant) para que o evento auditavel seja registrado com a action
+	// correta para a camada admin sem precisar mexer no handler do auth.
+	router.POST("/admin/logout", func(c *gin.Context) {
+		ctx := c.Request.Context()
+		// Tenta extrair claims do token atual para enriquecer o log.
+		if tokenStr, err := c.Cookie("token"); err == nil && tokenStr != "" {
+			if claims, err := tokenProvider.Validate(tokenStr); err == nil && claims != nil {
+				publishAuthEvent(ctx, auditPublisher, auditapp.RegisterAuditLogInput{
+					Action:     auditdomain.ActionLogout,
+					ActorEmail: claims.Email,
+					UserID:     ptrString(claims.UserID),
+					Entity:     "session",
+					EntityID:   ptrString(claims.UserID),
+				})
+			}
+		}
+		c.SetSameSite(http.SameSiteLaxMode)
+		c.SetCookie("token", "", -1, "/", "", secureCookie, true)
+		c.Header("HX-Redirect", "/admin/login")
 		c.Status(http.StatusOK)
 	})
 

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 
+	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
 	"github.com/sasrgita/crm-juridico/internal/tenant/domain"
 )
 
@@ -147,4 +148,21 @@ func (m *mockBlockHistoryRepo) FindByTenantID(_ context.Context, tenantID string
 		}
 	}
 	return result, nil
+}
+
+// spyAuditPublisher captura todas as chamadas de Publish para asserts.
+// Implementa auditapp.Publisher. Se publishErr != nil, retorna o erro
+// sem registrar a chamada — usado para validar S1-C17 (falha de auditoria
+// nao aborta operacao). Caller deve consultar `calls` apos o teste.
+type spyAuditPublisher struct {
+	calls      []auditapp.RegisterAuditLogInput
+	publishErr error
+}
+
+func (s *spyAuditPublisher) Publish(_ context.Context, in auditapp.RegisterAuditLogInput) error {
+	if s.publishErr != nil {
+		return s.publishErr
+	}
+	s.calls = append(s.calls, in)
+	return nil
 }

@@ -88,6 +88,7 @@ func (uc *LoginUseCase) Execute(ctx context.Context, input LoginInput) (*LoginOu
 
 	claims := domain.TokenClaims{
 		UserID: user.ID,
+		Email:  user.Email,
 		Role:   user.Role,
 	}
 

@@ -21,6 +21,7 @@ type stubUserRepo struct {
 }
 
 func (s *stubUserRepo) Create(context.Context, *authdomain.User) error { return nil }
+func (s *stubUserRepo) Update(context.Context, *authdomain.User) error { return nil }
 func (s *stubUserRepo) FindByID(_ context.Context, id string) (*authdomain.User, error) {
 	if s.err != nil {
 		return nil, s.err

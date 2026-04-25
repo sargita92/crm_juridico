@@ -70,6 +70,35 @@ func (r *GormUserRepository) Create(ctx context.Context, user *domain.User) erro
 	return nil
 }
 
+// Update persiste alteracoes em campos mutaveis (Name, Email, Status).
+// PasswordHash nao e alterado por este metodo — fluxo separado.
+//
+// Erros 1062 (UNIQUE constraint) em email viram ErrUserEmailExists,
+// alinhado a Create. RowsAffected == 0 retorna ErrUserNotFound.
+func (r *GormUserRepository) Update(ctx context.Context, user *domain.User) error {
+	model := userToModel(user)
+	model.UpdatedAt = time.Now()
+	res := r.db.WithContext(ctx).Model(&userModel{}).
+		Where("id = ?", user.ID).
+		Updates(map[string]any{
+			"name":       model.Name,
+			"email":      model.Email,
+			"status":     model.Status,
+			"updated_at": model.UpdatedAt,
+		})
+	if res.Error != nil {
+		var mysqlErr *mysql.MySQLError
+		if errors.As(res.Error, &mysqlErr) && mysqlErr.Number == 1062 {
+			return domain.ErrUserEmailExists
+		}
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}
+
 func (r *GormUserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var model userModel
 	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&model).Error; err != nil {

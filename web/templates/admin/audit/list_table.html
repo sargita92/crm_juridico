@@ -1,0 +1,55 @@
+{{define "admin/audit/list_table.html"}}
+<div id="logs-list">
+    {{if .Error}}
+        <div class="alert alert-error">{{.Error}}</div>
+    {{end}}
+
+    {{if .IsEmpty}}
+        {{template "admin/audit/empty.html" .}}
+    {{else}}
+        <table class="logs-table">
+            <thead>
+                <tr>
+                    <th>Quando</th>
+                    <th>Quem</th>
+                    <th>Acao</th>
+                    <th>Tenant</th>
+                    <th>Entidade</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Items}}
+                <tr class="log-row" hx-get="/admin/logs/{{.ID}}?return={{$.ReturnQS}}" hx-target="#logs-list" hx-push-url="true">
+                    <td>{{.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
+                    <td>{{.ActorEmail}}</td>
+                    <td><span class="action-pill">{{.Action.Humanized}}</span></td>
+                    <td>{{if .TenantID}}{{deref .TenantID}}{{else}}<span class="muted">—</span>{{end}}</td>
+                    <td>{{if .EntityID}}{{deref .EntityID}}{{else}}<span class="muted">—</span>{{end}}</td>
+                    <td><a href="/admin/logs/{{.ID}}?return={{$.ReturnQS}}" class="btn btn-link">Detalhes</a></td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+
+        <div class="table-footer">
+            <span>
+                Mostrando {{.StartItem}}–{{.EndItem}} de {{.Total}}
+            </span>
+            <nav class="pagination">
+                {{if .HasPrev}}
+                    <a class="btn" href="/admin/logs?page={{.PrevPage}}&page_size={{.PageSize}}{{if .Filters.TenantID}}&tenant_id={{.Filters.TenantID}}{{end}}{{if .Filters.UserID}}&user_id={{.Filters.UserID}}{{end}}{{if .Filters.Action}}&action={{.Filters.Action}}{{end}}{{if .Filters.From}}&from={{.Filters.From}}{{end}}{{if .Filters.To}}&to={{.Filters.To}}{{end}}"
+                       hx-get="/admin/logs?page={{.PrevPage}}&page_size={{.PageSize}}{{if .Filters.TenantID}}&tenant_id={{.Filters.TenantID}}{{end}}{{if .Filters.UserID}}&user_id={{.Filters.UserID}}{{end}}{{if .Filters.Action}}&action={{.Filters.Action}}{{end}}{{if .Filters.From}}&from={{.Filters.From}}{{end}}{{if .Filters.To}}&to={{.Filters.To}}{{end}}"
+                       hx-target="#logs-list" hx-push-url="true">Anterior</a>
+                {{end}}
+                <span>Pagina {{.Page}}</span>
+                {{if .HasNext}}
+                    <a class="btn" href="/admin/logs?page={{.NextPage}}&page_size={{.PageSize}}{{if .Filters.TenantID}}&tenant_id={{.Filters.TenantID}}{{end}}{{if .Filters.UserID}}&user_id={{.Filters.UserID}}{{end}}{{if .Filters.Action}}&action={{.Filters.Action}}{{end}}{{if .Filters.From}}&from={{.Filters.From}}{{end}}{{if .Filters.To}}&to={{.Filters.To}}{{end}}"
+                       hx-get="/admin/logs?page={{.NextPage}}&page_size={{.PageSize}}{{if .Filters.TenantID}}&tenant_id={{.Filters.TenantID}}{{end}}{{if .Filters.UserID}}&user_id={{.Filters.UserID}}{{end}}{{if .Filters.Action}}&action={{.Filters.Action}}{{end}}{{if .Filters.From}}&from={{.Filters.From}}{{end}}{{if .Filters.To}}&to={{.Filters.To}}{{end}}"
+                       hx-target="#logs-list" hx-push-url="true">Proxima</a>
+                {{end}}
+            </nav>
+        </div>
+    {{end}}
+</div>
+{{end}}

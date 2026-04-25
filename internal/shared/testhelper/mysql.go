@@ -2,6 +2,7 @@ package testhelper
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"os"
@@ -200,6 +201,19 @@ func TemplateFuncMap() template.FuncMap {
 				return ""
 			}
 			return p.Format("2006-01-02")
+		},
+		"deref": func(p *string) string {
+			if p == nil {
+				return ""
+			}
+			return *p
+		},
+		"prettyJSON": func(v interface{}) string {
+			b, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("%v", v)
+			}
+			return string(b)
 		},
 	}
 }
