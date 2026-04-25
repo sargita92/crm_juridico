@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -21,6 +22,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/audit"
 	auditapp "github.com/sasrgita/crm-juridico/internal/audit/application"
 	auditdomain "github.com/sasrgita/crm-juridico/internal/audit/domain"
+	auditinfra "github.com/sasrgita/crm-juridico/internal/audit/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/auth"
 	authapp "github.com/sasrgita/crm-juridico/internal/auth/application"
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
@@ -271,13 +273,22 @@ func main() {
 	)
 
 	// Audit module (F12) — sits at the end of wiring so all other modules can
-	// inject the publisher into their use cases. Does not own routes yet
-	// (Step 8 wires /admin/logs); for now we just expose the Publisher.
+	// inject the publisher into their use cases. Step 8 wires /admin/logs
+	// via auditMod.RegisterRoutes (apos setupRouter retornar o engine).
 	auditMod := audit.NewModule(db, log)
 	authMod.SetAuditPublisher(auditMod.Publisher)
 	tenantMod.SetAuditPublisher(auditMod.Publisher)
 	// F12 Step 7: permissao alterada de usuario admin produz audit log.
 	permissionMod.SetAuditPublisher(auditMod.Publisher)
+
+	// F12 Step 8: adapters para os dropdowns de filtro da Tela 1.
+	// TenantLister usa o repo ja existente; AdminUserLister usa o gorm
+	// db direto (decisao do design — view de leitura especifica do
+	// painel admin de auditoria, fora do dominio de auth).
+	auditMod.AttachFilters(
+		auditinfra.NewTenantListerAdapter(tenantMod.TenantRepo()),
+		auditinfra.NewAdminUserListerAdapter(db),
+	)
 
 	modules := []module.Module{tenantMod, specialistMod, documentMod, mcpMod, whatsappMod, funnelMod, productMod, filesMod, aiMod, permissionMod, notificationMod, automationMod, pagamentosMod, dashboardMod}
 
@@ -312,6 +323,12 @@ func main() {
 
 	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
 	notificationMod.SetRenderer(notifhttp.NewToastRenderer(tmpl))
+
+	// F12 Step 8: rotas /admin/logs e /admin/logs/:id.
+	// Registradas fora do for-modules porque o audit.Module nao
+	// implementa module.Module (assinatura RegisterRoutes diferente —
+	// recebe tokenProvider para o middleware AdminPageAuth especifico).
+	auditMod.RegisterRoutes(router, tokenProvider)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
@@ -460,6 +477,27 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 				return ""
 			}
 			return p.Format("2006-01-02")
+		},
+		// deref dereferencia *string com fallback "" para nil. Usado em
+		// templates de F12 (audit) que recebem TenantID/UserID/EntityID
+		// nullable da entidade.
+		"deref": func(p *string) string {
+			if p == nil {
+				return ""
+			}
+			return *p
+		},
+		// prettyJSON converte qualquer valor para uma string JSON
+		// formatada e escapada por html/template. Usado no detalhe do
+		// audit log (F12 S4-C17) — substitui exibir o JSON cru de
+		// `metadata` por algo legivel sem usar template.HTML (a regra de
+		// seguranca proibe executar HTML cru de dado de log).
+		"prettyJSON": func(v interface{}) string {
+			b, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("%v", v)
+			}
+			return string(b)
 		},
 	}
 	tmpl := template.New("").Funcs(funcMap)

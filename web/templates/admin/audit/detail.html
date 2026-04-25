@@ -1,0 +1,26 @@
+{{define "admin/audit/detail.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log {{.Log.ID}} — CRM Juridico</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="admin-layout">
+    {{template "partials/sidebar.html" (dict "ActiveNav" "logs")}}
+    <main class="admin-content">
+        <div class="page-header">
+            <h1>Detalhe do log</h1>
+            <p class="muted">ID: {{.Log.ID}}</p>
+        </div>
+        <div id="logs-list">
+            {{template "admin/audit/detail_fragment.html" .}}
+        </div>
+    </main>
+</div>
+</body>
+</html>
+{{end}}

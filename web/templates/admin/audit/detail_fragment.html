@@ -1,0 +1,66 @@
+{{define "admin/audit/detail_fragment.html"}}
+<article class="log-detail">
+    <header class="log-detail-header">
+        <h2>{{.ActionLabel}}</h2>
+        <p class="muted">
+            <strong>Quando:</strong> {{.Log.CreatedAt.Format "2006-01-02 15:04:05 MST"}}
+        </p>
+        <p>
+            <a href="{{.ReturnURL}}" class="btn btn-link" hx-get="{{.ReturnURL}}" hx-target="#logs-list" hx-push-url="true">Voltar para listagem</a>
+        </p>
+    </header>
+
+    <section class="log-detail-block">
+        <h3>O que aconteceu</h3>
+        <dl>
+            <dt>Acao</dt>
+            <dd>{{.ActionLabel}} <small class="muted">({{.Action}})</small></dd>
+            <dt>Ator</dt>
+            <dd>{{.Log.ActorEmail}}</dd>
+            {{if .Log.UserID}}
+            <dt>ID do ator</dt>
+            <dd>{{deref .Log.UserID}}</dd>
+            {{end}}
+        </dl>
+    </section>
+
+    <section class="log-detail-block">
+        <h3>Contexto</h3>
+        <dl>
+            <dt>IP</dt>
+            <dd>{{.Log.IP}}</dd>
+            <dt>User-Agent</dt>
+            <dd>{{if .Log.UserAgent}}{{.Log.UserAgent}}{{else}}<span class="muted">—</span>{{end}}</dd>
+            {{if .Log.TenantID}}
+            <dt>Tenant relacionado</dt>
+            <dd>{{deref .Log.TenantID}}</dd>
+            {{end}}
+            {{if .Log.EntityID}}
+            <dt>Entidade afetada</dt>
+            <dd>{{.Log.Entity}} — {{deref .Log.EntityID}}</dd>
+            {{end}}
+        </dl>
+    </section>
+
+    <section class="log-detail-block">
+        <h3>Dados adicionais</h3>
+        {{if .Log.Metadata}}
+            <table class="metadata-table">
+                <thead>
+                    <tr><th>Campo</th><th>Valor</th></tr>
+                </thead>
+                <tbody>
+                    {{range $k, $v := .Log.Metadata}}
+                    <tr>
+                        <td>{{$k}}</td>
+                        <td><pre class="metadata-value">{{prettyJSON $v}}</pre></td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        {{else}}
+            <p class="muted">Sem dados adicionais.</p>
+        {{end}}
+    </section>
+</article>
+{{end}}

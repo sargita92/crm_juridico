@@ -69,3 +69,42 @@ func (a Action) Humanized() string {
 	}
 	return string(a)
 }
+
+// ActionOption e a representacao para alimentar o dropdown de filtros do
+// painel admin (Tela 1 / S3-C05). Mantem o code (valor enviado no
+// query string) e o label humanizado.
+type ActionOption struct {
+	Code  string
+	Label string
+}
+
+// orderedActions garante que o dropdown apresente as acoes na ordem que
+// faz mais sentido para o operador (auth, tenant, user_admin, permission)
+// — diferente da iteracao de mapa, que e nao-deterministica.
+var orderedActions = []Action{
+	ActionLoginSuccess,
+	ActionLoginFailure,
+	ActionLogout,
+	ActionTenantCreated,
+	ActionTenantUpdated,
+	ActionTenantDeactivated,
+	ActionTenantBlocked,
+	ActionTenantUnblocked,
+	ActionUserAdminCreated,
+	ActionUserAdminUpdated,
+	ActionUserAdminDeactivated,
+	ActionUserAdminBlocked,
+	ActionUserAdminUnblocked,
+	ActionPermissionChanged,
+}
+
+// AllActions devolve a lista de acoes na ordem canonica para popular o
+// dropdown da UI. Cada entrada ja vem com o label humanizado, evitando
+// que o template precise chamar funcMap por item.
+func AllActions() []ActionOption {
+	out := make([]ActionOption, 0, len(orderedActions))
+	for _, a := range orderedActions {
+		out = append(out, ActionOption{Code: string(a), Label: a.Humanized()})
+	}
+	return out
+}

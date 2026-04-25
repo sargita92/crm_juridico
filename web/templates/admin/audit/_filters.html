@@ -1,0 +1,60 @@
+{{define "admin/audit/_filters.html"}}
+<form class="filters" method="get" action="/admin/logs"
+      hx-get="/admin/logs" hx-target="#logs-list" hx-push-url="true" hx-include="closest form">
+    <div class="filters-row">
+        <label>
+            <span>Tenant</span>
+            <select name="tenant_id">
+                <option value="">Todos</option>
+                {{range .TenantOptions}}
+                    <option value="{{.ID}}" {{if eq $.Filters.TenantID .ID}}selected{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+        </label>
+
+        <label>
+            <span>Usuario admin</span>
+            <select name="user_id">
+                <option value="">Todos</option>
+                {{range .UserOptions}}
+                    <option value="{{.ID}}" {{if eq $.Filters.UserID .ID}}selected{{end}}>{{.Name}} ({{.Email}})</option>
+                {{end}}
+            </select>
+        </label>
+
+        <label>
+            <span>Acao</span>
+            <select name="action">
+                <option value="">Todas</option>
+                {{range .Actions}}
+                    <option value="{{.Code}}" {{if eq $.Filters.Action .Code}}selected{{end}}>{{.Label}}</option>
+                {{end}}
+            </select>
+        </label>
+    </div>
+
+    <div class="filters-row">
+        <label>
+            <span>De</span>
+            <input type="date" name="from" value="{{.Filters.From}}">
+        </label>
+        <label>
+            <span>Ate</span>
+            <input type="date" name="to" value="{{.Filters.To}}">
+        </label>
+        <label>
+            <span>Por pagina</span>
+            <select name="page_size">
+                {{range .PageSizes}}
+                    <option value="{{.}}" {{if eq (printf "%d" .) $.Filters.PageSize}}selected{{end}}>{{.}}</option>
+                {{end}}
+            </select>
+        </label>
+
+        <div class="filters-actions">
+            <button type="submit" class="btn btn-primary">Aplicar</button>
+            <a href="/admin/logs" class="btn">Limpar</a>
+        </div>
+    </div>
+</form>
+{{end}}
