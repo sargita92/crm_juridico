@@ -28,6 +28,8 @@
 |---|---------|--------|-------------|------------|
 | F06 | [Integração com WhatsApp](../features/F06-integracao-whatsapp.md) | concluído | F02 | alta |
 | F07 | [Funis de Vendas (Kanban)](../features/F07-funis-kanban.md) | concluído | F06 | alta |
+| F20 | [WhatsApp Business API (Meta) — Provider de Produção](../features/F20-whatsapp-meta-provider.md) | backlog | F06 | alta |
+| F22 | [WhatsApp Meta — Onboarding e Billing Avançado](../features/F22-whatsapp-meta-onboarding-billing.md) | backlog | F20, F11 | média |
 
 ## Épico 4: Gestão de Equipe e Operação
 
@@ -78,6 +80,14 @@ Suporte interno, não faz parte do produto final.
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F19 | [Dashboards (Admin + Tenant)](../features/F19-dashboards.md) | concluído | F06, F07, F08, F10 | média |
+
+## Épico 11: Manutenção e Qualidade Técnica
+
+| # | Feature | Status | Dependência | Prioridade |
+|---|---------|--------|-------------|------------|
+| F21 | [Saneamento Técnico (one-shot)](../features/F21-saneamento-tecnico.md) | backlog | F01 | alta |
+
+> Após F21, manutenção contínua segue o processo recorrente em [manutencao-tecnica.md](manutencao-tecnica.md) (não vai ao backlog).
 
 ---
 
