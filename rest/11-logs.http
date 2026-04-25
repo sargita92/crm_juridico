@@ -1,24 +1,55 @@
-### Listar logs (todos)
-GET {{base_url}}/api/admin/logs?page=1&per_page=50
-Authorization: Bearer {{token}}
+### F12 — Logs (Admin)
+###
+### Auditoria de acoes admin/seguranca: login (sucesso/falha), CRUD de tenants,
+### CRUD de usuarios admin, bloqueio/desbloqueio de tenant, alteracao de
+### permissoes. Acesso restrito ao admin global; nao-admins recebem 404
+### generico (sem revelar a existencia da rota). Sem CSV no MVP, retencao
+### ilimitada e ordenacao desc por created_at.
+###
+### Variaveis (definir em http-client.env.json):
+###   - base_url: URL base da API (ex.: http://localhost:8533)
+###   - token: cookie JWT do usuario logado (admin global para os requests OK)
+###   - logId: id (UUID) de um log existente para o request de detalhe
+###
+### Pre-requisitos: autenticar via 01-auth.http -> sobrescreve {{token}}.
 
-### Filtrar logs por tenant
-GET {{base_url}}/api/admin/logs?tenant_id={{tenant_id}}&page=1&per_page=50
-Authorization: Bearer {{token}}
+@host = {{base_url}}
 
-### Filtrar logs por ação
-GET {{base_url}}/api/admin/logs?acao=login&page=1&per_page=50
-Authorization: Bearer {{token}}
+### Listar logs (sem filtro, default page=1 page_size=25)
+GET {{host}}/admin/logs
+Cookie: token={{token}}
 
-### Filtrar logs por período
-GET {{base_url}}/api/admin/logs?from=2026-04-01&to=2026-04-05&page=1&per_page=50
-Authorization: Bearer {{token}}
+### Listar logs filtrado por acao + intervalo de datas
+GET {{host}}/admin/logs?action=tenant.blocked&from=2026-04-01&to=2026-04-30
+Cookie: token={{token}}
 
-### Buscar log por ID
-GET {{base_url}}/api/admin/logs/{{log_id}}
-Authorization: Bearer {{token}}
+### Listar logs filtrado por tenant + usuario
+GET {{host}}/admin/logs?tenant_id={{tenantId}}&user_id={{userId}}
+Cookie: token={{token}}
 
-### Exportar logs CSV
-GET {{base_url}}/api/admin/logs/export?tenant_id={{tenant_id}}&from=2026-04-01&to=2026-04-05
-Authorization: Bearer {{token}}
-Accept: text/csv
+### Paginacao explicita (pagina 2, 25 por pagina)
+GET {{host}}/admin/logs?page=2&page_size=25
+Cookie: token={{token}}
+
+### Page size maior (50 por pagina)
+GET {{host}}/admin/logs?page=1&page_size=50
+Cookie: token={{token}}
+
+### Detalhe de log por id
+GET {{host}}/admin/logs/{{logId}}
+Cookie: token={{token}}
+
+### ---- OWASP / cenarios negativos ----
+
+### Sem cookie -> 302 redirect para /login (auth admin redireciona)
+GET {{host}}/admin/logs
+
+### Detalhe com id inexistente (admin valido) -> 404 generico
+GET {{host}}/admin/logs/abc-inexistente
+Cookie: token={{token}}
+
+### Acesso com token de usuario tenant (nao-admin) -> 404 generico
+### (autenticar com usuario nao-admin antes para sobrescrever {{token}};
+### resposta deve ser 404 sem revelar a existencia da rota /admin/logs)
+GET {{host}}/admin/logs
+Cookie: token={{token}}
