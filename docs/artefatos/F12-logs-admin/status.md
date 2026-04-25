@@ -14,4 +14,4 @@ updated_at: 2026-04-24
 | Dev Backend | steps 1-10 | — | concluido |
 | Dev Front-end | step 8 (templates HTMX) | — | concluido |
 | QA | qa-validacao | v2 | aprovado |
-| Seguranca | seguranca-review | — | pendente |
+| Seguranca | seguranca-review | v1 | concluido |
