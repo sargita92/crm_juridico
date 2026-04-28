@@ -4,63 +4,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRM Jurídico — Gerencie leads pelo WhatsApp</title>
-    <meta name="description" content="CRM jurídico integrado com WhatsApp. Gerencie leads, automatize atendimentos com IA e acompanhe cada oportunidade no funil de vendas.">
+    <title>CRM Jurídico — Transforme WhatsApp em clientes reais</title>
+    <meta name="description" content="CRM jurídico com IA que atende seus leads 24/7 no WhatsApp, organiza o funil e libera sua equipe para focar no que importa: ganhar causas.">
     <meta name="keywords" content="CRM jurídico, WhatsApp, gestão de leads, funil de vendas, advocacia, escritório de advocacia, automação, IA">
-    <meta property="og:title" content="CRM Jurídico — Gerencie leads pelo WhatsApp">
+    <meta property="og:title" content="CRM Jurídico — Transforme WhatsApp em clientes reais">
     <meta property="og:description" content="CRM integrado com WhatsApp para escritórios de advocacia. Funil visual, IA especialista e automação de atendimento.">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="pt_BR">
+    <link rel="stylesheet" href="/static/css/tokens.css">
     <link rel="stylesheet" href="/static/css/landing.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+    <link rel="stylesheet" href="/static/css/components-pro.css">
     <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+    <script src="/static/js/ui.js" defer></script>
 </head>
-<body>
+<body class="landing-body">
+<div class="htmx-progress"></div>
 
-<nav class="landing-nav">
-    <a href="/" class="logo">CRM Jurídico</a>
-    <div style="display:flex;align-items:center;gap:0.75rem;">
+<nav class="landing-nav" id="landingNav">
+    <a href="/" class="logo">
+        <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v6c0 5 3.5 7.5 8 8 4.5-.5 8-3 8-8V7l-8-4z"/></svg>
+        </span>
+        CRM <span class="logo-accent">Jurídico</span>
+    </a>
+    <div class="nav-links">
+        <a href="#funcionalidades" class="nav-link">Funcionalidades</a>
+        <a href="#como-funciona" class="nav-link">Como funciona</a>
+        <a href="#faq" class="nav-link">Dúvidas</a>
         <a href="/login" class="nav-login">Área do cliente</a>
-        <a href="#contato" class="nav-cta">Solicitar contato</a>
+        <a href="#contato" class="nav-cta">Agendar demonstração</a>
     </div>
 </nav>
 
-<!-- Hero -->
+<!-- ===================== HERO ===================== -->
 <section class="hero">
-    <div class="hero-text">
-        <span class="hero-tag">Exclusivo para escritórios de advocacia</span>
-        <h1>Seu escritório perde clientes por demora no atendimento?</h1>
-        <p>Mensagens que chegam à noite, no fim de semana ou no meio de uma audiência. Cada minuto sem resposta é um cliente que procura outro advogado.</p>
-        <a href="#contato" class="hero-cta">Conhecer a solução</a>
+    <div class="hero-bg" aria-hidden="true">
+        <span class="orb orb-1"></span>
+        <span class="orb orb-2"></span>
+        <span class="orb orb-3"></span>
+        <span class="grid-overlay"></span>
     </div>
-    <div class="hero-preview">
-        <div class="mock-app">
-            <div class="mock-app-bar">
-                <div class="mock-dot"></div>
-                <div class="mock-dot"></div>
-                <div class="mock-dot"></div>
+
+    <div class="hero-inner">
+        <div class="hero-text anim-fade-in-up">
+            <span class="hero-tag">
+                <span class="hero-tag-dot"></span>
+                Plataforma exclusiva para escritórios de advocacia
+            </span>
+            <h1>
+                Transforme cada mensagem no <span class="grad-text">WhatsApp</span> em um cliente do seu escritório.
+            </h1>
+            <p class="hero-lead">
+                CRM jurídico com inteligência artificial que atende seus leads 24/7, organiza o funil de captação e libera sua equipe para focar no que realmente importa: <strong>ganhar causas</strong>.
+            </p>
+            <div class="hero-actions">
+                <a href="#contato" class="hero-cta">
+                    Agendar demonstração gratuita
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </a>
+                <a href="#como-funciona" class="hero-cta-secondary">Ver como funciona</a>
             </div>
-            <div class="mock-app-body">
-                <div class="mock-sidebar">
-                    <div class="mock-sidebar-item active"></div>
-                    <div class="mock-sidebar-item"></div>
-                    <div class="mock-sidebar-item"></div>
-                    <div class="mock-sidebar-item"></div>
+            <ul class="hero-trust">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Sem cartão de crédito</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Setup em 24 horas</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Suporte dedicado em PT-BR</li>
+            </ul>
+        </div>
+
+        <div class="hero-preview anim-fade-in" style="animation-delay:200ms">
+            <div class="hero-stack">
+                <!-- Phone mockup with WhatsApp conversation -->
+                <div class="mock-phone">
+                    <div class="mock-phone-notch"></div>
+                    <div class="mock-phone-header">
+                        <span class="mock-avatar"></span>
+                        <div>
+                            <strong>Dra. Helena · IA</strong>
+                            <small>online agora</small>
+                        </div>
+                    </div>
+                    <div class="mock-chat">
+                        <div class="mock-msg incoming anim-fade-in-up" style="animation-delay:600ms">
+                            Olá! Sofri um acidente de trabalho, posso entrar com ação?
+                        </div>
+                        <div class="mock-msg outgoing anim-fade-in-up" style="animation-delay:1000ms">
+                            Sim, posso te ajudar! Você precisou ficar afastado(a)?
+                        </div>
+                        <div class="mock-msg incoming anim-fade-in-up" style="animation-delay:1500ms">
+                            Sim, 15 dias.
+                        </div>
+                        <div class="mock-msg outgoing anim-fade-in-up" style="animation-delay:1900ms">
+                            Perfeito. Posso agendar uma reunião com a Dra. Helena ainda hoje?
+                        </div>
+                        <div class="mock-typing anim-fade-in" style="animation-delay:2400ms">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="mock-main">
-                    <div class="mock-header"></div>
-                    <div class="mock-cards">
-                        <div class="mock-column">
-                            <div class="mock-card"></div>
-                            <div class="mock-card"></div>
+
+                <!-- Floating Kanban card -->
+                <div class="mock-kanban">
+                    <div class="mock-kanban-header">
+                        <span class="mock-kanban-title">Funil de leads</span>
+                        <span class="mock-kanban-badge">+12 hoje</span>
+                    </div>
+                    <div class="mock-kanban-body">
+                        <div class="mock-col">
+                            <span class="mock-col-title">Novo</span>
+                            <div class="mock-task t-blue"></div>
+                            <div class="mock-task t-blue"></div>
                         </div>
-                        <div class="mock-column">
-                            <div class="mock-card"></div>
+                        <div class="mock-col">
+                            <span class="mock-col-title">Qualificado</span>
+                            <div class="mock-task t-amber"></div>
+                            <div class="mock-task t-amber"></div>
+                            <div class="mock-task t-amber"></div>
                         </div>
-                        <div class="mock-column">
-                            <div class="mock-card"></div>
-                            <div class="mock-card"></div>
-                            <div class="mock-card"></div>
+                        <div class="mock-col">
+                            <span class="mock-col-title">Cliente</span>
+                            <div class="mock-task t-green"></div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Floating notification -->
+                <div class="mock-toast anim-fade-in-up" style="animation-delay:1300ms">
+                    <span class="mock-toast-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </span>
+                    <div>
+                        <strong>Lead qualificado!</strong>
+                        <small>R$ 8.500 estimados</small>
                     </div>
                 </div>
             </div>
@@ -68,99 +143,321 @@
     </div>
 </section>
 
-<!-- Pain points -->
-<section class="pain-points">
-    <div class="pain-grid">
+<!-- ===================== STATS ===================== -->
+<section class="stats-section reveal">
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-value grad-text">+500%</span>
+            <span class="stat-label">Aumento na taxa de resposta</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value grad-text">&lt; 30s</span>
+            <span class="stat-label">Tempo médio de primeira resposta</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value grad-text">+40%</span>
+            <span class="stat-label">Conversão de leads em clientes</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value grad-text">24/7</span>
+            <span class="stat-label">Atendimento sem interrupção</span>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== PAIN POINTS ===================== -->
+<section class="pain-points reveal">
+    <div class="section-head">
+        <span class="kicker">Por que escritórios estão perdendo clientes</span>
+        <h2 class="section-title">Reconhece estas situações?</h2>
+        <p class="section-subtitle">Cada minuto sem resposta é um cliente que procura outro advogado. E na advocacia, o segundo lugar não existe.</p>
+    </div>
+    <div class="pain-grid stagger">
         <div class="pain-card">
             <div class="pain-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <h3>Cliente mandou mensagem às 22h</h3>
-            <p>Você viu só de manhã. Ele já tinha fechado com outro escritório.</p>
+            <h3>Mensagem às 22h. Resposta às 9h.</h3>
+            <p>Cliente em potencial chegou de noite, no domingo, no meio de uma audiência. Quando você viu, ele já tinha fechado com outro escritório.</p>
         </div>
         <div class="pain-card">
             <div class="pain-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
             </div>
-            <h3>Conversas espalhadas no WhatsApp</h3>
-            <p>Ninguém sabe quem atendeu quem, o que foi combinado ou qual o próximo passo.</p>
+            <h3>Conversas espalhadas pelo WhatsApp</h3>
+            <p>Ninguém sabe quem atendeu quem, o que foi combinado nem qual o próximo passo. O conhecimento mora na cabeça (e no celular) de uma única pessoa.</p>
         </div>
         <div class="pain-card">
             <div class="pain-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
-            <h3>Equipe sem visão do todo</h3>
-            <p>Quantos leads entraram essa semana? Quantos estão parados? Ninguém tem essa resposta rápida.</p>
+            <h3>Equipe sem visão do funil</h3>
+            <p>Quantos leads entraram esta semana? Quantos travaram? Qual advogado está com sobrecarga? Você responde por achismo, não por dado.</p>
         </div>
     </div>
 </section>
 
-<!-- Features -->
-<section class="features">
-    <h2 class="section-title">Nunca mais perca um cliente por falta de resposta</h2>
-    <p class="section-subtitle">Tecnologia que trabalha pelo seu escritório, mesmo quando você não está disponível</p>
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 14h3"/><path d="M1 9h3"/><path d="M1 14h3"/></svg>
+<!-- ===================== HOW IT WORKS ===================== -->
+<section class="how-it-works reveal" id="como-funciona">
+    <div class="section-head">
+        <span class="kicker">Implantação simples</span>
+        <h2 class="section-title">Em 3 passos seu escritório nunca mais perde um lead</h2>
+        <p class="section-subtitle">Sem migração complicada. Sem treinamento de semanas. Sua equipe começa a usar no mesmo dia.</p>
+    </div>
+    <div class="steps stagger">
+        <div class="step-card">
+            <span class="step-number">01</span>
+            <div class="step-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3"/><path d="M21 21h-4"/><path d="M21 17v4"/></svg>
             </div>
-            <h3>Atendimento humanizado 24 horas</h3>
-            <p>Uma inteligência artificial treinada para o contexto jurídico responde seus leads com naturalidade, a qualquer hora do dia. O cliente sente que está falando com alguém do escritório.</p>
+            <h3>Conecte seu WhatsApp</h3>
+            <p>Escaneie o QR code com o número do escritório. Em 60 segundos, todas as mensagens passam a chegar dentro da plataforma.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <div class="step-card">
+            <span class="step-number">02</span>
+            <div class="step-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
             </div>
-            <h3>Tudo em um só lugar</h3>
-            <p>WhatsApp, histórico de conversas e dados do cliente no mesmo painel. Sem alternar entre apps, sem perder contexto, sem retrabalho.</p>
+            <h3>Treine a IA com seu contexto</h3>
+            <p>Carregue áreas de atuação, perguntas frequentes e tom de voz do escritório. A IA aprende a falar como você atende.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <div class="step-card">
+            <span class="step-number">03</span>
+            <div class="step-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
             </div>
-            <h3>Controle total do seu funil</h3>
-            <p>Saiba exatamente quantos leads entraram, quem está atendendo cada um e em que etapa estão. Visão clara para tomar decisões, não achismos.</p>
+            <h3>Acompanhe pelo funil visual</h3>
+            <p>Veja cada lead na etapa correta, com histórico completo, próximas ações e métricas em tempo real para decidir com dado.</p>
         </div>
     </div>
 </section>
 
-<!-- CTA / Contact -->
-<section class="cta-section" id="contato">
-    <h2>Pronto para não perder mais clientes?</h2>
-    <p class="section-subtitle">Converse com nossa equipe e descubra como a plataforma se adapta ao seu escritório</p>
-    <div id="contact-form-container">
-        <form class="contact-form"
-              hx-post="/contato"
-              hx-target="#contact-form-container"
-              hx-swap="innerHTML">
-            <input type="text" name="name" placeholder="Seu nome" required>
-            <input type="email" name="email" placeholder="Email profissional" required>
-            <input type="tel" name="phone" placeholder="WhatsApp com DDD">
-            <select name="office_size">
-                <option value="" disabled selected>Tamanho do escritório</option>
-                <option value="1-5">1 a 5 advogados</option>
-                <option value="6-20">6 a 20 advogados</option>
-                <option value="20+">Mais de 20 advogados</option>
-            </select>
-            <button type="submit">Falar com um consultor</button>
-        </form>
+<!-- ===================== FEATURES ===================== -->
+<section class="features reveal" id="funcionalidades">
+    <div class="section-head">
+        <span class="kicker">Funcionalidades</span>
+        <h2 class="section-title">Tudo que seu escritório precisa em um só lugar</h2>
+        <p class="section-subtitle">Construído com escritórios reais. Sem features inúteis, sem complicação.</p>
+    </div>
+    <div class="features-grid stagger">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+            </div>
+            <span class="feature-tag">IA jurídica</span>
+            <h3>Atendimento humanizado 24/7</h3>
+            <p>IA treinada no contexto do seu escritório responde com naturalidade a qualquer hora. O cliente sente que falou com alguém da equipe.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </div>
+            <span class="feature-tag">Integração</span>
+            <h3>WhatsApp e CRM unificados</h3>
+            <p>Mensagens, histórico do cliente e documentos no mesmo painel. Sem alternar entre apps, sem perder contexto, sem retrabalho.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </div>
+            <span class="feature-tag">Funil</span>
+            <h3>Kanban personalizável</h3>
+            <p>Crie etapas que refletem o atendimento do seu escritório: novo, triagem, audiência, contrato. Arraste cards e veja o funil andar.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="m16 11 2 2 4-4"/></svg>
+            </div>
+            <span class="feature-tag">Equipe</span>
+            <h3>Distribuição automática de leads</h3>
+            <p>Defina regras por área, especialidade ou load balance. Cada lead vai direto para o advogado certo, sem reunião de divisão.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 6-6"/></svg>
+            </div>
+            <span class="feature-tag">BI</span>
+            <h3>Métricas em tempo real</h3>
+            <p>Conversão por etapa, tempo médio de resposta, performance por advogado. Dashboards prontos, sem planilha.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <span class="feature-tag">Segurança</span>
+            <h3>Permissões granulares</h3>
+            <p>Sócios veem o todo. Estagiário vê só o seu. Multi-equipe, perfis de acesso e auditoria — em conformidade com a OAB e a LGPD.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== DIFFERENTIALS ===================== -->
+<section class="differentials reveal">
+    <div class="diff-inner">
+        <div class="diff-text">
+            <span class="kicker">Diferencial</span>
+            <h2 class="section-title">Não é mais um CRM genérico.<br>É feito para a advocacia.</h2>
+            <p class="section-subtitle">Você não precisa adaptar a plataforma ao seu escritório. Ela já entende como vocês trabalham.</p>
+            <ul class="diff-list">
+                <li>
+                    <span class="diff-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                    <div><strong>IA com contexto jurídico.</strong> Entende termos como audiência, prazo, recurso e petição — sem precisar treinar do zero.</div>
+                </li>
+                <li>
+                    <span class="diff-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                    <div><strong>WhatsApp nativo, não plugin.</strong> Conversas, áudios e documentos chegam no painel — sem ferramentas paralelas.</div>
+                </li>
+                <li>
+                    <span class="diff-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                    <div><strong>Implantação em 24h.</strong> Sem consultoria, sem migração lenta. Sua equipe usa no mesmo dia.</div>
+                </li>
+                <li>
+                    <span class="diff-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+                    <div><strong>Suporte de quem entende advocacia.</strong> Falamos a sua língua. Sem chatbot, sem ticket eterno.</div>
+                </li>
+            </ul>
+        </div>
+        <div class="diff-visual">
+            <div class="diff-card">
+                <div class="diff-card-header">
+                    <span class="diff-pulse"></span>
+                    Atividade ao vivo
+                </div>
+                <div class="diff-feed">
+                    <ul class="diff-feed-track">
+                        <li><strong>+1 lead</strong> qualificado · há 12s</li>
+                        <li><strong>Dr. Marcelo</strong> assumiu o atendimento</li>
+                        <li><strong>Reunião agendada</strong> · sexta 14h</li>
+                        <li><strong>Contrato enviado</strong> · R$ 12.400</li>
+                        <li><strong>Mensagem respondida</strong> em 18s pela IA</li>
+                        <!-- Duplicated for seamless loop -->
+                        <li aria-hidden="true"><strong>+1 lead</strong> qualificado · há 12s</li>
+                        <li aria-hidden="true"><strong>Dr. Marcelo</strong> assumiu o atendimento</li>
+                        <li aria-hidden="true"><strong>Reunião agendada</strong> · sexta 14h</li>
+                        <li aria-hidden="true"><strong>Contrato enviado</strong> · R$ 12.400</li>
+                        <li aria-hidden="true"><strong>Mensagem respondida</strong> em 18s pela IA</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section class="faq reveal" id="faq">
+    <div class="section-head">
+        <span class="kicker">Dúvidas frequentes</span>
+        <h2 class="section-title">Antes de você perguntar</h2>
+    </div>
+    <div class="faq-list">
+        <details class="faq-item">
+            <summary>Preciso pagar o WhatsApp Business API?</summary>
+            <p>Não. A plataforma usa o WhatsApp comum do escritório, sem custos adicionais com API. É só conectar e usar.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Em quanto tempo começo a usar?</summary>
+            <p>O setup é feito em 24h corridas. Conexão do WhatsApp, treinamento da IA com seu contexto e onboarding da equipe — tudo no primeiro dia.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Posso treinar a IA com meus próprios casos e tom de voz?</summary>
+            <p>Sim. Você carrega áreas de atuação, perguntas frequentes do escritório e tom de comunicação. A IA aprende a falar como você atende.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Os dados ficam seguros e em conformidade com a LGPD?</summary>
+            <p>Sim. Hospedagem no Brasil, criptografia em repouso e em trânsito, controle de acesso por perfil e logs de auditoria. Em conformidade com LGPD e diretrizes da OAB.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Funciona para escritórios pequenos?</summary>
+            <p>Funciona a partir de 1 advogado. Os planos escalam conforme o tamanho da equipe — sem cobrar por features que você não usa.</p>
+        </details>
+        <details class="faq-item">
+            <summary>Posso cancelar quando quiser?</summary>
+            <p>Pode. Sem fidelidade, sem multa. Se não fizer sentido, basta avisar e seus dados são exportados em formato aberto.</p>
+        </details>
+    </div>
+</section>
+
+<!-- ===================== FINAL CTA ===================== -->
+<section class="cta-section reveal" id="contato">
+    <div class="cta-bg" aria-hidden="true">
+        <span class="orb orb-1"></span>
+        <span class="orb orb-2"></span>
+    </div>
+    <div class="cta-inner">
+        <span class="kicker on-dark">Demonstração gratuita</span>
+        <h2>Pronto para não perder mais clientes?</h2>
+        <p class="section-subtitle">Converse com um especialista e veja como a plataforma se adapta ao seu escritório. Sem compromisso, sem cartão de crédito.</p>
+        <div id="contact-form-container">
+            <form class="contact-form"
+                  hx-post="/contato"
+                  hx-target="#contact-form-container"
+                  hx-swap="innerHTML"
+                  hx-indicator=".contact-form button">
+                <input type="text" name="name" placeholder="Seu nome" required>
+                <input type="email" name="email" placeholder="Email profissional" required>
+                <input type="tel" name="phone" placeholder="WhatsApp com DDD">
+                <select name="office_size" required>
+                    <option value="" disabled selected>Tamanho do escritório</option>
+                    <option value="1-5">1 a 5 advogados</option>
+                    <option value="6-20">6 a 20 advogados</option>
+                    <option value="20+">Mais de 20 advogados</option>
+                </select>
+                <button type="submit" class="htmx-spinner">
+                    Falar com um consultor
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                </button>
+            </form>
+            <p class="cta-finescript">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Seus dados ficam protegidos. Não compartilhamos com terceiros e estamos em conformidade com a LGPD.
+            </p>
+        </div>
     </div>
 </section>
 
 <footer class="landing-footer">
     <div class="footer-content">
         <div class="footer-brand">
-            <strong>CRM Jurídico</strong>
+            <strong>
+                <span class="logo-mark logo-mark-light" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v6c0 5 3.5 7.5 8 8 4.5-.5 8-3 8-8V7l-8-4z"/></svg>
+                </span>
+                CRM Jurídico
+            </strong>
             <p>Plataforma de gestão de leads e atendimento inteligente para escritórios de advocacia.</p>
         </div>
-        <div class="footer-links">
-            <a href="/login">Área do cliente</a>
+        <div class="footer-cols">
+            <div class="footer-col">
+                <span class="footer-col-title">Produto</span>
+                <a href="#funcionalidades">Funcionalidades</a>
+                <a href="#como-funciona">Como funciona</a>
+                <a href="#faq">Dúvidas</a>
+            </div>
+            <div class="footer-col">
+                <span class="footer-col-title">Acesso</span>
+                <a href="/login">Área do cliente</a>
+                <a href="#contato">Demonstração</a>
+            </div>
         </div>
     </div>
     <div class="footer-bottom">
-        <p>&copy; {{.Year}} CRM Jurídico. Todos os direitos reservados.</p>
+        <p>&copy; {{.Year}} CRM Jurídico · Todos os direitos reservados.</p>
+        <p class="footer-bottom-meta">Em conformidade com LGPD e diretrizes da OAB.</p>
     </div>
 </footer>
+
+<script>
+(function () {
+    var nav = document.getElementById('landingNav');
+    if (!nav) return;
+    var onScroll = function () {
+        if (window.scrollY > 12) nav.classList.add('is-scrolled');
+        else nav.classList.remove('is-scrolled');
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+})();
+</script>
 
 </body>
 </html>

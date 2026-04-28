@@ -1,0 +1,233 @@
+/* =============================================================
+   Animations — keyframes, utilities, HTMX hooks
+   Respects prefers-reduced-motion (durations collapse via tokens).
+   ============================================================= */
+
+/* ---------- Keyframes ---------- */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleOut {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(16px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-16px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes pulseRing {
+    0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
+    70%  { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+@keyframes pulseSoft {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.55; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+}
+
+@keyframes bounceIn {
+    0%   { transform: scale(0.7); opacity: 0; }
+    60%  { transform: scale(1.04); opacity: 1; }
+    100% { transform: scale(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+}
+
+/* ---------- Utility classes ---------- */
+
+.anim-fade-in       { animation: fadeIn       var(--dur-base)  var(--ease-out) both; }
+.anim-fade-in-up    { animation: fadeInUp     var(--dur-slow)  var(--ease-out) both; }
+.anim-fade-in-down  { animation: fadeInDown   var(--dur-slow)  var(--ease-out) both; }
+.anim-scale-in      { animation: scaleIn      var(--dur-slow)  var(--ease-out) both; }
+.anim-slide-in-right{ animation: slideInRight var(--dur-slow)  var(--ease-out) both; }
+.anim-slide-in-up   { animation: slideInUp    var(--dur-slow)  var(--ease-out) both; }
+.anim-bounce-in     { animation: bounceIn     var(--dur-slower) var(--ease-spring) both; }
+.anim-pulse-ring    { animation: pulseRing    1.6s             var(--ease-out) infinite; }
+.anim-pulse-soft    { animation: pulseSoft    1.8s             var(--ease-in-out) infinite; }
+.anim-shake         { animation: shake        var(--dur-slow)  var(--ease-in-out) both; }
+
+/* Stagger helpers — apply to children inside a list */
+.stagger > *        { animation: fadeInUp var(--dur-slow) var(--ease-out) both; }
+.stagger > *:nth-child(1)  { animation-delay: 30ms;  }
+.stagger > *:nth-child(2)  { animation-delay: 60ms;  }
+.stagger > *:nth-child(3)  { animation-delay: 90ms;  }
+.stagger > *:nth-child(4)  { animation-delay: 120ms; }
+.stagger > *:nth-child(5)  { animation-delay: 150ms; }
+.stagger > *:nth-child(6)  { animation-delay: 180ms; }
+.stagger > *:nth-child(7)  { animation-delay: 210ms; }
+.stagger > *:nth-child(8)  { animation-delay: 240ms; }
+.stagger > *:nth-child(9)  { animation-delay: 270ms; }
+.stagger > *:nth-child(10) { animation-delay: 300ms; }
+
+/* Reveal on viewport entry — uses CSS only (no JS) via animation-timeline (progressive enhancement)
+   Fallback: visible by default. */
+@supports (animation-timeline: view()) {
+    .reveal {
+        animation: fadeInUp var(--dur-slow) var(--ease-out) both;
+        animation-timeline: view();
+        animation-range: entry 5% cover 30%;
+    }
+}
+
+/* ---------- Hover/press helpers ---------- */
+
+.hover-lift {
+    transition: transform var(--dur-fast) var(--ease-out),
+                box-shadow var(--dur-fast) var(--ease-out);
+}
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.press-scale {
+    transition: transform var(--dur-instant) var(--ease-out);
+}
+.press-scale:active {
+    transform: scale(0.97);
+}
+
+/* ---------- HTMX hooks ----------
+   HTMX adds these classes to elements during requests.
+   - htmx-request:    while a request is in flight (on the triggering element)
+   - htmx-swapping:   on the target while old content fades out
+   - htmx-settling:   on the target while new content settles in
+   See: https://htmx.org/docs/#request-operations
+*/
+
+/* Subtle dim while a button/link is loading */
+.htmx-request {
+    opacity: 0.7;
+    pointer-events: none;
+    cursor: wait;
+}
+
+/* Inline spinner — opt-in via .htmx-spinner on the trigger */
+.htmx-spinner.htmx-request::after {
+    content: "";
+    display: inline-block;
+    width: 0.85em;
+    height: 0.85em;
+    margin-left: 0.5em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: -2px;
+}
+
+/* Page-level progress bar (top sliver) — opt-in via .htmx-indicator on a div near the top */
+.htmx-progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(90deg,
+        var(--color-accent) 0%,
+        var(--brand-blue-600) 50%,
+        var(--color-accent) 100%);
+    background-size: 200% 100%;
+    transform-origin: left;
+    transform: scaleX(0);
+    opacity: 0;
+    z-index: var(--z-tooltip);
+    transition: transform var(--dur-base) var(--ease-out),
+                opacity var(--dur-fast) var(--ease-out);
+}
+.htmx-request.htmx-progress,
+body.htmx-loading .htmx-progress {
+    transform: scaleX(1);
+    opacity: 1;
+    animation: shimmer 1.2s linear infinite;
+}
+
+/* Smooth swap transitions — apply to any HTMX target with .smooth-swap */
+.smooth-swap.htmx-swapping {
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity var(--dur-fast) var(--ease-in),
+                transform var(--dur-fast) var(--ease-in);
+}
+.smooth-swap.htmx-settling {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+.smooth-swap {
+    transition: opacity var(--dur-base) var(--ease-out),
+                transform var(--dur-base) var(--ease-out);
+}
+
+/* Skeleton placeholder background */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--slate-100) 0%,
+        var(--slate-200) 50%,
+        var(--slate-100) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+    border-radius: var(--radius-md);
+    color: transparent !important;
+    user-select: none;
+}
+
+/* ---------- Focus rings (accessibility) ---------- */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+    border-radius: var(--radius-sm);
+}

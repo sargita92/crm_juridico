@@ -1,0 +1,292 @@
+/* =============================================================
+   Components — polished overrides on top of main.css/landing.css
+   Loads AFTER existing CSS so tokens-driven rules win.
+   ============================================================= */
+
+/* ---------- Buttons ---------- */
+
+.btn {
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        color            var(--dur-fast) var(--ease-out),
+        border-color     var(--dur-fast) var(--ease-out),
+        box-shadow       var(--dur-fast) var(--ease-out),
+        transform        var(--dur-instant) var(--ease-out);
+    will-change: transform;
+    border-radius: var(--radius-lg);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0.01em;
+}
+
+.btn:hover         { box-shadow: var(--shadow-sm); }
+.btn:active        { transform: translateY(1px) scale(0.99); box-shadow: none; }
+.btn:focus-visible { box-shadow: var(--shadow-focus); }
+
+.btn-primary {
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--brand-navy-900) 100%);
+    color: var(--color-on-primary);
+}
+.btn-primary:hover {
+    background: linear-gradient(180deg, var(--brand-navy-700) 0%, var(--color-primary) 100%);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-success { background-color: var(--color-success); }
+.btn-success:hover { background-color: #15803d; box-shadow: var(--shadow-md); }
+
+.btn-danger { background-color: var(--color-danger); }
+.btn-danger:hover { background-color: var(--color-danger-hover); box-shadow: var(--shadow-md); }
+
+.btn-secondary {
+    background-color: var(--slate-100);
+    color: var(--slate-700);
+}
+.btn-secondary:hover {
+    background-color: var(--slate-200);
+    color: var(--slate-900);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--slate-700);
+    border: 1.5px solid var(--color-border);
+}
+.btn-outline:hover {
+    background-color: var(--slate-50);
+    border-color: var(--color-border-strong);
+}
+
+/* ---------- Inputs ---------- */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+select,
+textarea {
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow   var(--dur-fast) var(--ease-out),
+        background-color var(--dur-fast) var(--ease-out);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--color-accent) !important;
+    box-shadow: var(--shadow-focus) !important;
+}
+
+/* ---------- Cards ---------- */
+
+.card,
+.metric-card,
+.dashboard-card,
+.tenant-card {
+    transition:
+        transform   var(--dur-fast) var(--ease-out),
+        box-shadow  var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
+}
+.card:hover,
+.metric-card:hover,
+.dashboard-card:hover,
+.tenant-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-strong);
+}
+
+/* ---------- Sidebar (admin/tenant) ---------- */
+
+.admin-sidebar {
+    background: linear-gradient(180deg, #1a1a2e 0%, #11142a 100%);
+    box-shadow: 1px 0 0 rgba(255, 255, 255, 0.04), var(--shadow-md);
+}
+
+.sidebar-nav a {
+    position: relative;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        color           var(--dur-fast) var(--ease-out),
+        padding-left    var(--dur-base) var(--ease-out);
+}
+
+.sidebar-nav a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background: var(--color-accent);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform var(--dur-base) var(--ease-spring);
+}
+.sidebar-nav a:hover::before { transform: scaleY(0.6); }
+.sidebar-nav a.active::before { transform: scaleY(1); }
+
+.sidebar-nav a:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+.sidebar-nav a.active {
+    background-color: rgba(37, 99, 235, 0.15);
+    color: #fff;
+}
+
+/* ---------- Modals ---------- */
+
+.modal-overlay {
+    background: var(--color-overlay) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: fadeIn var(--dur-fast) var(--ease-out) !important;
+}
+
+.modal-card,
+.modal-content {
+    border-radius: var(--radius-xl) !important;
+    box-shadow: var(--shadow-xl) !important;
+    animation: scaleIn var(--dur-slow) var(--ease-spring) !important;
+}
+
+/* ---------- Tabs ---------- */
+
+.tab,
+.tabs .tab {
+    position: relative;
+    transition: color var(--dur-fast) var(--ease-out);
+}
+
+.tab::after,
+.tabs .tab::after {
+    content: "";
+    position: absolute;
+    left: 12px; right: 12px;
+    bottom: -1px;
+    height: 2px;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform var(--dur-base) var(--ease-spring);
+}
+.tab:hover::after { transform: scaleX(0.4); }
+.tab.tab-active::after,
+.tab.active::after { transform: scaleX(1); }
+
+/* ---------- Badges ---------- */
+
+.badge {
+    transition:
+        transform   var(--dur-fast) var(--ease-out),
+        box-shadow  var(--dur-fast) var(--ease-out);
+}
+
+/* ---------- Toasts ---------- */
+
+.toast,
+.toast-notif {
+    box-shadow: var(--shadow-lg);
+    animation:
+        slideInRight var(--dur-slow) var(--ease-spring),
+        fadeOut var(--dur-base) 4.5s var(--ease-in) forwards;
+}
+
+/* ---------- Notification bell ---------- */
+
+.notification-bell-btn {
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        transform var(--dur-instant) var(--ease-out),
+        box-shadow var(--dur-fast) var(--ease-out);
+}
+.notification-bell-btn:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+.notification-bell-btn:active {
+    transform: scale(0.96);
+}
+.notification-badge {
+    animation: bounceIn var(--dur-slower) var(--ease-spring);
+}
+
+/* ---------- Tables ---------- */
+
+.admin-table tbody tr,
+.payments-table tbody tr,
+.users-table tbody tr,
+.groups-table tbody tr {
+    transition: background-color var(--dur-fast) var(--ease-out);
+}
+.admin-table tbody tr:hover,
+.payments-table tbody tr:hover,
+.users-table tbody tr:hover,
+.groups-table tbody tr:hover {
+    background-color: var(--slate-50);
+}
+
+/* ---------- Auth (login / select tenant) ---------- */
+
+.auth-card {
+    animation: fadeInUp var(--dur-slow) var(--ease-out);
+    box-shadow: var(--shadow-xl) !important;
+    border-radius: var(--radius-2xl) !important;
+}
+
+.tenant-card {
+    transition:
+        transform var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-fast) var(--ease-out);
+}
+.tenant-card:hover {
+    transform: translateX(4px);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-md);
+}
+
+/* ---------- Page transitions (HTMX boosts) ---------- */
+
+main, .admin-content {
+    animation: fadeIn var(--dur-base) var(--ease-out);
+}
+
+/* ---------- Selection / scrollbar polish ---------- */
+
+::selection {
+    background: rgba(37, 99, 235, 0.18);
+    color: var(--slate-900);
+}
+
+/* Custom scrollbar (WebKit/Blink) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: var(--radius-full);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--slate-400); background-clip: padding-box; border: 2px solid transparent; }
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--slate-300) transparent;
+}
+
+/* ---------- Smooth scroll ---------- */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+}

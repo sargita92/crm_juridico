@@ -9,7 +9,7 @@
     </button>
 </div>
 {{else if .Conversations}}
-<div class="wa-conversations-list">
+<div class="wa-conversations-list stagger">
     {{range .Conversations}}
     {{template "whatsapp/conversation_item.html" .}}
     {{end}}

@@ -10,7 +10,7 @@
         {{end}}
     </div>
 {{else}}
-<ul class="files-list">
+<ul class="files-list stagger">
     {{range .Items}}
     <li class="file-row"
         hx-get="/tenant/files/{{.ID}}/preview"

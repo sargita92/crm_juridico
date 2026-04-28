@@ -11,10 +11,15 @@
     <meta property="og:description" content="CRM integrado com WhatsApp para escritórios de advocacia. Funil visual, IA especialista e automação de atendimento.">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="pt_BR">
+    <link rel="stylesheet" href="/static/css/tokens.css">
     <link rel="stylesheet" href="/static/css/landing.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+    <link rel="stylesheet" href="/static/css/components-pro.css">
     <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+    <script src="/static/js/ui.js" defer></script>
 </head>
 <body>
+    <div class="htmx-progress"></div>
     {{block "content" .}}{{end}}
 </body>
 </html>
