@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <link rel="stylesheet" href="/static/css/animations.css">
     <link rel="stylesheet" href="/static/css/components-pro.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
     <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
     <script src="/static/js/ui.js" defer></script>
     <!-- Chart.js (sem SRI por enquanto — TODO F19). Carregar no head para estar disponivel antes dos scripts inline dos blocos. -->
@@ -19,18 +20,22 @@
 <div class="admin-layout">
     {{template "partials/sidebar.html" (dict "ActiveNav" "dashboard")}}
     <main class="admin-content">
-        <div class="dashboard-page">
-            <header class="dashboard-header">
+        {{template "partials/admin_topbar.html" (dict "PageTitle" "Dashboard")}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
                 <div>
                     <h1>Dashboard</h1>
+                    <p class="lede">Visão geral em tempo real da plataforma multitenant.</p>
                 </div>
-                <button class="dashboard-refresh-btn"
-                        hx-get="/admin/dashboard/content"
-                        hx-target="#dashboard-content"
-                        hx-swap="outerHTML">
-                    Atualizar
-                </button>
-            </header>
+                <div class="head-actions">
+                    <button class="dashboard-refresh-btn"
+                            hx-get="/admin/dashboard/content"
+                            hx-target="#dashboard-content"
+                            hx-swap="outerHTML">
+                        Atualizar
+                    </button>
+                </div>
+            </div>
             {{template "admin/dashboard/content.html" .}}
         </div>
     </main>

@@ -1,0 +1,55 @@
+{{define "admin/dashboard/_kpi_row.html"}}
+<div class="kpi-grid">
+    <div class="kpi success">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/></svg>
+            Tenants ativos
+        </div>
+        <div class="kpi-value">{{.Stats.Bloco1_Tenants.Active}}</div>
+        <div class="kpi-meta">
+            <span class="kpi-delta up">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
+                +{{.Stats.Bloco1_Tenants.NewThisMonth}}
+            </span>
+            <span>novos este mês</span>
+        </div>
+    </div>
+
+    <div class="kpi">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Total de leads
+        </div>
+        <div class="kpi-value">{{.Stats.Bloco2_Uso.TotalLeads}}</div>
+        <div class="kpi-meta">
+            <span>na base atual</span>
+        </div>
+    </div>
+
+    <div class="kpi purple">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Conversas ativas
+        </div>
+        <div class="kpi-value">{{.Stats.Bloco2_Uso.ActiveConversations}}</div>
+        <div class="kpi-meta">
+            <span>nas últimas 24h</span>
+        </div>
+    </div>
+
+    <div class="kpi warning">
+        <div class="kpi-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Receita no ano
+        </div>
+        <div class="kpi-value">{{.Stats.Bloco6_Financeiro.ReceitaAno}}</div>
+        <div class="kpi-meta">
+            <span class="kpi-delta down">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                {{.Stats.Bloco6_Financeiro.AtrasadoTotal}}
+            </span>
+            <span>em atraso</span>
+        </div>
+    </div>
+</div>
+{{end}}

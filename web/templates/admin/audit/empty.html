@@ -1,7 +1,15 @@
 {{define "admin/audit/empty.html"}}
-<div class="empty-state">
-    <h2>Nenhum log encontrado</h2>
-    <p>Nao ha registros que correspondam aos filtros aplicados.</p>
-    <a href="/admin/logs" class="btn">Limpar filtros</a>
+<div class="empty-pro">
+    <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.3-4.3"/>
+        </svg>
+    </div>
+    <h3>Nenhum log encontrado</h3>
+    <p>Não há registros que correspondam aos filtros aplicados. Tente limpar a busca ou ajustar o intervalo de datas.</p>
+    <p style="margin-top:1rem">
+        <a href="/admin/logs" class="btn">Limpar filtros</a>
+    </p>
 </div>
 {{end}}

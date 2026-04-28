@@ -1,10 +1,13 @@
 {{define "admin/dashboard/content.html"}}
-<div id="dashboard-content" class="dashboard-grid">
-    {{template "admin/dashboard/_bloco1_tenants.html" .}}
-    {{template "admin/dashboard/_bloco2_uso.html" .}}
-    {{template "admin/dashboard/_bloco3_health.html" .}}
-    {{template "admin/dashboard/_bloco4_infra.html" .}}
-    {{template "admin/dashboard/_bloco5_especialistas.html" .}}
-    {{template "admin/dashboard/_bloco6_financeiro.html" .}}
+<div id="dashboard-content">
+    {{template "admin/dashboard/_kpi_row.html" .}}
+    <div class="dashboard-grid">
+        {{template "admin/dashboard/_bloco1_tenants.html" .}}
+        {{template "admin/dashboard/_bloco2_uso.html" .}}
+        {{template "admin/dashboard/_bloco3_health.html" .}}
+        {{template "admin/dashboard/_bloco4_infra.html" .}}
+        {{template "admin/dashboard/_bloco5_especialistas.html" .}}
+        {{template "admin/dashboard/_bloco6_financeiro.html" .}}
+    </div>
 </div>
 {{end}}
