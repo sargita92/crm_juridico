@@ -10,7 +10,9 @@
         {{range .Stats.Bloco4_Infra.ServicesStatus}}
         <div class="dashboard-service {{if .Up}}up{{else}}down{{end}}">
             <span><span class="status-dot"></span> {{.Name}}</span>
-            <span>{{if .Up}}OK{{else}}DOWN{{end}}</span>
+            <span class="status-pill {{if .Up}}up{{else}}down{{end}}">
+                <span class="dot"></span> {{if .Up}}OK{{else}}DOWN{{end}}
+            </span>
         </div>
         {{end}}
     </div>

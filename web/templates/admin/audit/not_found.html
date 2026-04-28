@@ -4,19 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagina nao encontrada — CRM Juridico</title>
+    <title>Página não encontrada — CRM Juridico</title>
     <link rel="stylesheet" href="/static/css/tokens.css">
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/animations.css">
     <link rel="stylesheet" href="/static/css/components-pro.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
 </head>
 <body>
 <div class="admin-layout">
-    <main class="admin-content">
-        <div class="empty-state">
-            <h1>Pagina nao encontrada</h1>
-            <p>A pagina que voce tentou acessar nao existe ou nao esta disponivel.</p>
-            <p><a href="/admin/dashboard" class="btn">Voltar ao painel</a></p>
+    <main class="admin-content" style="margin-left:0">
+        <div class="admin-page-shell">
+            <div class="empty-pro" style="margin-top:6rem">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                </div>
+                <h3>Página não encontrada</h3>
+                <p>A página que você tentou acessar não existe ou não está disponível.</p>
+                <p style="margin-top:1rem"><a href="/admin/dashboard" class="btn">Voltar ao painel</a></p>
+            </div>
         </div>
     </main>
 </div>

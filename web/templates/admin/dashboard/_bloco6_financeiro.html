@@ -6,10 +6,12 @@
         <div class="dashboard-counter warning"><span class="label">Pendente</span><span class="value">{{.Stats.Bloco6_Financeiro.PendenteTotal}}</span></div>
         <div class="dashboard-counter danger"><span class="label">Atrasado</span><span class="value">{{.Stats.Bloco6_Financeiro.AtrasadoTotal}}</span></div>
     </div>
-    <div class="dashboard-grid" style="margin-top:1rem">
-        <div>
-            <h3 style="font-size:0.95rem;margin:0 0 0.5rem 0">Distribuição de planos</h3>
-            <canvas id="chart-bloco6-plans" class="dashboard-chart"></canvas>
+    <div class="card-split" style="margin-top:1rem">
+        <div class="card-split-pane">
+            <h3 class="card-split-title">Distribuição de planos</h3>
+            <div class="chart-frame chart-frame-sm">
+                <canvas id="chart-bloco6-plans"></canvas>
+            </div>
             <script type="application/json" id="data-bloco6-plans">{{.Stats.Bloco6_Financeiro.PlanDistJSON}}</script>
             <script>
             (function(){
@@ -18,17 +20,35 @@
                     type: 'doughnut',
                     data: {
                         labels: ['Mensal','Anual','Vitalício','Externo'],
-                        datasets: [{ data: [p.Mensal, p.Anual, p.Vitalicio, p.Externo], backgroundColor: ['#4299e1','#48bb78','#9f7aea','#ed8936'] }]
+                        datasets: [{
+                            data: [p.Mensal, p.Anual, p.Vitalicio, p.Externo],
+                            backgroundColor: ['#2563eb','#16a34a','#7c3aed','#f59e0b'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 6
+                        }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '62%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12, family: 'Inter,system-ui' }, color: '#475569' }
+                            }
+                        }
+                    }
                 });
             })();
             </script>
         </div>
-        <div>
-            <h3 style="font-size:0.95rem;margin:0 0 0.5rem 0">Top 10 atrasados</h3>
+        <div class="card-split-pane">
+            <h3 class="card-split-title">Top 10 atrasados</h3>
             {{if .Stats.Bloco6_Financeiro.TopOverdue}}
-            <canvas id="chart-bloco6-overdue" class="dashboard-chart"></canvas>
+            <div class="chart-frame chart-frame-md">
+                <canvas id="chart-bloco6-overdue"></canvas>
+            </div>
             <script type="application/json" id="data-bloco6-overdue">{{.Stats.Bloco6_Financeiro.TopOverdueJSON}}</script>
             <script>
             (function(){
@@ -37,9 +57,24 @@
                     type: 'bar',
                     data: {
                         labels: items.map(i => i.TenantName),
-                        datasets: [{ label: 'Atrasado', data: items.map(i => i.ValorCents/100), backgroundColor: '#e53e3e' }]
+                        datasets: [{
+                            label: 'Atrasado (R$)',
+                            data: items.map(i => i.ValorCents/100),
+                            backgroundColor: 'rgba(220, 38, 38, 0.85)',
+                            borderRadius: 4,
+                            borderSkipped: false
+                        }]
                     },
-                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(15,23,42,0.06)' }, ticks: { color: '#64748b', font: { size: 11 } } },
+                            y: { grid: { display: false }, ticks: { color: '#475569', font: { size: 12 } } }
+                        }
+                    }
                 });
             })();
             </script>
