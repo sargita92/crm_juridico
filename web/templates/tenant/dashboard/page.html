@@ -11,20 +11,25 @@
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "dashboard")}}
     <main class="admin-content">
-        <div class="dashboard-page">
-            <header class="dashboard-header">
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Dashboard")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
                 <div>
                     <h1>Dashboard
                         {{if .Stats.ScopeIsUser}}<span class="scope-badge">{{.Stats.CurrentUserName}}</span>{{end}}
                     </h1>
+                    <p class="lede">Visão consolidada do escritório, conversas e funil em tempo real.</p>
                 </div>
-                <button class="dashboard-refresh-btn"
-                        hx-get="/dashboard/content"
-                        hx-target="#dashboard-content"
-                        hx-swap="outerHTML">
-                    Atualizar
-                </button>
-            </header>
+                <div class="head-actions">
+                    <button class="dashboard-refresh-btn"
+                            hx-get="/dashboard/content"
+                            hx-target="#dashboard-content"
+                            hx-swap="outerHTML">
+                        Atualizar
+                    </button>
+                </div>
+            </div>
             {{template "tenant/dashboard/content.html" .}}
         </div>
     </main>

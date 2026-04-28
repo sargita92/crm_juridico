@@ -9,15 +9,18 @@
 <body>
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "leads")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <div>
-                <a href="/tenant/leads/funnels" class="btn-back">← Voltar</a>
-                <h1>{{if .ID}}Editar Funil{{else}}Novo Funil{{end}}</h1>
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Funis")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <a href="/tenant/leads/funnels" class="btn-back">← Voltar</a>
+                    <h1>{{if .ID}}Editar Funil{{else}}Novo Funil{{end}}</h1>
+                    <p class="lede">Defina o nome e a descrição que aparecem no kanban e nas automações.</p>
+                </div>
             </div>
-        </div>
-        <div class="admin-table-wrapper" style="max-width:500px">
+            <div class="admin-table-wrapper" style="max-width:500px">
             {{if .Error}}<div class="alert alert-error" style="padding:0.75rem;margin-bottom:1rem;background:#fef2f2;color:#ef4444;border-radius:6px">{{.Error}}</div>{{end}}
             <form method="POST" action="{{if .ID}}/tenant/leads/funnels/{{.ID}}{{else}}/tenant/leads/funnels{{end}}">
                 <div class="form-group" style="margin-bottom:1rem">
@@ -35,6 +38,7 @@
                     <button type="submit" class="btn btn-primary">Salvar</button>
                 </div>
             </form>
+        </div>
         </div>
     </main>
 </div>

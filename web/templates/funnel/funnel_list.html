@@ -9,16 +9,21 @@
 <body>
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "leads")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <div>
-                <a href="/tenant/leads" class="btn-back">← Voltar ao Kanban</a>
-                <h1>Funis de Vendas</h1>
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Funis de vendas")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <a href="/tenant/leads" class="btn-back">← Voltar ao Kanban</a>
+                    <h1>Funis de Vendas</h1>
+                    <p class="lede">Configure as etapas pelas quais cada lead avança até o fechamento.</p>
+                </div>
+                <div class="head-actions">
+                    <a href="/tenant/leads/funnels/new" class="btn btn-primary">+ Novo Funil</a>
+                </div>
             </div>
-            <a href="/tenant/leads/funnels/new" class="btn btn-primary">+ Novo Funil</a>
-        </div>
-        <div class="admin-table-wrapper" id="funnels-list">
+            <div class="admin-table-wrapper" id="funnels-list">
             {{if .Funnels}}
             {{range .Funnels}}
             <a href="/tenant/leads/funnels/{{.ID}}" class="funnel-card">
@@ -39,6 +44,7 @@
                 <a href="/tenant/leads/funnels/new" class="btn btn-primary">Criar primeiro funil</a>
             </div>
             {{end}}
+        </div>
         </div>
     </main>
 </div>

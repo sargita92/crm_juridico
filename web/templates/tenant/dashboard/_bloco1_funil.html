@@ -13,7 +13,9 @@
         <div class="dashboard-counter"><span class="label">Esta semana</span><span class="value">{{.Stats.Bloco1_Funil.NewThisWeek}}</span></div>
     </div>
     {{if .Stats.Bloco1_Funil.ColumnTotals}}
-    <canvas id="chart-bloco1-cols" class="dashboard-chart"></canvas>
+    <div class="dashboard-chart-wrap">
+        <canvas id="chart-bloco1-cols" class="dashboard-chart"></canvas>
+    </div>
     <script type="application/json" id="data-bloco1-cols">{{.Stats.Bloco1_Funil.ColumnTotalsJSON}}</script>
     <script>
     (function(){
@@ -22,9 +24,18 @@
             type: 'bar',
             data: {
                 labels: cols.map(c => c.ColumnName),
-                datasets: [{ label: 'Leads por coluna', data: cols.map(c => c.Count), backgroundColor: '#4299e1' }]
+                datasets: [{ label: 'Leads por coluna', data: cols.map(c => c.Count), backgroundColor: '#4299e1', borderRadius: 4, maxBarThickness: 28 }]
             },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } },
+                    y: { grid: { display: false } }
+                }
+            }
         });
     })();
     </script>

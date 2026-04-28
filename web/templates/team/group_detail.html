@@ -7,31 +7,38 @@
 <body class="no-auto-close-modals">
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "team")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <nav class="breadcrumbs">
-                <a href="/tenant/team">Equipe</a> › <a href="/tenant/team/groups">Grupos</a> › {{.Group.Name}}
-            </nav>
-            <h1>{{.Group.Name}}</h1>
-            <p class="muted">{{.Group.Description}}</p>
-            <button class="btn btn-danger"
-                    hx-delete="/tenant/groups/{{.Group.ID}}"
-                    hx-confirm="Excluir este grupo?"
-                    hx-on::after-request="if(event.detail.successful){window.location='/tenant/team/groups';}">
-                🗑️ Excluir grupo
-            </button>
-        </div>
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" .Group.Name)}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <nav class="breadcrumbs">
+                        <a href="/tenant/team">Equipe</a> › <a href="/tenant/team/groups">Grupos</a> › {{.Group.Name}}
+                    </nav>
+                    <h1>{{.Group.Name}}</h1>
+                    {{if .Group.Description}}<p class="lede">{{.Group.Description}}</p>{{end}}
+                </div>
+                <div class="head-actions">
+                    <button class="btn btn-danger"
+                            hx-delete="/tenant/groups/{{.Group.ID}}"
+                            hx-confirm="Excluir este grupo?"
+                            hx-on::after-request="if(event.detail.successful){window.location='/tenant/team/groups';}">
+                        Excluir grupo
+                    </button>
+                </div>
+            </div>
 
-        {{range .Sections}}
-        <section class="card"
-                 hx-get="/tenant/team/groups/{{$.Group.ID}}/section/{{.Slug}}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-            <h2>{{.Title}}</h2>
-            <p class="muted">Carregando...</p>
-        </section>
-        {{end}}
+            {{range .Sections}}
+            <section class="card"
+                     hx-get="/tenant/team/groups/{{$.Group.ID}}/section/{{.Slug}}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                <h2>{{.Title}}</h2>
+                <p class="muted">Carregando...</p>
+            </section>
+            {{end}}
+        </div>
     </main>
 </div>
 <script src="/static/js/admin.js"></script>

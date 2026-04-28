@@ -198,6 +198,12 @@
 .dashboard-service.up .status-dot { background: #38a169; }
 .dashboard-service.down .status-dot { background: #e53e3e; }
 
+.dashboard-chart-wrap {
+    max-width: 640px;
+    height: 220px;
+    margin-top: 0.75rem;
+    position: relative;
+}
 canvas.dashboard-chart {
     max-height: 240px;
     width: 100% !important;

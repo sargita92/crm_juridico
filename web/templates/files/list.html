@@ -8,17 +8,20 @@
 <body class="no-auto-close-modals">
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "files")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <div>
-                <h1>Arquivos</h1>
-                <small>{{.Total}} arquivos</small>
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Arquivos")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <h1>Arquivos</h1>
+                    <p class="lede">{{.Total}} arquivos no acervo do escritório.</p>
+                </div>
             </div>
-        </div>
-        {{template "files/_filters.html" .}}
-        <div id="files-list">
-            {{template "files/_list_fragment.html" .}}
+            {{template "files/_filters.html" .}}
+            <div id="files-list">
+                {{template "files/_list_fragment.html" .}}
+            </div>
         </div>
     </main>
 </div>

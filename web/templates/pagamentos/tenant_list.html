@@ -2,51 +2,50 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meus pagamentos — CRM Juridico</title>
-    <link rel="stylesheet" href="/static/css/tokens.css">
-    <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/animations.css">
-    <link rel="stylesheet" href="/static/css/components-pro.css">
-    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
-    <script src="/static/js/ui.js" defer></script>
+    {{template "partials/tenant_head.html" (dict "Title" "Meus pagamentos")}}
 </head>
 <body>
-<div class="tenant-layout">
+<div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "pagamentos")}}
-    <main class="tenant-content">
-        <div class="page-header">
-            <h1>Meus pagamentos</h1>
+    <main class="admin-content">
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Pagamentos")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <h1>Meus pagamentos</h1>
+                    <p class="lede">Resumo financeiro e lançamentos do escritório.</p>
+                </div>
+            </div>
+
+            {{template "pagamentos/partials/resumo_financeiro.html" (dict "Summary" .Summary)}}
+
+            <table class="payments-table">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Descrição/Comp.</th>
+                        <th>Valor</th>
+                        <th>Vencimento</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Items}}
+                    <tr>
+                        <td>{{.Tipo}}</td>
+                        <td>{{if .Descricao}}{{.Descricao}}{{else}}{{.Competencia}}{{end}}</td>
+                        <td>{{.Valor}}</td>
+                        <td>{{.DataVencimento}}</td>
+                        <td><span class="{{.StatusBadge}}">{{.Status}}</span></td>
+                    </tr>
+                    {{else}}
+                    <tr><td colspan="5" class="empty">Nenhum lançamento encontrado.</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+            <p class="table-footer">Total: {{.Total}}</p>
         </div>
-
-        {{template "pagamentos/partials/resumo_financeiro.html" (dict "Summary" .Summary)}}
-
-        <table class="payments-table">
-            <thead>
-                <tr>
-                    <th>Tipo</th>
-                    <th>Descrição/Comp.</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Items}}
-                <tr>
-                    <td>{{.Tipo}}</td>
-                    <td>{{if .Descricao}}{{.Descricao}}{{else}}{{.Competencia}}{{end}}</td>
-                    <td>{{.Valor}}</td>
-                    <td>{{.DataVencimento}}</td>
-                    <td><span class="{{.StatusBadge}}">{{.Status}}</span></td>
-                </tr>
-                {{else}}
-                <tr><td colspan="5" class="empty">Nenhum lançamento encontrado.</td></tr>
-                {{end}}
-            </tbody>
-        </table>
-        <p class="table-footer">Total: {{.Total}}</p>
     </main>
 </div>
 </body>

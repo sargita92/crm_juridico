@@ -1376,3 +1376,119 @@ body:has(.admin-layout) { background: var(--admin-bg); }
     .dashboard-card,
     .kpi-grid .kpi { opacity: 1; transform: none; }
 }
+
+/* ============================================================
+   TENANT — escopo derivado do admin (accent verde WhatsApp)
+   Aplicado via .admin-sidebar.tenant-sidebar e .admin-topbar.tenant-topbar.
+   ============================================================ */
+
+/* Sidebar: troca o orb azul por verde para fixar identidade do tenant */
+.admin-sidebar.tenant-sidebar::before {
+    background: radial-gradient(circle, rgba(0, 168, 132, 0.32) 0%, transparent 70%);
+}
+.admin-sidebar.tenant-sidebar::after {
+    background: radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, transparent 70%);
+}
+.admin-sidebar.tenant-sidebar .sidebar-logo::before {
+    background: linear-gradient(135deg, #00a884 0%, #2563eb 100%);
+}
+
+/* Active state usa accent WhatsApp para reforçar contexto operacional */
+.admin-sidebar.tenant-sidebar .sidebar-nav a.active {
+    background: linear-gradient(135deg, rgba(0, 168, 132, 0.20) 0%, rgba(0, 168, 132, 0.08) 100%);
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(0, 168, 132, 0.30), 0 4px 14px rgba(0, 168, 132, 0.18);
+}
+.admin-sidebar.tenant-sidebar .sidebar-nav a.active::before {
+    background: linear-gradient(180deg, #00a884 0%, #2563eb 100%);
+}
+
+/* Logo: nome do escritório truncado em uma linha */
+.admin-sidebar .sidebar-logo small[data-office-name] {
+    display: block;
+    color: #93c5fd;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    max-width: 170px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.admin-sidebar.tenant-sidebar .sidebar-logo small[data-office-name] {
+    color: #6ee7b7;
+}
+
+/* Sidebar: botão Sair com ícone */
+.admin-sidebar .sidebar-footer .sidebar-logout-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+    padding: 0.55rem 0.85rem;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur-fast, 150ms) var(--ease-out, ease-out),
+                border-color var(--dur-fast, 150ms) var(--ease-out, ease-out),
+                color var(--dur-fast, 150ms) var(--ease-out, ease-out);
+}
+.admin-sidebar .sidebar-footer .sidebar-logout-btn:hover {
+    background: rgba(239, 68, 68, 0.14);
+    border-color: rgba(239, 68, 68, 0.40);
+    color: #fecaca;
+}
+.admin-sidebar .sidebar-footer .sidebar-logout-btn svg {
+    width: 16px; height: 16px;
+}
+
+/* WhatsApp status pill no footer da sidebar (ajustado ao tema escuro) */
+.admin-sidebar .sidebar-footer .tenant-wa-status {
+    width: 100%;
+    margin-bottom: 0.6rem;
+}
+.admin-sidebar .sidebar-footer .tenant-wa-status:empty {
+    display: none;
+}
+.admin-sidebar .sidebar-footer .tenant-wa-status .status-pill,
+.admin-sidebar .sidebar-footer .tenant-wa-status .whatsapp-status {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.72rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Topbar do tenant: breadcrumb com nome do escritório */
+.admin-topbar.tenant-topbar .admin-breadcrumb a [data-office-name] {
+    max-width: 200px;
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+}
+
+/* Page shell: pequena variação de espaçamento para leitura mais densa */
+.admin-content .tenant-page-shell {
+    /* alias para reuso semântico */
+}
+
+/* Dashboard: scope-badge com accent verde no tenant */
+.admin-content .dashboard-page .dashboard-header .scope-badge {
+    background: rgba(0, 168, 132, 0.10);
+    color: #047857;
+    border: 1px solid rgba(0, 168, 132, 0.25);
+}
+

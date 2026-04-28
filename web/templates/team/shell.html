@@ -7,19 +7,25 @@
 <body class="no-auto-close-modals">
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "team")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <div><h1>Equipe</h1></div>
-        </div>
-        <div class="tabs">
-            <a href="/tenant/team/users"
-               class="tab {{if eq .ActiveTab "users"}}active{{end}}">Usuários</a>
-            <a href="/tenant/team/groups"
-               class="tab {{if eq .ActiveTab "groups"}}active{{end}}">Grupos</a>
-        </div>
-        <div id="tab-content">
-            {{if eq .ActiveTab "users"}}{{template "team/users_page.html" .}}{{else if eq .ActiveTab "groups"}}{{template "team/groups_page.html" .}}{{end}}
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Equipe")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <h1>Equipe</h1>
+                    <p class="lede">Usuários, grupos e permissões do escritório.</p>
+                </div>
+            </div>
+            <div class="tabs">
+                <a href="/tenant/team/users"
+                   class="tab {{if eq .ActiveTab "users"}}active{{end}}">Usuários</a>
+                <a href="/tenant/team/groups"
+                   class="tab {{if eq .ActiveTab "groups"}}active{{end}}">Grupos</a>
+            </div>
+            <div id="tab-content">
+                {{if eq .ActiveTab "users"}}{{template "team/users_page.html" .}}{{else if eq .ActiveTab "groups"}}{{template "team/groups_page.html" .}}{{end}}
+            </div>
         </div>
     </main>
 </div>

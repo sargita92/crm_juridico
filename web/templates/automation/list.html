@@ -7,14 +7,17 @@
 <body class="no-auto-close-modals">
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "automations")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <div>
-                <h1>Automações</h1>
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Automações")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <h1>Automações</h1>
+                    <p class="lede">Regras que disparam ações com base em mudanças no funil — economize horas de trabalho repetitivo.</p>
+                </div>
             </div>
-        </div>
-        <div class="admin-table-wrapper">
+            <div class="admin-table-wrapper">
             <div class="filters-bar">
                 <select name="funnel_id" id="funnel-select"
                         hx-get="/tenant/automations/table"
@@ -41,6 +44,7 @@
                  hx-swap="innerHTML">
                 {{template "automation/table.html" .}}
             </div>
+        </div>
         </div>
     </main>
 </div>

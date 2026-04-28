@@ -9,15 +9,17 @@
 <body>
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "products")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <div>
-                <h1>Meus Produtos</h1>
-                <p style="color:#667781;font-size:0.875rem;margin-top:0.25rem">Produtos associados ao seu escritorio. Configure quais funis atendem cada produto.</p>
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" "Produtos")}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <h1>Meus Produtos</h1>
+                    <p class="lede">Produtos associados ao seu escritório. Configure quais funis atendem cada produto.</p>
+                </div>
             </div>
-        </div>
-        <div class="admin-table-wrapper">
+            <div class="admin-table-wrapper">
             {{if .Error}}<div class="alert alert-danger">{{.Error}}</div>{{end}}
             {{if .Products}}
             {{range $product := .Products}}
@@ -89,6 +91,7 @@
                 <p style="color:#9ca3af;font-size:0.875rem">Os produtos sao gerenciados pelo administrador.</p>
             </div>
             {{end}}
+        </div>
         </div>
     </main>
 </div>

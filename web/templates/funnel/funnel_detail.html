@@ -9,34 +9,37 @@
 <body>
 <div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "leads")}}
-    {{template "partials/notification_bell.html" .}}
     <main class="admin-content">
-        <div class="page-header">
-            <div>
-                <a href="/tenant/leads/funnels" class="btn-back">← Voltar</a>
-                <h1>{{.Funnel.Name}}</h1>
-                {{if .Funnel.Description}}<p class="text-muted">{{.Funnel.Description}}</p>{{end}}
+        {{template "partials/tenant_topbar.html" (dict "PageTitle" .Funnel.Name)}}
+        {{template "partials/notification_bell.html" .}}
+        <div class="admin-page-shell">
+            <div class="admin-page-head">
+                <div>
+                    <a href="/tenant/leads/funnels" class="btn-back">← Voltar</a>
+                    <h1>{{.Funnel.Name}}</h1>
+                    {{if .Funnel.Description}}<p class="lede">{{.Funnel.Description}}</p>{{end}}
+                </div>
+                <div class="head-actions" style="display:flex;gap:0.5rem;align-items:center">
+                    <a href="/tenant/leads/funnels/{{.Funnel.ID}}/edit" class="btn btn-outline btn-sm">Editar</a>
+                    <form method="POST" action="/tenant/leads/funnels/{{.Funnel.ID}}/toggle" style="margin:0">
+                        {{if .Funnel.Active}}
+                        <button type="submit" class="btn btn-outline btn-sm">Desativar</button>
+                        {{else}}
+                        <button type="submit" class="btn btn-primary btn-sm">Ativar</button>
+                        {{end}}
+                    </form>
+                </div>
             </div>
-            <div style="display:flex;gap:0.5rem;align-items:center">
-                <a href="/tenant/leads/funnels/{{.Funnel.ID}}/edit" class="btn btn-outline btn-sm">Editar</a>
-                <form method="POST" action="/tenant/leads/funnels/{{.Funnel.ID}}/toggle" style="margin:0">
-                    {{if .Funnel.Active}}
-                    <button type="submit" class="btn btn-outline btn-sm">Desativar</button>
-                    {{else}}
-                    <button type="submit" class="btn btn-primary btn-sm">Ativar</button>
-                    {{end}}
-                </form>
-            </div>
-        </div>
 
-        <div class="admin-table-wrapper">
-            <div class="section-header">
-                <h2>Colunas</h2>
-            </div>
-            <div id="columns-section"
-                 hx-get="/tenant/leads/funnels/{{.Funnel.ID}}/columns"
-                 hx-trigger="load"
-                 hx-target="#columns-section">
+            <div class="admin-table-wrapper">
+                <div class="section-header">
+                    <h2>Colunas</h2>
+                </div>
+                <div id="columns-section"
+                     hx-get="/tenant/leads/funnels/{{.Funnel.ID}}/columns"
+                     hx-trigger="load"
+                     hx-target="#columns-section">
+                </div>
             </div>
         </div>
     </main>

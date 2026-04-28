@@ -304,6 +304,15 @@ func main() {
 	requirePermMw := middleware.RequirePermission(permissionMod.Resolver())
 	// Sidebar UX flag: cookie ux_show_pagamentos lido por JS na sidebar.
 	sidebarMw := middleware.SidebarFlags(pagamentosMod.ShowsPortalForTenant)
+	// Office name UX: cookie crm_office_name lido pela sidebar/topbar do tenant.
+	tenantRepo := tenantMod.TenantRepo()
+	officeNameMw := middleware.OfficeName(func(ctx context.Context, tenantID string) (string, error) {
+		t, err := tenantRepo.FindByID(ctx, tenantID)
+		if err != nil {
+			return "", err
+		}
+		return t.Name, nil
+	})
 
 	mw := module.Middlewares{
 		Auth:              authMw,
@@ -312,13 +321,17 @@ func main() {
 		RequirePermission: requirePermMw,
 	}
 
-	// Compose Tenant middleware to also stamp sidebar flags after auth/tenant resolution.
+	// Compose Tenant middleware to also stamp sidebar flags + office name after auth/tenant resolution.
 	mw.Tenant = func(c *gin.Context) {
 		tenantMw(c)
 		if c.IsAborted() {
 			return
 		}
 		sidebarMw(c)
+		if c.IsAborted() {
+			return
+		}
+		officeNameMw(c)
 	}
 
 	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
