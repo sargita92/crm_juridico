@@ -9,43 +9,84 @@
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/animations.css">
     <link rel="stylesheet" href="/static/css/components-pro.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
     <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
     <script src="/static/js/ui.js" defer></script>
 </head>
-<body>
+<body class="auth-page">
     <div class="htmx-progress"></div>
-    <div class="auth-container">
-        <div class="auth-card">
-            <div class="auth-logo">
-                <h1>CRM Jurídico</h1>
+    <div class="auth-shell">
+
+        <aside class="auth-brand" aria-hidden="true">
+            <span class="auth-orb auth-orb-1"></span>
+            <span class="auth-orb auth-orb-2"></span>
+            <span class="auth-orb auth-orb-3"></span>
+            <span class="auth-grid"></span>
+
+            <a href="/" class="auth-brand-logo">
+                <span class="auth-brand-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 21h18"/>
+                        <path d="M5 21V8l7-4 7 4v13"/>
+                        <path d="M9 21v-6h6v6"/>
+                    </svg>
+                </span>
+                <span>CRM Jurídico</span>
+            </a>
+
+            <div class="auth-brand-content anim-fade-in-up">
+                <span class="auth-kicker">Escritórios vinculados</span>
+                <h2 class="auth-headline">
+                    Escolha o <span class="grad">escritório</span> que deseja acessar.
+                </h2>
+                <p class="auth-sub">
+                    Cada escritório tem seus próprios leads, conversas e equipe. Você pode trocar a qualquer momento.
+                </p>
             </div>
-            <h2 class="select-title">Selecione o escritório</h2>
-            <div class="tenant-list stagger">
-                {{range .Tenants}}
-                <div class="tenant-card"
-                     hx-post="/select-tenant"
-                     hx-vals='{"tenant_id": "{{.ID}}"}'
-                     hx-indicator="this"
-                     role="button"
-                     tabindex="0">
-                    <span class="tenant-icon">{{if eq (printf "%s" .Type) "PJ"}}🏢{{else}}👤{{end}}</span>
-                    <div class="tenant-info">
-                        <strong>{{.Name}}</strong>
-                        <small>{{printf "%s" .Type}} · {{.Document}}</small>
-                    </div>
-                    <span class="spinner"></span>
+
+            <p class="auth-brand-foot">© 2026 CRM Jurídico</p>
+        </aside>
+
+        <main class="auth-form-side">
+            <div class="auth-card-pro is-wide" id="select-tenant-card">
+                <div class="auth-card-head">
+                    <span class="auth-card-eyebrow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/></svg>
+                        Selecionar escritório
+                    </span>
+                    <h2>Bem-vindo de volta</h2>
+                    <p class="auth-card-sub">Selecione o escritório para entrar no CRM.</p>
                 </div>
-                {{end}}
-                {{if not .Tenants}}
-                <div class="empty-state">Nenhum escritório vinculado.</div>
-                {{end}}
+
+                <div class="tenant-list">
+                    {{range .Tenants}}
+                    <div class="tenant-card"
+                         hx-post="/select-tenant"
+                         hx-vals='{"tenant_id": "{{.ID}}"}'
+                         hx-indicator="this"
+                         role="button"
+                         tabindex="0">
+                        <span class="tenant-icon">{{if eq (printf "%s" .Type) "PJ"}}🏢{{else}}👤{{end}}</span>
+                        <div class="tenant-info">
+                            <strong>{{.Name}}</strong>
+                            <small>{{printf "%s" .Type}} · {{.Document}}</small>
+                        </div>
+                        <span class="spinner"></span>
+                    </div>
+                    {{end}}
+                    {{if not .Tenants}}
+                    <div class="empty-state">Nenhum escritório vinculado à sua conta.</div>
+                    {{end}}
+                </div>
+
+                <div class="logout-link">
+                    <form hx-post="/logout">
+                        <button type="submit" class="btn-link">Sair da conta</button>
+                    </form>
+                </div>
             </div>
-            <div class="logout-link">
-                <form hx-post="/logout">
-                    <button type="submit" class="btn-link">Sair</button>
-                </form>
-            </div>
-        </div>
+        </main>
+
     </div>
 </body>
 </html>
