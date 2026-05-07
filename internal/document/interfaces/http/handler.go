@@ -123,7 +123,7 @@ func (h *Handler) HandleUpload(c *gin.Context) {
 		c.HTML(http.StatusBadRequest, "document/upload_modal.html", gin.H{"Error": "Arquivo é obrigatório"})
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if header.Size > maxFileSize {
 		c.HTML(http.StatusBadRequest, "document/upload_modal.html", gin.H{
@@ -156,10 +156,10 @@ func (h *Handler) HandleUpload(c *gin.Context) {
 		c.HTML(http.StatusInternalServerError, "document/upload_modal.html", gin.H{"Error": "Erro ao salvar arquivo"})
 		return
 	}
-	defer dst.Close()
+	defer func() { _ = dst.Close() }()
 
 	if _, err := io.Copy(dst, file); err != nil {
-		os.Remove(filePath)
+		_ = os.Remove(filePath)
 		c.HTML(http.StatusInternalServerError, "document/upload_modal.html", gin.H{"Error": "Erro ao salvar arquivo"})
 		return
 	}
@@ -171,7 +171,7 @@ func (h *Handler) HandleUpload(c *gin.Context) {
 		FileSize: header.Size,
 	})
 	if err != nil {
-		os.Remove(filePath)
+		_ = os.Remove(filePath)
 		c.HTML(http.StatusBadRequest, "document/upload_modal.html", gin.H{
 			"Error": mapDomainError(err),
 			"Name":  name,

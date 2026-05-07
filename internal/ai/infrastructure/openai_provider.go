@@ -77,7 +77,7 @@ func (p *OpenAIProvider) GenerateResponse(ctx context.Context, req *domain.AIReq
 		)
 		return nil, fmt.Errorf("openai: http request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	duration := time.Since(start)
 	respBytes, err := io.ReadAll(resp.Body)

@@ -115,7 +115,7 @@ func (h *Handler) Download(c *gin.Context) {
 		c.Status(h.statusFor(err))
 		return
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	infrastructure.DownloadsTotal.WithLabelValues(string(f.MediaType)).Inc()
 	h.log.Info("file downloaded",
@@ -156,7 +156,7 @@ func (h *Handler) Thumbnail(c *gin.Context) {
 		c.Status(h.statusFor(err))
 		return
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	if f.MediaType != domain.MediaTypeImage {
 		c.Status(http.StatusNotFound)

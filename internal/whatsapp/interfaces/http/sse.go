@@ -40,7 +40,7 @@ func (h *Handler) HandleSSE(c *gin.Context) {
 				zap.String("tenant_id", tenantID),
 				zap.String("event_type", string(event.Type)),
 			)
-			fmt.Fprintf(w, "event: %s\ndata: {}\n\n", event.Type)
+			_, _ = fmt.Fprintf(w, "event: %s\ndata: {}\n\n", event.Type)
 			return true
 		case <-c.Request.Context().Done():
 			return false

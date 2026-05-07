@@ -48,7 +48,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 		delete(p.clients, tenantID)
 	}
 	if existing, ok := p.stores[tenantID]; ok {
-		existing.Close()
+		_ = existing.Close()
 		delete(p.stores, tenantID)
 	}
 
@@ -63,13 +63,13 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 		return nil, fmt.Errorf("failed to create whatsmeow store: %w", err)
 	}
 	if err := container.Upgrade(ctx); err != nil {
-		container.Close()
+		_ = container.Close()
 		return nil, fmt.Errorf("failed to upgrade whatsmeow store: %w", err)
 	}
 
 	deviceStore, err := container.GetFirstDevice(ctx)
 	if err != nil {
-		container.Close()
+		_ = container.Close()
 		return nil, fmt.Errorf("failed to get device: %w", err)
 	}
 
@@ -89,7 +89,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 		})
 
 		if err := client.Connect(); err != nil {
-			container.Close()
+			_ = container.Close()
 			return nil, fmt.Errorf("failed to reconnect: %w", err)
 		}
 
@@ -108,7 +108,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 
 	qrChan, err := client.GetQRChannel(ctx)
 	if err != nil {
-		container.Close()
+		_ = container.Close()
 		return nil, fmt.Errorf("failed to get QR channel: %w", err)
 	}
 
@@ -118,7 +118,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 	})
 
 	if err := client.Connect(); err != nil {
-		container.Close()
+		_ = container.Close()
 		return nil, fmt.Errorf("failed to connect: %w", err)
 	}
 
@@ -188,7 +188,7 @@ func (p *WhatsmeowProvider) Disconnect(_ context.Context, tenantID string) error
 		delete(p.clients, tenantID)
 	}
 	if store, ok := p.stores[tenantID]; ok {
-		store.Close()
+		_ = store.Close()
 		delete(p.stores, tenantID)
 	}
 	return nil
@@ -240,7 +240,7 @@ func (p *WhatsmeowProvider) Shutdown() {
 	for tenantID, client := range p.clients {
 		client.Disconnect()
 		if store, ok := p.stores[tenantID]; ok {
-			store.Close()
+			_ = store.Close()
 		}
 	}
 	p.clients = make(map[string]*whatsmeow.Client)
