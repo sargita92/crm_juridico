@@ -8,7 +8,7 @@ Refactors arquiteturais identificados na auditoria **não entram nesta feature**
 ## Pré-requisitos
 - F01 (setup inicial — Makefile, golangci-lint configurados)
 
-## Status: backlog
+## Status: concluído (2026-05-07)
 
 ## Steps
 
