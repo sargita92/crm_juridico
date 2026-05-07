@@ -51,12 +51,12 @@ func NewMySQLContainer(ctx context.Context, t *testing.T) *MySQLContainer {
 		WaitingFor: wait.ForAll(
 			wait.ForLog("ready for connections").
 				WithOccurrence(2).
-				WithStartupTimeout(60*time.Second),
+				WithStartupTimeout(180*time.Second),
 			wait.ForSQL("3306/tcp", "mysql", func(host string, port string) string {
 				return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True",
 					dbUser, dbPassword, host, port, dbName,
 				)
-			}).WithStartupTimeout(60*time.Second),
+			}).WithStartupTimeout(180*time.Second),
 		),
 	}
 
@@ -246,12 +246,12 @@ func NewMySQLContainerForMain(ctx context.Context) *MySQLContainer {
 		WaitingFor: wait.ForAll(
 			wait.ForLog("ready for connections").
 				WithOccurrence(2).
-				WithStartupTimeout(60*time.Second),
+				WithStartupTimeout(180*time.Second),
 			wait.ForSQL("3306/tcp", "mysql", func(host string, port string) string {
 				return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True",
 					dbUser, dbPassword, host, port, dbName,
 				)
-			}).WithStartupTimeout(60*time.Second),
+			}).WithStartupTimeout(180*time.Second),
 		),
 	}
 
