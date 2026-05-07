@@ -45,8 +45,7 @@ cover:
 
 audit-vuln:
 	@echo "[audit] vulnerabilities (govulncheck)"
-	@$(GOVULNCHECK) $(SRC_PATTERNS) || (echo "[audit] FAIL: vulnerabilities found" && exit 1)
-	@echo "[audit] OK: no vulnerabilities"
+	@bash scripts/audit-vuln.sh
 
 audit-lint:
 	@echo "[audit] lint (golangci-lint)"

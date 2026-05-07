@@ -1,0 +1,7 @@
+# Vulnerabilidades aceitas (com justificativa).
+# Formato: <ID> | <justificativa>
+# Estas IDs sao filtradas do `make audit-vuln` antes de avaliar pass/fail.
+# Revisar trimestralmente em `docs/processo/manutencao-tecnica.md`.
+
+GO-2026-4887 | docker/docker (Moby AuthZ bypass) — vulnerabilidade do daemon Moby. Importada transitivamente via testcontainers-go (somente test infra). Nao ha call path para autorizacao do daemon a partir do codigo produtivo. Sem fix upstream em v28.5.2 (latest).
+GO-2026-4883 | docker/docker (Moby off-by-one plugin privilege) — mesmo motivo de GO-2026-4887. Daemon-side. Sem fix upstream em v28.5.2 (latest).
