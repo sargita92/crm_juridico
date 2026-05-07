@@ -55,11 +55,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v8
         with:
-          # Pinned ao minimo que suporta Go 1.26.x (linter foi compilado com Go 1.24
-          # nas versoes <= v1.64.x e nao consegue carregar config alvo a 1.26+).
-          version: latest
+          # v2.x e' compilado com Go 1.26+. Versoes v1.x (incluindo 'latest' do v1)
+          # sao compiladas com Go 1.24 e falham com `go.mod` apontando para 1.26+.
+          version: v2.6.0
 
   vuln:
     name: govulncheck
