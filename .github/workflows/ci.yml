@@ -57,9 +57,10 @@ jobs:
           cache: true
       - uses: golangci/golangci-lint-action@v8
         with:
-          # v2.x e' compilado com Go 1.26+. Versoes v1.x (incluindo 'latest' do v1)
-          # sao compiladas com Go 1.24 e falham com `go.mod` apontando para 1.26+.
-          version: v2.6.0
+          # v2.12.2 e' a 1a release compilada com Go 1.26 (publicada 2026-05-06).
+          # Versoes anteriores falham com `go.mod` apontando para 1.26+ porque
+          # o linter precisa ser compilado com >= a versao do alvo.
+          version: v2.12.2
 
   vuln:
     name: govulncheck
