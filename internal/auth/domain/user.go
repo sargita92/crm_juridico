@@ -21,12 +21,12 @@ const (
 )
 
 var (
-	ErrUserNotFound     = errors.New("user not found")
-	ErrUserEmailExists  = errors.New("user with this email already exists")
-	ErrUserInactive     = errors.New("user is inactive")
-	ErrInvalidEmail     = errors.New("invalid email format")
-	ErrUserNameRequired = errors.New("user name is required")
-	ErrPasswordRequired = errors.New("password is required")
+	ErrUserNotFound       = errors.New("user not found")
+	ErrUserEmailExists    = errors.New("user with this email already exists")
+	ErrUserInactive       = errors.New("user is inactive")
+	ErrInvalidEmail       = errors.New("invalid email format")
+	ErrUserNameRequired   = errors.New("user name is required")
+	ErrPasswordRequired   = errors.New("password is required")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 
 	ErrInviteTokenNotFound = errors.New("invite token not found")
@@ -49,10 +49,10 @@ type User struct {
 }
 
 type UserTenant struct {
-	UserID      string
-	TenantID    string
-	IsOwner     bool
-	WhatsAppID  string
+	UserID     string
+	TenantID   string
+	IsOwner    bool
+	WhatsAppID string
 }
 
 func NewUser(id, name, email, passwordHash string, role UserRole) (*User, error) {

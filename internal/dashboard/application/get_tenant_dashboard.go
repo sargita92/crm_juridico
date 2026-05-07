@@ -64,13 +64,13 @@ func (uc *GetTenantDashboard) Execute(ctx context.Context, in TenantInput) (*dom
 	}
 
 	out := &domain.TenantStats{
-		Bloco1_Funil:        *funil,
-		Bloco2_WhatsApp:     *whats,
-		Bloco3_Responsaveis: resp,
-		Bloco4_TempoFunil:   tempo,
-		Bloco5_Produtos:     prod,
-		ActiveFunnelName:    funilName,
-		ScopeIsUser:         userFilter != nil,
+		Bloco1_Funil:      *funil,
+		Bloco2_WhatsApp:   *whats,
+		Bloco3_Responsive: resp,
+		Bloco4_TempoFunil: tempo,
+		Bloco5_Produtos:   prod,
+		ActiveFunnelName:  funilName,
+		ScopeIsUser:       userFilter != nil,
 	}
 	if out.ScopeIsUser {
 		name, err := uc.users.UserName(ctx, in.UserID)

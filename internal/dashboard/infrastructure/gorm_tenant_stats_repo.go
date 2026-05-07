@@ -32,7 +32,7 @@ func applyLeadUserScope(q *gorm.DB, userID *string, leadAlias string) *gorm.DB {
 	return q.Where(leadAlias+".responsible_user_id = ?", *userID)
 }
 
-// FunilBlock — Bloco 1: status totals + colunas + conversão + novos hoje/semana.
+// FunilBlock — Bloco 1: status totals + colunas + convertsão + novos hoje/semana.
 // Filtro opcional por responsible_user_id quando userID != nil.
 // Retorna também o nome do funil ativo (default do tenant).
 func (r *GormTenantStatsRepo) FunilBlock(

@@ -460,9 +460,9 @@ func (h *Handler) RenderTenantProductList(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "product/product_list.html", gin.H{
-		"Products":        displayProducts,
+		"Products":         displayProducts,
 		"AvailableFunnels": availableFunnels,
-		"ActiveNav":       "products",
+		"ActiveNav":        "products",
 	})
 }
 

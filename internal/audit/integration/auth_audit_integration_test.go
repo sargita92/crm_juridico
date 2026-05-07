@@ -4,7 +4,7 @@ package integration
 //
 // Vive em um pacote separado (`internal/audit/integration`) para nao
 // disparar import cycle: o pacote `audit/application` importa
-// `audit/infrastructure` (metricas), e qualquer teste no pacote
+// `audit/infrastructure` (metrics), e qualquer teste no pacote
 // `audit/infrastructure` que tente importar `audit/application` cria um
 // ciclo proibido em `go vet`. Aqui o pacote nao tem codigo de producao,
 // entao podemos importar livremente os modulos de aplicacao e
@@ -15,10 +15,10 @@ package integration
 // chamado pelos handlers de admin login/logout.
 
 import (
-	"strings"
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -205,7 +205,7 @@ func TestAuthAudit_LoginFailure_WrongPassword_PublishesCredenciaisInvalidas(t *t
 	require.Error(t, err)
 	require.True(t, errors.Is(err, authdomain.ErrInvalidCredentials))
 
-	env.publishLoginFailure(ctx, "admin2@example.com", "credenciais_invalidas")
+	env.publishLoginFailure(ctx, "admin2@example.com", "credenciais_invalidates")
 
 	logs := env.listAuditLogs(t)
 	require.Len(t, logs, 1)
@@ -213,7 +213,7 @@ func TestAuthAudit_LoginFailure_WrongPassword_PublishesCredenciaisInvalidas(t *t
 	assert.Equal(t, "admin2@example.com", logs[0].ActorEmail)
 	assert.Nil(t, logs[0].UserID, "user_id deve ser NULL para falha de credenciais (snapshot do form)")
 	require.NotNil(t, logs[0].Metadata)
-	assert.Equal(t, "credenciais_invalidas", logs[0].Metadata["reason"])
+	assert.Equal(t, "credenciais_invalidates", logs[0].Metadata["reason"])
 }
 
 func TestAuthAudit_LoginFailure_UnknownEmail_PublishesUsuarioNaoEncontrado(t *testing.T) {

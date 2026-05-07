@@ -9,11 +9,11 @@ import (
 
 func makeGuardrail(gType specDomain.GuardrailType, rule, message string, active bool) specDomain.Guardrail {
 	return specDomain.Guardrail{
-		ID:     "g1",
-		Type:   gType,
-		Rule:   rule,
+		ID:      "g1",
+		Type:    gType,
+		Rule:    rule,
 		Message: message,
-		Active: active,
+		Active:  active,
 	}
 }
 
@@ -53,10 +53,10 @@ func TestGuardrailChecker_InactiveGuardrailIgnored(t *testing.T) {
 func TestGuardrailChecker_ScopeLimitTypeIgnored(t *testing.T) {
 	checker := NewGuardrailChecker()
 	guardrails := []specDomain.Guardrail{
-		makeGuardrail(specDomain.GuardrailTypeScopeLimit, "esportes", "Fora do escopo.", true),
+		makeGuardrail(specDomain.GuardrailTypeScopeLimit, "esports", "Fora do escopo.", true),
 	}
 
-	violated, fallback := checker.Check("Falando sobre esportes aqui.", guardrails)
+	violated, fallback := checker.Check("Falando sobre esports aqui.", guardrails)
 	assert.False(t, violated)
 	assert.Equal(t, "", fallback)
 }

@@ -51,7 +51,7 @@ func NewStep(id, specialistID string, orderIndex int, text string, dataType Step
 		ID: id, SpecialistID: specialistID, OrderIndex: orderIndex,
 		Text: text, DataType: dataType, Required: required, Score: score,
 		TargetColumnID: targetColumnID,
-		CreatedAt: now, UpdatedAt: now,
+		CreatedAt:      now, UpdatedAt: now,
 	}, nil
 }
 

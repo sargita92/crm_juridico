@@ -13,9 +13,9 @@ import (
 // --- Mock ContactRepository ---
 
 type mockContactRepo struct {
-	contacts    map[string]*domain.Contact
-	byWhatsApp  map[string]*domain.Contact // key: tenantID+whatsappID
-	createErr   error
+	contacts   map[string]*domain.Contact
+	byWhatsApp map[string]*domain.Contact // key: tenantID+whatsappID
+	createErr  error
 }
 
 func newMockContactRepo() *mockContactRepo {
@@ -128,10 +128,10 @@ func (m *mockConversationRepo) FindByTenantID(_ context.Context, tenantID string
 // --- Mock MessageRepository ---
 
 type mockMessageRepo struct {
-	messages     map[string]*domain.Message
-	byConvID     map[string][]*domain.Message
-	byWaMsgID    map[string]*domain.Message
-	createErr    error
+	messages  map[string]*domain.Message
+	byConvID  map[string][]*domain.Message
+	byWaMsgID map[string]*domain.Message
+	createErr error
 }
 
 func newMockMessageRepo() *mockMessageRepo {
@@ -253,15 +253,6 @@ func (m *mockEventBus) Publish(event events.Event) {
 func (m *mockEventBus) Subscribe(tenantID string) (<-chan events.Event, func()) {
 	ch := make(chan events.Event, 100)
 	return ch, func() { close(ch) }
-}
-
-func (m *mockEventBus) lastEvent() *events.Event {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if len(m.events) == 0 {
-		return nil
-	}
-	return &m.events[len(m.events)-1]
 }
 
 var errProviderSend = errors.New("provider send failed")

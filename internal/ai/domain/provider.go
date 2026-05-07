@@ -15,12 +15,12 @@ const (
 )
 
 var (
-	ErrMessageContentEmpty  = errors.New("message content is required")
-	ErrMessageRoleInvalid   = errors.New("message role is invalid")
-	ErrMessagesEmpty        = errors.New("messages cannot be empty")
-	ErrModelRequired        = errors.New("model is required")
-	ErrTemperatureInvalid   = errors.New("temperature must be between 0 and 1")
-	ErrProviderNotFound     = errors.New("AI provider not found")
+	ErrMessageContentEmpty = errors.New("message content is required")
+	ErrMessageRoleInvalid  = errors.New("message role is invalid")
+	ErrMessagesEmpty       = errors.New("messages cannot be empty")
+	ErrModelRequired       = errors.New("model is required")
+	ErrTemperatureInvalid  = errors.New("temperature must be between 0 and 1")
+	ErrProviderNotFound    = errors.New("AI provider not found")
 )
 
 // AIMessage represents a single message in an AI conversation.

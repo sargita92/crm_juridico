@@ -1,9 +1,9 @@
 package infrastructure
 
 import (
-	"strings"
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -75,7 +75,7 @@ func createTestSpecialist(t *testing.T, db *gorm.DB, name string) string {
 
 func TestGormMcpServerRepository_Create_And_FindByID(t *testing.T) {
 	repo, _, _ := setupRepos(t)
-	m := createTestMcp(t, repo, "API Processos", "https://api.processos.com/mcp")
+	m := createTestMcp(t, repo, "API Processors", "https://api.processos.com/mcp")
 
 	found, err := repo.FindByID(context.Background(), m.ID)
 	require.NoError(t, err)
@@ -130,10 +130,10 @@ func TestGormMcpServerRepository_FindWithFilter_All(t *testing.T) {
 
 func TestGormMcpServerRepository_FindWithFilter_Search(t *testing.T) {
 	repo, _, _ := setupRepos(t)
-	createTestMcp(t, repo, "API Processos", "https://processos.com")
+	createTestMcp(t, repo, "API Processors", "https://processos.com")
 	createTestMcp(t, repo, "API Contratos", "https://contratos.com")
 
-	result, err := repo.FindWithFilter(context.Background(), domain.McpFilter{Search: "Processos", Page: 1, Limit: 20})
+	result, err := repo.FindWithFilter(context.Background(), domain.McpFilter{Search: "Processors", Page: 1, Limit: 20})
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), result.Total)
 }

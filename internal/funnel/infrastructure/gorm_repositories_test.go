@@ -1,9 +1,9 @@
 package infrastructure
 
 import (
-	"strings"
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -239,7 +239,6 @@ func TestGormFunnelRepository_FindDefaultByTenantID_NotFound(t *testing.T) {
 	_, err := repos.funnels.FindDefaultByTenantID(context.Background(), tenantID)
 	assert.ErrorIs(t, err, domain.ErrFunnelNotFound)
 }
-
 
 // ---------- ColumnRepository ----------
 

@@ -131,7 +131,7 @@ func (b *ContextBuilder) Build(ctx context.Context, state *domain.ConversationSt
 
 		// 6. Instruction for LLM to emit STEP_META for free_text steps.
 		if currentStep.DataType == specDomain.StepDataTypeFreeText {
-			sb.WriteString("\n\n## Como sinalizar progresso da etapa")
+			sb.WriteString("\n\n## Como sinalizar progression da etapa")
 			sb.WriteString("\n\nSó inclua o comentário STEP_META quando a ÚLTIMA MENSAGEM DO CLIENTE REALMENTE responder a pergunta desta etapa. Saudações (\"oi\", \"bom dia\"), perguntas do cliente, ou mensagens vagas NÃO completam a etapa — nestes casos, responda normalmente SEM emitir STEP_META.")
 			sb.WriteString("\n\nQuando a etapa for efetivamente respondida, inclua no FINAL da sua resposta o seguinte comentário (o usuário não o verá):")
 			sb.WriteString("\n<!--STEP_META:{\"step_completed\": true, \"collected_data\": \"<dado coletado da mensagem do cliente>\", \"score\": " + fmt.Sprintf("%d", currentStep.Score) + "}-->")

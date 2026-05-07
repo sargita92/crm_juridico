@@ -34,8 +34,8 @@ type AuditLog struct {
 	CreatedAt  time.Time
 }
 
-// NewAuditLogInput agrupa os parametros do construtor para evitar uma
-// assinatura com muitos argumentos posicionais. Campos opcionais (ID,
+// NewAuditLogInput agrupa os parameters do construtor para evitar uma
+// assinatura com muitos arguments posicionais. Campos opcionais (ID,
 // CreatedAt, Metadata, ponteiros nullable) podem ser deixados zero.
 type NewAuditLogInput struct {
 	ID         string

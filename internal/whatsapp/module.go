@@ -95,4 +95,3 @@ func (m *Module) ReceiveMessageUC() *application.ReceiveMessageUseCase {
 func (m *Module) SetAIHandler(handler domain.AIHandler) {
 	m.receiveMessageUC.SetAIHandler(handler)
 }
-

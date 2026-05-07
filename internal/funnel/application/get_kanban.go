@@ -38,10 +38,10 @@ type KanbanLead struct {
 }
 
 type KanbanOutput struct {
-	FunnelID    string
-	FunnelName  string
-	Columns     []KanbanColumn
-	TotalLeads  int
+	FunnelID   string
+	FunnelName string
+	Columns    []KanbanColumn
+	TotalLeads int
 }
 
 type GetKanbanUseCase struct {

@@ -69,7 +69,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer log.Sync()
+	defer func() { _ = log.Sync() }()
 
 	if cfg.Env == "production" && cfg.AI.PlaygroundEnabled {
 		log.Warn("AI playground is ENABLED in production — disable AI_PLAYGROUND_ENABLED")
@@ -415,7 +415,7 @@ func classifyLoginErr(err error) string {
 	case errors.Is(err, authdomain.ErrUserNotFound):
 		return "usuario_nao_encontrado"
 	case errors.Is(err, authdomain.ErrInvalidCredentials):
-		return "credenciais_invalidas"
+		return "credenciais_invalidates"
 	default:
 		return "erro_inesperado"
 	}

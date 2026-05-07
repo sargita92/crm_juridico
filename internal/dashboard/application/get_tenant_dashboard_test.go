@@ -85,7 +85,7 @@ func TestGetTenantDashboard_PropagatesProviderError(t *testing.T) {
 	}{
 		{"funil", func(fp *fakeTenantProvider) { fp.errFunil = sentinel }},
 		{"whatsapp", func(fp *fakeTenantProvider) { fp.errWhats = sentinel }},
-		{"responsaveis", func(fp *fakeTenantProvider) { fp.errResp = sentinel }},
+		{"responsive", func(fp *fakeTenantProvider) { fp.errResp = sentinel }},
 		{"tempo_funil", func(fp *fakeTenantProvider) { fp.errTempo = sentinel }},
 		{"produtos", func(fp *fakeTenantProvider) { fp.errProd = sentinel }},
 	}

@@ -27,14 +27,14 @@ func validUUID(id string) bool {
 }
 
 type Handler struct {
-	uploadUC          *application.UploadDocumentUseCase
-	listUC            *application.ListDocumentsUseCase
-	getUC             *application.GetDocumentUseCase
-	deleteUC          *application.DeleteDocumentUseCase
-	associateUC       *application.AssociateDocumentUseCase
-	dissociateUC      *application.DissociateDocumentUseCase
-	listSpecDocsUC    *application.ListSpecialistDocumentsUseCase
-	listAvailableUC   *application.ListAvailableDocumentsUseCase
+	uploadUC        *application.UploadDocumentUseCase
+	listUC          *application.ListDocumentsUseCase
+	getUC           *application.GetDocumentUseCase
+	deleteUC        *application.DeleteDocumentUseCase
+	associateUC     *application.AssociateDocumentUseCase
+	dissociateUC    *application.DissociateDocumentUseCase
+	listSpecDocsUC  *application.ListSpecialistDocumentsUseCase
+	listAvailableUC *application.ListAvailableDocumentsUseCase
 }
 
 func NewHandler(
@@ -272,8 +272,8 @@ func (h *Handler) HandleListAvailableDocuments(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "specialist/documents_modal.html", gin.H{
 		"AvailableDocuments": items,
-		"SpecialistID":      id,
-		"Search":            search,
+		"SpecialistID":       id,
+		"Search":             search,
 	})
 }
 

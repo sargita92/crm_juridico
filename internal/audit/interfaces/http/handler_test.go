@@ -137,15 +137,6 @@ func adminClaims() *authdomain.TokenClaims {
 	}
 }
 
-func userClaims() *authdomain.TokenClaims {
-	return &authdomain.TokenClaims{
-		UserID:   "user-uuid",
-		Email:    "user@crm.com",
-		Role:     authdomain.UserRoleUser,
-		TenantID: "tenant-uuid",
-	}
-}
-
 // sampleLog devolve um AuditLog valido para os testes de detalhe/listagem.
 func sampleLog(t *testing.T, action domain.Action) *domain.AuditLog {
 	t.Helper()

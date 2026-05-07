@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	auditinfra "github.com/sasrgita/crm-juridico/internal/audit/infrastructure"
-	autinfra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	authinfra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
+	autinfra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	perminfra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 )
 

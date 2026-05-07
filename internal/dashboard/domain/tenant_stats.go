@@ -15,7 +15,7 @@ type ColumnLeadsCount struct {
 	Count      int64
 }
 
-// ResponsiblePerformance — leads por responsável e conversão.
+// ResponsiblePerformance — leads por responsável e convertsão.
 type ResponsiblePerformance struct {
 	UserID   string
 	UserName string
@@ -52,11 +52,11 @@ type WhatsAppStats struct {
 
 // TenantStats é o output completo do dashboard do tenant.
 type TenantStats struct {
-	Bloco1_Funil        FunilBlock
-	Bloco2_WhatsApp     WhatsAppStats
-	Bloco3_Responsaveis []ResponsiblePerformance
-	Bloco4_TempoFunil   []ColumnDwell
-	Bloco5_Produtos     []ProductLeadsCount
+	Bloco1_Funil      FunilBlock
+	Bloco2_WhatsApp   WhatsAppStats
+	Bloco3_Responsive []ResponsiblePerformance
+	Bloco4_TempoFunil []ColumnDwell
+	Bloco5_Produtos   []ProductLeadsCount
 	// Contexto de renderização:
 	ScopeIsUser      bool   // true quando filtrado por responsible_user_id
 	CurrentUserName  string // usado no título do Bloco 3 quando ScopeIsUser

@@ -59,7 +59,7 @@ func (m *owaspProductRepo) FindActiveByIDs(_ context.Context, ids []string) ([]d
 
 type owaspFPRepo struct{}
 
-func (m *owaspFPRepo) Create(_ context.Context, fp *domain.FunnelProduct) error { return nil }
+func (m *owaspFPRepo) Create(_ context.Context, fp *domain.FunnelProduct) error   { return nil }
 func (m *owaspFPRepo) Delete(_ context.Context, funnelID, productID string) error { return nil }
 func (m *owaspFPRepo) FindByProductID(_ context.Context, productID string) ([]domain.FunnelProduct, error) {
 	return nil, nil
@@ -76,7 +76,7 @@ func (m *owaspFPRepo) UpdatePriority(_ context.Context, funnelID, productID stri
 
 type owaspTPRepo struct{}
 
-func (m *owaspTPRepo) Create(_ context.Context, tp *domain.TenantProduct) error { return nil }
+func (m *owaspTPRepo) Create(_ context.Context, tp *domain.TenantProduct) error   { return nil }
 func (m *owaspTPRepo) Delete(_ context.Context, tenantID, productID string) error { return nil }
 func (m *owaspTPRepo) FindByTenantID(_ context.Context, tenantID string) ([]domain.TenantProduct, error) {
 	return nil, nil

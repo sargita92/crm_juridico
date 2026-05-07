@@ -2,7 +2,7 @@
 //
 // Embora os fragments e a pagina full compartilhem o mesmo `Handler`
 // struct (mais simples para wiring), separamos os metodos em dois
-// arquivos para facilitar leitura: este arquivo cobre as variantes
+// arquivos para facilitar leitura: este arquivo cobre as variants
 // `*Fragment` que sao chamadas quando a request vem com `HX-Request: true`.
 package http
 
@@ -18,7 +18,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/audit/domain"
 )
 
-// Handler reune as dependencias compartilhadas entre ListPage/DetailPage
+// Handler reune as dependencies compartilhadas entre ListPage/DetailPage
 // (pagina completa) e ListFragment/DetailFragment (fragmento HTMX).
 //
 // `tenantLister` e `adminUserLister` sao opcionais: quando nil os
@@ -101,15 +101,15 @@ func (h *Handler) renderNotFound(c *gin.Context) {
 func (h *Handler) buildListData(c *gin.Context) (gin.H, int) {
 	filter, parseErr := parseFilterFromQuery(c)
 	data := gin.H{
-		"Filters":    formFilterValues(c),
-		"Items":      []*domain.AuditLog{},
-		"Total":      int64(0),
-		"Page":       filter.Page,
-		"PageSize":   filter.PageSize,
-		"PageSizes":  []int{10, 25, 50, 100},
-		"Actions":    domain.AllActions(),
-		"ActiveNav":  "logs",
-		"ReturnQS":   c.Request.URL.RawQuery,
+		"Filters":   formFilterValues(c),
+		"Items":     []*domain.AuditLog{},
+		"Total":     int64(0),
+		"Page":      filter.Page,
+		"PageSize":  filter.PageSize,
+		"PageSizes": []int{10, 25, 50, 100},
+		"Actions":   domain.AllActions(),
+		"ActiveNav": "logs",
+		"ReturnQS":  c.Request.URL.RawQuery,
 	}
 
 	if parseErr != nil {

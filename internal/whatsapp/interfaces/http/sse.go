@@ -27,7 +27,7 @@ func (h *Handler) HandleSSE(c *gin.Context) {
 	defer cleanup()
 
 	// Initial keepalive to establish connection
-	c.Writer.WriteString(": keepalive\n\n")
+	_, _ = c.Writer.WriteString(": keepalive\n\n")
 	c.Writer.Flush()
 
 	c.Stream(func(w io.Writer) bool {

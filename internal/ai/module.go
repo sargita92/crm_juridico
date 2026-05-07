@@ -30,15 +30,15 @@ import (
 
 // ModuleDeps holds cross-module dependencies needed by the AI module.
 type ModuleDeps struct {
-	SpecialistRepo  specDomain.SpecialistRepository
-	StepRepo        specDomain.StepRepository
-	GuardrailRepo   specDomain.GuardrailRepository
-	SpecTenantRepo  specDomain.SpecialistTenantRepository
-	DocRepo         docDomain.DocumentRepository
-	SpecDocRepo     docDomain.SpecialistDocumentRepository
-	ProductRepo     productDomain.ProductRepository
-	PhoneNumberRepo productDomain.PhoneNumberRepository
-	DetectProductUC *productApp.DetectProductUseCase
+	SpecialistRepo   specDomain.SpecialistRepository
+	StepRepo         specDomain.StepRepository
+	GuardrailRepo    specDomain.GuardrailRepository
+	SpecTenantRepo   specDomain.SpecialistTenantRepository
+	DocRepo          docDomain.DocumentRepository
+	SpecDocRepo      docDomain.SpecialistDocumentRepository
+	ProductRepo      productDomain.ProductRepository
+	PhoneNumberRepo  productDomain.PhoneNumberRepository
+	DetectProductUC  *productApp.DetectProductUseCase
 	MessageRepo      whatsappDomain.MessageRepository
 	ConversationRepo whatsappDomain.ConversationRepository
 	SendMessageUC    *whatsappApp.SendMessageUseCase
@@ -48,9 +48,9 @@ type ModuleDeps struct {
 	FunnelRepo       funnelDomain.FunnelRepository
 	ColumnRepo       funnelDomain.ColumnRepository
 	// Tool wiring deps (Task 16)
-	NoteRepo           funnelDomain.LeadNoteRepository
-	TenantProductRepo  productDomain.TenantProductRepository
-	AutomationEngine   *automationApp.AutomationEngine
+	NoteRepo             funnelDomain.LeadNoteRepository
+	TenantProductRepo    productDomain.TenantProductRepository
+	AutomationEngine     *automationApp.AutomationEngine
 	SpecialistToolFinder application.SpecialistToolFinder
 	// ScoringConfigFinder is optional; when provided the engine moves leads to
 	// qualified/disqualified columns based on the specialist's scoring threshold.

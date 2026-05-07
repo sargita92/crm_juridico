@@ -69,7 +69,7 @@ func setupTenant(t *testing.T, plano string, exibir bool) *tenantEnv {
 	start := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
 	tn, _ := tenantDomain.NewTenant(uuid.New().String(), "Tenant F11", tenantDomain.TenantTypePJ, uuid.New().String()[:20])
 	switch plano {
-	case "mensal", "anual":
+	case "mensal", "annual":
 		tn.SetBillingConfig(plano, &valor, &dia, &start, exibir)
 	default:
 		tn.SetBillingConfig(plano, nil, nil, nil, exibir)
@@ -178,7 +178,7 @@ func TestTenant_List_SemAuth_401(t *testing.T) {
 }
 
 func TestTenant_List_PlanoAnual_Permitido(t *testing.T) {
-	e := setupTenant(t, "anual", true)
+	e := setupTenant(t, "annual", true)
 	userID := uuid.NewString()
 	e.perm.allow[userID+":"+e.tenantID] = true
 	w := httptest.NewRecorder()

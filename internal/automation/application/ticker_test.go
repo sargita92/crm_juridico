@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	infra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/sasrgita/crm-juridico/internal/automation/domain"
+	infra "github.com/sasrgita/crm-juridico/internal/automation/infrastructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -207,7 +207,7 @@ func (r *errAutoRepo) FindByID(_ context.Context, _ string) (*domain.Automation,
 	return nil, r.err
 }
 func (r *errAutoRepo) Update(_ context.Context, _ *domain.Automation) error { return nil }
-func (r *errAutoRepo) Delete(_ context.Context, _ string) error              { return nil }
+func (r *errAutoRepo) Delete(_ context.Context, _ string) error             { return nil }
 func (r *errAutoRepo) FindByTenantAndColumn(_ context.Context, _, _ string) ([]domain.Automation, error) {
 	return nil, r.err
 }

@@ -127,21 +127,6 @@ type rateLimitCounterModel struct {
 
 func (rateLimitCounterModel) TableName() string { return "rate_limit_counters" }
 
-func rateLimitToModel(r *domain.RateLimitCounter) *rateLimitCounterModel {
-	m := &rateLimitCounterModel{
-		ID:           r.ID,
-		TenantID:     r.TenantID,
-		PeriodStart:  r.PeriodStart,
-		MessageCount: r.MessageCount,
-		CreatedAt:    r.CreatedAt,
-	}
-	if r.SpecialistID != "" {
-		v := r.SpecialistID
-		m.SpecialistID = &v
-	}
-	return m
-}
-
 func rateLimitToDomain(m *rateLimitCounterModel) *domain.RateLimitCounter {
 	r := &domain.RateLimitCounter{
 		ID:           m.ID,

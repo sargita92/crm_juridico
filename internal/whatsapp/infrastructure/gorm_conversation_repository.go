@@ -94,14 +94,14 @@ func (r *GormConversationRepository) FindByTenantID(ctx context.Context, tenantI
 
 	// Data query
 	type convRow struct {
-		ID            string    `gorm:"column:id"`
-		TenantID      string    `gorm:"column:tenant_id"`
-		ContactID     string    `gorm:"column:contact_id"`
-		Status        string    `gorm:"column:status"`
-		LastMessageAt time.Time `gorm:"column:last_message_at"`
-		UnreadCount   int       `gorm:"column:unread_count"`
-		CreatedAt     time.Time `gorm:"column:created_at"`
-		UpdatedAt     time.Time `gorm:"column:updated_at"`
+		ID              string    `gorm:"column:id"`
+		TenantID        string    `gorm:"column:tenant_id"`
+		ContactID       string    `gorm:"column:contact_id"`
+		Status          string    `gorm:"column:status"`
+		LastMessageAt   time.Time `gorm:"column:last_message_at"`
+		UnreadCount     int       `gorm:"column:unread_count"`
+		CreatedAt       time.Time `gorm:"column:created_at"`
+		UpdatedAt       time.Time `gorm:"column:updated_at"`
 		ContactName     string    `gorm:"column:contact_name"`
 		ContactPhone    string    `gorm:"column:contact_phone"`
 		ContactWhatsApp string    `gorm:"column:contact_whatsapp_id"`

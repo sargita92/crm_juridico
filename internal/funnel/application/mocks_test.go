@@ -8,8 +8,6 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
 
-var errInternal = errors.New("internal error")
-
 // --- Mock FunnelRepository ---
 
 type mockFunnelRepo struct {
@@ -185,10 +183,10 @@ func (m *mockColumnRepo) SwapOrder(_ context.Context, col1ID string, order1 int,
 // --- Mock LeadRepository ---
 
 type mockLeadRepo struct {
-	leads         map[string]*domain.Lead
-	byContactKey  map[string]*domain.Lead // key: tenantID+"|"+contactID
-	byColumn      map[string]int          // columnID -> count
-	createErr     error
+	leads        map[string]*domain.Lead
+	byContactKey map[string]*domain.Lead // key: tenantID+"|"+contactID
+	byColumn     map[string]int          // columnID -> count
+	createErr    error
 }
 
 func newMockLeadRepo() *mockLeadRepo {
@@ -454,21 +452,4 @@ func (m *mockFunnelProductRouter) FindTopPriorityFunnelID(_ context.Context, ten
 		return funnelID, nil
 	}
 	return "", errors.New("no funnel-product mapping found")
-}
-
-// --- Mock ProductProvider ---
-
-type mockProductProvider struct {
-	names map[string]string
-}
-
-func newMockProductProvider() *mockProductProvider {
-	return &mockProductProvider{names: make(map[string]string)}
-}
-
-func (m *mockProductProvider) FindProductNameByID(_ context.Context, id string) (string, error) {
-	if name, ok := m.names[id]; ok {
-		return name, nil
-	}
-	return "", errors.New("product not found")
 }

@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	infra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/auth/domain"
+	infra "github.com/sasrgita/crm-juridico/internal/auth/infrastructure"
 )
 
 func setupInviteUC() (*InviteUserUseCase, *mockInviteTokenRepo, *mockUserRepo, *mockUserTenantRepo) {

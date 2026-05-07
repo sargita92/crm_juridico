@@ -12,12 +12,12 @@ import (
 )
 
 type Module struct {
-	handler       *producthttp.Handler
-	detectUC      *application.DetectProductUseCase
-	productRepo   *infrastructure.GormProductRepository
-	fpRepo        *infrastructure.GormFunnelProductRepository
-	tpRepo        *infrastructure.GormTenantProductRepository
-	phoneNumRepo  *infrastructure.GormPhoneNumberRepository
+	handler      *producthttp.Handler
+	detectUC     *application.DetectProductUseCase
+	productRepo  *infrastructure.GormProductRepository
+	fpRepo       *infrastructure.GormFunnelProductRepository
+	tpRepo       *infrastructure.GormTenantProductRepository
+	phoneNumRepo *infrastructure.GormPhoneNumberRepository
 }
 
 func NewModule(db *gorm.DB, log *zap.Logger) *Module {

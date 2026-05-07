@@ -82,19 +82,19 @@ func (h *Handler) RenderList(c *gin.Context) {
 	}
 
 	data := gin.H{
-		"Tenants":    output.Tenants,
-		"Total":      output.Total,
-		"Page":       output.Page,
-		"Limit":      output.Limit,
-		"Search":     input.Search,
-		"Status":     input.Status,
-		"Type":       input.Type,
-		"HasPrev":    output.Page > 1,
-		"HasNext":    int64(output.Page*output.Limit) < output.Total,
-		"PrevPage":   output.Page - 1,
-		"NextPage":   output.Page + 1,
-		"StartItem":  (output.Page-1)*output.Limit + 1,
-		"EndItem":    min(int64(output.Page*output.Limit), output.Total),
+		"Tenants":   output.Tenants,
+		"Total":     output.Total,
+		"Page":      output.Page,
+		"Limit":     output.Limit,
+		"Search":    input.Search,
+		"Status":    input.Status,
+		"Type":      input.Type,
+		"HasPrev":   output.Page > 1,
+		"HasNext":   int64(output.Page*output.Limit) < output.Total,
+		"PrevPage":  output.Page - 1,
+		"NextPage":  output.Page + 1,
+		"StartItem": (output.Page-1)*output.Limit + 1,
+		"EndItem":   min(int64(output.Page*output.Limit), output.Total),
 	}
 
 	if c.GetHeader("HX-Request") == "true" {
@@ -326,7 +326,7 @@ func parseBillingForm(c *gin.Context, id, name, typ, doc string) (*application.U
 	}
 
 	var valorCents *int64
-	if valorStr != "" && (plano == "mensal" || plano == "anual") {
+	if valorStr != "" && (plano == "mensal" || plano == "annual") {
 		f, err := strconv.ParseFloat(strings.ReplaceAll(valorStr, ",", "."), 64)
 		if err != nil {
 			return nil, formTenant, "Valor de cobrança inválido"
@@ -337,7 +337,7 @@ func parseBillingForm(c *gin.Context, id, name, typ, doc string) (*application.U
 	}
 
 	var dia *uint8
-	if diaStr != "" && (plano == "mensal" || plano == "anual") {
+	if diaStr != "" && (plano == "mensal" || plano == "annual") {
 		n, err := strconv.Atoi(diaStr)
 		if err != nil || n < 1 || n > 28 {
 			return nil, formTenant, "Dia de vencimento deve estar entre 1 e 28"
@@ -348,7 +348,7 @@ func parseBillingForm(c *gin.Context, id, name, typ, doc string) (*application.U
 	}
 
 	var dataInicio *time.Time
-	if dataStr != "" && (plano == "mensal" || plano == "anual") {
+	if dataStr != "" && (plano == "mensal" || plano == "annual") {
 		t, err := time.Parse("2006-01-02", dataStr)
 		if err != nil {
 			return nil, formTenant, "Data de início inválida"
@@ -391,7 +391,7 @@ func mapDomainError(err error) string {
 	case errors.Is(err, domain.ErrTenantNotFound):
 		return "Tenant não encontrado"
 	case errors.Is(err, pagdomain.ErrInvalidPlano):
-		return "Configuração de cobrança inválida: plano mensal/anual requer valor, dia (1-28) e data de início"
+		return "Configuração de cobrança inválida: plano mensal/annual requer valor, dia (1-28) e data de início"
 	case errors.Is(err, pagdomain.ErrValorInvalido):
 		return "Valor de cobrança deve ser maior que zero"
 	default:

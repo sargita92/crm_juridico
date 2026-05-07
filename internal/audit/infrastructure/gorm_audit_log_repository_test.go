@@ -1,9 +1,9 @@
 package infrastructure
 
 import (
-	"strings"
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,9 +57,7 @@ func setupAuditRepo(t *testing.T) (*GormAuditLogRepository, *gorm.DB) {
 	return NewGormAuditLogRepository(db), db
 }
 
-func ptrStr(s string) *string                            { return &s }
-func ptrAction(a auditdomain.Action) *auditdomain.Action { return &a }
-func ptrTime(t time.Time) *time.Time                     { return &t }
+func ptrStr(s string) *string { return &s }
 
 func mustNewLog(t *testing.T, in auditdomain.NewAuditLogInput) *auditdomain.AuditLog {
 	t.Helper()
@@ -151,7 +149,7 @@ func TestGormAuditLogRepository_Create_EmptyMetadata(t *testing.T) {
 		Action:     auditdomain.ActionLogout,
 		Entity:     "session",
 		IP:         "127.0.0.1",
-		// Metadata nil de proposito.
+		// Metadata nil de proposition.
 	})
 	require.NoError(t, repo.Create(ctx, log))
 

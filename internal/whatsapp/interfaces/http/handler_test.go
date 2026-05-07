@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"

@@ -1,11 +1,11 @@
 package database_test
 
 import (
-	"strings"
 	"context"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/database"

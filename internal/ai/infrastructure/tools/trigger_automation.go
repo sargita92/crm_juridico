@@ -37,7 +37,7 @@ func (t *TriggerAutomationTool) Execute(ctx context.Context, tenantID string, ar
 	automationID, _ := args["automation_id"].(string)
 	leadID, _ := args["lead_id"].(string)
 	if automationID == "" || leadID == "" {
-		r := domain.NewToolResult("", "parametros obrigatorios: 'automation_id' e 'lead_id'", true)
+		r := domain.NewToolResult("", "parameters obrigatorios: 'automation_id' e 'lead_id'", true)
 		return &r, nil
 	}
 

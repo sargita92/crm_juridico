@@ -11,7 +11,7 @@ import (
 )
 
 // PermissionChecker abstrai o ResolvePermissionUseCase. O HasPermission ja
-// inclui owner bypass + admin bypass + grupos/individuais.
+// inclui owner bypass + admin bypass + grupos/individuals.
 type PermissionChecker interface {
 	HasPermission(ctx context.Context, userID, tenantID, resource, action string) (bool, error)
 }

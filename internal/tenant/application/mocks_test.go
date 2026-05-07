@@ -8,10 +8,10 @@ import (
 )
 
 type mockTenantRepo struct {
-	tenants    map[string]*domain.Tenant
-	createErr  error
-	updateErr  error
-	documents  map[string]*domain.Tenant
+	tenants   map[string]*domain.Tenant
+	createErr error
+	updateErr error
+	documents map[string]*domain.Tenant
 }
 
 func newMockTenantRepo() *mockTenantRepo {

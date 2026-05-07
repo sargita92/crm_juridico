@@ -9,7 +9,7 @@ import (
 	auditinfra "github.com/sasrgita/crm-juridico/internal/audit/infrastructure"
 )
 
-// RegisterAuditLogInput agrupa os parametros do caso de uso.
+// RegisterAuditLogInput agrupa os parameters do caso de uso.
 //
 // Espelha 1:1 os campos de domain.NewAuditLogInput — a camada de aplicacao
 // nao adiciona invariantes proprios; delega validacao + sanitizacao ao

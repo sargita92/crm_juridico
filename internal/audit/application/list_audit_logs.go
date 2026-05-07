@@ -17,7 +17,7 @@ import (
 // Contrato (decisao do design F12, secao 3.2):
 //   - Normaliza o filtro antes de chamar o repo (defesa em profundidade:
 //     o repo tambem normaliza, mas chamar aqui garante que erros de filtro
-//     - acao invalida, periodo invertido - nao toquem no banco).
+//   - acao invalida, periodo invertido - nao toquem no banco).
 //   - Mede a duracao total no histograma `crm_audit_logs_list_duration_seconds`.
 //   - Emite span `audit.usecase.list` com atributos de filtro.
 //   - Propaga erros do repo (incluindo context.Canceled) para o caller.

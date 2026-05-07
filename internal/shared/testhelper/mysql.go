@@ -40,9 +40,9 @@ func NewMySQLContainer(ctx context.Context, t *testing.T) *MySQLContainer {
 		ExposedPorts: []string{"3306/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": dbRoot,
-			"MYSQL_DATABASE":     dbName,
-			"MYSQL_USER":         dbUser,
-			"MYSQL_PASSWORD":     dbPassword,
+			"MYSQL_DATABASE":      dbName,
+			"MYSQL_USER":          dbUser,
+			"MYSQL_PASSWORD":      dbPassword,
 		},
 		Cmd: []string{
 			"--character-set-server=utf8mb4",
@@ -235,9 +235,9 @@ func NewMySQLContainerForMain(ctx context.Context) *MySQLContainer {
 		ExposedPorts: []string{"3306/tcp"},
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": dbRoot,
-			"MYSQL_DATABASE":     dbName,
-			"MYSQL_USER":         dbUser,
-			"MYSQL_PASSWORD":     dbPassword,
+			"MYSQL_DATABASE":      dbName,
+			"MYSQL_USER":          dbUser,
+			"MYSQL_PASSWORD":      dbPassword,
 		},
 		Cmd: []string{
 			"--character-set-server=utf8mb4",

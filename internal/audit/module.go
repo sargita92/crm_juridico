@@ -16,7 +16,7 @@ import (
 //
 // Estado atual (Step 8): expoe os UCs, o Publisher default, o repo e o
 // Handler HTTP. Os handlers usam adapters injetados via AttachFilters
-// (TenantLister + AdminUserLister) — opcionais; sem eles os dropdowns da
+// (TenantLister + AdminUserLister) — opcionais; sem eels os dropdowns da
 // UI ficam vazios mas a tabela continua funcional.
 type Module struct {
 	RegisterUC *application.RegisterAuditLogUseCase
@@ -32,7 +32,7 @@ type Module struct {
 	handler *audithttp.Handler
 }
 
-// NewModule monta as dependencias do contexto audit.
+// NewModule monta as dependencies do contexto audit.
 //
 // Wire-up minimo: repositorio Gorm + caso de uso de registro + publisher
 // default (engole erro com WARN, decisao do design F12 secao 3.1).
@@ -65,7 +65,7 @@ func NewModule(db *gorm.DB, logger *zap.Logger) *Module {
 // unica vez depois do NewModule, antes do RegisterRoutes — caso
 // contrario o handler segue funcionando, mas com dropdowns vazios.
 //
-// Argumentos sao interfaces para permitir mocks em testes (nao acopla a
+// Arguments sao interfaces para permitir mocks em testes (nao acopla a
 // `internal/audit/infrastructure`).
 func (m *Module) AttachFilters(tenantLister domain.TenantLister, adminUserLister domain.AdminUserLister) {
 	m.handler = audithttp.NewHandler(m.ListUC, m.GetUC, tenantLister, adminUserLister)

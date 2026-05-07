@@ -17,13 +17,13 @@ func TestNewLead_Valid(t *testing.T) {
 
 func TestNewLead_MissingFields(t *testing.T) {
 	tests := []struct {
-		name   string
-		tenant string
-		funnel string
-		col    string
+		name    string
+		tenant  string
+		funnel  string
+		col     string
 		contact string
-		conv   string
-		err    error
+		conv    string
+		err     error
 	}{
 		{"no tenant", "", "f", "c", "ct", "cv", ErrTenantIDRequired},
 		{"no funnel", "t", "", "c", "ct", "cv", ErrFunnelIDRequired},

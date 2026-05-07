@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -106,8 +107,8 @@ func TestListNotifications_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	n2, err := domain.NewNotification("ln-2", testTenantID, testUserID, domain.TypeLeadMoved, "Lead B", "", nil)
 	require.NoError(t, err)
-	require.NoError(t, env.repo.Create(nil, n1))
-	require.NoError(t, env.repo.Create(nil, n2))
+	require.NoError(t, env.repo.Create(context.Background(), n1))
+	require.NoError(t, env.repo.Create(context.Background(), n2))
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/notifications", nil)
@@ -136,8 +137,8 @@ func TestListNotifications_OnlyUnreadFilter(t *testing.T) {
 	read, _ := domain.NewNotification("ln-read", testTenantID, testUserID, domain.TypeLeadMoved, "Read", "", nil)
 	read.MarkRead()
 	unread, _ := domain.NewNotification("ln-unread", testTenantID, testUserID, domain.TypeLeadAssigned, "Unread", "", nil)
-	require.NoError(t, env.repo.Create(nil, read))
-	require.NoError(t, env.repo.Create(nil, unread))
+	require.NoError(t, env.repo.Create(context.Background(), read))
+	require.NoError(t, env.repo.Create(context.Background(), unread))
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/notifications?unread=true", nil)
@@ -161,7 +162,7 @@ func TestUnreadCount_HappyPath(t *testing.T) {
 	for _, id := range []string{"uc-1", "uc-2", "uc-3"} {
 		n, err := domain.NewNotification(id, testTenantID, testUserID, domain.TypeLeadAssigned, "t", "", nil)
 		require.NoError(t, err)
-		require.NoError(t, env.repo.Create(nil, n))
+		require.NoError(t, env.repo.Create(context.Background(), n))
 	}
 
 	w := httptest.NewRecorder()
@@ -194,7 +195,7 @@ func TestMarkRead_HappyPath(t *testing.T) {
 
 	n, err := domain.NewNotification("mr-1", testTenantID, testUserID, domain.TypeLeadAssigned, "t", "", nil)
 	require.NoError(t, err)
-	require.NoError(t, env.repo.Create(nil, n))
+	require.NoError(t, env.repo.Create(context.Background(), n))
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/notifications/mr-1/read", nil)
@@ -253,7 +254,7 @@ func TestMarkRead_CrossTenantIsolation(t *testing.T) {
 	// Create a notification in the other tenant.
 	n, err := domain.NewNotification("ct-1", otherTenant, "user-other", domain.TypeLeadAssigned, "t", "", nil)
 	require.NoError(t, err)
-	require.NoError(t, repo.Create(nil, n))
+	require.NoError(t, repo.Create(context.Background(), n))
 
 	// Router authenticated as testTenantID / testUserID — NOT otherTenant.
 	router := gin.New()
@@ -308,7 +309,7 @@ func TestMarkAllRead_HappyPath(t *testing.T) {
 	for _, id := range []string{"mar-1", "mar-2"} {
 		n, err := domain.NewNotification(id, testTenantID, testUserID, domain.TypeLeadAssigned, "t", "", nil)
 		require.NoError(t, err)
-		require.NoError(t, env.repo.Create(nil, n))
+		require.NoError(t, env.repo.Create(context.Background(), n))
 	}
 
 	w := httptest.NewRecorder()
@@ -342,7 +343,7 @@ func TestGetPreferences_HappyPath(t *testing.T) {
 	// Seed one preference.
 	pref, err := domain.NewNotificationPreference("pref-1", testUserID, testTenantID, domain.ChannelInApp, true)
 	require.NoError(t, err)
-	require.NoError(t, env.prefs.CreateOrUpdate(nil, pref))
+	require.NoError(t, env.prefs.CreateOrUpdate(context.Background(), pref))
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/notifications/preferences", nil)
@@ -500,7 +501,7 @@ func TestRegisterRoutes_AllRoutesReachable(t *testing.T) {
 	// not router-404, but we seed to get a clean 200 for the route check).
 	n, err := domain.NewNotification("rr-1", testTenantID, testUserID, domain.TypeLeadAssigned, "t", "", nil)
 	require.NoError(t, err)
-	require.NoError(t, repo.Create(nil, n))
+	require.NoError(t, repo.Create(context.Background(), n))
 
 	router := gin.New()
 	// Use no-op middleware for auth and tenant.

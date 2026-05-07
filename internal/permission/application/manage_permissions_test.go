@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	infra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	auditdomain "github.com/sasrgita/crm-juridico/internal/audit/domain"
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/domain"
+	infra "github.com/sasrgita/crm-juridico/internal/permission/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

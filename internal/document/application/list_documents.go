@@ -30,7 +30,7 @@ type ListDocumentsOutput struct {
 }
 
 type ListDocumentsUseCase struct {
-	repo       domain.DocumentRepository
+	repo        domain.DocumentRepository
 	specDocRepo domain.SpecialistDocumentRepository
 }
 

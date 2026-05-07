@@ -88,7 +88,7 @@ func (h *Handler) RenderKanbanPage(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to list funnels", zap.Error(err))
 		c.HTML(http.StatusInternalServerError, "funnel/kanban.html", gin.H{
-			"Error":    "Erro ao carregar funis",
+			"Error":     "Erro ao carregar funis",
 			"ActiveNav": "leads",
 		})
 		return
@@ -285,7 +285,7 @@ func (h *Handler) RenderFunnelList(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to list funnels", zap.Error(err))
 		c.HTML(http.StatusInternalServerError, "funnel/funnel_list.html", gin.H{
-			"Error":    "Erro ao carregar funis",
+			"Error":     "Erro ao carregar funis",
 			"ActiveNav": "leads",
 		})
 		return
@@ -308,7 +308,7 @@ func (h *Handler) RenderFunnelDetail(c *gin.Context) {
 	if err != nil {
 		h.log.Error("failed to get funnel", zap.Error(err))
 		c.HTML(http.StatusNotFound, "funnel/funnel_detail.html", gin.H{
-			"Error":    "Funil nao encontrado",
+			"Error":     "Funil nao encontrado",
 			"ActiveNav": "leads",
 		})
 		return

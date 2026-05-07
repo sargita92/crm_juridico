@@ -26,7 +26,7 @@ import (
 // --- Flow mocks: richer than owasp mocks so happy-path handlers can render data. ---
 
 type flowProductRepo struct {
-	products  map[string]*domain.Product
+	products   map[string]*domain.Product
 	findAllErr error
 }
 
