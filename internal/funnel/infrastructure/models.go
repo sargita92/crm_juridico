@@ -33,16 +33,16 @@ type columnModel struct {
 func (columnModel) TableName() string { return "funnel_columns" }
 
 type leadModel struct {
-	ID                string `gorm:"primaryKey;column:id;type:char(36)"`
-	TenantID          string `gorm:"column:tenant_id;type:char(36);not null"`
-	FunnelID          string `gorm:"column:funnel_id;type:char(36);not null"`
-	ColumnID          string `gorm:"column:column_id;type:char(36);not null"`
-	ContactID         string `gorm:"column:contact_id;type:char(36);not null"`
-	ConversationID    string `gorm:"column:conversation_id;type:char(36);not null"`
+	ID                string  `gorm:"primaryKey;column:id;type:char(36)"`
+	TenantID          string  `gorm:"column:tenant_id;type:char(36);not null"`
+	FunnelID          string  `gorm:"column:funnel_id;type:char(36);not null"`
+	ColumnID          string  `gorm:"column:column_id;type:char(36);not null"`
+	ContactID         string  `gorm:"column:contact_id;type:char(36);not null"`
+	ConversationID    string  `gorm:"column:conversation_id;type:char(36);not null"`
 	ProductID         *string `gorm:"column:product_id;type:char(36)"`
 	ResponsibleUserID *string `gorm:"column:responsible_user_id;type:char(36)"`
-	Score             int    `gorm:"column:score;type:int;not null;default:0"`
-	Status            string `gorm:"column:status;type:varchar(20);not null;default:'open'"`
+	Score             int     `gorm:"column:score;type:int;not null;default:0"`
+	Status            string  `gorm:"column:status;type:varchar(20);not null;default:'open'"`
 	ColumnEnteredAt   time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time

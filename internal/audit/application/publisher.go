@@ -40,8 +40,8 @@ func NewPublisher(uc *RegisterAuditLogUseCase, logger *zap.Logger) Publisher {
 
 // Publish invoca o caso de uso e absorve qualquer erro com WARN.
 //
-// Sempre retorna nil (a assinatura mantem `error` para futuras politicas
-// de back-pressure ou metricas adicionais sem quebrar callers).
+// Sempre retorna nil (a assinatura mantem `error` para futuras politics
+// de back-pressure ou metrics adicionais sem quebrar callers).
 func (p *defaultPublisher) Publish(ctx context.Context, in RegisterAuditLogInput) error {
 	if err := p.uc.Execute(ctx, in); err != nil {
 		p.log.Warn("audit publisher swallowed error",
@@ -55,11 +55,11 @@ func (p *defaultPublisher) Publish(ctx context.Context, in RegisterAuditLogInput
 }
 
 // NoopPublisher e usado em testes de outras features para nao acoplar a
-// suite ao banco/UC reais. Exportado de proposito — outros pacotes podem
+// suite ao banco/UC reais. Exportado de proposition — outros pacotes podem
 // importar e usar como `audit.NoopPublisher{}`.
 type NoopPublisher struct{}
 
-// Publish e no-op: nao chama UC, nao registra metricas, retorna nil.
+// Publish e no-op: nao chama UC, nao registra metrics, retorna nil.
 func (NoopPublisher) Publish(_ context.Context, _ RegisterAuditLogInput) error {
 	return nil
 }

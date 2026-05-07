@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,7 +22,7 @@ var sharedContainer *testhelper.MySQLContainer
 func TestMain(m *testing.M) {
 	short := false
 	for _, arg := range os.Args {
-		if arg == "-test.short" || arg == "-short" {
+		if arg == "-test.short" || arg == "-short" || strings.HasPrefix(arg, "-test.short=") || strings.HasPrefix(arg, "-short=") {
 			short = true
 			break
 		}
@@ -301,12 +302,12 @@ func TestTenantRepository_BillingFields_Roundtrip(t *testing.T) {
 	valor := int64(75000)
 	dia := uint8(15)
 	start := time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC)
-	tn.SetBillingConfig("anual", &valor, &dia, &start, false)
+	tn.SetBillingConfig("annual", &valor, &dia, &start, false)
 	require.NoError(t, repo.Create(context.Background(), tn))
 
 	got, err := repo.FindByID(context.Background(), tn.ID)
 	require.NoError(t, err)
-	assert.Equal(t, "anual", got.Plano)
+	assert.Equal(t, "annual", got.Plano)
 	require.NotNil(t, got.ValorCobrancaCents)
 	assert.Equal(t, int64(75000), *got.ValorCobrancaCents)
 	require.NotNil(t, got.DiaVencimento)

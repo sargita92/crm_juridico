@@ -68,7 +68,7 @@ func (uc *MoveColumnUseCase) Execute(ctx context.Context, input MoveColumnInput)
 	}
 
 	// Find neighbor
-	neighborIdx := -1
+	var neighborIdx int
 	if input.Direction == "up" {
 		if targetIdx == 0 {
 			return ErrCannotMoveColumn

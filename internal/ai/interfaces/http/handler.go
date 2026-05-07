@@ -240,8 +240,8 @@ func (h *Handler) RenderSpecialistProducts(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "specialist/specialist_products_section.html", gin.H{
-		"SpecialistID":     specialistID,
-		"LinkedProducts":   linked,
+		"SpecialistID":      specialistID,
+		"LinkedProducts":    linked,
 		"AvailableProducts": available,
 	})
 }

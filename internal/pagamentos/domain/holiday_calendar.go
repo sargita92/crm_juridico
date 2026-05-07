@@ -6,7 +6,7 @@ import (
 )
 
 // HolidayCalendar abstrai um calendário de feriados, usado pelo cron de
-// pagamentos para calcular vencimentos prorrogando para o próximo dia útil.
+// pagamentos para calculator vencimentos prorrogando para o próximo dia útil.
 type HolidayCalendar interface {
 	IsHoliday(d time.Time) bool
 	NextBusinessDay(d time.Time) time.Time
@@ -82,7 +82,7 @@ func (c *BrazilHolidayCalendar) isBusinessDay(day time.Time) bool {
 // para o ano informado, carregando-o sob demanda.
 //
 // Usa o padrão double-check: tenta ler com lock compartilhado (RLock); se
-// cache miss, adquire lock exclusivo (Lock) e revalida antes de escrever,
+// cache miss, acquire lock exclusivo (Lock) e revalida antes de escrever,
 // evitando que duas goroutines que perderam o cache simultaneamente
 // recomputem e sobrescrevam o conjunto de feriados.
 func (c *BrazilHolidayCalendar) holidaysForYear(year int) map[string]bool {
@@ -112,14 +112,14 @@ func buildHolidays(year int) map[string]bool {
 		month time.Month
 		day   int
 	}{
-		{time.January, 1},    // Confraternização Universal
-		{time.April, 21},     // Tiradentes
-		{time.May, 1},        // Dia do Trabalho
-		{time.September, 7},  // Independência
-		{time.October, 12},   // Nossa Senhora Aparecida
-		{time.November, 2},   // Finados
-		{time.November, 15},  // Proclamação da República
-		{time.December, 25},  // Natal
+		{time.January, 1},   // Confraternização Universal
+		{time.April, 21},    // Tiradentes
+		{time.May, 1},       // Dia do Trabalho
+		{time.September, 7}, // Independência
+		{time.October, 12},  // Nossa Senhora Aparecida
+		{time.November, 2},  // Finados
+		{time.November, 15}, // Proclamação da República
+		{time.December, 25}, // Natal
 	}
 	for _, f := range fixed {
 		d := time.Date(year, f.month, f.day, 0, 0, 0, 0, time.UTC)

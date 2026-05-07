@@ -52,7 +52,7 @@ func TestToTenantView_PopulatesAllBlocks(t *testing.T) {
 			},
 		},
 		Bloco2_WhatsApp: domain.WhatsAppStats{IncomingMessages: 10, OutgoingMessages: 8, ActiveConversations: 4, FirstResponseAvgSec: 90},
-		Bloco3_Responsaveis: []domain.ResponsiblePerformance{
+		Bloco3_Responsive: []domain.ResponsiblePerformance{
 			{UserID: "u1", UserName: "Maria", Total: 5, Won: 2, Lost: 1},
 		},
 		Bloco4_TempoFunil: []domain.ColumnDwell{
@@ -69,8 +69,8 @@ func TestToTenantView_PopulatesAllBlocks(t *testing.T) {
 	assert.Equal(t, "66.7%", vm.Bloco1_Funil.ConversionPct)
 	require.Len(t, vm.Bloco1_Funil.ColumnTotals, 1)
 	assert.Equal(t, "1.5min", vm.Bloco2_WhatsApp.FirstResponseAvg) // 90s
-	require.Len(t, vm.Bloco3_Responsaveis, 1)
-	assert.Equal(t, "66.7%", vm.Bloco3_Responsaveis[0].ConversionPct) // 2/(2+1)
+	require.Len(t, vm.Bloco3_Responsive, 1)
+	assert.Equal(t, "66.7%", vm.Bloco3_Responsive[0].ConversionPct) // 2/(2+1)
 	require.Len(t, vm.Bloco4_TempoFunil, 1)
 	assert.Equal(t, "12.5h", vm.Bloco4_TempoFunil[0].AvgHours)
 	assert.True(t, vm.ScopeIsUser)
@@ -113,7 +113,7 @@ func TestToAdminView_PopulatesAllBlocks(t *testing.T) {
 			ReceitaAnoCents:    1_500_000,
 			PendenteTotalCents: 200_000,
 			AtrasadoTotalCents: 50_000,
-			PlanDist:           domain.PlanDistribution{Mensal: 5, Anual: 2, Vitalicio: 1, Externo: 0},
+			PlanDist:           domain.PlanDistribution{Mensal: 5, Annual: 2, Vitalicio: 1, Externo: 0},
 			TopOverdue:         []domain.OverdueTenant{{TenantID: "t9", TenantName: "T9", ValorCents: 50_000}},
 		},
 	}

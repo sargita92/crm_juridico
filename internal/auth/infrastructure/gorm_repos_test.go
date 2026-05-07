@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -21,7 +22,7 @@ var sharedContainer *testhelper.MySQLContainer
 func TestMain(m *testing.M) {
 	short := false
 	for _, arg := range os.Args {
-		if arg == "-test.short" || arg == "-short" {
+		if arg == "-test.short" || arg == "-short" || strings.HasPrefix(arg, "-test.short=") || strings.HasPrefix(arg, "-short=") {
 			short = true
 			break
 		}

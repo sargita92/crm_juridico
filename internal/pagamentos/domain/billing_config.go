@@ -12,7 +12,7 @@ type BillingConfig struct {
 	ExibirPagamentos   bool
 }
 
-// NewBillingConfig valida e constrói uma BillingConfig. Para planos mensal/anual,
+// NewBillingConfig valida e constrói uma BillingConfig. Para planos mensal/annual,
 // valor, dia (1..28) e data de início são obrigatórios. Para vitalicio/externo
 // esses campos são ignorados (zerados).
 func NewBillingConfig(plano Plan, valor *int64, dia *uint8, start *time.Time, exibir bool) (*BillingConfig, error) {
@@ -49,7 +49,7 @@ func (c *BillingConfig) GenerateRecurring() bool {
 }
 
 // ShowsPortalMenu indica se o tenant deve ver o item "Pagamentos" no portal.
-// Vitalício e externo nunca veem; mensal/anual veem apenas se a flag estiver ligada.
+// Vitalício e externo nunca veem; mensal/annual veem apenas se a flag estiver ligada.
 func (c *BillingConfig) ShowsPortalMenu() bool {
 	return c.GenerateRecurring() && c.ExibirPagamentos
 }

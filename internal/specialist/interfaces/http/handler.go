@@ -19,17 +19,17 @@ func validUUID(id string) bool {
 }
 
 type Handler struct {
-	createUC          *application.CreateSpecialistUseCase
-	listUC            *application.ListSpecialistsUseCase
-	getUC             *application.GetSpecialistUseCase
-	updateUC          *application.UpdateSpecialistUseCase
-	deactivateUC      *application.DeactivateSpecialistUseCase
-	activateUC        *application.ActivateSpecialistUseCase
-	associateUC       *application.AssociateTenantUseCase
-	dissociateUC      *application.DissociateTenantUseCase
-	listTenantsUC     *application.ListSpecialistTenantsUseCase
-	listAvailableUC   *application.ListAvailableTenantsUseCase
-	specTenantRepo    domain.SpecialistTenantRepository
+	createUC        *application.CreateSpecialistUseCase
+	listUC          *application.ListSpecialistsUseCase
+	getUC           *application.GetSpecialistUseCase
+	updateUC        *application.UpdateSpecialistUseCase
+	deactivateUC    *application.DeactivateSpecialistUseCase
+	activateUC      *application.ActivateSpecialistUseCase
+	associateUC     *application.AssociateTenantUseCase
+	dissociateUC    *application.DissociateTenantUseCase
+	listTenantsUC   *application.ListSpecialistTenantsUseCase
+	listAvailableUC *application.ListAvailableTenantsUseCase
+	specTenantRepo  domain.SpecialistTenantRepository
 }
 
 func NewHandler(

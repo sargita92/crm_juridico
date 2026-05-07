@@ -32,10 +32,10 @@ type DefaultSpecialistFinder interface {
 
 // SpecialistRouter routes an inbound message to the appropriate specialist.
 type SpecialistRouter struct {
-	phoneFinder         PhoneNumberFinder
-	spFinder            SpecialistProductFinder
-	productDetector     ProductDetectorForRouter
-	defaultSpFinder     DefaultSpecialistFinder
+	phoneFinder     PhoneNumberFinder
+	spFinder        SpecialistProductFinder
+	productDetector ProductDetectorForRouter
+	defaultSpFinder DefaultSpecialistFinder
 }
 
 // NewSpecialistRouter creates a SpecialistRouter with the required dependencies.

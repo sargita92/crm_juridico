@@ -27,7 +27,7 @@ func (h *Handler) HandleSSE(c *gin.Context) {
 	defer cleanup()
 
 	// Initial keepalive to establish connection
-	c.Writer.WriteString(": keepalive\n\n")
+	_, _ = c.Writer.WriteString(": keepalive\n\n")
 	c.Writer.Flush()
 
 	c.Stream(func(w io.Writer) bool {
@@ -40,7 +40,7 @@ func (h *Handler) HandleSSE(c *gin.Context) {
 				zap.String("tenant_id", tenantID),
 				zap.String("event_type", string(event.Type)),
 			)
-			fmt.Fprintf(w, "event: %s\ndata: {}\n\n", event.Type)
+			_, _ = fmt.Fprintf(w, "event: %s\ndata: {}\n\n", event.Type)
 			return true
 		case <-c.Request.Context().Done():
 			return false

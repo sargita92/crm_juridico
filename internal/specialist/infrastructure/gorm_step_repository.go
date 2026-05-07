@@ -52,7 +52,7 @@ func stepToModel(s *domain.Step) *stepModel {
 		TargetColumnID:  s.TargetColumnID,
 		ForcedTools:     marshalToolList(s.ForcedTools),
 		RestrictedTools: marshalToolList(s.RestrictedTools),
-		CreatedAt: s.CreatedAt, UpdatedAt: s.UpdatedAt,
+		CreatedAt:       s.CreatedAt, UpdatedAt: s.UpdatedAt,
 	}
 }
 
@@ -63,7 +63,7 @@ func stepToDomain(m *stepModel) *domain.Step {
 		TargetColumnID:  m.TargetColumnID,
 		ForcedTools:     unmarshalToolList(m.ForcedTools),
 		RestrictedTools: unmarshalToolList(m.RestrictedTools),
-		CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
+		CreatedAt:       m.CreatedAt, UpdatedAt: m.UpdatedAt,
 	}
 }
 

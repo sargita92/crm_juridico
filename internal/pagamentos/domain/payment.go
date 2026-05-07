@@ -7,7 +7,7 @@ type Plan string
 
 const (
 	PlanMensal    Plan = "mensal"
-	PlanAnual     Plan = "anual"
+	PlanAnual     Plan = "annual"
 	PlanVitalicio Plan = "vitalicio"
 	PlanExterno   Plan = "externo"
 )

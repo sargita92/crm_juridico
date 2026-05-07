@@ -13,7 +13,7 @@ import (
 // --- mock AIConfigRepository ---
 
 type mockAIConfigRepo struct {
-	cfg    *domain.AIConfig
+	cfg     *domain.AIConfig
 	findErr error
 }
 

@@ -2,7 +2,7 @@ package infrastructure
 
 import "github.com/prometheus/client_golang/prometheus"
 
-// Metricas do dominio audit. Registradas globalmente via init() — padrao
+// Metrics do dominio audit. Registradas globalmente via init() — padrao
 // vigente no projeto (ver internal/auth/infrastructure/metrics.go).
 //
 // Naming/labels seguem secao 9.1 do design F12:
@@ -24,7 +24,7 @@ var (
 
 	// AuditLogsListDuration mede a latencia da listagem de audit logs
 	// (filtro + paginacao). Usado pelo ListAuditLogsUseCase no Step 4.
-	// Exposto agora para consolidar o registro de metricas em um unico lugar.
+	// Exposto agora para consolidar o registro de metrics em um unico lugar.
 	AuditLogsListDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "crm",

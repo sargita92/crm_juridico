@@ -4,6 +4,41 @@ Registro histórico de entregas do projeto.
 
 ---
 
+## [2026-05-07] F21 — Saneamento Técnico (Faxina Mecânica)
+
+Rodada one-shot que zera dívida técnica mecânica e estabelece o processo recorrente de manutenção. Foco em automação, não em refactor.
+
+**Highlights**
+- `make audit` orquestra 6 sub-alvos: `audit-vuln`, `audit-vet`, `audit-lint`, `audit-cover`, `audit-deps`, `audit-todos`.
+- `.golangci.yml` configurado (errcheck, govet, ineffassign, staticcheck, unused, gosimple, misspell, goimports). `govet.shadow` desabilitado por escolha de estilo (codebase usa `err :=` em escopos internos).
+- `scripts/audit-vuln.sh` filtra IDs aceitas em `.audit-accepted-vulns.txt` (com justificativa e revisão trimestral).
+- `scripts/audit-cover.sh` em **dois modos**: `-short` (dev, informativo, exclui pacotes que dependem de testcontainers) e `AUDIT_INTEGRATION=1` (CI, enforce com global ≥ 85% e pacote ≥ 80%).
+- `.github/workflows/ci.yml` ganhou 7 jobs: `build`, `vet`, `lint`, `vuln`, `test-short`, `test-integration`, `coverage`.
+- Issue template `.github/ISSUE_TEMPLATE/manutencao-trimestral.md` com checklist alinhado a `docs/processo/manutencao-tecnica.md`.
+
+**Resultados**
+- Vulnerabilidades: **14 → 0** não-aceitas. Toolchain Go 1.26.1 → 1.26.3 (resolveu 11 stdlib); `golang.org/x/net` v0.52 → v0.53 (resolveu GO-2026-4918); 2 vulns `docker/docker` aceitas com justificativa (transitivas via testcontainers, sem fix upstream, sem call path produtivo).
+- Lint: **199 → 0** issues. Auto-fix em misspell (79) e goimports (57); manual em staticcheck `nil` context (17), unused (10), errcheck (2), ineffassign (1).
+- Testes: **1911 → 1921** verdes em `-short`. Resolveu regressão herdada do redesign UI (commit `af3b174`) em `internal/audit/interfaces/http` (10 testes).
+- Bug de TestMain pré-existente: 20 pacotes detectavam `-short` por igualdade exata de `os.Args`, mas `go test -short` propaga `-test.short=true`. Corrigido com `strings.HasPrefix`. Testes de integração agora pulam corretamente em `-short`.
+- Deps diretas atualizadas: `go-sql-driver/mysql`, `mattn/go-sqlite3`, `docker/go-connections`, `testcontainers-go` (v0.41 → v0.42, com ajuste de assinatura `wait.ForSQL`), `whatsmeow`, `zap`.
+
+**Decisões consolidadas**
+- Updates major ficam fora do escopo (viram features dedicadas se necessário).
+- Refactors arquiteturais ficam fora do escopo (viram F23+).
+- `govet.shadow` desabilitado: padrão idiomatico do codebase.
+- Vulnerabilidades aceitas vão em `.audit-accepted-vulns.txt` com justificativa e são revisadas trimestralmente.
+- Cobertura tem duas metas (global ≥ 85%, pacote ≥ 80%) para evitar média enganosa.
+- Pacotes wiring/main isentos da meta (`cmd/...`, `internal/shared/module`).
+
+**Artefatos**
+- PO/UIUX/Arquiteto: `docs/artefatos/F21-saneamento-tecnico/`
+- Relatório inicial: `docs/manutencao/audit-inicial-2026-05-07.md`
+- Relatório final: `docs/manutencao/audit-final-2026-05-07.md`
+- Processo recorrente: `docs/processo/manutencao-tecnica.md`
+
+---
+
 ## [2026-04-24] F12 — Logs (Admin)
 
 Auditoria centralizada de ações admin e de segurança: login (sucesso e falha), CRUD de tenants, CRUD de usuários admin, bloqueio/desbloqueio de tenant e alteração de permissões. Consulta com filtros (tenant, usuário, ação, período) + paginação + detalhe. Rota `/admin/logs` restrita ao admin global; usuários não-admin recebem 404 genérico (sem revelar a existência da rota). Sem exportação CSV no MVP; retenção ilimitada.

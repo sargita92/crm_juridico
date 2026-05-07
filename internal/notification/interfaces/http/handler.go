@@ -11,8 +11,8 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/notification/application"
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
 	notifinfra "github.com/sasrgita/crm-juridico/internal/notification/infrastructure"
-	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	events "github.com/sasrgita/crm-juridico/internal/shared/events"
+	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
 
 // Handler holds all notification use cases and the event bus for SSE.

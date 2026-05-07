@@ -38,7 +38,7 @@ func (t *CreateLeadNoteTool) Execute(ctx context.Context, tenantID string, args 
 	leadID, _ := args["lead_id"].(string)
 	content, _ := args["content"].(string)
 	if leadID == "" || content == "" {
-		r := domain.NewToolResult("", "parametros obrigatorios: 'lead_id' e 'content'", true)
+		r := domain.NewToolResult("", "parameters obrigatorios: 'lead_id' e 'content'", true)
 		return &r, nil
 	}
 

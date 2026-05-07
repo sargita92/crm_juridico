@@ -15,8 +15,8 @@ import (
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/notification/application"
 	"github.com/sasrgita/crm-juridico/internal/notification/domain"
-	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	sharedevents "github.com/sasrgita/crm-juridico/internal/shared/events"
+	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
 
 func TestSSEStream_EmitsHTMLFragmentForOwnUser(t *testing.T) {

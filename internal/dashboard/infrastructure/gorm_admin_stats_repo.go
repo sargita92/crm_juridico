@@ -135,7 +135,7 @@ func (r *GormAdminStatsRepo) HealthBlock(ctx context.Context, now time.Time) (*d
 		Total      int64
 	}
 	var tops []topRow
-	// "Active" aqui refere-se a volume de leads (uso histórico), não ao status operacional do tenant.
+	// "Active" aqui refere-se a volume de leads (uso histórico), não ao status operational do tenant.
 	// Tenants com status='blocked'/'inactive' aparecem se tiveram leads — admin precisa ver uso real.
 	// Se o template precisar destacar visualmente, fazer no template (não filtrar aqui).
 	if err := r.db.WithContext(ctx).
@@ -206,7 +206,7 @@ func (r *GormAdminStatsRepo) HealthBlock(ctx context.Context, now time.Time) (*d
 func (r *GormAdminStatsRepo) EspecialistasBlock(ctx context.Context) (*domain.SpecialistsBlock, error) {
 	out := &domain.SpecialistsBlock{}
 
-	// Total de especialistas (todos, independente de status).
+	// Total de especialistas (todos, independence de status).
 	if err := r.db.WithContext(ctx).Table("specialists").Count(&out.Total).Error; err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (r *GormAdminStatsRepo) EspecialistasBlock(ctx context.Context) (*domain.Sp
 // financeiras). PlanDistribution é uma agregação simples sobre tenants.plano e fica
 // neste repo para evitar acoplar pagamentos a conhecimento de planos por contagem.
 //
-// Plans desconhecidos (string fora do conjunto suportado: mensal/anual/vitalicio/externo)
+// Plans desconhecidos (string fora do conjunto suportado: mensal/annual/vitalicio/externo)
 // são silenciosamente ignorados — o admin vê apenas categorias conhecidas; isso evita
 // quebrar o dashboard caso um valor exótico apareça (ex.: migração futura).
 func (r *GormAdminStatsRepo) FinanceiroBlock(ctx context.Context, now time.Time) (*domain.FinancialBlock, error) {
@@ -273,8 +273,8 @@ func (r *GormAdminStatsRepo) FinanceiroBlock(ctx context.Context, now time.Time)
 		switch rr.Plano {
 		case "mensal":
 			dist.Mensal = rr.Total
-		case "anual":
-			dist.Anual = rr.Total
+		case "annual":
+			dist.Annual = rr.Total
 		case "vitalicio":
 			dist.Vitalicio = rr.Total
 		case "externo":

@@ -42,7 +42,7 @@ func TestWhatsmeowProvider_Disconnect_NoClient_NoPanic(t *testing.T) {
 	provider := NewWhatsmeowProvider(t.TempDir(), log)
 
 	assert.NotPanics(t, func() {
-		_ = provider.Disconnect(nil, "nonexistent")
+		_ = provider.Disconnect(context.Background(), "nonexistent")
 	})
 }
 

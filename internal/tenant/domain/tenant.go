@@ -21,11 +21,11 @@ const (
 )
 
 var (
-	ErrTenantNotFound       = errors.New("tenant not found")
-	ErrTenantDocumentExists = errors.New("tenant with this document already exists")
-	ErrTenantBlocked        = errors.New("tenant is blocked")
-	ErrTenantInactive       = errors.New("tenant is inactive")
-	ErrInvalidTenantType    = errors.New("invalid tenant type: must be PF or PJ")
+	ErrTenantNotFound        = errors.New("tenant not found")
+	ErrTenantDocumentExists  = errors.New("tenant with this document already exists")
+	ErrTenantBlocked         = errors.New("tenant is blocked")
+	ErrTenantInactive        = errors.New("tenant is inactive")
+	ErrInvalidTenantType     = errors.New("invalid tenant type: must be PF or PJ")
 	ErrTenantNameRequired    = errors.New("tenant name is required")
 	ErrTenantDocRequired     = errors.New("tenant document is required")
 	ErrBlockReasonRequired   = errors.New("block reason is required")

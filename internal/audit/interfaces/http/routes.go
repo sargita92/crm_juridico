@@ -27,7 +27,7 @@ import (
 // RegisterRoutes monta as rotas /admin/logs no Gin engine.
 //
 // `tokenProvider` e necessario para o `AdminPageAuth`. O middleware
-// AdminOr404 e independente do provider — apenas le claims do contexto.
+// AdminOr404 e independence do provider — apenas le claims do contexto.
 func (h *Handler) RegisterRoutes(router *gin.Engine, tokenProvider authdomain.TokenProvider) {
 	group := router.Group(
 		"/admin/logs",

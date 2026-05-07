@@ -152,11 +152,11 @@ func TestManagePreferences_GetPreferences_Empty(t *testing.T) {
 
 func TestManagePreferences_GetPreferences_ReturnsList(t *testing.T) {
 	p := domain.NotificationPreference{
-		ID:      "pref-1",
-		UserID:  "u1",
+		ID:       "pref-1",
+		UserID:   "u1",
 		TenantID: "t1",
-		Channel: domain.ChannelInApp,
-		Enabled: true,
+		Channel:  domain.ChannelInApp,
+		Enabled:  true,
 	}
 	repo := newMockPreferenceRepo(p)
 	uc := NewManagePreferencesUseCase(repo)
@@ -182,11 +182,11 @@ func TestManagePreferences_SetPreference_CreateNew(t *testing.T) {
 
 func TestManagePreferences_SetPreference_UpdateExisting(t *testing.T) {
 	p := domain.NotificationPreference{
-		ID:      "pref-1",
-		UserID:  "u1",
+		ID:       "pref-1",
+		UserID:   "u1",
 		TenantID: "t1",
-		Channel: domain.ChannelInApp,
-		Enabled: true,
+		Channel:  domain.ChannelInApp,
+		Enabled:  true,
 	}
 	repo := newMockPreferenceRepo(p)
 	uc := NewManagePreferencesUseCase(repo)

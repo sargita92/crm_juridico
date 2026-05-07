@@ -19,9 +19,9 @@ import (
 
 // connectState tracks an ongoing connection attempt per tenant.
 type connectState struct {
-	lastQR string    // most recent QR code received
-	err    error     // error if connection failed
-	done   bool      // connection process finished (connected or failed)
+	lastQR string // most recent QR code received
+	err    error  // error if connection failed
+	done   bool   // connection process finished (connected or failed)
 	mu     sync.Mutex
 }
 

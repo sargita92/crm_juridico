@@ -19,16 +19,16 @@ import (
 
 // ModuleDeps holds all cross-module dependencies for the automation module.
 type ModuleDeps struct {
-	MoveLeadUC     *funnelapp.MoveLeadUseCase
-	LeadRepo       funneldomain.LeadRepository
-	ColumnRepo     funneldomain.ColumnRepository
-	NoteRepo       funneldomain.LeadNoteRepository
-	NotifyService  *notifapp.NotifyService
-	DB             *gorm.DB
-	ListFunnelsUC  *funnelapp.ListFunnelsUseCase
+	MoveLeadUC      *funnelapp.MoveLeadUseCase
+	LeadRepo        funneldomain.LeadRepository
+	ColumnRepo      funneldomain.ColumnRepository
+	NoteRepo        funneldomain.LeadNoteRepository
+	NotifyService   *notifapp.NotifyService
+	DB              *gorm.DB
+	ListFunnelsUC   *funnelapp.ListFunnelsUseCase
 	ContactProvider funneldomain.ContactProvider
-	SpecialistRepo specialistdomain.SpecialistRepository
-	SpecTenantRepo specialistdomain.SpecialistTenantRepository
+	SpecialistRepo  specialistdomain.SpecialistRepository
+	SpecTenantRepo  specialistdomain.SpecialistTenantRepository
 }
 
 // Module is the automation bounded-context root.

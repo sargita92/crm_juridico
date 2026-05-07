@@ -38,7 +38,7 @@ func (t *MoveLeadTool) Execute(ctx context.Context, tenantID string, args map[st
 	leadID, _ := args["lead_id"].(string)
 	columnID, _ := args["column_id"].(string)
 	if leadID == "" || columnID == "" {
-		r := domain.NewToolResult("", "parametros obrigatorios: 'lead_id' e 'column_id'", true)
+		r := domain.NewToolResult("", "parameters obrigatorios: 'lead_id' e 'column_id'", true)
 		return &r, nil
 	}
 

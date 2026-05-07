@@ -9,11 +9,11 @@ import (
 )
 
 func TestNewMcpServer_WithValidData_ReturnsServer(t *testing.T) {
-	m, err := NewMcpServer("uuid-1", "API Processos", "https://api.processos.com/mcp", `{"timeout": 30}`, `{"Authorization": "Bearer token"}`)
+	m, err := NewMcpServer("uuid-1", "API Processors", "https://api.processos.com/mcp", `{"timeout": 30}`, `{"Authorization": "Bearer token"}`)
 
 	require.NoError(t, err)
 	assert.Equal(t, "uuid-1", m.ID)
-	assert.Equal(t, "API Processos", m.Name)
+	assert.Equal(t, "API Processors", m.Name)
 	assert.Equal(t, "https://api.processos.com/mcp", m.URL)
 	assert.Equal(t, `{"timeout": 30}`, m.Config)
 	assert.Equal(t, `{"Authorization": "Bearer token"}`, m.Headers)

@@ -51,8 +51,8 @@ func newPageRouter(ph *PageHandler) *gin.Engine {
 			}
 			return m
 		},
-		"add": func(a, b int) int { return a + b },
-		"sub": func(a, b int) int { return a - b },
+		"add":                 func(a, b int) int { return a + b },
+		"sub":                 func(a, b int) int { return a - b },
 		"aiPlaygroundEnabled": func() bool { return false },
 		"formatFileSize":      func(size int64) string { return "0 B" },
 		"typeIcon":            func(t string) string { return "🔔" },
@@ -232,7 +232,7 @@ func (s *stubColumnRepo) FindByFunnelID(ctx context.Context, funnelID string) ([
 func (s *stubColumnRepo) FindEntryByFunnelID(_ context.Context, _ string) (*funneldomain.Column, error) {
 	return nil, nil
 }
-func (s *stubColumnRepo) CountByFunnelID(_ context.Context, _ string) (int, error) { return 0, nil }
+func (s *stubColumnRepo) CountByFunnelID(_ context.Context, _ string) (int, error)  { return 0, nil }
 func (s *stubColumnRepo) GetMaxOrderIndex(_ context.Context, _ string) (int, error) { return 0, nil }
 func (s *stubColumnRepo) SwapOrder(_ context.Context, _ string, _ int, _ string, _ int) error {
 	return nil

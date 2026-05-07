@@ -38,7 +38,7 @@ func (t *SwitchSpecialistTool) Execute(ctx context.Context, tenantID string, arg
 	specialistID, _ := args["specialist_id"].(string)
 	conversationID, _ := args["conversation_id"].(string)
 	if specialistID == "" || conversationID == "" {
-		r := domain.NewToolResult("", "parametros obrigatorios: 'specialist_id' e 'conversation_id'", true)
+		r := domain.NewToolResult("", "parameters obrigatorios: 'specialist_id' e 'conversation_id'", true)
 		return &r, nil
 	}
 

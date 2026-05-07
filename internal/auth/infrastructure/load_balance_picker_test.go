@@ -65,7 +65,7 @@ func (f *fakeUserGroupRepo) FindByGroupID(_ context.Context, gid string) ([]perm
 	return f.byGroup[gid], nil
 }
 func (f *fakeUserGroupRepo) Create(context.Context, *permdomain.UserGroup) error { return nil }
-func (f *fakeUserGroupRepo) Delete(context.Context, string, string) error       { return nil }
+func (f *fakeUserGroupRepo) Delete(context.Context, string, string) error        { return nil }
 func (f *fakeUserGroupRepo) FindByUserAndTenant(context.Context, string, string) ([]permdomain.UserGroup, error) {
 	return nil, nil
 }

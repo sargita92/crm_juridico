@@ -10,10 +10,10 @@ import (
 // --- PermissionGroup model ---
 
 type permissionGroupModel struct {
-	ID          string    `gorm:"primaryKey;column:id;type:char(36)"`
-	TenantID    string    `gorm:"column:tenant_id;type:char(36);not null"`
-	Name        string    `gorm:"column:name;type:varchar(100);not null"`
-	Description string    `gorm:"column:description;type:varchar(500);not null;default:''"`
+	ID          string `gorm:"primaryKey;column:id;type:char(36)"`
+	TenantID    string `gorm:"column:tenant_id;type:char(36);not null"`
+	Name        string `gorm:"column:name;type:varchar(100);not null"`
+	Description string `gorm:"column:description;type:varchar(500);not null;default:''"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -45,10 +45,10 @@ func permissionGroupToDomain(m *permissionGroupModel) *domain.PermissionGroup {
 // --- UserGroup model ---
 
 type userGroupModel struct {
-	ID        string    `gorm:"primaryKey;column:id;type:char(36)"`
-	UserID    string    `gorm:"column:user_id;type:char(36);not null"`
-	GroupID   string    `gorm:"column:group_id;type:char(36);not null"`
-	TenantID  string    `gorm:"column:tenant_id;type:char(36);not null"`
+	ID        string `gorm:"primaryKey;column:id;type:char(36)"`
+	UserID    string `gorm:"column:user_id;type:char(36);not null"`
+	GroupID   string `gorm:"column:group_id;type:char(36);not null"`
+	TenantID  string `gorm:"column:tenant_id;type:char(36);not null"`
 	CreatedAt time.Time
 }
 
@@ -77,12 +77,12 @@ func userGroupToDomain(m *userGroupModel) *domain.UserGroup {
 // --- Permission model ---
 
 type permissionModel struct {
-	ID        string    `gorm:"primaryKey;column:id;type:char(36)"`
-	TenantID  string    `gorm:"column:tenant_id;type:char(36);not null"`
-	GroupID   *string   `gorm:"column:group_id;type:char(36)"`
-	UserID    *string   `gorm:"column:user_id;type:char(36)"`
-	Resource  string    `gorm:"column:resource;type:varchar(50);not null"`
-	Action    string    `gorm:"column:action;type:varchar(50);not null"`
+	ID        string  `gorm:"primaryKey;column:id;type:char(36)"`
+	TenantID  string  `gorm:"column:tenant_id;type:char(36);not null"`
+	GroupID   *string `gorm:"column:group_id;type:char(36)"`
+	UserID    *string `gorm:"column:user_id;type:char(36)"`
+	Resource  string  `gorm:"column:resource;type:varchar(50);not null"`
+	Action    string  `gorm:"column:action;type:varchar(50);not null"`
 	CreatedAt time.Time
 }
 
@@ -127,10 +127,10 @@ func permissionToDomain(m *permissionModel) *domain.Permission {
 // --- ViewProfile model ---
 
 type viewProfileModel struct {
-	ID             string    `gorm:"primaryKey;column:id;type:char(36)"`
-	GroupID        string    `gorm:"column:group_id;type:char(36);not null"`
-	FunnelID       string    `gorm:"column:funnel_id;type:char(36);not null"`
-	VisibleColumns string    `gorm:"column:visible_columns;type:json;not null"`
+	ID             string `gorm:"primaryKey;column:id;type:char(36)"`
+	GroupID        string `gorm:"column:group_id;type:char(36);not null"`
+	FunnelID       string `gorm:"column:funnel_id;type:char(36);not null"`
+	VisibleColumns string `gorm:"column:visible_columns;type:json;not null"`
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -170,10 +170,10 @@ func viewProfileToDomain(m *viewProfileModel) *domain.ViewProfile {
 // --- GroupFunnel model ---
 
 type groupFunnelModel struct {
-	ID        string    `gorm:"primaryKey;column:id;type:char(36)"`
-	GroupID   string    `gorm:"column:group_id;type:char(36);not null"`
-	FunnelID  string    `gorm:"column:funnel_id;type:char(36);not null"`
-	ColumnIDs string    `gorm:"column:column_ids;type:json;not null"`
+	ID        string `gorm:"primaryKey;column:id;type:char(36)"`
+	GroupID   string `gorm:"column:group_id;type:char(36);not null"`
+	FunnelID  string `gorm:"column:funnel_id;type:char(36);not null"`
+	ColumnIDs string `gorm:"column:column_ids;type:json;not null"`
 	CreatedAt time.Time
 }
 

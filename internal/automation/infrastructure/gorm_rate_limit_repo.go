@@ -6,8 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/sasrgita/crm-juridico/internal/automation/domain"
 	"github.com/google/uuid"
+	"github.com/sasrgita/crm-juridico/internal/automation/domain"
 )
 
 // GormRateLimitRepository is the GORM-backed implementation of domain.RateLimitRepository.

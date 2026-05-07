@@ -3,8 +3,9 @@ package infrastructure
 import "github.com/prometheus/client_golang/prometheus"
 
 // StoredTotal counts persisted files broken down by media type and direction.
-//   media_type ∈ {image, document, audio, video, other}
-//   direction  ∈ {inbound, outbound}
+//
+//	media_type ∈ {image, document, audio, video, other}
+//	direction  ∈ {inbound, outbound}
 var StoredTotal = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Namespace: "crm",

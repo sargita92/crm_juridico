@@ -1,0 +1,54 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+    govet:
+      # shadow nao-habilitado: o codebase usa propositalmente `err :=` em
+      # escopos internos, padrao idiomatico Go. Reabilitar requer auditoria
+      # caso-a-caso (eventual feature dedicada).
+      disable:
+        - fieldalignment
+    staticcheck:
+      # Manter apenas SA* (real bugs) e U* (unused).
+      # Desabilitado:
+      #   ST* (stylecheck — package comments, naming) — cosmetico
+      #   QF* (quick-fix suggestions) — sugestoes, nao bugs
+      #   S*  (simplifications) — cosmetico
+      checks:
+        - SA*
+        - U*
+  exclusions:
+    paths:
+      - tmp
+      - storage
+      - fixture
+    rules:
+      # Test helpers podem ignorar errcheck para reduzir ruido
+      - path: _test\.go
+        linters:
+          - errcheck
+      # Migrations geradas
+      - path: migrations/
+        linters:
+          - errcheck
+          - staticcheck
+          - unused
+
+formatters:
+  enable:
+    - goimports

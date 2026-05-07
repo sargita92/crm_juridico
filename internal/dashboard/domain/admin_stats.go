@@ -49,7 +49,7 @@ type OverdueTenant struct {
 
 type PlanDistribution struct {
 	Mensal    int64
-	Anual     int64
+	Annual    int64
 	Vitalicio int64
 	Externo   int64
 }

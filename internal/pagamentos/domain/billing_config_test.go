@@ -20,7 +20,7 @@ func TestNewBillingConfig_Mensal_Success(t *testing.T) {
 	assert.True(t, cfg.ShowsPortalMenu())
 }
 
-func TestNewBillingConfig_Anual_Success(t *testing.T) {
+func TestNewBillingConfig_Annual_Success(t *testing.T) {
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	valor := int64(600000)
 	dia := uint8(15)

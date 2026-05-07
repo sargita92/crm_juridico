@@ -59,26 +59,26 @@ func FormatPct(p float64) string {
 
 // TenantView é o view-model do dashboard tenant. Strings já formatadas.
 type TenantView struct {
-	Bloco1_Funil        FunilView
-	Bloco2_WhatsApp     WhatsAppView
-	Bloco3_Responsaveis []ResponsibleView
-	Bloco4_TempoFunil   []ColumnDwellView
-	Bloco5_Produtos     []ProductView
-	ScopeIsUser         bool
-	CurrentUserName     string
-	ActiveFunnelName    string
+	Bloco1_Funil      FunilView
+	Bloco2_WhatsApp   WhatsAppView
+	Bloco3_Responsive []ResponsibleView
+	Bloco4_TempoFunil []ColumnDwellView
+	Bloco5_Produtos   []ProductView
+	ScopeIsUser       bool
+	CurrentUserName   string
+	ActiveFunnelName  string
 }
 
 type FunilView struct {
-	Open               int64
-	Won                int64
-	Lost               int64
-	Total              int64 // open+won+lost
-	ColumnTotals       []ColumnLeadsView
-	ColumnTotalsJSON   template.JS // JSON array p/ Chart.js (pre-encoded em ToTenantView)
-	ConversionPct      string
-	NewToday           int64
-	NewThisWeek        int64
+	Open             int64
+	Won              int64
+	Lost             int64
+	Total            int64 // open+won+lost
+	ColumnTotals     []ColumnLeadsView
+	ColumnTotalsJSON template.JS // JSON array p/ Chart.js (pre-encoded em ToTenantView)
+	ConversionPct    string
+	NewToday         int64
+	NewThisWeek      int64
 }
 
 type ColumnLeadsView struct {
@@ -90,7 +90,7 @@ type WhatsAppView struct {
 	IncomingMessages    int64
 	OutgoingMessages    int64
 	ActiveConversations int64
-	FirstResponseAvg    string // ex: "3.5min" ou "-"
+	FirstResponseAvg    string      // ex: "3.5min" ou "-"
 	MessagesJSON        template.JS // JSON {"in":N,"out":M} p/ Chart.js
 }
 
@@ -144,12 +144,12 @@ func ToTenantView(s *domain.TenantStats) *TenantView {
 			ColumnName: ct.ColumnName, Count: ct.Count,
 		})
 	}
-	for _, r := range s.Bloco3_Responsaveis {
+	for _, r := range s.Bloco3_Responsive {
 		pct := 0.0
 		if denom := r.Won + r.Lost; denom > 0 {
 			pct = float64(r.Won) * 100 / float64(denom)
 		}
-		out.Bloco3_Responsaveis = append(out.Bloco3_Responsaveis, ResponsibleView{
+		out.Bloco3_Responsive = append(out.Bloco3_Responsive, ResponsibleView{
 			UserName: r.UserName, Total: r.Total, Won: r.Won, Lost: r.Lost,
 			ConversionPct: FormatPct(pct),
 		})
@@ -211,13 +211,13 @@ type AdminView struct {
 }
 
 type TenantsView struct {
-	Active          int64
-	Inactive        int64
-	Blocked         int64
-	Total           int64
-	NewThisMonth    int64
-	Last6Months     []MonthlyView
-	MonthlyJSON     template.JS // JSON array de Last6Months p/ Chart.js
+	Active       int64
+	Inactive     int64
+	Blocked      int64
+	Total        int64
+	NewThisMonth int64
+	Last6Months  []MonthlyView
+	MonthlyJSON  template.JS // JSON array de Last6Months p/ Chart.js
 }
 
 type MonthlyView struct {
@@ -276,13 +276,13 @@ type FinancialView struct {
 	AtrasadoTotal  string // BRL
 	PlanDist       PlanDistributionView
 	TopOverdue     []OverdueTenantView
-	PlanDistJSON   template.JS // JSON {"Mensal":N,"Anual":N,"Vitalicio":N,"Externo":N}
+	PlanDistJSON   template.JS // JSON {"Mensal":N,"Annual":N,"Vitalicio":N,"Externo":N}
 	TopOverdueJSON template.JS // JSON array com TenantName + ValorCents (raw int64)
 }
 
 type PlanDistributionView struct {
 	Mensal    int64
-	Anual     int64
+	Annual    int64
 	Vitalicio int64
 	Externo   int64
 	Total     int64 // soma — útil pra render percentuais no template
@@ -325,10 +325,10 @@ func ToAdminView(s *domain.AdminStats) *AdminView {
 			AtrasadoTotal: FormatBRL(s.Bloco6_Financeiro.AtrasadoTotalCents),
 			PlanDist: PlanDistributionView{
 				Mensal:    s.Bloco6_Financeiro.PlanDist.Mensal,
-				Anual:     s.Bloco6_Financeiro.PlanDist.Anual,
+				Annual:    s.Bloco6_Financeiro.PlanDist.Annual,
 				Vitalicio: s.Bloco6_Financeiro.PlanDist.Vitalicio,
 				Externo:   s.Bloco6_Financeiro.PlanDist.Externo,
-				Total: s.Bloco6_Financeiro.PlanDist.Mensal + s.Bloco6_Financeiro.PlanDist.Anual +
+				Total: s.Bloco6_Financeiro.PlanDist.Mensal + s.Bloco6_Financeiro.PlanDist.Annual +
 					s.Bloco6_Financeiro.PlanDist.Vitalicio + s.Bloco6_Financeiro.PlanDist.Externo,
 			},
 		},

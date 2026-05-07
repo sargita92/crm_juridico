@@ -85,7 +85,7 @@ Suporte interno, não faz parte do produto final.
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
-| F21 | [Saneamento Técnico (one-shot)](../features/F21-saneamento-tecnico.md) | backlog | F01 | alta |
+| F21 | [Saneamento Técnico (one-shot)](../features/F21-saneamento-tecnico.md) | concluído | F01 | alta |
 
 > Após F21, manutenção contínua segue o processo recorrente em [manutencao-tecnica.md](manutencao-tecnica.md) (não vai ao backlog).
 

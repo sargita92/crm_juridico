@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -74,7 +75,7 @@ func newPageEnv(t *testing.T) *pageEnv {
 
 func (e *pageEnv) seed(t *testing.T, n *domain.Notification) {
 	t.Helper()
-	require.NoError(t, e.repo.Create(nil, n))
+	require.NoError(t, e.repo.Create(context.Background(), n))
 }
 
 func TestRenderBadge_NoUnread(t *testing.T) {

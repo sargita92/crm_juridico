@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -160,7 +161,7 @@ func TestOWASP_A01_TenantIsolation_ConversationNotVisible(t *testing.T) {
 
 	// Create conversation for tenant-a
 	conv, _ := domain.NewConversation(uuid.New().String(), "tenant-a", "contact-1")
-	_ = env.convRepo.Create(nil, conv)
+	_ = env.convRepo.Create(context.Background(), conv)
 
 	// Tenant-b tries to access it
 	tokenB := env.tenantToken(t, "tenant-b")
@@ -176,7 +177,7 @@ func TestOWASP_A01_TenantIsolation_SendMessageDenied(t *testing.T) {
 	env := setupOwaspEnv()
 
 	conv, _ := domain.NewConversation(uuid.New().String(), "tenant-a", "contact-1")
-	_ = env.convRepo.Create(nil, conv)
+	_ = env.convRepo.Create(context.Background(), conv)
 
 	tokenB := env.tenantToken(t, "tenant-b")
 	form := url.Values{"content": {"hack"}}
@@ -210,9 +211,9 @@ func TestOWASP_A03_SQLInjection_SendMessage(t *testing.T) {
 
 	// Create contact and conversation so the flow reaches message creation
 	contact, _ := domain.NewContact(uuid.New().String(), "tenant-1", "Test", "+55", "jid@wa")
-	_ = env.contactRepo.Create(nil, contact)
+	_ = env.contactRepo.Create(context.Background(), contact)
 	conv, _ := domain.NewConversation(uuid.New().String(), "tenant-1", contact.ID)
-	_ = env.convRepo.Create(nil, conv)
+	_ = env.convRepo.Create(context.Background(), conv)
 
 	form := url.Values{"content": {"'; DROP TABLE messages; --"}}
 	w := httptest.NewRecorder()
@@ -230,7 +231,7 @@ func TestOWASP_A03_XSS_MessageContent(t *testing.T) {
 	token := env.tenantToken(t, "tenant-1")
 
 	conv, _ := domain.NewConversation(uuid.New().String(), "tenant-1", "contact-1")
-	_ = env.convRepo.Create(nil, conv)
+	_ = env.convRepo.Create(context.Background(), conv)
 
 	form := url.Values{"content": {"<script>alert('xss')</script>"}}
 	w := httptest.NewRecorder()

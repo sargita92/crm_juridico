@@ -67,7 +67,7 @@ func (m *mockUserRepo) ExistsByEmail(_ context.Context, email string) (bool, err
 // --- Mock UserTenantRepository ---
 
 type mockUserTenantRepo struct {
-	associations map[string][]string          // userID -> []tenantID
+	associations map[string][]string           // userID -> []tenantID
 	userTenants  map[string]*domain.UserTenant // "userID:tenantID" -> UserTenant
 	owners       map[string]bool               // "userID:tenantID" -> isOwner
 	removed      map[string]bool               // "userID:tenantID" -> removed

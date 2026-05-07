@@ -422,8 +422,14 @@ func TestOWASP_A07_InvalidTokenString_Returns401(t *testing.T) {
 
 	// Token base valido
 	validToken := env.tenantToken(t, "tenant-a")
-	// Corrompe ultimo caractere (signature segment)
-	tampered := validToken[:len(validToken)-1] + "X"
+	// Corrompe ultimo caractere (signature segment) com um valor garantido
+	// diferente do original (senao a tampering vira no-op em ~1.5% dos runs).
+	last := validToken[len(validToken)-1]
+	replacement := byte('X')
+	if last == replacement {
+		replacement = 'Y'
+	}
+	tampered := validToken[:len(validToken)-1] + string(replacement)
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/tenant/leads", nil)

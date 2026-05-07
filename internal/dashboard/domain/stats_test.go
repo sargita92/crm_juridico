@@ -11,7 +11,7 @@ import (
 func TestTenantStats_ZeroValue(t *testing.T) {
 	var s domain.TenantStats
 	assert.Equal(t, float64(0), s.Bloco1_Funil.ConversionPct)
-	assert.Nil(t, s.Bloco3_Responsaveis)
+	assert.Nil(t, s.Bloco3_Responsive)
 }
 
 func TestAdminStats_ZeroValue(t *testing.T) {

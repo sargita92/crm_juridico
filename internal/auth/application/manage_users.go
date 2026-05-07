@@ -34,7 +34,7 @@ type AdminUserOutput struct {
 	Status domain.UserStatus
 }
 
-// CreateAdminUserInput agrupa os parametros do CreateAdminUser UC.
+// CreateAdminUserInput agrupa os parameters do CreateAdminUser UC.
 //
 // PasswordHash deve ser pre-computado pelo handler (mesmo padrao do
 // invite_user). UC nao tem responsabilidade sobre hashing — mantem foco
@@ -255,7 +255,7 @@ func (uc *ManageUsersUseCase) UnblockAdminUser(ctx context.Context, userID, moti
 }
 
 // changeAdminStatus e o helper compartilhado por Deactivate/Block/Unblock.
-// Persiste a mudanca de status e publica a action correspondente quando
+// Persiste a mudanca de status e publica a action correspondence quando
 // o alvo e admin. Para alvo nao-admin, persiste sem publicar.
 func (uc *ManageUsersUseCase) changeAdminStatus(
 	ctx context.Context,

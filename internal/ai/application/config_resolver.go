@@ -29,11 +29,11 @@ func (r *EnvConfigResolver) Resolve(ctx context.Context, specialistID string) *d
 	}
 
 	return &domain.AIConfig{
-		SpecialistID: specialistID,
-		Provider:     r.envCfg.DefaultProvider,
-		Model:        r.envCfg.DefaultModel,
-		Temperature:  r.envCfg.DefaultTemperature,
-		MaxTokens:    r.envCfg.DefaultMaxTokens,
+		SpecialistID:    specialistID,
+		Provider:        r.envCfg.DefaultProvider,
+		Model:           r.envCfg.DefaultModel,
+		Temperature:     r.envCfg.DefaultTemperature,
+		MaxTokens:       r.envCfg.DefaultMaxTokens,
 		DebounceSeconds: r.envCfg.DefaultDebounce,
 	}
 }

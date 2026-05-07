@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"context"
-	"errors"
 
 	"gorm.io/gorm"
 
@@ -83,11 +82,3 @@ func (r *GormNotificationRepository) MarkAllRead(ctx context.Context, tenantID, 
 
 // Ensure interface is satisfied at compile time.
 var _ domain.NotificationRepository = (*GormNotificationRepository)(nil)
-
-// gormNotFoundToNotFound converts gorm.ErrRecordNotFound to domain error.
-func gormNotFoundToNotFound(err error) error {
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return domain.ErrNotificationNotFound
-	}
-	return err
-}

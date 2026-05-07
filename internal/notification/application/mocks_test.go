@@ -135,7 +135,7 @@ func (m *mockPreferenceRepo) FindByUserAndChannel(_ context.Context, userID, ten
 // --- mockEventBus ---
 
 type mockEventBus struct {
-	mu       sync.Mutex
+	mu        sync.Mutex
 	published []events.Event
 }
 

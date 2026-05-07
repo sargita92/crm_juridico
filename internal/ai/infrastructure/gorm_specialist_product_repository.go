@@ -10,9 +10,9 @@ import (
 )
 
 type specialistProductModel struct {
-	ID           string    `gorm:"primaryKey;column:id;type:char(36)"`
-	SpecialistID string    `gorm:"column:specialist_id;type:char(36);not null;index"`
-	ProductID    string    `gorm:"column:product_id;type:char(36);not null;index"`
+	ID           string `gorm:"primaryKey;column:id;type:char(36)"`
+	SpecialistID string `gorm:"column:specialist_id;type:char(36);not null;index"`
+	ProductID    string `gorm:"column:product_id;type:char(36);not null;index"`
 	CreatedAt    time.Time
 }
 

@@ -248,7 +248,7 @@ func TestHealthBlock_Top10Active_IncludesBlockedTenants(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, got.Top10Active, 2)
 	// Blocked tenant deve aparecer em primeiro (5 leads > 2 leads), por design:
-	// "active" = volume de leads, não status operacional.
+	// "active" = volume de leads, não status operational.
 	assert.Equal(t, tBlocked, got.Top10Active[0].TenantID)
 	assert.Equal(t, int64(5), got.Top10Active[0].LeadCount)
 	assert.Equal(t, tActive, got.Top10Active[1].TenantID)
@@ -348,10 +348,10 @@ func TestFinanceiroBlock_AggregatesFromPaymentRepoAndPlanDistribution(t *testing
 	now := time.Date(2026, 4, 19, 12, 0, 0, 0, time.UTC)
 
 	// Tenants com diferentes planos:
-	// 2 mensal, 1 anual, 1 vitalicio, 0 externo
+	// 2 mensal, 1 annual, 1 vitalicio, 0 externo
 	t1 := seedTenantWithPlano(t, db, "Mensal-1", "mensal")
 	t2 := seedTenantWithPlano(t, db, "Mensal-2", "mensal")
-	seedTenantWithPlano(t, db, "Anual-1", "anual")
+	seedTenantWithPlano(t, db, "Annual-1", "annual")
 	seedTenantWithPlano(t, db, "Vital-1", "vitalicio")
 
 	// Pagamentos (alimentam GlobalSummary):
@@ -373,7 +373,7 @@ func TestFinanceiroBlock_AggregatesFromPaymentRepoAndPlanDistribution(t *testing
 
 	// Distribuição de planos (vinda da query direta em tenants.plano)
 	assert.Equal(t, int64(2), got.PlanDist.Mensal)
-	assert.Equal(t, int64(1), got.PlanDist.Anual)
+	assert.Equal(t, int64(1), got.PlanDist.Annual)
 	assert.Equal(t, int64(1), got.PlanDist.Vitalicio)
 	assert.Equal(t, int64(0), got.PlanDist.Externo)
 
