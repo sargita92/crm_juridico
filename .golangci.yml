@@ -1,0 +1,42 @@
+run:
+  timeout: 5m
+  tests: true
+  skip-dirs:
+    - tmp
+    - storage
+    - fixture
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosimple
+    - misspell
+    - goimports
+
+linters-settings:
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+  govet:
+    enable:
+      - shadow
+
+issues:
+  exclude-rules:
+    # Test helpers podem ignorar errcheck para reduzir ruido
+    - path: _test\.go
+      linters:
+        - errcheck
+    # Migrations geradas
+    - path: migrations/
+      linters:
+        - errcheck
+        - staticcheck
+        - unused
+  max-issues-per-linter: 0
+  max-same-issues: 0
