@@ -132,8 +132,8 @@ func TestOWASP_TenantUser_Get404Generic(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	body := strings.ToLower(w.Body.String())
-	assert.Contains(t, body, "pagina nao encontrada")
-	assert.NotContains(t, body, "logs admin", "nao deve revelar nome da pagina protegida")
+	assert.Contains(t, body, "página não encontrada")
+	assert.NotContains(t, body, "logs de auditoria", "nao deve revelar nome da pagina protegida")
 }
 
 // S5-C07: GET /admin/logs/:id com token de tenant -> 404 generico.

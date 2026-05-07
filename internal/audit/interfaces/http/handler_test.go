@@ -80,6 +80,7 @@ func auditTemplates(t *testing.T) *template.Template {
 	patterns := []string{
 		root + "/web/templates/admin/audit/*.html",
 		root + "/web/templates/partials/sidebar.html",
+		root + "/web/templates/partials/admin_topbar.html",
 	}
 	for _, p := range patterns {
 		tmpl = template.Must(tmpl.ParseGlob(p))
@@ -190,7 +191,7 @@ func TestListPage_FullPage_RendersTable(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
-	assert.Contains(t, body, "Logs admin", "deve renderizar layout completo")
+	assert.Contains(t, body, "Logs de auditoria", "deve renderizar layout completo")
 	assert.Contains(t, body, "Tenant bloqueado", "deve renderizar humanized da action")
 	assert.NotContains(t, body, "Excluir", "S4-C16: nao deve mostrar acoes destrutivas")
 }
@@ -216,7 +217,7 @@ func TestListPage_HxRequest_ReturnsFragment(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
-	assert.NotContains(t, body, "Logs admin", "fragment nao deve ter o header da pagina")
+	assert.NotContains(t, body, "Logs de auditoria", "fragment nao deve ter o header da pagina")
 	assert.Contains(t, body, "Login bem-sucedido")
 }
 
@@ -349,7 +350,7 @@ func TestDetailPage_NotFound_404Generic(t *testing.T) {
 
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	body := strings.ToLower(w.Body.String())
-	assert.Contains(t, body, "pagina nao encontrada")
+	assert.Contains(t, body, "página não encontrada")
 }
 
 // HX-Request no detalhe -> fragment em vez de full page (S4-C02).
