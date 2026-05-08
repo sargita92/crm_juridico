@@ -66,3 +66,13 @@ func (a *LeadUpdaterAdapter) SetOutcome(ctx context.Context, conversationID stri
 	}
 	return nil
 }
+
+// GetLeadIDByConversation resolves the lead.ID for a given conversation ID.
+// Required to pass the correct originLeadID to CrossSellExecutor.
+func (a *LeadUpdaterAdapter) GetLeadIDByConversation(ctx context.Context, conversationID string) (string, error) {
+	lead, err := a.leadRepo.FindByConversationID(ctx, conversationID)
+	if err != nil {
+		return "", fmt.Errorf("lead_updater_adapter: find lead for id lookup: %w", err)
+	}
+	return lead.ID, nil
+}

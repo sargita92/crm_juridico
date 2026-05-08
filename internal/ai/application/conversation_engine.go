@@ -36,6 +36,9 @@ type LeadUpdater interface {
 	UpdateLeadScore(ctx context.Context, conversationID string, score int) error
 	MoveLeadToColumn(ctx context.Context, conversationID, columnID string) error
 	SetOutcome(ctx context.Context, conversationID string, outcome string) error
+	// GetLeadIDByConversation resolves the lead ID for a given conversation ID.
+	// Used to pass the correct originLeadID to CrossSellExecutor instead of conversationID.
+	GetLeadIDByConversation(ctx context.Context, conversationID string) (string, error)
 }
 
 // ScoringConfigFinder loads the scoring configuration for a specialist. When
@@ -200,7 +203,11 @@ func (e *ConversationEngine) HandleMessages(
 					crossSellColID = sc.CrossSellColumnID
 				}
 			}
-			return e.crossSellExecutor.CompleteTransition(ctx, conversationID, tenantID, conversationID, crossSellColID, rule)
+			originLeadID, leadIDErr := e.leadUpdater.GetLeadIDByConversation(ctx, conversationID)
+			if leadIDErr != nil {
+				return fmt.Errorf("conversation_engine: resolve origin lead id: %w", leadIDErr)
+			}
+			return e.crossSellExecutor.CompleteTransition(ctx, conversationID, tenantID, originLeadID, crossSellColID, rule)
 		}
 		// Negative answer: clear pending, fall through to normal flow.
 		if clearErr := e.crossSellExecutor.ClearPending(ctx, conversationID); clearErr != nil {
@@ -229,7 +236,11 @@ func (e *ConversationEngine) HandleMessages(
 							crossSellColID = sc.CrossSellColumnID
 						}
 					}
-					return e.crossSellExecutor.Execute(ctx, conversationID, tenantID, conversationID, crossSellColID, specialist, match)
+					originLeadID, leadIDErr := e.leadUpdater.GetLeadIDByConversation(ctx, conversationID)
+					if leadIDErr != nil {
+						return fmt.Errorf("conversation_engine: resolve origin lead id: %w", leadIDErr)
+					}
+					return e.crossSellExecutor.Execute(ctx, conversationID, tenantID, originLeadID, crossSellColID, specialist, match)
 				}
 			}
 		}

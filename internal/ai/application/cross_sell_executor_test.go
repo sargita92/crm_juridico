@@ -83,6 +83,10 @@ func (f *fakeLeadUpdater) SetOutcome(_ context.Context, _ string, outcome string
 	return f.setOutcomeErr
 }
 
+func (f *fakeLeadUpdater) GetLeadIDByConversation(_ context.Context, conversationID string) (string, error) {
+	return "lead-for-" + conversationID, nil
+}
+
 type fakeMessageSender struct {
 	sentMessages []string
 	err          error
@@ -299,4 +303,33 @@ func TestCrossSell_CompleteTransition_DirectCall(t *testing.T) {
 	assert.Equal(t, string(specDomain.OutcomeCrossSell), updater.outcomeSet)
 	assert.Equal(t, "col-cs", updater.movedColumnID)
 	assert.Equal(t, "spec-new", mover.migratedSpecialistID)
+}
+
+// TestCrossSell_AnnounceMode_EmptyTemplate_UsesFallback verifies that when
+// CrossSellAnnouncementTemplate is empty, the executor sends the default fallback
+// message instead of an empty string (Bug 2 safety net).
+func TestCrossSell_AnnounceMode_EmptyTemplate_UsesFallback(t *testing.T) {
+	spec, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Você é advogada.")
+	// EnableCrossSell in announce mode requires a non-empty template via domain validation.
+	// Simulate a pre-F23 record where the field is empty by mutating directly after construction.
+	spec.CrossSellMode = specDomain.CrossSellModeAnnounce
+	spec.CrossSellAnnouncementTemplate = "" // empty — as if stored before F23
+	spec.CrossSellEnabled = true
+
+	rule := makeRule("prod-b")
+
+	resolver := &fakeProductSpecialistResolver{specialistID: "spec-new", funnelID: "f1", initialColumnID: "c1"}
+	factory := &fakeLeadFactory{returnedLeadID: "lead-new"}
+	mover := &fakeConversationMover{}
+	updater := &fakeLeadUpdater{}
+	sender := &fakeMessageSender{}
+	lookup := &fakeProductNameLookup{name: "Produto B"}
+
+	exec := newTestExecutor(resolver, factory, mover, updater, sender, lookup)
+	err := exec.Execute(context.Background(), "conv-7", "tenant-1", "lead-origin", "", spec, rule)
+	require.NoError(t, err)
+
+	require.Len(t, sender.sentMessages, 1, "fallback message must be sent")
+	assert.Contains(t, sender.sentMessages[0], "Produto B", "fallback message must mention product name")
+	assert.NotEmpty(t, sender.sentMessages[0], "sent message must not be empty")
 }

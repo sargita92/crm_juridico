@@ -95,6 +95,10 @@ func (x *CrossSellExecutor) Execute(
 
 	case specDomain.CrossSellModeAnnounce:
 		rendered := strings.ReplaceAll(fromSpecialist.CrossSellAnnouncementTemplate, "{{produto}}", productName)
+		if strings.TrimSpace(rendered) == "" {
+			// Safety fallback: template was empty (e.g. pre-F23 specialist record).
+			rendered = fmt.Sprintf("Vou te conectar com nosso especialista em %s.", productName)
+		}
 		if err := x.sender.SendAIResponse(ctx, tenantID, convID, rendered); err != nil {
 			return fmt.Errorf("cross_sell_executor: send announcement: %w", err)
 		}

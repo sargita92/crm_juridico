@@ -96,14 +96,15 @@ func NewLeadFactoryAdapter(leadRepo funnelDomain.LeadRepository) *LeadFactoryAda
 	return &LeadFactoryAdapter{leadRepo: leadRepo}
 }
 
-// CreateForCrossSell looks up the origin lead by conversationID (originLeadID is the conversationID
-// in this system), then creates a new lead in the target funnel/column with CrossSellOriginLeadID set.
+// CreateForCrossSell looks up the origin lead by its lead ID, then creates a new
+// lead in the target funnel/column with CrossSellOriginLeadID set to the origin lead's ID.
+// originLeadID must be the actual lead.ID (not a conversation ID).
 func (a *LeadFactoryAdapter) CreateForCrossSell(
 	ctx context.Context,
 	originLeadID, tenantID, funnelID, columnID, specialistID string,
 ) (newLeadID string, err error) {
-	// Resolve origin lead to get contactID (and reuse conversationID for the new lead).
-	originLead, err := a.leadRepo.FindByConversationID(ctx, originLeadID)
+	// Resolve origin lead by its primary key to get contactID and conversationID.
+	originLead, err := a.leadRepo.FindByID(ctx, originLeadID)
 	if err != nil {
 		return "", fmt.Errorf("lead_factory: find origin lead: %w", err)
 	}

@@ -103,6 +103,12 @@ func (m *mockLeadUpdater) SetOutcome(_ context.Context, conversationID, outcome 
 	return nil
 }
 
+func (m *mockLeadUpdater) GetLeadIDByConversation(_ context.Context, conversationID string) (string, error) {
+	// Return a deterministic lead ID derived from the conversation ID so tests
+	// can assert that originLeadID != conversationID.
+	return "lead-for-" + conversationID, nil
+}
+
 func (m *mockLeadUpdater) LastOutcomeFor(conversationID string) string {
 	return m.outcomes[conversationID]
 }
@@ -805,12 +811,14 @@ func (m *mockProductSpecialistResolver) FindSpecialistByProduct(_ context.Contex
 }
 
 type mockLeadFactory struct {
-	createdLeadID string
-	calls         int
+	createdLeadID        string
+	capturedOriginLeadID string
+	calls                int
 }
 
-func (m *mockLeadFactory) CreateForCrossSell(_ context.Context, _, _, _, _, _ string) (string, error) {
+func (m *mockLeadFactory) CreateForCrossSell(_ context.Context, originLeadID, _, _, _, _ string) (string, error) {
 	m.calls++
+	m.capturedOriginLeadID = originLeadID
 	if m.createdLeadID == "" {
 		m.createdLeadID = "new-lead-id"
 	}
@@ -971,6 +979,9 @@ func TestConversationEngine_KeywordRuleTriggersBeforeLLM(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, lf.calls, "LeadFactory should have been called once for the cross-sell transition")
 	assert.Equal(t, "spec-new", mover.migratedTo, "conversation must be migrated to the new specialist")
+	// Bug 1 regression: originLeadID must be the lead's ID, NOT the conversation ID.
+	assert.Equal(t, "lead-for-conv-1", lf.capturedOriginLeadID, "originLeadID must be lead.ID, not conversationID")
+	assert.NotEqual(t, "conv-1", lf.capturedOriginLeadID, "originLeadID must not equal conversationID")
 }
 
 // panicAIProvider panics if GenerateResponse is called — used to assert LLM is NOT invoked.
@@ -1030,4 +1041,7 @@ func TestConversationEngine_ConfirmMode_PositiveReply_CompletesTransition(t *tes
 	assert.Equal(t, 1, lf.calls, "new lead must be created for the cross-sell")
 	assert.True(t, mover.pendingCleared, "pending state must be cleared after positive reply")
 	assert.Equal(t, "spec-new", mover.migratedTo, "conversation must migrate to new specialist")
+	// Bug 1 regression: originLeadID must be the lead's ID, NOT the conversation ID.
+	assert.Equal(t, "lead-for-conv-1", lf.capturedOriginLeadID, "originLeadID must be lead.ID, not conversationID")
+	assert.NotEqual(t, "conv-1", lf.capturedOriginLeadID, "originLeadID must not equal conversationID")
 }
