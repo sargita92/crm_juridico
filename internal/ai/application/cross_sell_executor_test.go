@@ -41,12 +41,12 @@ func (f *fakeLeadFactory) CreateForCrossSell(_ context.Context, originLeadID, _,
 }
 
 type fakeConversationMover struct {
-	migratedSpecialistID  string
-	pendingRuleID         string
-	clearCalled           bool
-	migrateErr            error
-	setPendingErr         error
-	clearErr              error
+	migratedSpecialistID string
+	pendingRuleID        string
+	clearCalled          bool
+	migrateErr           error
+	setPendingErr        error
+	clearErr             error
 }
 
 func (f *fakeConversationMover) MigrateSpecialist(_ context.Context, _, newSpecialistID string) error {

@@ -21,7 +21,7 @@ import (
 //   - product/domain.FunnelProductRepository  (tenantID + productID → funnelID)
 //   - funnel/domain.ColumnRepository          (funnelID → entry column)
 type ProductSpecialistResolverAdapter struct {
-	spProductRepo   aiDomain.SpecialistProductRepository
+	spProductRepo       aiDomain.SpecialistProductRepository
 	funnelProductFinder funnelProductTopPriorityFinder
 	columnEntryFinder   funnelEntryColumnFinder
 }

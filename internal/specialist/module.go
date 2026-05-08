@@ -14,20 +14,20 @@ import (
 )
 
 type Module struct {
-	specialistRepo         domain.SpecialistRepository
-	stepRepo               domain.StepRepository
-	guardrailRepo          domain.GuardrailRepository
-	specialistTenantRepo   domain.SpecialistTenantRepository
-	specialistToolRepo     domain.SpecialistToolRepository
-	scoringConfigRepo      domain.ScoringConfigRepository
-	crossSellRuleRepo      domain.CrossSellRuleRepository
-	handler                *specialisthttp.Handler
-	guardrailHandler       *specialisthttp.GuardrailHandler
-	stepHandler            *specialisthttp.StepHandler
-	scoringHandler         *specialisthttp.ScoringHandler
-	toolHandler            *specialisthttp.ToolHandler
-	crossSellRuleHandler   *specialisthttp.CrossSellRuleHandler
-	htmxCrossSellHandler   *specialisthttp.HTMXCrossSellHandler
+	specialistRepo       domain.SpecialistRepository
+	stepRepo             domain.StepRepository
+	guardrailRepo        domain.GuardrailRepository
+	specialistTenantRepo domain.SpecialistTenantRepository
+	specialistToolRepo   domain.SpecialistToolRepository
+	scoringConfigRepo    domain.ScoringConfigRepository
+	crossSellRuleRepo    domain.CrossSellRuleRepository
+	handler              *specialisthttp.Handler
+	guardrailHandler     *specialisthttp.GuardrailHandler
+	stepHandler          *specialisthttp.StepHandler
+	scoringHandler       *specialisthttp.ScoringHandler
+	toolHandler          *specialisthttp.ToolHandler
+	crossSellRuleHandler *specialisthttp.CrossSellRuleHandler
+	htmxCrossSellHandler *specialisthttp.HTMXCrossSellHandler
 }
 
 func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegistry *aiapp.ToolRegistry) *Module {
@@ -127,8 +127,8 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 		stepHandler:          stepHandler,
 		scoringHandler:       scoringHandler,
 		toolHandler:          toolHandler,
-		crossSellRuleHandler:   crossSellRuleHandler,
-		htmxCrossSellHandler:   htmxCrossSellHandler,
+		crossSellRuleHandler: crossSellRuleHandler,
+		htmxCrossSellHandler: htmxCrossSellHandler,
 	}
 }
 

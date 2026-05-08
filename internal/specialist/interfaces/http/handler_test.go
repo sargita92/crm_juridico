@@ -1034,12 +1034,12 @@ func TestScoring_UpdateWithHumanoMinAndColumns(t *testing.T) {
 	// Update with threshold=80, threshold_humano_min=50, human_column_id, cross_sell_column_id
 	w2 := httptest.NewRecorder()
 	req2 := putForm("/admin/specialists/"+spec.ID+"/scoring", url.Values{
-		"threshold":           {"80"},
-		"threshold_humano_min": {"50"},
-		"qualified_column_id":  {"col-approved"},
-		"human_column_id":      {"col-human"},
+		"threshold":              {"80"},
+		"threshold_humano_min":   {"50"},
+		"qualified_column_id":    {"col-approved"},
+		"human_column_id":        {"col-human"},
 		"disqualified_column_id": {"col-rejected"},
-		"cross_sell_column_id": {"col-cross"},
+		"cross_sell_column_id":   {"col-cross"},
 	}, tokenCookie(token))
 	env.router.ServeHTTP(w2, req2)
 	assert.Equal(t, http.StatusOK, w2.Code)
@@ -1075,7 +1075,7 @@ func TestScoring_UpdateHumanoMinAboveThreshold_Returns400(t *testing.T) {
 	// threshold=60, threshold_humano_min=70 -> humano_min > threshold -> 400
 	w2 := httptest.NewRecorder()
 	req2 := putForm("/admin/specialists/"+spec.ID+"/scoring", url.Values{
-		"threshold":           {"60"},
+		"threshold":            {"60"},
 		"threshold_humano_min": {"70"},
 	}, tokenCookie(token))
 	env.router.ServeHTTP(w2, req2)

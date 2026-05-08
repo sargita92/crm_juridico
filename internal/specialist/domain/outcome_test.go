@@ -3,8 +3,8 @@ package domain_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/sasrgita/crm-juridico/internal/specialist/domain"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCalculateOutcome_BinaryWhenHumanoMinZero(t *testing.T) {

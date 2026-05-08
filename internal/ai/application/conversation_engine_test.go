@@ -751,9 +751,9 @@ func TestConversationEngine_PersistsOutcomeInLead(t *testing.T) {
 // ─── cross-sell mocks ────────────────────────────────────────────────────────
 
 type mockCrossSellRuleRepo struct {
-	rules  []*specDomain.CrossSellRule
-	byID   map[string]*specDomain.CrossSellRule
-	saved  []*specDomain.CrossSellRule
+	rules   []*specDomain.CrossSellRule
+	byID    map[string]*specDomain.CrossSellRule
+	saved   []*specDomain.CrossSellRule
 	deleted []string
 }
 
@@ -818,8 +818,8 @@ func (m *mockLeadFactory) CreateForCrossSell(_ context.Context, _, _, _, _, _ st
 }
 
 type mockConversationMover struct {
-	migratedTo    string
-	pendingSet    string
+	migratedTo     string
+	pendingSet     string
 	pendingCleared bool
 }
 

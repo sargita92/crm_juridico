@@ -8,7 +8,6 @@ import (
 	funnelDomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
 
-
 // LeadUpdaterAdapter satisfies application.LeadUpdater.
 type LeadUpdaterAdapter struct {
 	leadRepo   funnelDomain.LeadRepository

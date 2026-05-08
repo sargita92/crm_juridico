@@ -62,27 +62,27 @@ var (
 	ErrCrossSellTemplateRequired = errors.New("specialist: cross-sell announce mode requires a template")
 
 	// CrossSellRule errors
-	ErrCrossSellRuleNotFound              = errors.New("cross-sell rule not found")
-	ErrCrossSellRuleNotOwnedBySpecialist  = errors.New("cross-sell rule does not belong to the given specialist")
-	ErrTargetProductRequired              = errors.New("cross-sell rule: target product ID is required")
-	ErrKeywordTriggerEmpty        = errors.New("cross-sell rule: keyword trigger must have at least one non-blank term")
-	ErrStepAnswerTriggerInvalid   = errors.New("cross-sell rule: step_answer trigger requires a non-empty step ID")
-	ErrInvalidRegex               = errors.New("cross-sell rule: trigger regex is invalid")
-	ErrUnsupportedTrigger         = errors.New("cross-sell rule: unsupported trigger type")
+	ErrCrossSellRuleNotFound             = errors.New("cross-sell rule not found")
+	ErrCrossSellRuleNotOwnedBySpecialist = errors.New("cross-sell rule does not belong to the given specialist")
+	ErrTargetProductRequired             = errors.New("cross-sell rule: target product ID is required")
+	ErrKeywordTriggerEmpty               = errors.New("cross-sell rule: keyword trigger must have at least one non-blank term")
+	ErrStepAnswerTriggerInvalid          = errors.New("cross-sell rule: step_answer trigger requires a non-empty step ID")
+	ErrInvalidRegex                      = errors.New("cross-sell rule: trigger regex is invalid")
+	ErrUnsupportedTrigger                = errors.New("cross-sell rule: unsupported trigger type")
 )
 
 type Specialist struct {
-	ID                          string
-	Name                        string
-	Description                 string
-	Prompt                      string
-	Status                      SpecialistStatus
-	CreatedAt                   time.Time
-	UpdatedAt                   time.Time
-	CrossSellEnabled            bool
-	CrossSellMode               CrossSellMode
+	ID                            string
+	Name                          string
+	Description                   string
+	Prompt                        string
+	Status                        SpecialistStatus
+	CreatedAt                     time.Time
+	UpdatedAt                     time.Time
+	CrossSellEnabled              bool
+	CrossSellMode                 CrossSellMode
 	CrossSellAnnouncementTemplate string
-	AllowAICrossSellSuggestion  bool
+	AllowAICrossSellSuggestion    bool
 }
 
 func NewSpecialist(id, name, description, prompt string) (*Specialist, error) {
@@ -101,14 +101,14 @@ func NewSpecialist(id, name, description, prompt string) (*Specialist, error) {
 
 	now := time.Now()
 	return &Specialist{
-		ID:              id,
-		Name:            name,
-		Description:     description,
-		Prompt:          prompt,
-		Status:          SpecialistStatusActive,
-		CreatedAt:       now,
-		UpdatedAt:       now,
-		CrossSellMode:   CrossSellModeAnnounce,
+		ID:               id,
+		Name:             name,
+		Description:      description,
+		Prompt:           prompt,
+		Status:           SpecialistStatusActive,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+		CrossSellMode:    CrossSellModeAnnounce,
 		CrossSellEnabled: false,
 	}, nil
 }
