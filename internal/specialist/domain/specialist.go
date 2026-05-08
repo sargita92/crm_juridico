@@ -46,6 +46,8 @@ var (
 	ErrScoringConfigNotFound        = errors.New("scoring config not found")
 	ErrScoringThresholdInvalid      = errors.New("scoring threshold must be greater than zero")
 	ErrScoringThresholdExceedsTotal = errors.New("scoring threshold exceeds total possible score")
+	ErrHumanoMinNegative            = errors.New("scoring: threshold humano min cannot be negative")
+	ErrHumanoMinAboveAprovado       = errors.New("scoring: threshold humano min cannot exceed threshold aprovado")
 )
 
 type Specialist struct {

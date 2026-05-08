@@ -6,8 +6,11 @@ type ScoringConfig struct {
 	ID                   string
 	SpecialistID         string
 	Threshold            int
+	ThresholdHumanoMin   int
 	QualifiedColumnID    string
 	DisqualifiedColumnID string
+	HumanColumnID        string
+	CrossSellColumnID    string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -35,6 +38,21 @@ func (sc *ScoringConfig) UpdateThreshold(threshold, totalPossible int) error {
 		return ErrScoringThresholdExceedsTotal
 	}
 	sc.Threshold = threshold
+	sc.UpdatedAt = time.Now()
+	return nil
+}
+
+func (sc *ScoringConfig) UpdateThresholdHumanoMin(value, totalPossible int) error {
+	if value < 0 {
+		return ErrHumanoMinNegative
+	}
+	if value > sc.Threshold {
+		return ErrHumanoMinAboveAprovado
+	}
+	if value > totalPossible {
+		return ErrScoringThresholdExceedsTotal
+	}
+	sc.ThresholdHumanoMin = value
 	sc.UpdatedAt = time.Now()
 	return nil
 }
