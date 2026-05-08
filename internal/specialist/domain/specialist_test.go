@@ -186,3 +186,48 @@ func TestSpecialist_Activate_AlreadyActive_ReturnsError(t *testing.T) {
 
 	assert.ErrorIs(t, err, ErrSpecialistAlreadyActive)
 }
+
+func TestSpecialist_CrossSellDefaultsDisabled(t *testing.T) {
+	s, _ := NewSpecialist("uuid-1", "Assistente Juridico", "Atende leads", "Voce e um assistente...")
+
+	assert.False(t, s.CrossSellEnabled)
+	assert.Equal(t, CrossSellModeAnnounce, s.CrossSellMode)
+}
+
+func TestSpecialist_EnableCrossSell_RequiresTemplateInAnnounceMode(t *testing.T) {
+	s, _ := NewSpecialist("uuid-1", "Assistente Juridico", "Atende leads", "Voce e um assistente...")
+
+	err := s.EnableCrossSell(CrossSellModeAnnounce, "")
+
+	require.ErrorIs(t, err, ErrCrossSellTemplateRequired)
+}
+
+func TestSpecialist_EnableCrossSell_SilentDoesNotRequireTemplate(t *testing.T) {
+	s, _ := NewSpecialist("uuid-1", "Assistente Juridico", "Atende leads", "Voce e um assistente...")
+
+	err := s.EnableCrossSell(CrossSellModeSilent, "")
+
+	require.NoError(t, err)
+	assert.True(t, s.CrossSellEnabled)
+	assert.Equal(t, CrossSellModeSilent, s.CrossSellMode)
+}
+
+func TestSpecialist_EnableCrossSell_AnnounceWithTemplate_Success(t *testing.T) {
+	s, _ := NewSpecialist("uuid-1", "Assistente Juridico", "Atende leads", "Voce e um assistente...")
+
+	err := s.EnableCrossSell(CrossSellModeAnnounce, "Conheça nossos outros serviços")
+
+	require.NoError(t, err)
+	assert.True(t, s.CrossSellEnabled)
+	assert.Equal(t, CrossSellModeAnnounce, s.CrossSellMode)
+	assert.Equal(t, "Conheça nossos outros serviços", s.CrossSellAnnouncementTemplate)
+}
+
+func TestSpecialist_DisableCrossSell_Success(t *testing.T) {
+	s, _ := NewSpecialist("uuid-1", "Assistente Juridico", "Atende leads", "Voce e um assistente...")
+	_ = s.EnableCrossSell(CrossSellModeAnnounce, "Template")
+
+	s.DisableCrossSell()
+
+	assert.False(t, s.CrossSellEnabled)
+}
