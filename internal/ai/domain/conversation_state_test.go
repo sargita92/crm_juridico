@@ -111,6 +111,37 @@ func TestConversationState_IsAfterResume_BeforeResumedAt_ReturnsFalse(t *testing
 	assert.False(t, result)
 }
 
+func TestNewConversationState_PendingCrossSellRuleID_DefaultNil(t *testing.T) {
+	state, err := NewConversationState("id-1", "conv-1", "spec-1")
+
+	require.NoError(t, err)
+	assert.Nil(t, state.PendingCrossSellRuleID)
+}
+
+func TestConversationState_SetPendingCrossSellRuleID_StoresID(t *testing.T) {
+	state, _ := NewConversationState("id-1", "conv-1", "spec-1")
+	before := state.UpdatedAt
+	time.Sleep(time.Millisecond)
+
+	state.SetPendingCrossSellRuleID("rule-uuid-1")
+
+	require.NotNil(t, state.PendingCrossSellRuleID)
+	assert.Equal(t, "rule-uuid-1", *state.PendingCrossSellRuleID)
+	assert.True(t, state.UpdatedAt.After(before))
+}
+
+func TestConversationState_ClearPendingCrossSellRuleID_SetsNil(t *testing.T) {
+	state, _ := NewConversationState("id-1", "conv-1", "spec-1")
+	state.SetPendingCrossSellRuleID("rule-uuid-1")
+	before := state.UpdatedAt
+	time.Sleep(time.Millisecond)
+
+	state.ClearPendingCrossSellRuleID()
+
+	assert.Nil(t, state.PendingCrossSellRuleID)
+	assert.True(t, state.UpdatedAt.After(before))
+}
+
 func TestConversationState_Reset(t *testing.T) {
 	s, err := NewConversationState("id-1", "conv-1", "spec-1")
 	require.NoError(t, err)
