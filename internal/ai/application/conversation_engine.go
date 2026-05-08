@@ -349,6 +349,7 @@ func (e *ConversationEngine) HandleMessages(
 					effectiveTarget = targetColumnID
 				case sc != nil:
 					outcome := specDomain.CalculateOutcome(sc, state.AccumulatedScore)
+					QualificationOutcomeTotal.WithLabelValues(tenantID, specialistID, string(outcome)).Inc()
 					if setErr := e.leadUpdater.SetOutcome(ctx, conversationID, string(outcome)); setErr != nil {
 						e.log.Warn("conversation_engine: set outcome failed",
 							zap.String("conversation_id", conversationID),

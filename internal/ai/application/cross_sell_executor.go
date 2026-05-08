@@ -74,6 +74,9 @@ func (x *CrossSellExecutor) Execute(
 	fromSpecialist *specDomain.Specialist,
 	rule *specDomain.CrossSellRule,
 ) error {
+	triggerType := "rule_" + string(rule.TriggerType)
+	CrossSellTriggeredTotal.WithLabelValues(tenantID, fromSpecialist.ID, triggerType).Inc()
+
 	productName, err := x.productNameLookup.Name(ctx, rule.TargetProductID)
 	if err != nil {
 		return fmt.Errorf("cross_sell_executor: lookup product name: %w", err)

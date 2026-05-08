@@ -155,6 +155,26 @@ var (
 		},
 		[]string{"tenant_id", "tool_name"},
 	)
+
+	QualificationOutcomeTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "qualification_outcome_total",
+			Help:      "Lead qualification outcomes",
+		},
+		[]string{"tenant_id", "specialist_id", "outcome"},
+	)
+
+	CrossSellTriggeredTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "crm",
+			Subsystem: "ai",
+			Name:      "cross_sell_triggered_total",
+			Help:      "Cross-sell rule triggers by type",
+		},
+		[]string{"tenant_id", "specialist_id", "trigger_type"},
+	)
 )
 
 func init() {
@@ -174,5 +194,7 @@ func init() {
 		aiToolCallDurationSeconds,
 		aiToolLoopIterations,
 		aiToolResultTruncatedTotal,
+		QualificationOutcomeTotal,
+		CrossSellTriggeredTotal,
 	)
 }
