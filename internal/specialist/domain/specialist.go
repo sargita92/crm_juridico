@@ -60,6 +60,13 @@ var (
 
 	// Cross-sell errors
 	ErrCrossSellTemplateRequired = errors.New("specialist: cross-sell announce mode requires a template")
+
+	// CrossSellRule errors
+	ErrTargetProductRequired      = errors.New("cross-sell rule: target product ID is required")
+	ErrKeywordTriggerEmpty        = errors.New("cross-sell rule: keyword trigger must have at least one non-blank term")
+	ErrStepAnswerTriggerInvalid   = errors.New("cross-sell rule: step_answer trigger requires a non-empty step ID")
+	ErrInvalidRegex               = errors.New("cross-sell rule: trigger regex is invalid")
+	ErrUnsupportedTrigger         = errors.New("cross-sell rule: unsupported trigger type")
 )
 
 type Specialist struct {
