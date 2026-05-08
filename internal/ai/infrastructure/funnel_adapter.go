@@ -53,3 +53,26 @@ func (a *LeadUpdaterAdapter) MoveLeadToColumn(ctx context.Context, conversationI
 	}
 	return nil
 }
+
+// SetOutcome looks up the lead by conversation ID and persists the qualification outcome.
+func (a *LeadUpdaterAdapter) SetOutcome(ctx context.Context, conversationID string, outcome string) error {
+	lead, err := a.leadRepo.FindByConversationID(ctx, conversationID)
+	if err != nil {
+		return fmt.Errorf("lead_updater_adapter: find lead: %w", err)
+	}
+	lead.SetQualificationOutcome(funnelDomain.QualificationOutcome(outcome))
+	if err := a.leadRepo.Update(ctx, lead); err != nil {
+		return fmt.Errorf("lead_updater_adapter: set outcome: %w", err)
+	}
+	return nil
+}
+
+// GetLeadIDByConversation resolves the lead.ID for a given conversation ID.
+// Required to pass the correct originLeadID to CrossSellExecutor.
+func (a *LeadUpdaterAdapter) GetLeadIDByConversation(ctx context.Context, conversationID string) (string, error) {
+	lead, err := a.leadRepo.FindByConversationID(ctx, conversationID)
+	if err != nil {
+		return "", fmt.Errorf("lead_updater_adapter: find lead for id lookup: %w", err)
+	}
+	return lead.ID, nil
+}

@@ -57,3 +57,28 @@ func TestScoringConfig_UpdateThreshold_Zero_ReturnsError(t *testing.T) {
 
 	assert.ErrorIs(t, err, ErrScoringThresholdInvalid)
 }
+
+func TestScoringConfig_HumanoMinDefaultsToZero(t *testing.T) {
+	sc, err := NewScoringConfig("id", "spec-1", 80)
+	require.NoError(t, err)
+	assert.Equal(t, 0, sc.ThresholdHumanoMin)
+}
+
+func TestScoringConfig_UpdateThresholdHumanoMin_ValidRange(t *testing.T) {
+	sc, _ := NewScoringConfig("id", "spec-1", 80)
+	err := sc.UpdateThresholdHumanoMin(50, 100)
+	require.NoError(t, err)
+	assert.Equal(t, 50, sc.ThresholdHumanoMin)
+}
+
+func TestScoringConfig_UpdateThresholdHumanoMin_RejectsAboveAprovado(t *testing.T) {
+	sc, _ := NewScoringConfig("id", "spec-1", 80)
+	err := sc.UpdateThresholdHumanoMin(90, 100)
+	require.ErrorIs(t, err, ErrHumanoMinAboveAprovado)
+}
+
+func TestScoringConfig_UpdateThresholdHumanoMin_RejectsNegative(t *testing.T) {
+	sc, _ := NewScoringConfig("id", "spec-1", 80)
+	err := sc.UpdateThresholdHumanoMin(-1, 100)
+	require.ErrorIs(t, err, ErrHumanoMinNegative)
+}

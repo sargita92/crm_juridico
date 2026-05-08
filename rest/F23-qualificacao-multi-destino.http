@@ -1,0 +1,139 @@
+### --- Variaveis ---
+### Assumir que voce tem um token admin valido
+### e pelo menos um especialista criado
+
+@base_url = http://localhost:8080
+@token = SEU_TOKEN_ADMIN_AQUI
+@specialist_id = SEU_SPECIALIST_ID_AQUI
+@rule_id = SEU_RULE_ID_AQUI
+
+### =============================================
+### JSON API — Regras de Cross-Sell (Admin)
+### =============================================
+
+### Listar regras de cross-sell do especialista
+GET {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules
+Cookie: token={{token}}
+
+### Criar regra — trigger por keyword
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules
+Cookie: token={{token}}
+Content-Type: application/json
+
+{
+  "trigger": {
+    "type": "keyword",
+    "value": "inventario"
+  },
+  "target_product_id": "SEU_PRODUCT_ID_AQUI",
+  "priority": 1
+}
+
+### Criar regra — trigger por step_answer
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules
+Cookie: token={{token}}
+Content-Type: application/json
+
+{
+  "trigger": {
+    "type": "step_answer",
+    "step_id": "SEU_STEP_ID_AQUI",
+    "value": "sim"
+  },
+  "target_product_id": "SEU_PRODUCT_ID_AQUI",
+  "priority": 2
+}
+
+### Atualizar regra
+PUT {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/{{rule_id}}
+Cookie: token={{token}}
+Content-Type: application/json
+
+{
+  "trigger": {
+    "type": "keyword",
+    "value": "heranca"
+  },
+  "target_product_id": "SEU_PRODUCT_ID_AQUI",
+  "priority": 1
+}
+
+### Remover regra
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/{{rule_id}}
+Cookie: token={{token}}
+
+### Reordenar — mover regra para cima
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/{{rule_id}}/move-up
+Cookie: token={{token}}
+
+### Reordenar — mover regra para baixo
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/{{rule_id}}/move-down
+Cookie: token={{token}}
+
+### =============================================
+### HTMX — Configuracao de Cross-Sell (fragmentos)
+### =============================================
+
+### Renderizar secao cross-sell do especialista (fragmento)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell
+Cookie: token={{token}}
+HX-Request: true
+
+### Atualizar config de cross-sell (form POST)
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell/config
+Cookie: token={{token}}
+HX-Request: true
+Content-Type: application/x-www-form-urlencoded
+
+cross_sell_enabled=true&cross_sell_mode=announce&cross_sell_announcement_template=Vou transferi-lo para o especialista mais indicado.&allow_ai_cross_sell_suggestion=false
+
+### Criar regra via form HTMX
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/htmx
+Cookie: token={{token}}
+HX-Request: true
+Content-Type: application/x-www-form-urlencoded
+
+trigger_type=keyword&trigger_value=inventario&target_product_id=SEU_PRODUCT_ID_AQUI
+
+### Remover regra via HTMX
+DELETE {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/htmx/{{rule_id}}
+Cookie: token={{token}}
+HX-Request: true
+
+### Mover regra para cima via HTMX
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/htmx/{{rule_id}}/move-up
+Cookie: token={{token}}
+HX-Request: true
+
+### Mover regra para baixo via HTMX
+POST {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules/htmx/{{rule_id}}/move-down
+Cookie: token={{token}}
+HX-Request: true
+
+### =============================================
+### Testes OWASP
+### =============================================
+
+### A01 — Sem token (deve retornar 401)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules
+
+### A01 — Token de usuario comum (deve retornar 403)
+### Substituir pelo token de um usuario com role "user"
+GET {{base_url}}/admin/specialists/{{specialist_id}}/cross-sell-rules
+Cookie: token=TOKEN_USUARIO_COMUM
+
+### A04/A05 — Acessar regras de outro tenant (deve retornar 403 ou 404)
+### Substituir specialist_id por ID de especialista de outro tenant
+GET {{base_url}}/admin/specialists/SPECIALIST_DE_OUTRO_TENANT/cross-sell-rules
+Cookie: token={{token}}
+
+### A04/A05 — Criar regra para especialista de outro tenant (deve retornar 403 ou 404)
+POST {{base_url}}/admin/specialists/SPECIALIST_DE_OUTRO_TENANT/cross-sell-rules
+Cookie: token={{token}}
+Content-Type: application/json
+
+{
+  "trigger": { "type": "keyword", "value": "teste" },
+  "target_product_id": "qualquer-id",
+  "priority": 1
+}

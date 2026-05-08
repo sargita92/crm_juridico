@@ -1,0 +1,44 @@
+{{define "specialist/cross_sell_rule_row.html"}}
+{{/* Linha de uma regra de cross-sell.
+     Contexto: CrossSellRuleView { ID, SpecialistID, Ordem, TriggerType, TriggerDisplay, TargetProductID, Ativo }
+               + RuleCount int */}}
+<div class="association-item" style="flex-wrap:wrap">
+    <div class="association-info" style="flex:1">
+        <span class="badge {{if eq .TriggerType "keyword"}}badge-info{{else}}badge-warning{{end}}">
+            {{if eq .TriggerType "keyword"}}Palavra-chave{{else}}Resposta de step{{end}}
+        </span>
+        <span style="margin-left:0.5rem;font-size:0.9rem">
+            {{if eq .TriggerType "keyword"}}
+                termos: <em>{{.TriggerDisplay}}</em>
+            {{else}}
+                step + regex: <em>{{.TriggerDisplay}}</em>
+            {{end}}
+        </span>
+        <span style="margin-left:0.5rem;color:#718096">→ produto: <strong>{{.TargetProductID}}</strong></span>
+        {{if not .Ativo}}<span class="badge badge-outline" style="margin-left:0.5rem">Inativo</span>{{end}}
+    </div>
+    <div style="display:flex;gap:0.25rem;align-items:center">
+        {{if gt .Ordem 1}}
+        <button class="btn btn-sm btn-outline"
+                hx-post="/admin/specialists/{{.SpecialistID}}/cross-sell-rules/htmx/{{.ID}}/move-up"
+                hx-target="#cross-sell-section"
+                hx-swap="outerHTML"
+                title="Mover para cima">&#9650;</button>
+        {{end}}
+        {{if lt .Ordem .RuleCount}}
+        <button class="btn btn-sm btn-outline"
+                hx-post="/admin/specialists/{{.SpecialistID}}/cross-sell-rules/htmx/{{.ID}}/move-down"
+                hx-target="#cross-sell-section"
+                hx-swap="outerHTML"
+                title="Mover para baixo">&#9660;</button>
+        {{end}}
+        <button class="btn btn-sm btn-danger"
+                hx-delete="/admin/specialists/{{.SpecialistID}}/cross-sell-rules/htmx/{{.ID}}"
+                hx-target="#cross-sell-section"
+                hx-swap="outerHTML"
+                hx-confirm="Excluir esta regra de cross-sell?">
+            &times;
+        </button>
+    </div>
+</div>
+{{end}}

@@ -76,6 +76,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	db.Exec("DELETE FROM scoring_configs")
 	db.Exec("DELETE FROM steps")
 	db.Exec("DELETE FROM guardrails")
+	db.Exec("DELETE FROM cross_sell_rules")
 	db.Exec("DELETE FROM specialist_mcps")
 	db.Exec("DELETE FROM mcp_servers")
 	db.Exec("DELETE FROM specialist_documents")
@@ -135,6 +136,18 @@ func setupTestEnv(t *testing.T) *testEnv {
 	updateScoringUC := application.NewUpdateScoringUseCase(stepRepo, scoringRepo)
 	scoringHandler := NewScoringHandler(getScoringUC, updateScoringUC)
 
+	// Cross-sell rule use cases
+	crossSellRuleRepo := specialistinfra.NewGormCrossSellRuleRepository(db)
+	listCrossSellRulesUC := application.NewListCrossSellRulesUseCase(crossSellRuleRepo)
+	createCrossSellRuleUC := application.NewCreateCrossSellRuleUseCase(specialistRepo, crossSellRuleRepo)
+	updateCrossSellRuleUC := application.NewUpdateCrossSellRuleUseCase(crossSellRuleRepo)
+	deleteCrossSellRuleUC := application.NewDeleteCrossSellRuleUseCase(crossSellRuleRepo)
+	reorderCrossSellRuleUC := application.NewReorderCrossSellRuleUseCase(crossSellRuleRepo)
+	crossSellRuleHandler := NewCrossSellRuleHandler(
+		listCrossSellRulesUC, createCrossSellRuleUC, updateCrossSellRuleUC,
+		deleteCrossSellRuleUC, reorderCrossSellRuleUC,
+	)
+
 	router := gin.New()
 	tmpl := testhelper.ParseTemplates()
 	router.SetHTMLTemplate(tmpl)
@@ -145,6 +158,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	guardrailHandler.RegisterRoutes(router, authMw, adminMw)
 	stepHandler.RegisterRoutes(router, authMw, adminMw)
 	scoringHandler.RegisterRoutes(router, authMw, adminMw)
+	crossSellRuleHandler.RegisterRoutes(router, authMw, adminMw)
 
 	return &testEnv{
 		router:         router,
@@ -707,6 +721,13 @@ func TestAdminRoutes_NoToken_Returns401(t *testing.T) {
 		// Scoring routes
 		{http.MethodGet, "/admin/specialists/some-id/scoring"},
 		{http.MethodPut, "/admin/specialists/some-id/scoring"},
+		// Cross-sell rule routes
+		{http.MethodGet, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPut, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodDelete, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-up"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-down"},
 	}
 
 	for _, route := range routes {
@@ -755,6 +776,13 @@ func TestAdminRoutes_UserRole_Returns403(t *testing.T) {
 		// Scoring routes
 		{http.MethodGet, "/admin/specialists/some-id/scoring"},
 		{http.MethodPut, "/admin/specialists/some-id/scoring"},
+		// Cross-sell rule routes
+		{http.MethodGet, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPut, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodDelete, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-up"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-down"},
 	}
 
 	for _, route := range routes {
@@ -985,4 +1013,71 @@ func TestScoring_GetAndUpdate(t *testing.T) {
 	}, tokenCookie(token))
 	env.router.ServeHTTP(w3, req3)
 	assert.Equal(t, http.StatusOK, w3.Code)
+}
+
+func TestScoring_UpdateWithHumanoMinAndColumns(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista SCH", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create step with score so total=100
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Pergunta"}, "data_type": {"free_text"}, "required": {"on"}, "score": {"100"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Update with threshold=80, threshold_humano_min=50, human_column_id, cross_sell_column_id
+	w2 := httptest.NewRecorder()
+	req2 := putForm("/admin/specialists/"+spec.ID+"/scoring", url.Values{
+		"threshold":              {"80"},
+		"threshold_humano_min":   {"50"},
+		"qualified_column_id":    {"col-approved"},
+		"human_column_id":        {"col-human"},
+		"disqualified_column_id": {"col-rejected"},
+		"cross_sell_column_id":   {"col-cross"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	// Verify persisted via repo
+	scoringRepo := specialistinfra.NewGormScoringConfigRepository(env.db)
+	saved, err := scoringRepo.FindBySpecialistID(ctx, spec.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 80, saved.Threshold)
+	assert.Equal(t, 50, saved.ThresholdHumanoMin)
+	assert.Equal(t, "col-approved", saved.QualifiedColumnID)
+	assert.Equal(t, "col-human", saved.HumanColumnID)
+	assert.Equal(t, "col-rejected", saved.DisqualifiedColumnID)
+	assert.Equal(t, "col-cross", saved.CrossSellColumnID)
+}
+
+func TestScoring_UpdateHumanoMinAboveThreshold_Returns400(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista SCHV", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create step with score so total=100
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Pergunta"}, "data_type": {"free_text"}, "required": {"on"}, "score": {"100"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// threshold=60, threshold_humano_min=70 -> humano_min > threshold -> 400
+	w2 := httptest.NewRecorder()
+	req2 := putForm("/admin/specialists/"+spec.ID+"/scoring", url.Values{
+		"threshold":            {"60"},
+		"threshold_humano_min": {"70"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusBadRequest, w2.Code)
 }

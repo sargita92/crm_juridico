@@ -84,3 +84,15 @@ func TestLead_MoveTo_RefreshesColumnEnteredAt(t *testing.T) {
 	assert.True(t, l.ColumnEnteredAt.After(previous), "ColumnEnteredAt deve ser atualizado no MoveTo")
 	assert.True(t, l.UpdatedAt.After(previousUpdatedAt), "UpdatedAt deve ser atualizado no MoveTo")
 }
+
+func TestLead_DefaultsOutcomeEmAndamento(t *testing.T) {
+	l, err := NewLead("id-1", "tenant-1", "funnel-1", "col-1", "contact-1", "conv-1")
+	require.NoError(t, err)
+	assert.Equal(t, QualificationOutcomeEmAndamento, l.QualificationOutcome)
+}
+
+func TestLead_SetOutcome(t *testing.T) {
+	l, _ := NewLead("id-1", "tenant-1", "funnel-1", "col-1", "contact-1", "conv-1")
+	l.SetQualificationOutcome(QualificationOutcomeHumano)
+	assert.Equal(t, QualificationOutcomeHumano, l.QualificationOutcome)
+}

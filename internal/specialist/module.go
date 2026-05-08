@@ -20,11 +20,14 @@ type Module struct {
 	specialistTenantRepo domain.SpecialistTenantRepository
 	specialistToolRepo   domain.SpecialistToolRepository
 	scoringConfigRepo    domain.ScoringConfigRepository
+	crossSellRuleRepo    domain.CrossSellRuleRepository
 	handler              *specialisthttp.Handler
 	guardrailHandler     *specialisthttp.GuardrailHandler
 	stepHandler          *specialisthttp.StepHandler
 	scoringHandler       *specialisthttp.ScoringHandler
 	toolHandler          *specialisthttp.ToolHandler
+	crossSellRuleHandler *specialisthttp.CrossSellRuleHandler
+	htmxCrossSellHandler *specialisthttp.HTMXCrossSellHandler
 }
 
 func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegistry *aiapp.ToolRegistry) *Module {
@@ -87,6 +90,30 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 	// Tool association handler — registry may be nil during early startup; handler guards internally.
 	toolHandler := specialisthttp.NewToolHandler(specialistToolRepo, toolRegistry)
 
+	// Cross-sell rule use cases
+	crossSellRuleRepo := infrastructure.NewGormCrossSellRuleRepository(db)
+	listCrossSellRulesUC := application.NewListCrossSellRulesUseCase(crossSellRuleRepo)
+	createCrossSellRuleUC := application.NewCreateCrossSellRuleUseCase(specialistRepo, crossSellRuleRepo)
+	updateCrossSellRuleUC := application.NewUpdateCrossSellRuleUseCase(crossSellRuleRepo)
+	deleteCrossSellRuleUC := application.NewDeleteCrossSellRuleUseCase(crossSellRuleRepo)
+	reorderCrossSellRuleUC := application.NewReorderCrossSellRuleUseCase(crossSellRuleRepo)
+
+	crossSellRuleHandler := specialisthttp.NewCrossSellRuleHandler(
+		listCrossSellRulesUC,
+		createCrossSellRuleUC,
+		updateCrossSellRuleUC,
+		deleteCrossSellRuleUC,
+		reorderCrossSellRuleUC,
+	)
+
+	htmxCrossSellHandler := specialisthttp.NewHTMXCrossSellHandler(
+		specialistRepo,
+		listCrossSellRulesUC,
+		createCrossSellRuleUC,
+		deleteCrossSellRuleUC,
+		reorderCrossSellRuleUC,
+	)
+
 	return &Module{
 		specialistRepo:       specialistRepo,
 		stepRepo:             stepRepo,
@@ -94,11 +121,14 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 		specialistTenantRepo: specialistTenantRepo,
 		specialistToolRepo:   specialistToolRepo,
 		scoringConfigRepo:    scoringRepo,
+		crossSellRuleRepo:    crossSellRuleRepo,
 		handler:              handler,
 		guardrailHandler:     guardrailHandler,
 		stepHandler:          stepHandler,
 		scoringHandler:       scoringHandler,
 		toolHandler:          toolHandler,
+		crossSellRuleHandler: crossSellRuleHandler,
+		htmxCrossSellHandler: htmxCrossSellHandler,
 	}
 }
 
@@ -110,6 +140,8 @@ func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.stepHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.scoringHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.toolHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
+	m.crossSellRuleHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
+	m.htmxCrossSellHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 }
 
 func (m *Module) SpecialistRepo() domain.SpecialistRepository {
@@ -134,4 +166,8 @@ func (m *Module) SpecialistToolRepo() domain.SpecialistToolRepository {
 
 func (m *Module) ScoringConfigRepo() domain.ScoringConfigRepository {
 	return m.scoringConfigRepo
+}
+
+func (m *Module) CrossSellRuleRepo() domain.CrossSellRuleRepository {
+	return m.crossSellRuleRepo
 }

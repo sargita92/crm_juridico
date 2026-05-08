@@ -89,6 +89,12 @@ Suporte interno, não faz parte do produto final.
 
 > Após F21, manutenção contínua segue o processo recorrente em [manutencao-tecnica.md](manutencao-tecnica.md) (não vai ao backlog).
 
+## Épico 12: Qualificação Avançada
+
+| # | Feature | Status | Dependência | Prioridade |
+|---|---------|--------|-------------|------------|
+| F23 | [Qualificação Multi-Destino (faixa cinzenta + cross-sell)](../features/F23-qualificacao-multi-destino.md) | concluído | F16, F07, F10 | alta |
+
 ---
 
 ## Ordem sugerida de execução
@@ -111,6 +117,7 @@ Iteração 14: F11 (pagamentos)
 Iteração 15: F12 (logs)
 Iteração 16: F13 (landing page)
 Iteração 17: F19 (dashboards admin + tenant)
+Iteração 18: F23 (qualificação multi-destino)
 ```
 
 ## Notas

@@ -4,12 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 
 	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
@@ -30,6 +35,10 @@ type MessageSender interface {
 type LeadUpdater interface {
 	UpdateLeadScore(ctx context.Context, conversationID string, score int) error
 	MoveLeadToColumn(ctx context.Context, conversationID, columnID string) error
+	SetOutcome(ctx context.Context, conversationID string, outcome string) error
+	// GetLeadIDByConversation resolves the lead ID for a given conversation ID.
+	// Used to pass the correct originLeadID to CrossSellExecutor instead of conversationID.
+	GetLeadIDByConversation(ctx context.Context, conversationID string) (string, error)
 }
 
 // ScoringConfigFinder loads the scoring configuration for a specialist. When
@@ -38,6 +47,12 @@ type LeadUpdater interface {
 // completed below the threshold.
 type ScoringConfigFinder interface {
 	FindBySpecialistID(ctx context.Context, specialistID string) (*specDomain.ScoringConfig, error)
+}
+
+// HandoffActivator activates a human-agent handoff for a conversation.
+// The interface decouples the engine from the concrete ActivateHandoffUseCase.
+type HandoffActivator interface {
+	Activate(ctx context.Context, conversationID string) error
 }
 
 // ConversationEngine orchestrates the AI conversation flow for a lead.
@@ -56,12 +71,20 @@ type ConversationEngine struct {
 	toolResultMaxLength int
 	toolLoopMaxIter     int
 	scoringFinder       ScoringConfigFinder
-	log                 *zap.Logger
+	handoffActivator    HandoffActivator
+	// cross-sell fields — all optional (nil-safe); when nil, cross-sell logic is skipped.
+	crossSellRuleRepo  specDomain.CrossSellRuleRepository
+	crossSellEvaluator *CrossSellRuleEvaluator
+	crossSellExecutor  *CrossSellExecutor
+	log                *zap.Logger
 }
 
 // NewConversationEngine creates a ConversationEngine with all required dependencies.
 // scoringFinder is optional: when nil, scoring-based column movement is disabled
 // and only explicit step.TargetColumnID drives column transitions.
+// handoffActivator is optional: when nil, human-outcome handoff activation is skipped.
+// crossSellRuleRepo, crossSellEvaluator, crossSellExecutor are optional (nil-safe);
+// when all three are non-nil the engine evaluates cross-sell rules before invoking the LLM.
 func NewConversationEngine(
 	providerRegistry *domain.ProviderRegistry,
 	configResolver ConfigResolver,
@@ -77,6 +100,10 @@ func NewConversationEngine(
 	toolResultMaxLength int,
 	toolLoopMaxIter int,
 	scoringFinder ScoringConfigFinder,
+	handoffActivator HandoffActivator,
+	crossSellRuleRepo specDomain.CrossSellRuleRepository,
+	crossSellEvaluator *CrossSellRuleEvaluator,
+	crossSellExecutor *CrossSellExecutor,
 	log *zap.Logger,
 ) *ConversationEngine {
 	return &ConversationEngine{
@@ -94,6 +121,10 @@ func NewConversationEngine(
 		toolResultMaxLength: toolResultMaxLength,
 		toolLoopMaxIter:     toolLoopMaxIter,
 		scoringFinder:       scoringFinder,
+		handoffActivator:    handoffActivator,
+		crossSellRuleRepo:   crossSellRuleRepo,
+		crossSellEvaluator:  crossSellEvaluator,
+		crossSellExecutor:   crossSellExecutor,
 		log:                 log,
 	}
 }
@@ -149,6 +180,70 @@ func (e *ConversationEngine) HandleMessages(
 	// 2. If handoff is active, skip AI processing.
 	if state.HandoffActive {
 		return nil
+	}
+
+	// 2a. Cross-sell: handle pending confirmation branch first (before any LLM call).
+	if e.crossSellRuleRepo != nil && e.crossSellEvaluator != nil && e.crossSellExecutor != nil &&
+		state.PendingCrossSellRuleID != nil {
+		latestMsg := messages[len(messages)-1]
+		if isAffirmative(latestMsg) {
+			rule, findErr := e.crossSellRuleRepo.FindByID(ctx, *state.PendingCrossSellRuleID)
+			if findErr != nil {
+				return fmt.Errorf("conversation_engine: find pending cross-sell rule: %w", findErr)
+			}
+			if clearErr := e.crossSellExecutor.ClearPending(ctx, conversationID); clearErr != nil {
+				e.log.Warn("conversation_engine: clear pending cross-sell failed",
+					zap.String("conversation_id", conversationID),
+					zap.Error(clearErr),
+				)
+			}
+			crossSellColID := ""
+			if e.scoringFinder != nil {
+				if sc, scErr := e.scoringFinder.FindBySpecialistID(ctx, specialistID); scErr == nil && sc != nil {
+					crossSellColID = sc.CrossSellColumnID
+				}
+			}
+			originLeadID, leadIDErr := e.leadUpdater.GetLeadIDByConversation(ctx, conversationID)
+			if leadIDErr != nil {
+				return fmt.Errorf("conversation_engine: resolve origin lead id: %w", leadIDErr)
+			}
+			return e.crossSellExecutor.CompleteTransition(ctx, conversationID, tenantID, originLeadID, crossSellColID, rule)
+		}
+		// Negative answer: clear pending, fall through to normal flow.
+		if clearErr := e.crossSellExecutor.ClearPending(ctx, conversationID); clearErr != nil {
+			e.log.Warn("conversation_engine: clear pending cross-sell (negative) failed",
+				zap.String("conversation_id", conversationID),
+				zap.Error(clearErr),
+			)
+		}
+		state.ClearPendingCrossSellRuleID()
+	}
+
+	// 2b. Cross-sell: evaluate active rules before invoking the LLM.
+	if e.crossSellRuleRepo != nil && e.crossSellEvaluator != nil && e.crossSellExecutor != nil &&
+		state.PendingCrossSellRuleID == nil {
+		// Load specialist to check CrossSellEnabled flag.
+		specialist, specErr := e.contextBuilder.SpecialistFinder.FindByID(ctx, specialistID)
+		if specErr == nil && specialist != nil && specialist.CrossSellEnabled {
+			activeRules, _ := e.crossSellRuleRepo.ListActiveBySpecialistOrdered(ctx, specialistID)
+			if len(activeRules) > 0 {
+				latestMsg := messages[len(messages)-1]
+				match := e.crossSellEvaluator.Evaluate(activeRules, latestMsg, state.CollectedData)
+				if match != nil {
+					crossSellColID := ""
+					if e.scoringFinder != nil {
+						if sc, scErr2 := e.scoringFinder.FindBySpecialistID(ctx, specialistID); scErr2 == nil && sc != nil {
+							crossSellColID = sc.CrossSellColumnID
+						}
+					}
+					originLeadID, leadIDErr := e.leadUpdater.GetLeadIDByConversation(ctx, conversationID)
+					if leadIDErr != nil {
+						return fmt.Errorf("conversation_engine: resolve origin lead id: %w", leadIDErr)
+					}
+					return e.crossSellExecutor.Execute(ctx, conversationID, tenantID, originLeadID, crossSellColID, specialist, match)
+				}
+			}
+		}
 	}
 
 	// 3. Resolve config.
@@ -254,9 +349,7 @@ func (e *ConversationEngine) HandleMessages(
 				// Column routing priority:
 				//   1. LLM veto flag (meta.Disqualified) overrides everything.
 				//   2. Explicit step.TargetColumnID for forward progression.
-				//   3. Scoring threshold: qualify as soon as score crosses
-				//      threshold, disqualify once every step has been answered
-				//      without reaching it.
+				//   3. OutcomeCalculator: Aprovado → qualified, Humano → human + handoff, Reprovado → disqualified.
 				effectiveTarget := ""
 				disqualifying := false
 				switch {
@@ -265,11 +358,39 @@ func (e *ConversationEngine) HandleMessages(
 					disqualifying = true
 				case targetColumnID != "":
 					effectiveTarget = targetColumnID
-				case sc != nil && state.AccumulatedScore >= sc.Threshold && sc.QualifiedColumnID != "":
-					effectiveTarget = sc.QualifiedColumnID
-				case sc != nil && state.CurrentStepIndex >= len(steps) && sc.DisqualifiedColumnID != "":
-					effectiveTarget = sc.DisqualifiedColumnID
-					disqualifying = true
+				case sc != nil:
+					outcome := specDomain.CalculateOutcome(sc, state.AccumulatedScore)
+					QualificationOutcomeTotal.WithLabelValues(tenantID, specialistID, string(outcome)).Inc()
+					if setErr := e.leadUpdater.SetOutcome(ctx, conversationID, string(outcome)); setErr != nil {
+						e.log.Warn("conversation_engine: set outcome failed",
+							zap.String("conversation_id", conversationID),
+							zap.String("outcome", string(outcome)),
+							zap.Error(setErr),
+						)
+					}
+					switch outcome {
+					case specDomain.OutcomeAprovado:
+						if sc.QualifiedColumnID != "" {
+							effectiveTarget = sc.QualifiedColumnID
+						}
+					case specDomain.OutcomeHumano:
+						if sc.HumanColumnID != "" {
+							effectiveTarget = sc.HumanColumnID
+						}
+						if e.handoffActivator != nil {
+							if hErr := e.handoffActivator.Activate(ctx, conversationID); hErr != nil {
+								e.log.Warn("conversation_engine: handoff activation failed",
+									zap.String("conversation_id", conversationID),
+									zap.Error(hErr),
+								)
+							}
+						}
+					case specDomain.OutcomeReprovado:
+						if state.CurrentStepIndex >= len(steps) && sc.DisqualifiedColumnID != "" {
+							effectiveTarget = sc.DisqualifiedColumnID
+							disqualifying = true
+						}
+					}
 				}
 
 				if effectiveTarget != "" {
@@ -325,6 +446,15 @@ func (e *ConversationEngine) HandleMessages(
 
 	return nil
 }
+
+// isAffirmative returns true when s is a recognisable affirmative reply (accent-insensitive).
+func isAffirmative(s string) bool {
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	normalized, _, _ := transform.String(t, strings.ToLower(strings.TrimSpace(s)))
+	return affirmativeRe.MatchString(normalized)
+}
+
+var affirmativeRe = regexp.MustCompile(`^(sim|s|ok|claro|pode|por favor)\b`)
 
 // executeToolLoop runs the tool calling loop: send request → get tool calls → execute → repeat
 // until the response has no tool calls or maxIterations is reached.

@@ -61,9 +61,24 @@ func (h *ScoringHandler) HandleUpdate(c *gin.Context) {
 		return
 	}
 
+	thresholdHumanoMinStr := c.PostForm("threshold_humano_min")
+	thresholdHumanoMin := 0
+	if thresholdHumanoMinStr != "" {
+		thresholdHumanoMin, err = strconv.Atoi(thresholdHumanoMinStr)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Threshold humano min inválido"})
+			return
+		}
+	}
+
 	_, err = h.updateUC.Execute(c.Request.Context(), application.UpdateScoringInput{
-		SpecialistID: id,
-		Threshold:    threshold,
+		SpecialistID:         id,
+		Threshold:            threshold,
+		ThresholdHumanoMin:   thresholdHumanoMin,
+		QualifiedColumnID:    c.PostForm("qualified_column_id"),
+		HumanColumnID:        c.PostForm("human_column_id"),
+		DisqualifiedColumnID: c.PostForm("disqualified_column_id"),
+		CrossSellColumnID:    c.PostForm("cross_sell_column_id"),
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrScoringThresholdInvalid) {
@@ -72,6 +87,14 @@ func (h *ScoringHandler) HandleUpdate(c *gin.Context) {
 		}
 		if errors.Is(err, domain.ErrScoringThresholdExceedsTotal) {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Threshold não pode exceder o total possível"})
+			return
+		}
+		if errors.Is(err, domain.ErrHumanoMinAboveAprovado) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Threshold humano min não pode ser maior que o threshold aprovado"})
+			return
+		}
+		if errors.Is(err, domain.ErrHumanoMinNegative) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Threshold humano min não pode ser negativo"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar scoring"})

@@ -13,17 +13,30 @@ var (
 
 // ConversationState tracks the AI conversation progress for a lead.
 type ConversationState struct {
-	ID               string
-	ConversationID   string
-	SpecialistID     string
-	CurrentStepIndex int
-	CollectedData    map[string]string
-	AccumulatedScore int
-	HandoffActive    bool
-	HandoffAt        *time.Time
-	ResumedAt        *time.Time
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID                     string
+	ConversationID         string
+	SpecialistID           string
+	CurrentStepIndex       int
+	CollectedData          map[string]string
+	AccumulatedScore       int
+	HandoffActive          bool
+	HandoffAt              *time.Time
+	ResumedAt              *time.Time
+	PendingCrossSellRuleID *string
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
+}
+
+// SetPendingCrossSellRuleID stores the cross-sell rule ID that awaits confirmation.
+func (s *ConversationState) SetPendingCrossSellRuleID(id string) {
+	s.PendingCrossSellRuleID = &id
+	s.UpdatedAt = time.Now()
+}
+
+// ClearPendingCrossSellRuleID removes any pending cross-sell rule.
+func (s *ConversationState) ClearPendingCrossSellRuleID() {
+	s.PendingCrossSellRuleID = nil
+	s.UpdatedAt = time.Now()
 }
 
 // NewConversationState constructs a ConversationState with validation.

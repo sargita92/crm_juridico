@@ -12,17 +12,18 @@ import (
 )
 
 type conversationStateModel struct {
-	ID               string     `gorm:"primaryKey;column:id;type:char(36)"`
-	ConversationID   string     `gorm:"column:conversation_id;type:char(36);uniqueIndex;not null"`
-	SpecialistID     string     `gorm:"column:specialist_id;type:char(36);not null"`
-	CurrentStepIndex int        `gorm:"column:current_step_index;not null;default:0"`
-	CollectedData    string     `gorm:"column:collected_data;type:text;not null;default:'{}'"`
-	AccumulatedScore int        `gorm:"column:accumulated_score;not null;default:0"`
-	HandoffActive    bool       `gorm:"column:handoff_active;not null;default:false"`
-	HandoffAt        *time.Time `gorm:"column:handoff_at"`
-	ResumedAt        *time.Time `gorm:"column:resumed_at"`
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID                     string     `gorm:"primaryKey;column:id;type:char(36)"`
+	ConversationID         string     `gorm:"column:conversation_id;type:char(36);uniqueIndex;not null"`
+	SpecialistID           string     `gorm:"column:specialist_id;type:char(36);not null"`
+	CurrentStepIndex       int        `gorm:"column:current_step_index;not null;default:0"`
+	CollectedData          string     `gorm:"column:collected_data;type:text;not null;default:'{}'"`
+	AccumulatedScore       int        `gorm:"column:accumulated_score;not null;default:0"`
+	HandoffActive          bool       `gorm:"column:handoff_active;not null;default:false"`
+	HandoffAt              *time.Time `gorm:"column:handoff_at"`
+	ResumedAt              *time.Time `gorm:"column:resumed_at"`
+	PendingCrossSellRuleID *string    `gorm:"column:pending_cross_sell_rule_id;type:varchar(36)"`
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 func (conversationStateModel) TableName() string { return "conversation_states" }
@@ -33,17 +34,18 @@ func conversationStateToModel(s *domain.ConversationState) (*conversationStateMo
 		return nil, err
 	}
 	return &conversationStateModel{
-		ID:               s.ID,
-		ConversationID:   s.ConversationID,
-		SpecialistID:     s.SpecialistID,
-		CurrentStepIndex: s.CurrentStepIndex,
-		CollectedData:    string(data),
-		AccumulatedScore: s.AccumulatedScore,
-		HandoffActive:    s.HandoffActive,
-		HandoffAt:        s.HandoffAt,
-		ResumedAt:        s.ResumedAt,
-		CreatedAt:        s.CreatedAt,
-		UpdatedAt:        s.UpdatedAt,
+		ID:                     s.ID,
+		ConversationID:         s.ConversationID,
+		SpecialistID:           s.SpecialistID,
+		CurrentStepIndex:       s.CurrentStepIndex,
+		CollectedData:          string(data),
+		AccumulatedScore:       s.AccumulatedScore,
+		HandoffActive:          s.HandoffActive,
+		HandoffAt:              s.HandoffAt,
+		ResumedAt:              s.ResumedAt,
+		PendingCrossSellRuleID: s.PendingCrossSellRuleID,
+		CreatedAt:              s.CreatedAt,
+		UpdatedAt:              s.UpdatedAt,
 	}, nil
 }
 
@@ -57,17 +59,18 @@ func conversationStateToDomain(m *conversationStateModel) (*domain.ConversationS
 		}
 	}
 	return &domain.ConversationState{
-		ID:               m.ID,
-		ConversationID:   m.ConversationID,
-		SpecialistID:     m.SpecialistID,
-		CurrentStepIndex: m.CurrentStepIndex,
-		CollectedData:    collectedData,
-		AccumulatedScore: m.AccumulatedScore,
-		HandoffActive:    m.HandoffActive,
-		HandoffAt:        m.HandoffAt,
-		ResumedAt:        m.ResumedAt,
-		CreatedAt:        m.CreatedAt,
-		UpdatedAt:        m.UpdatedAt,
+		ID:                     m.ID,
+		ConversationID:         m.ConversationID,
+		SpecialistID:           m.SpecialistID,
+		CurrentStepIndex:       m.CurrentStepIndex,
+		CollectedData:          collectedData,
+		AccumulatedScore:       m.AccumulatedScore,
+		HandoffActive:          m.HandoffActive,
+		HandoffAt:              m.HandoffAt,
+		ResumedAt:              m.ResumedAt,
+		PendingCrossSellRuleID: m.PendingCrossSellRuleID,
+		CreatedAt:              m.CreatedAt,
+		UpdatedAt:              m.UpdatedAt,
 	}, nil
 }
 

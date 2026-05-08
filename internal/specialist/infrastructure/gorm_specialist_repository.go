@@ -19,38 +19,50 @@ func escapeLike(s string) string {
 }
 
 type specialistModel struct {
-	ID          string `gorm:"primaryKey;column:id;type:char(36)"`
-	Name        string `gorm:"column:name;type:varchar(255);not null"`
-	Description string `gorm:"column:description;type:varchar(500);not null;default:''"`
-	Prompt      string `gorm:"column:prompt;type:text;not null"`
-	Status      string `gorm:"column:status;type:enum('active','inactive');not null;default:active"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                            string `gorm:"primaryKey;column:id;type:char(36)"`
+	Name                          string `gorm:"column:name;type:varchar(255);not null"`
+	Description                   string `gorm:"column:description;type:varchar(500);not null;default:''"`
+	Prompt                        string `gorm:"column:prompt;type:text;not null"`
+	Status                        string `gorm:"column:status;type:enum('active','inactive');not null;default:active"`
+	CrossSellEnabled              bool   `gorm:"column:cross_sell_enabled;type:tinyint(1);not null;default:0"`
+	CrossSellMode                 string `gorm:"column:cross_sell_mode;type:varchar(16);not null;default:'announce'"`
+	CrossSellAnnouncementTemplate string `gorm:"column:cross_sell_announcement_template;type:text"`
+	AllowAICrossSellSuggestion    bool   `gorm:"column:allow_ai_cross_sell_suggestion;type:tinyint(1);not null;default:0"`
+	CreatedAt                     time.Time
+	UpdatedAt                     time.Time
 }
 
 func (specialistModel) TableName() string { return "specialists" }
 
 func toModel(s *domain.Specialist) *specialistModel {
 	return &specialistModel{
-		ID:          s.ID,
-		Name:        s.Name,
-		Description: s.Description,
-		Prompt:      s.Prompt,
-		Status:      string(s.Status),
-		CreatedAt:   s.CreatedAt,
-		UpdatedAt:   s.UpdatedAt,
+		ID:                            s.ID,
+		Name:                          s.Name,
+		Description:                   s.Description,
+		Prompt:                        s.Prompt,
+		Status:                        string(s.Status),
+		CrossSellEnabled:              s.CrossSellEnabled,
+		CrossSellMode:                 string(s.CrossSellMode),
+		CrossSellAnnouncementTemplate: s.CrossSellAnnouncementTemplate,
+		AllowAICrossSellSuggestion:    s.AllowAICrossSellSuggestion,
+		CreatedAt:                     s.CreatedAt,
+		UpdatedAt:                     s.UpdatedAt,
 	}
 }
 
 func toDomain(m *specialistModel) *domain.Specialist {
 	return &domain.Specialist{
-		ID:          m.ID,
-		Name:        m.Name,
-		Description: m.Description,
-		Prompt:      m.Prompt,
-		Status:      domain.SpecialistStatus(m.Status),
-		CreatedAt:   m.CreatedAt,
-		UpdatedAt:   m.UpdatedAt,
+		ID:                            m.ID,
+		Name:                          m.Name,
+		Description:                   m.Description,
+		Prompt:                        m.Prompt,
+		Status:                        domain.SpecialistStatus(m.Status),
+		CrossSellEnabled:              m.CrossSellEnabled,
+		CrossSellMode:                 domain.CrossSellMode(m.CrossSellMode),
+		CrossSellAnnouncementTemplate: m.CrossSellAnnouncementTemplate,
+		AllowAICrossSellSuggestion:    m.AllowAICrossSellSuggestion,
+		CreatedAt:                     m.CreatedAt,
+		UpdatedAt:                     m.UpdatedAt,
 	}
 }
 
