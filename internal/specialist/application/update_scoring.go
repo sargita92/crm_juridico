@@ -10,8 +10,13 @@ import (
 )
 
 type UpdateScoringInput struct {
-	SpecialistID string
-	Threshold    int
+	SpecialistID         string
+	Threshold            int
+	ThresholdHumanoMin   int
+	QualifiedColumnID    string
+	HumanColumnID        string
+	DisqualifiedColumnID string
+	CrossSellColumnID    string
 }
 
 type UpdateScoringUseCase struct {
@@ -52,6 +57,15 @@ func (uc *UpdateScoringUseCase) Execute(ctx context.Context, input UpdateScoring
 		}
 	}
 
+	if err := config.UpdateThresholdHumanoMin(input.ThresholdHumanoMin, total); err != nil {
+		return nil, err
+	}
+
+	config.QualifiedColumnID = input.QualifiedColumnID
+	config.HumanColumnID = input.HumanColumnID
+	config.DisqualifiedColumnID = input.DisqualifiedColumnID
+	config.CrossSellColumnID = input.CrossSellColumnID
+
 	if err := uc.scoringRepo.CreateOrUpdate(ctx, config); err != nil {
 		return nil, err
 	}
@@ -62,9 +76,14 @@ func (uc *UpdateScoringUseCase) Execute(ctx context.Context, input UpdateScoring
 	}
 
 	return &ScoringOutput{
-		Threshold:     config.Threshold,
-		TotalPossible: total,
-		Percentage:    percentage,
-		Steps:         stepItems,
+		Threshold:            config.Threshold,
+		ThresholdHumanoMin:   config.ThresholdHumanoMin,
+		TotalPossible:        total,
+		Percentage:           percentage,
+		Steps:                stepItems,
+		QualifiedColumnID:    config.QualifiedColumnID,
+		HumanColumnID:        config.HumanColumnID,
+		DisqualifiedColumnID: config.DisqualifiedColumnID,
+		CrossSellColumnID:    config.CrossSellColumnID,
 	}, nil
 }

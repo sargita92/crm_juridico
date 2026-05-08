@@ -14,10 +14,15 @@ type StepScoreItem struct {
 }
 
 type ScoringOutput struct {
-	Threshold     int
-	TotalPossible int
-	Percentage    float64
-	Steps         []StepScoreItem
+	Threshold            int
+	ThresholdHumanoMin   int
+	TotalPossible        int
+	Percentage           float64
+	Steps                []StepScoreItem
+	QualifiedColumnID    string
+	HumanColumnID        string
+	DisqualifiedColumnID string
+	CrossSellColumnID    string
 }
 
 type GetScoringUseCase struct {
@@ -48,8 +53,18 @@ func (uc *GetScoringUseCase) Execute(ctx context.Context, specialistID string) (
 	}
 
 	threshold := 0
+	thresholdHumanoMin := 0
+	qualifiedColumnID := ""
+	humanColumnID := ""
+	disqualifiedColumnID := ""
+	crossSellColumnID := ""
 	if config != nil {
 		threshold = config.Threshold
+		thresholdHumanoMin = config.ThresholdHumanoMin
+		qualifiedColumnID = config.QualifiedColumnID
+		humanColumnID = config.HumanColumnID
+		disqualifiedColumnID = config.DisqualifiedColumnID
+		crossSellColumnID = config.CrossSellColumnID
 	}
 
 	var percentage float64
@@ -58,9 +73,14 @@ func (uc *GetScoringUseCase) Execute(ctx context.Context, specialistID string) (
 	}
 
 	return &ScoringOutput{
-		Threshold:     threshold,
-		TotalPossible: total,
-		Percentage:    percentage,
-		Steps:         stepItems,
+		Threshold:            threshold,
+		ThresholdHumanoMin:   thresholdHumanoMin,
+		TotalPossible:        total,
+		Percentage:           percentage,
+		Steps:                stepItems,
+		QualifiedColumnID:    qualifiedColumnID,
+		HumanColumnID:        humanColumnID,
+		DisqualifiedColumnID: disqualifiedColumnID,
+		CrossSellColumnID:    crossSellColumnID,
 	}, nil
 }

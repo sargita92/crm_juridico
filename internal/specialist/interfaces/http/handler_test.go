@@ -986,3 +986,70 @@ func TestScoring_GetAndUpdate(t *testing.T) {
 	env.router.ServeHTTP(w3, req3)
 	assert.Equal(t, http.StatusOK, w3.Code)
 }
+
+func TestScoring_UpdateWithHumanoMinAndColumns(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista SCH", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create step with score so total=100
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Pergunta"}, "data_type": {"free_text"}, "required": {"on"}, "score": {"100"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// Update with threshold=80, threshold_humano_min=50, human_column_id, cross_sell_column_id
+	w2 := httptest.NewRecorder()
+	req2 := putForm("/admin/specialists/"+spec.ID+"/scoring", url.Values{
+		"threshold":           {"80"},
+		"threshold_humano_min": {"50"},
+		"qualified_column_id":  {"col-approved"},
+		"human_column_id":      {"col-human"},
+		"disqualified_column_id": {"col-rejected"},
+		"cross_sell_column_id": {"col-cross"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	// Verify persisted via repo
+	scoringRepo := specialistinfra.NewGormScoringConfigRepository(env.db)
+	saved, err := scoringRepo.FindBySpecialistID(ctx, spec.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 80, saved.Threshold)
+	assert.Equal(t, 50, saved.ThresholdHumanoMin)
+	assert.Equal(t, "col-approved", saved.QualifiedColumnID)
+	assert.Equal(t, "col-human", saved.HumanColumnID)
+	assert.Equal(t, "col-rejected", saved.DisqualifiedColumnID)
+	assert.Equal(t, "col-cross", saved.CrossSellColumnID)
+}
+
+func TestScoring_UpdateHumanoMinAboveThreshold_Returns400(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista SCHV", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// Create step with score so total=100
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Pergunta"}, "data_type": {"free_text"}, "required": {"on"}, "score": {"100"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	// threshold=60, threshold_humano_min=70 -> humano_min > threshold -> 400
+	w2 := httptest.NewRecorder()
+	req2 := putForm("/admin/specialists/"+spec.ID+"/scoring", url.Values{
+		"threshold":           {"60"},
+		"threshold_humano_min": {"70"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusBadRequest, w2.Code)
+}

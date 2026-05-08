@@ -34,6 +34,66 @@
     <div style="margin-top:1rem">
         <button class="btn btn-sm btn-primary" onclick="openModal('scoring-modal')">Configurar Threshold</button>
     </div>
+
+    <!-- Scoring modal form -->
+    <div id="scoring-modal" style="display:none;margin-top:1.5rem;padding:1rem;background:#f7fafc;border-radius:8px;border:1px solid #e2e8f0">
+        <form hx-put="/admin/specialists/{{.SpecialistID}}/scoring"
+              hx-target="#scoring-section"
+              hx-swap="outerHTML"
+              style="display:flex;flex-direction:column;gap:0.75rem">
+            <label style="display:flex;flex-direction:column;gap:0.25rem">
+                <span>Threshold aprovado</span>
+                <input type="number" name="threshold" value="{{.Scoring.Threshold}}" min="1" style="padding:0.4rem;border:1px solid #cbd5e0;border-radius:4px">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:0.25rem">
+                <span>Threshold humano min</span>
+                <input type="number" name="threshold_humano_min" value="{{.Scoring.ThresholdHumanoMin}}" min="0" style="padding:0.4rem;border:1px solid #cbd5e0;border-radius:4px">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:0.25rem">
+                <span>Coluna p/ aprovado</span>
+                <select name="qualified_column_id" style="padding:0.4rem;border:1px solid #cbd5e0;border-radius:4px">
+                    <option value="">— nenhuma —</option>
+                    {{range .Columns}}
+                    <option value="{{.ID}}"{{if eq .ID $.Scoring.QualifiedColumnID}} selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:0.25rem">
+                <span>Coluna p/ humano</span>
+                <select name="human_column_id" style="padding:0.4rem;border:1px solid #cbd5e0;border-radius:4px">
+                    <option value="">— nenhuma —</option>
+                    {{range .Columns}}
+                    <option value="{{.ID}}"{{if eq .ID $.Scoring.HumanColumnID}} selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:0.25rem">
+                <span>Coluna p/ desqualificado</span>
+                <select name="disqualified_column_id" style="padding:0.4rem;border:1px solid #cbd5e0;border-radius:4px">
+                    <option value="">— nenhuma —</option>
+                    {{range .Columns}}
+                    <option value="{{.ID}}"{{if eq .ID $.Scoring.DisqualifiedColumnID}} selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </label>
+            <label style="display:flex;flex-direction:column;gap:0.25rem">
+                <span>Coluna p/ cross-sell</span>
+                <select name="cross_sell_column_id" style="padding:0.4rem;border:1px solid #cbd5e0;border-radius:4px">
+                    <option value="">— nenhuma —</option>
+                    {{range .Columns}}
+                    <option value="{{.ID}}"{{if eq .ID $.Scoring.CrossSellColumnID}} selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </label>
+            <small style="color:#718096">
+                Score &#x2265; {{.Scoring.Threshold}} aprovado &middot; faixa cinzenta a partir de {{.Scoring.ThresholdHumanoMin}} (humano) &middot; abaixo de {{.Scoring.ThresholdHumanoMin}} reprovado
+            </small>
+            <div style="display:flex;gap:0.5rem">
+                <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+                <button type="button" class="btn btn-sm" onclick="closeModal('scoring-modal')">Cancelar</button>
+            </div>
+        </form>
+    </div>
     {{else}}
     <div class="empty-state" style="padding:1.5rem">
         Configure pontuacoes nos steps acima para habilitar a qualificacao
