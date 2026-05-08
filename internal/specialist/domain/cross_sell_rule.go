@@ -64,6 +64,12 @@ func NewCrossSellRule(
 	}, nil
 }
 
+// ValidateTriggerConfig is the exported form of validateTriggerConfig,
+// used by application use cases to validate before persisting updates.
+func ValidateTriggerConfig(t CrossSellTriggerType, cfg any) error {
+	return validateTriggerConfig(t, cfg)
+}
+
 func validateTriggerConfig(t CrossSellTriggerType, cfg any) error {
 	switch t {
 	case CrossSellTriggerKeyword:

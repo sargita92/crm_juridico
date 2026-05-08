@@ -76,6 +76,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	db.Exec("DELETE FROM scoring_configs")
 	db.Exec("DELETE FROM steps")
 	db.Exec("DELETE FROM guardrails")
+	db.Exec("DELETE FROM cross_sell_rules")
 	db.Exec("DELETE FROM specialist_mcps")
 	db.Exec("DELETE FROM mcp_servers")
 	db.Exec("DELETE FROM specialist_documents")
@@ -135,6 +136,18 @@ func setupTestEnv(t *testing.T) *testEnv {
 	updateScoringUC := application.NewUpdateScoringUseCase(stepRepo, scoringRepo)
 	scoringHandler := NewScoringHandler(getScoringUC, updateScoringUC)
 
+	// Cross-sell rule use cases
+	crossSellRuleRepo := specialistinfra.NewGormCrossSellRuleRepository(db)
+	listCrossSellRulesUC := application.NewListCrossSellRulesUseCase(crossSellRuleRepo)
+	createCrossSellRuleUC := application.NewCreateCrossSellRuleUseCase(specialistRepo, crossSellRuleRepo)
+	updateCrossSellRuleUC := application.NewUpdateCrossSellRuleUseCase(crossSellRuleRepo)
+	deleteCrossSellRuleUC := application.NewDeleteCrossSellRuleUseCase(crossSellRuleRepo)
+	reorderCrossSellRuleUC := application.NewReorderCrossSellRuleUseCase(crossSellRuleRepo)
+	crossSellRuleHandler := NewCrossSellRuleHandler(
+		listCrossSellRulesUC, createCrossSellRuleUC, updateCrossSellRuleUC,
+		deleteCrossSellRuleUC, reorderCrossSellRuleUC,
+	)
+
 	router := gin.New()
 	tmpl := testhelper.ParseTemplates()
 	router.SetHTMLTemplate(tmpl)
@@ -145,6 +158,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	guardrailHandler.RegisterRoutes(router, authMw, adminMw)
 	stepHandler.RegisterRoutes(router, authMw, adminMw)
 	scoringHandler.RegisterRoutes(router, authMw, adminMw)
+	crossSellRuleHandler.RegisterRoutes(router, authMw, adminMw)
 
 	return &testEnv{
 		router:         router,
@@ -707,6 +721,13 @@ func TestAdminRoutes_NoToken_Returns401(t *testing.T) {
 		// Scoring routes
 		{http.MethodGet, "/admin/specialists/some-id/scoring"},
 		{http.MethodPut, "/admin/specialists/some-id/scoring"},
+		// Cross-sell rule routes
+		{http.MethodGet, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPut, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodDelete, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-up"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-down"},
 	}
 
 	for _, route := range routes {
@@ -755,6 +776,13 @@ func TestAdminRoutes_UserRole_Returns403(t *testing.T) {
 		// Scoring routes
 		{http.MethodGet, "/admin/specialists/some-id/scoring"},
 		{http.MethodPut, "/admin/specialists/some-id/scoring"},
+		// Cross-sell rule routes
+		{http.MethodGet, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules"},
+		{http.MethodPut, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodDelete, "/admin/specialists/some-id/cross-sell-rules/rid"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-up"},
+		{http.MethodPost, "/admin/specialists/some-id/cross-sell-rules/rid/move-down"},
 	}
 
 	for _, route := range routes {
