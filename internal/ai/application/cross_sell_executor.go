@@ -106,6 +106,12 @@ func (x *CrossSellExecutor) Execute(
 	return x.CompleteTransition(ctx, convID, tenantID, originLeadID, crossSellColumnID, rule)
 }
 
+// ClearPending delegates to conversationMover.ClearPendingCrossSell so callers
+// don't need a direct reference to ConversationMover.
+func (x *CrossSellExecutor) ClearPending(ctx context.Context, convID string) error {
+	return x.conversationMover.ClearPendingCrossSell(ctx, convID)
+}
+
 // CompleteTransition performs the full specialist handoff:
 //  1. Resolves new specialist via target product.
 //  2. Creates a new lead linked to the origin lead.

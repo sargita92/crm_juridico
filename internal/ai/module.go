@@ -69,6 +69,10 @@ type ModuleDeps struct {
 	// ToolRegistry is an optional pre-created registry shared with the specialist UI (Task 17).
 	// When non-nil, tools are registered into it; when nil, a new private registry is created.
 	ToolRegistry *application.ToolRegistry
+	// CrossSellRuleRepo is optional. When non-nil, the engine auto-builds the
+	// CrossSellExecutor using existing deps (ProductRepo, LeadRepo, ColumnRepo, etc.)
+	// and evaluates cross-sell rules before invoking the LLM.
+	CrossSellRuleRepo specDomain.CrossSellRuleRepository
 }
 
 // conversationContext holds routing context stored between routing and debounce callback.
@@ -192,6 +196,35 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	activateHandoff := application.NewActivateHandoffUseCase(convStateRepo, log)
 	deactivateHandoff := application.NewDeactivateHandoffUseCase(convStateRepo, log)
 
+	// 8. Create cross-sell components (optional; nil when CrossSellRuleRepo not wired).
+	// When CrossSellRuleRepo is provided, the executor is auto-built from existing module deps.
+	var crossSellEvaluator *application.CrossSellRuleEvaluator
+	var crossSellExecutor *application.CrossSellExecutor
+	if deps.CrossSellRuleRepo != nil {
+		crossSellEvaluator = application.NewCrossSellRuleEvaluator()
+
+		productNameLookup := infrastructure.NewProductNameLookupAdapter(deps.ProductRepo)
+		conversationMover := infrastructure.NewConversationMoverAdapter(convStateRepo)
+		leadFactory := infrastructure.NewLeadFactoryAdapter(deps.LeadRepo)
+
+		// ProductSpecialistResolver needs a funnelProductFinder. We use the GORM DB
+		// directly via a thin shim embedded in cross_sell_adapters.go.
+		productSpecialistResolver := infrastructure.NewProductSpecialistResolverAdapter(
+			spProductRepo,
+			infrastructure.NewGormFunnelProductFinder(db),
+			deps.ColumnRepo,
+		)
+
+		crossSellExecutor = application.NewCrossSellExecutor(
+			productSpecialistResolver,
+			leadFactory,
+			conversationMover,
+			leadUpdaterAdapter,
+			messageSenderAdapter,
+			productNameLookup,
+		)
+	}
+
 	// 8. Create ConversationEngine.
 	engine := application.NewConversationEngine(
 		providerRegistry,
@@ -209,6 +242,9 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		cfg.ToolLoopMaxIterations,
 		deps.ScoringConfigFinder,
 		activateHandoffAdapter{uc: activateHandoff},
+		deps.CrossSellRuleRepo,
+		crossSellEvaluator,
+		crossSellExecutor,
 		log,
 	)
 
