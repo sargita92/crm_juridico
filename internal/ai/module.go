@@ -28,6 +28,17 @@ import (
 	whatsappDomain "github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
+// activateHandoffAdapter adapts ActivateHandoffUseCase to the HandoffActivator interface
+// expected by ConversationEngine, bridging the tenantID gap (tenantID is unknown at
+// construction time; the adapter passes an empty string for the metric label).
+type activateHandoffAdapter struct {
+	uc *application.ActivateHandoffUseCase
+}
+
+func (a activateHandoffAdapter) Activate(ctx context.Context, conversationID string) error {
+	return a.uc.Execute(ctx, "", conversationID)
+}
+
 // ModuleDeps holds cross-module dependencies needed by the AI module.
 type ModuleDeps struct {
 	SpecialistRepo   specDomain.SpecialistRepository
@@ -177,6 +188,10 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 	stepEvaluator := application.NewStepEvaluator()
 	guardrailChecker := application.NewGuardrailChecker()
 
+	// 9. Create handoff use cases (before engine so activateHandoff can be injected).
+	activateHandoff := application.NewActivateHandoffUseCase(convStateRepo, log)
+	deactivateHandoff := application.NewDeactivateHandoffUseCase(convStateRepo, log)
+
 	// 8. Create ConversationEngine.
 	engine := application.NewConversationEngine(
 		providerRegistry,
@@ -193,6 +208,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		cfg.ToolResultMaxLength,
 		cfg.ToolLoopMaxIterations,
 		deps.ScoringConfigFinder,
+		activateHandoffAdapter{uc: activateHandoff},
 		log,
 	)
 
@@ -203,10 +219,6 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		productDetectorAdapter,
 		defaultSpFinderAdapter,
 	)
-
-	// 9. Create handoff use cases.
-	activateHandoff := application.NewActivateHandoffUseCase(convStateRepo, log)
-	deactivateHandoff := application.NewDeactivateHandoffUseCase(convStateRepo, log)
 
 	// 10. Create ProductListerAdapter and HTTP handler.
 	productListerAdapter := infrastructure.NewProductListerAdapter(deps.ProductRepo)

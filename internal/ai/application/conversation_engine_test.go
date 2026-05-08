@@ -94,6 +94,24 @@ func (m *mockLeadUpdater) MoveLeadToColumn(_ context.Context, _, columnID string
 	return nil
 }
 
+type mockHandoffActivator struct {
+	activatedFor []string
+}
+
+func (m *mockHandoffActivator) Activate(_ context.Context, conversationID string) error {
+	m.activatedFor = append(m.activatedFor, conversationID)
+	return nil
+}
+
+func (m *mockHandoffActivator) WasActivatedFor(conversationID string) bool {
+	for _, id := range m.activatedFor {
+		if id == conversationID {
+			return true
+		}
+	}
+	return false
+}
+
 // --- helpers ---
 
 func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr error) (
@@ -143,6 +161,7 @@ func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr 
 		nil,
 		0,
 		5,
+		nil,
 		nil,
 		log,
 	)
@@ -252,7 +271,7 @@ func TestConversationEngine_GuardrailViolation_UsesFallback(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, nil, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, nil, nil, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
@@ -294,7 +313,7 @@ func TestConversationEngine_StepCompleted_RuleBased(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, nil, false, nil, 0, 5, nil, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater, nil, false, nil, 0, 5, nil, nil, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"42"})
@@ -321,6 +340,7 @@ func buildScoringEngine(
 	steps []specDomain.Step,
 	scoring *specDomain.ScoringConfig,
 	state *domain.ConversationState,
+	handoffActivator HandoffActivator,
 ) (*ConversationEngine, *mockLeadUpdater) {
 	t.Helper()
 
@@ -357,6 +377,7 @@ func buildScoringEngine(
 		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater,
 		nil, false, nil, 0, 5,
 		scoringFinder,
+		handoffActivator,
 		zap.NewNop(),
 	)
 	return engine, leadUpdater
@@ -374,7 +395,7 @@ func TestConversationEngine_ScoringQualifies_MovesLeadToQualifiedColumn(t *testi
 		DisqualifiedColumnID: "col-disqualified",
 	}
 
-	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, nil)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
 
@@ -395,7 +416,7 @@ func TestConversationEngine_AllStepsDoneUnderThreshold_MovesLeadToDisqualifiedCo
 		DisqualifiedColumnID: "col-disqualified",
 	}
 
-	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, nil)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
 
@@ -415,7 +436,7 @@ func TestConversationEngine_StepTargetWinsOverScoring(t *testing.T) {
 		QualifiedColumnID: "col-qualified",
 	}
 
-	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, nil)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
 
@@ -468,6 +489,7 @@ func TestConversationEngine_LLMDisqualifies_MovesLeadToDisqualifiedColumn(t *tes
 		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater,
 		nil, false, nil, 0, 5,
 		&mockScoringFinder{config: scoring},
+		nil,
 		zap.NewNop(),
 	)
 
@@ -512,6 +534,7 @@ func TestConversationEngine_LLMDisqualifies_NoScoringConfig_NoMove(t *testing.T)
 		NewStepEvaluator(), NewGuardrailChecker(), sender, leadUpdater,
 		nil, false, nil, 0, 5,
 		nil,
+		nil,
 		zap.NewNop(),
 	)
 
@@ -534,7 +557,7 @@ func TestConversationEngine_MidFlow_UnderThreshold_NoScoringMove(t *testing.T) {
 		DisqualifiedColumnID: "col-disqualified",
 	}
 
-	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state)
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, nil)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
 
@@ -561,7 +584,7 @@ func TestHandleMessages_ResetCommandEnabled_TriggersReset(t *testing.T) {
 
 	engine := NewConversationEngine(
 		nil, nil, stateRepo, nil, nil, nil, sender, nil,
-		resetUC, true, nil, 0, 5, nil, zap.NewNop(),
+		resetUC, true, nil, 0, 5, nil, nil, zap.NewNop(),
 	)
 
 	err = engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"/reset"})
@@ -619,11 +642,36 @@ func TestConversationEngine_ProviderError(t *testing.T) {
 
 	engine := NewConversationEngine(
 		registry, configResolver, stateRepo, contextBuilder,
-		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, nil, log,
+		NewStepEvaluator(), NewGuardrailChecker(), sender, nil, nil, false, nil, 0, 5, nil, nil, log,
 	)
 
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
 
 	require.Error(t, err)
 	assert.False(t, sender.sent)
+}
+
+func TestConversationEngine_ScoringInHumanZone_PausesAIAndMovesLead(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "Confirma?", DataType: specDomain.StepDataTypeSelection, Score: 60, TargetColumnID: ""},
+	}
+	scoring := &specDomain.ScoringConfig{
+		SpecialistID:         "spec-1",
+		Threshold:            80,
+		ThresholdHumanoMin:   50,
+		HumanColumnID:        "col-h",
+		QualifiedColumnID:    "col-qualified",
+		DisqualifiedColumnID: "col-disqualified",
+	}
+
+	fakeHandoff := &mockHandoffActivator{}
+	engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, fakeHandoff)
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"sim"})
+
+	require.NoError(t, err)
+	assert.Equal(t, 60, state.AccumulatedScore)
+	assert.True(t, fakeHandoff.WasActivatedFor("conv-1"), "handoff must be activated for the conversation")
+	assert.Equal(t, "col-h", leadUpdater.movedColumn, "lead must move to human column when score is in human zone")
 }

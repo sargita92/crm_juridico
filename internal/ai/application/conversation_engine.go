@@ -40,6 +40,12 @@ type ScoringConfigFinder interface {
 	FindBySpecialistID(ctx context.Context, specialistID string) (*specDomain.ScoringConfig, error)
 }
 
+// HandoffActivator activates a human-agent handoff for a conversation.
+// The interface decouples the engine from the concrete ActivateHandoffUseCase.
+type HandoffActivator interface {
+	Activate(ctx context.Context, conversationID string) error
+}
+
 // ConversationEngine orchestrates the AI conversation flow for a lead.
 type ConversationEngine struct {
 	providerRegistry    *domain.ProviderRegistry
@@ -56,12 +62,14 @@ type ConversationEngine struct {
 	toolResultMaxLength int
 	toolLoopMaxIter     int
 	scoringFinder       ScoringConfigFinder
+	handoffActivator    HandoffActivator
 	log                 *zap.Logger
 }
 
 // NewConversationEngine creates a ConversationEngine with all required dependencies.
 // scoringFinder is optional: when nil, scoring-based column movement is disabled
 // and only explicit step.TargetColumnID drives column transitions.
+// handoffActivator is optional: when nil, human-outcome handoff activation is skipped.
 func NewConversationEngine(
 	providerRegistry *domain.ProviderRegistry,
 	configResolver ConfigResolver,
@@ -77,6 +85,7 @@ func NewConversationEngine(
 	toolResultMaxLength int,
 	toolLoopMaxIter int,
 	scoringFinder ScoringConfigFinder,
+	handoffActivator HandoffActivator,
 	log *zap.Logger,
 ) *ConversationEngine {
 	return &ConversationEngine{
@@ -94,6 +103,7 @@ func NewConversationEngine(
 		toolResultMaxLength: toolResultMaxLength,
 		toolLoopMaxIter:     toolLoopMaxIter,
 		scoringFinder:       scoringFinder,
+		handoffActivator:    handoffActivator,
 		log:                 log,
 	}
 }
@@ -254,9 +264,7 @@ func (e *ConversationEngine) HandleMessages(
 				// Column routing priority:
 				//   1. LLM veto flag (meta.Disqualified) overrides everything.
 				//   2. Explicit step.TargetColumnID for forward progression.
-				//   3. Scoring threshold: qualify as soon as score crosses
-				//      threshold, disqualify once every step has been answered
-				//      without reaching it.
+				//   3. OutcomeCalculator: Aprovado → qualified, Humano → human + handoff, Reprovado → disqualified.
 				effectiveTarget := ""
 				disqualifying := false
 				switch {
@@ -265,11 +273,31 @@ func (e *ConversationEngine) HandleMessages(
 					disqualifying = true
 				case targetColumnID != "":
 					effectiveTarget = targetColumnID
-				case sc != nil && state.AccumulatedScore >= sc.Threshold && sc.QualifiedColumnID != "":
-					effectiveTarget = sc.QualifiedColumnID
-				case sc != nil && state.CurrentStepIndex >= len(steps) && sc.DisqualifiedColumnID != "":
-					effectiveTarget = sc.DisqualifiedColumnID
-					disqualifying = true
+				case sc != nil:
+					outcome := specDomain.CalculateOutcome(sc, state.AccumulatedScore)
+					switch outcome {
+					case specDomain.OutcomeAprovado:
+						if sc.QualifiedColumnID != "" {
+							effectiveTarget = sc.QualifiedColumnID
+						}
+					case specDomain.OutcomeHumano:
+						if sc.HumanColumnID != "" {
+							effectiveTarget = sc.HumanColumnID
+						}
+						if e.handoffActivator != nil {
+							if hErr := e.handoffActivator.Activate(ctx, conversationID); hErr != nil {
+								e.log.Warn("conversation_engine: handoff activation failed",
+									zap.String("conversation_id", conversationID),
+									zap.Error(hErr),
+								)
+							}
+						}
+					case specDomain.OutcomeReprovado:
+						if state.CurrentStepIndex >= len(steps) && sc.DisqualifiedColumnID != "" {
+							effectiveTarget = sc.DisqualifiedColumnID
+							disqualifying = true
+						}
+					}
 				}
 
 				if effectiveTarget != "" {
