@@ -8,6 +8,7 @@ import (
 	funnelDomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 )
 
+
 // LeadUpdaterAdapter satisfies application.LeadUpdater.
 type LeadUpdaterAdapter struct {
 	leadRepo   funnelDomain.LeadRepository
@@ -50,6 +51,19 @@ func (a *LeadUpdaterAdapter) MoveLeadToColumn(ctx context.Context, conversationI
 		ColumnID: columnID,
 	}); err != nil {
 		return fmt.Errorf("lead_updater_adapter: move lead: %w", err)
+	}
+	return nil
+}
+
+// SetOutcome looks up the lead by conversation ID and persists the qualification outcome.
+func (a *LeadUpdaterAdapter) SetOutcome(ctx context.Context, conversationID string, outcome string) error {
+	lead, err := a.leadRepo.FindByConversationID(ctx, conversationID)
+	if err != nil {
+		return fmt.Errorf("lead_updater_adapter: find lead: %w", err)
+	}
+	lead.SetQualificationOutcome(funnelDomain.QualificationOutcome(outcome))
+	if err := a.leadRepo.Update(ctx, lead); err != nil {
+		return fmt.Errorf("lead_updater_adapter: set outcome: %w", err)
 	}
 	return nil
 }

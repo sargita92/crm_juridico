@@ -82,6 +82,7 @@ func (m *mockMessageSender) SendAIResponse(_ context.Context, _, _, content stri
 type mockLeadUpdater struct {
 	scoreUpdated bool
 	movedColumn  string
+	outcomes     map[string]string
 }
 
 func (m *mockLeadUpdater) UpdateLeadScore(_ context.Context, _ string, _ int) error {
@@ -92,6 +93,18 @@ func (m *mockLeadUpdater) UpdateLeadScore(_ context.Context, _ string, _ int) er
 func (m *mockLeadUpdater) MoveLeadToColumn(_ context.Context, _, columnID string) error {
 	m.movedColumn = columnID
 	return nil
+}
+
+func (m *mockLeadUpdater) SetOutcome(_ context.Context, conversationID, outcome string) error {
+	if m.outcomes == nil {
+		m.outcomes = make(map[string]string)
+	}
+	m.outcomes[conversationID] = outcome
+	return nil
+}
+
+func (m *mockLeadUpdater) LastOutcomeFor(conversationID string) string {
+	return m.outcomes[conversationID]
 }
 
 type mockHandoffActivator struct {
@@ -674,4 +687,51 @@ func TestConversationEngine_ScoringInHumanZone_PausesAIAndMovesLead(t *testing.T
 	assert.Equal(t, 60, state.AccumulatedScore)
 	assert.True(t, fakeHandoff.WasActivatedFor("conv-1"), "handoff must be activated for the conversation")
 	assert.Equal(t, "col-h", leadUpdater.movedColumn, "lead must move to human column when score is in human zone")
+}
+
+func TestConversationEngine_PersistsOutcomeInLead(t *testing.T) {
+	scoring := &specDomain.ScoringConfig{
+		SpecialistID:         "spec-1",
+		Threshold:            80,
+		ThresholdHumanoMin:   50,
+		HumanColumnID:        "col-h",
+		QualifiedColumnID:    "col-qualified",
+		DisqualifiedColumnID: "col-disqualified",
+	}
+	steps := []specDomain.Step{
+		{ID: "step-1", Text: "Confirma?", DataType: specDomain.StepDataTypeSelection, Score: 0, TargetColumnID: ""},
+	}
+
+	t.Run("aprovado", func(t *testing.T) {
+		state, _ := domain.NewConversationState("s-1", "conv-aprovado", "spec-1")
+		state.AccumulatedScore = 80 // already at threshold before message
+		engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, nil)
+
+		err := engine.HandleMessages(context.Background(), "tenant-1", "conv-aprovado", "spec-1", "", []string{"sim"})
+
+		require.NoError(t, err)
+		assert.Equal(t, "aprovado", leadUpdater.LastOutcomeFor("conv-aprovado"))
+	})
+
+	t.Run("humano", func(t *testing.T) {
+		state, _ := domain.NewConversationState("s-1", "conv-humano", "spec-1")
+		state.AccumulatedScore = 60 // in humano zone [50, 80)
+		engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, nil)
+
+		err := engine.HandleMessages(context.Background(), "tenant-1", "conv-humano", "spec-1", "", []string{"sim"})
+
+		require.NoError(t, err)
+		assert.Equal(t, "humano", leadUpdater.LastOutcomeFor("conv-humano"))
+	})
+
+	t.Run("reprovado", func(t *testing.T) {
+		state, _ := domain.NewConversationState("s-1", "conv-reprovado", "spec-1")
+		state.AccumulatedScore = 10 // below humano min
+		engine, leadUpdater := buildScoringEngine(t, steps, scoring, state, nil)
+
+		err := engine.HandleMessages(context.Background(), "tenant-1", "conv-reprovado", "spec-1", "", []string{"sim"})
+
+		require.NoError(t, err)
+		assert.Equal(t, "reprovado", leadUpdater.LastOutcomeFor("conv-reprovado"))
+	})
 }

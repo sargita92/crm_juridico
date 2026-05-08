@@ -30,6 +30,7 @@ type MessageSender interface {
 type LeadUpdater interface {
 	UpdateLeadScore(ctx context.Context, conversationID string, score int) error
 	MoveLeadToColumn(ctx context.Context, conversationID, columnID string) error
+	SetOutcome(ctx context.Context, conversationID string, outcome string) error
 }
 
 // ScoringConfigFinder loads the scoring configuration for a specialist. When
@@ -275,6 +276,13 @@ func (e *ConversationEngine) HandleMessages(
 					effectiveTarget = targetColumnID
 				case sc != nil:
 					outcome := specDomain.CalculateOutcome(sc, state.AccumulatedScore)
+					if setErr := e.leadUpdater.SetOutcome(ctx, conversationID, string(outcome)); setErr != nil {
+						e.log.Warn("conversation_engine: set outcome failed",
+							zap.String("conversation_id", conversationID),
+							zap.String("outcome", string(outcome)),
+							zap.Error(setErr),
+						)
+					}
 					switch outcome {
 					case specDomain.OutcomeAprovado:
 						if sc.QualifiedColumnID != "" {
