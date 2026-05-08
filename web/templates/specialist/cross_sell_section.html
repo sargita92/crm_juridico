@@ -1,0 +1,143 @@
+{{define "specialist/cross_sell_section.html"}}
+<div id="cross-sell-section">
+    {{if .Error}}
+    <div class="alert alert-danger">{{.Error}}</div>
+    {{end}}
+
+    <!-- Config: enable/disable -->
+    <div style="display:flex;flex-direction:column;gap:0.75rem;padding-bottom:1rem;border-bottom:1px solid #e2e8f0;margin-bottom:1rem">
+        <form hx-post="/admin/specialists/{{.SpecialistID}}/cross-sell/config"
+              hx-target="#cross-sell-section"
+              hx-swap="outerHTML"
+              style="display:flex;flex-direction:column;gap:0.75rem">
+
+            <!-- Toggle habilitado -->
+            <label style="display:flex;align-items:center;gap:0.5rem;font-weight:600">
+                <input type="checkbox" name="cross_sell_enabled" value="true"
+                       {{if .CrossSellEnabled}}checked{{end}}>
+                Habilitar Cross-sell
+            </label>
+
+            {{if .CrossSellEnabled}}
+            <!-- Modo -->
+            <fieldset style="border:none;padding:0;margin:0">
+                <legend style="font-weight:600;margin-bottom:0.4rem">Modo de Cross-sell</legend>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap">
+                    <label style="display:flex;align-items:center;gap:0.35rem">
+                        <input type="radio" name="cross_sell_mode" value="announce"
+                               {{if eq .CrossSellMode "announce"}}checked{{end}}>
+                        Anunciar
+                    </label>
+                    <label style="display:flex;align-items:center;gap:0.35rem">
+                        <input type="radio" name="cross_sell_mode" value="silent"
+                               {{if eq .CrossSellMode "silent"}}checked{{end}}>
+                        Silencioso
+                    </label>
+                    <label style="display:flex;align-items:center;gap:0.35rem">
+                        <input type="radio" name="cross_sell_mode" value="confirm"
+                               {{if eq .CrossSellMode "confirm"}}checked{{end}}>
+                        Confirmar
+                    </label>
+                </div>
+            </fieldset>
+
+            <!-- Template de anuncio (visivel apenas no modo announce) -->
+            <div id="cs-announce-template-wrap"
+                 style="{{if ne .CrossSellMode "announce"}}display:none{{end}}">
+                <label style="display:flex;flex-direction:column;gap:0.25rem">
+                    <span style="font-weight:600">Template de anuncio</span>
+                    <textarea name="cross_sell_announcement_template"
+                              rows="3"
+                              placeholder="Ex: Posso tambem te ajudar com {produto} — quer saber mais?"
+                              style="padding:0.4rem;border:1px solid #cbd5e0;border-radius:4px;resize:vertical">{{.CrossSellAnnouncementTemplate}}</textarea>
+                    <small style="color:#718096">Use {produto} para inserir o nome do produto alvo</small>
+                </label>
+            </div>
+
+            <!-- Sugestao IA -->
+            <label style="display:flex;align-items:center;gap:0.5rem">
+                <input type="checkbox" name="allow_ai_cross_sell_suggestion" value="true"
+                       {{if .AllowAICrossSellSuggestion}}checked{{end}}>
+                Permitir sugestao de cross-sell pela IA
+            </label>
+
+            <div style="display:flex;gap:0.5rem">
+                <button type="submit" class="btn btn-sm btn-primary">Salvar configuracao</button>
+            </div>
+            {{end}}
+        </form>
+    </div>
+
+    {{if .CrossSellEnabled}}
+    <!-- Lista de regras -->
+    <div style="margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600;font-size:0.95rem">Regras de Cross-sell ({{len .Rules}})</span>
+        <button class="btn btn-sm btn-primary" onclick="openModal('cross-sell-rule-modal')">+ Adicionar regra</button>
+    </div>
+
+    {{if .Rules}}
+    <div class="association-list">
+        {{range .Rules}}
+        <div class="association-item" style="flex-wrap:wrap">
+            <div class="association-info" style="flex:1">
+                <span class="badge {{if eq .TriggerType "keyword"}}badge-info{{else}}badge-warning{{end}}">
+                    {{if eq .TriggerType "keyword"}}Palavra-chave{{else}}Resposta de step{{end}}
+                </span>
+                <span style="margin-left:0.5rem;font-size:0.9rem">
+                    {{if eq .TriggerType "keyword"}}
+                        termos: <em>{{.TriggerDisplay}}</em>
+                    {{else}}
+                        step + regex: <em>{{.TriggerDisplay}}</em>
+                    {{end}}
+                </span>
+                <span style="margin-left:0.5rem;color:#718096">→ produto: <strong>{{.TargetProductID}}</strong></span>
+                {{if not .Ativo}}<span class="badge badge-outline" style="margin-left:0.5rem">Inativo</span>{{end}}
+            </div>
+            <div style="display:flex;gap:0.25rem;align-items:center">
+                {{if gt .Ordem 1}}
+                <button class="btn btn-sm btn-outline"
+                        hx-post="/admin/specialists/{{$.SpecialistID}}/cross-sell-rules/htmx/{{.ID}}/move-up"
+                        hx-target="#cross-sell-section"
+                        hx-swap="outerHTML"
+                        title="Mover para cima">&#9650;</button>
+                {{end}}
+                {{if lt .Ordem $.RuleCount}}
+                <button class="btn btn-sm btn-outline"
+                        hx-post="/admin/specialists/{{$.SpecialistID}}/cross-sell-rules/htmx/{{.ID}}/move-down"
+                        hx-target="#cross-sell-section"
+                        hx-swap="outerHTML"
+                        title="Mover para baixo">&#9660;</button>
+                {{end}}
+                <button class="btn btn-sm btn-danger"
+                        hx-delete="/admin/specialists/{{$.SpecialistID}}/cross-sell-rules/htmx/{{.ID}}"
+                        hx-target="#cross-sell-section"
+                        hx-swap="outerHTML"
+                        hx-confirm="Excluir esta regra de cross-sell?">
+                    &times;
+                </button>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding:1.5rem">
+        Nenhuma regra de cross-sell configurada
+    </div>
+    {{end}}
+    {{end}}
+</div>
+
+<script>
+// Mostrar/ocultar template de anuncio ao mudar modo
+(function() {
+    var radios = document.querySelectorAll('input[name="cross_sell_mode"]');
+    var wrap = document.getElementById('cs-announce-template-wrap');
+    if (!wrap) return;
+    radios.forEach(function(r) {
+        r.addEventListener('change', function() {
+            wrap.style.display = r.value === 'announce' ? '' : 'none';
+        });
+    });
+})();
+</script>
+{{end}}
