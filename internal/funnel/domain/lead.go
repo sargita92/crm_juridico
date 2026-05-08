@@ -10,20 +10,32 @@ const (
 	LeadStatusLost LeadStatus = "lost"
 )
 
+type QualificationOutcome string
+
+const (
+	QualificationOutcomeEmAndamento QualificationOutcome = "em_andamento"
+	QualificationOutcomeAprovado    QualificationOutcome = "aprovado"
+	QualificationOutcomeHumano      QualificationOutcome = "humano"
+	QualificationOutcomeCrossSell   QualificationOutcome = "cross_sell"
+	QualificationOutcomeReprovado   QualificationOutcome = "reprovado"
+)
+
 type Lead struct {
-	ID                string
-	TenantID          string
-	FunnelID          string
-	ColumnID          string
-	ContactID         string
-	ConversationID    string
-	ProductID         string
-	ResponsibleUserID string
-	Score             int
-	Status            LeadStatus
-	ColumnEnteredAt   time.Time
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	ID                    string
+	TenantID              string
+	FunnelID              string
+	ColumnID              string
+	ContactID             string
+	ConversationID        string
+	ProductID             string
+	ResponsibleUserID     string
+	Score                 int
+	Status                LeadStatus
+	ColumnEnteredAt       time.Time
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
+	QualificationOutcome  QualificationOutcome
+	CrossSellOriginLeadID *string
 }
 
 func NewLead(id, tenantID, funnelID, columnID, contactID, conversationID string) (*Lead, error) {
@@ -49,6 +61,7 @@ func NewLead(id, tenantID, funnelID, columnID, contactID, conversationID string)
 		ConversationID: conversationID, Score: 0,
 		Status: LeadStatusOpen, ColumnEnteredAt: now,
 		CreatedAt: now, UpdatedAt: now,
+		QualificationOutcome: QualificationOutcomeEmAndamento,
 	}, nil
 }
 
@@ -80,5 +93,10 @@ func (l *Lead) UpdateScore(score int) {
 
 func (l *Lead) AssignResponsible(userID string) {
 	l.ResponsibleUserID = userID
+	l.UpdatedAt = time.Now()
+}
+
+func (l *Lead) SetQualificationOutcome(o QualificationOutcome) {
+	l.QualificationOutcome = o
 	l.UpdatedAt = time.Now()
 }
