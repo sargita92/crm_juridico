@@ -125,6 +125,7 @@ func (h *CrossSellRuleHandler) HandleUpdate(c *gin.Context) {
 
 	input := application.UpdateCrossSellRuleInput{
 		ID:              ruleID,
+		SpecialistID:    c.Param("id"),
 		TriggerType:     body.TriggerType,
 		TriggerConfig:   triggerConfig,
 		TargetProductID: body.TargetProductID,
@@ -135,6 +136,10 @@ func (h *CrossSellRuleHandler) HandleUpdate(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, domain.ErrCrossSellRuleNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Regra não encontrada"})
+			return
+		}
+		if errors.Is(err, domain.ErrCrossSellRuleNotOwnedBySpecialist) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Regra não pertence a este especialista"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": mapCrossSellError(err)})
@@ -151,9 +156,17 @@ func (h *CrossSellRuleHandler) HandleDelete(c *gin.Context) {
 		return
 	}
 
-	if err := h.deleteUC.Execute(c.Request.Context(), ruleID); err != nil {
+	deleteInput := application.DeleteCrossSellRuleInput{
+		ID:           ruleID,
+		SpecialistID: c.Param("id"),
+	}
+	if err := h.deleteUC.Execute(c.Request.Context(), deleteInput); err != nil {
 		if errors.Is(err, domain.ErrCrossSellRuleNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Regra não encontrada"})
+			return
+		}
+		if errors.Is(err, domain.ErrCrossSellRuleNotOwnedBySpecialist) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Regra não pertence a este especialista"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao excluir regra"})
@@ -172,12 +185,17 @@ func (h *CrossSellRuleHandler) HandleMoveUp(c *gin.Context) {
 	}
 
 	err := h.reorderUC.Execute(c.Request.Context(), application.ReorderCrossSellRuleInput{
-		ID:        ruleID,
-		Direction: "up",
+		ID:           ruleID,
+		SpecialistID: c.Param("id"),
+		Direction:    "up",
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrCrossSellRuleNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Regra não encontrada"})
+			return
+		}
+		if errors.Is(err, domain.ErrCrossSellRuleNotOwnedBySpecialist) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Regra não pertence a este especialista"})
 			return
 		}
 		if errors.Is(err, application.ErrCrossSellRuleAlreadyFirst) {
@@ -199,12 +217,17 @@ func (h *CrossSellRuleHandler) HandleMoveDown(c *gin.Context) {
 	}
 
 	err := h.reorderUC.Execute(c.Request.Context(), application.ReorderCrossSellRuleInput{
-		ID:        ruleID,
-		Direction: "down",
+		ID:           ruleID,
+		SpecialistID: c.Param("id"),
+		Direction:    "down",
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrCrossSellRuleNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Regra não encontrada"})
+			return
+		}
+		if errors.Is(err, domain.ErrCrossSellRuleNotOwnedBySpecialist) {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Regra não pertence a este especialista"})
 			return
 		}
 		if errors.Is(err, application.ErrCrossSellRuleAlreadyLast) {

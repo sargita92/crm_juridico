@@ -62,8 +62,9 @@ var (
 	ErrCrossSellTemplateRequired = errors.New("specialist: cross-sell announce mode requires a template")
 
 	// CrossSellRule errors
-	ErrCrossSellRuleNotFound      = errors.New("cross-sell rule not found")
-	ErrTargetProductRequired      = errors.New("cross-sell rule: target product ID is required")
+	ErrCrossSellRuleNotFound              = errors.New("cross-sell rule not found")
+	ErrCrossSellRuleNotOwnedBySpecialist  = errors.New("cross-sell rule does not belong to the given specialist")
+	ErrTargetProductRequired              = errors.New("cross-sell rule: target product ID is required")
 	ErrKeywordTriggerEmpty        = errors.New("cross-sell rule: keyword trigger must have at least one non-blank term")
 	ErrStepAnswerTriggerInvalid   = errors.New("cross-sell rule: step_answer trigger requires a non-empty step ID")
 	ErrInvalidRegex               = errors.New("cross-sell rule: trigger regex is invalid")

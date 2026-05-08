@@ -16,8 +16,9 @@ var (
 
 // ReorderCrossSellRuleInput holds the rule ID and direction to move.
 type ReorderCrossSellRuleInput struct {
-	ID        string
-	Direction string // "up" or "down"
+	ID           string
+	SpecialistID string // used to assert ownership; required for tenant isolation
+	Direction    string // "up" or "down"
 }
 
 // ReorderCrossSellRuleUseCase swaps a rule's Ordem with its adjacent neighbor.
@@ -37,6 +38,11 @@ func (uc *ReorderCrossSellRuleUseCase) Execute(ctx context.Context, input Reorde
 	rule, err := uc.repo.FindByID(ctx, input.ID)
 	if err != nil {
 		return err
+	}
+
+	// Tenant isolation: ensure the rule belongs to the specialist in the request context.
+	if input.SpecialistID != "" && rule.SpecialistID != input.SpecialistID {
+		return domain.ErrCrossSellRuleNotOwnedBySpecialist
 	}
 
 	rules, err := uc.repo.ListBySpecialistID(ctx, rule.SpecialistID)

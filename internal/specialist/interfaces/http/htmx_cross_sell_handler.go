@@ -211,9 +211,16 @@ func (h *HTMXCrossSellHandler) HandleDeleteHTMX(c *gin.Context) {
 		return
 	}
 
-	if err := h.deleteRulesUC.Execute(c.Request.Context(), ruleID); err != nil {
+	if err := h.deleteRulesUC.Execute(c.Request.Context(), application.DeleteCrossSellRuleInput{
+		ID:           ruleID,
+		SpecialistID: id,
+	}); err != nil {
 		if errors.Is(err, domain.ErrCrossSellRuleNotFound) {
 			h.renderSection(c, id, "Regra não encontrada")
+			return
+		}
+		if errors.Is(err, domain.ErrCrossSellRuleNotOwnedBySpecialist) {
+			h.renderSection(c, id, "Regra não pertence a este especialista")
 			return
 		}
 		h.renderSection(c, id, "Erro ao excluir regra")
@@ -233,8 +240,9 @@ func (h *HTMXCrossSellHandler) HandleMoveUpHTMX(c *gin.Context) {
 	}
 
 	err := h.reorderRulesUC.Execute(c.Request.Context(), application.ReorderCrossSellRuleInput{
-		ID:        ruleID,
-		Direction: "up",
+		ID:           ruleID,
+		SpecialistID: id,
+		Direction:    "up",
 	})
 	if err != nil {
 		if !errors.Is(err, application.ErrCrossSellRuleAlreadyFirst) {
@@ -256,8 +264,9 @@ func (h *HTMXCrossSellHandler) HandleMoveDownHTMX(c *gin.Context) {
 	}
 
 	err := h.reorderRulesUC.Execute(c.Request.Context(), application.ReorderCrossSellRuleInput{
-		ID:        ruleID,
-		Direction: "down",
+		ID:           ruleID,
+		SpecialistID: id,
+		Direction:    "down",
 	})
 	if err != nil {
 		if !errors.Is(err, application.ErrCrossSellRuleAlreadyLast) {
