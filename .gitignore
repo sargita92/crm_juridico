@@ -40,3 +40,6 @@ Thumbs.db
 
 # Local debug / curl artifacts
 cookies.txt
+
+# Worktrees temporários (skill superpowers:using-git-worktrees)
+.claire/
