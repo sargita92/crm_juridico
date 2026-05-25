@@ -56,11 +56,13 @@ func setupOwaspEnv() *owaspEnv {
 	for _, name := range []string{
 		"whatsapp/page.html", "whatsapp/qr.html", "whatsapp/status.html",
 		"whatsapp/conversations.html", "whatsapp/chat.html", "whatsapp/message.html",
-		"whatsapp/messages_fragment.html",
+		"whatsapp/messages_fragment.html", "whatsapp/notes_panel.html",
 	} {
 		template.Must(tmpl.New(name).Parse("ok"))
 	}
 	router.SetHTMLTemplate(tmpl)
+
+	handler.SetNotesService(&mockNotesService{hasLead: true})
 
 	jwtProvider := authinfra.NewJWTProvider("test-secret-owasp", 24*time.Hour)
 	authMw := middleware.Auth(jwtProvider)
@@ -115,6 +117,8 @@ func TestOWASP_A01_NoToken_Returns401(t *testing.T) {
 		{http.MethodGet, "/tenant/whatsapp/conversations"},
 		{http.MethodGet, "/tenant/whatsapp/conversations/some-id"},
 		{http.MethodPost, "/tenant/whatsapp/conversations/some-id/messages"},
+		{http.MethodGet, "/tenant/whatsapp/conversations/some-id/notes"},
+		{http.MethodPost, "/tenant/whatsapp/conversations/some-id/notes"},
 		{http.MethodPost, "/tenant/whatsapp/connect"},
 		{http.MethodPost, "/tenant/whatsapp/disconnect"},
 		{http.MethodGet, "/tenant/whatsapp/events"},
@@ -141,6 +145,7 @@ func TestOWASP_A01_NoTenant_Returns403(t *testing.T) {
 		{http.MethodGet, "/tenant/whatsapp"},
 		{http.MethodGet, "/tenant/whatsapp/conversations"},
 		{http.MethodPost, "/tenant/whatsapp/conversations/some-id/messages"},
+		{http.MethodPost, "/tenant/whatsapp/conversations/some-id/notes"},
 		{http.MethodPost, "/tenant/whatsapp/connect"},
 		{http.MethodPost, "/tenant/whatsapp/disconnect"},
 	}
@@ -242,6 +247,21 @@ func TestOWASP_A03_XSS_MessageContent(t *testing.T) {
 
 	// Go html/template auto-escapes, so <script> should not appear unescaped
 	// The stub template just renders "ok", but in production the template engine escapes
+	assert.NotContains(t, w.Body.String(), "<script>alert")
+}
+
+func TestOWASP_A03_XSS_NoteContent(t *testing.T) {
+	env := setupOwaspEnv()
+	token := env.tenantToken(t, "tenant-1")
+
+	form := url.Values{"content": {"<script>alert('xss')</script>"}}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/tenant/whatsapp/conversations/c1/notes", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(tokenCookieOwasp(token))
+	env.router.ServeHTTP(w, req)
+
+	// html/template auto-escapes; raw <script> must not appear in the response.
 	assert.NotContains(t, w.Body.String(), "<script>alert")
 }
 

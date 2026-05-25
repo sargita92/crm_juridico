@@ -14,6 +14,8 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.Handle
 	tenant.GET("/conversations/:id", h.RenderChat)
 	tenant.GET("/conversations/:id/messages/new", h.RenderNewMessages)
 	tenant.POST("/conversations/:id/messages", h.HandleSendMessage)
+	tenant.GET("/conversations/:id/notes", h.RenderNotesPanel)
+	tenant.POST("/conversations/:id/notes", h.HandleCreateNote)
 	tenant.POST("/connect", h.HandleConnect)
 	tenant.POST("/disconnect", h.HandleDisconnect)
 	tenant.GET("/events", h.HandleSSE)

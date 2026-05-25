@@ -68,6 +68,12 @@ func (m *Module) SetLeadCreator(lc domain.LeadCreator) {
 	m.receiveMessageUC.SetLeadCreator(lc)
 }
 
+// SetLeadNotesService wires the funnel-backed notes service into the HTTP handler so
+// the chat can show and add notes for the lead a conversation is currently on.
+func (m *Module) SetLeadNotesService(s domain.LeadNotesService) {
+	m.handler.SetNotesService(s)
+}
+
 func (m *Module) SetFileStorer(fs domain.FileStorer) {
 	m.receiveMessageUC.SetFileStorer(fs)
 }

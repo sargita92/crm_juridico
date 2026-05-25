@@ -226,14 +226,14 @@ func setupTest() *testDeps {
 	for _, name := range []string{
 		"whatsapp/page.html", "whatsapp/qr.html", "whatsapp/status.html",
 		"whatsapp/conversations.html", "whatsapp/chat.html", "whatsapp/message.html",
-		"whatsapp/messages_fragment.html",
+		"whatsapp/messages_fragment.html", "whatsapp/notes_panel.html",
 	} {
 		template.Must(tmpl.New(name).Parse("ok"))
 	}
 	router.SetHTMLTemplate(tmpl)
 
-	// Fake auth middleware (no-op) + fake tenant middleware using RequireTenant internals
-	authMw := func(c *gin.Context) { c.Next() }
+	// Fake auth middleware (sets user_id) + fake tenant middleware
+	authMw := func(c *gin.Context) { c.Set("user_id", "user-1"); c.Next() }
 	tenantMw := func(c *gin.Context) { c.Next() }
 
 	handler.RegisterRoutes(router, authMw, tenantMw)
