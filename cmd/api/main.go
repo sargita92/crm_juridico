@@ -131,6 +131,7 @@ func main() {
 	// module exists (see Task 14 wiring).
 	funnelMod := funnel.NewModule(db, contactAdapter, messageAdapter, userNameAdapter, productDetectorAdapter, productProviderAdapter, funnelProductRouterAdapter, productListerAdapter, sharedEventBus, nil, log)
 	whatsappMod.SetLeadCreator(funnelMod.LeadCreator())
+	whatsappMod.SetLeadNotesService(funnelMod.LeadNotesService())
 
 	// Files module — captures WhatsApp media into a per-tenant store and
 	// exposes listing/preview/download. Wire the storer into whatsapp so

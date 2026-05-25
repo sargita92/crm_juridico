@@ -34,10 +34,15 @@ type Handler struct {
 	disconnectUC  *application.DisconnectWhatsAppUseCase
 	eventBus      events.EventBus
 	log           *zap.Logger
+	notesService  domain.LeadNotesService
 
 	mu         sync.Mutex
 	connStates map[string]*connectState
 }
+
+// SetNotesService late-binds the funnel-backed notes service. Wired in main.go after
+// the funnel module is built (see SetLeadCreator for the same pattern).
+func (h *Handler) SetNotesService(s domain.LeadNotesService) { h.notesService = s }
 
 func NewHandler(
 	sendMessageUC *application.SendMessageUseCase,
@@ -404,4 +409,62 @@ func (h *Handler) HandleDisconnect(c *gin.Context) {
 
 	c.Header("HX-Redirect", "/tenant/whatsapp")
 	c.Status(http.StatusOK)
+}
+
+// RenderNotesPanel renders the notes drawer body for the lead the conversation is
+// currently on. Shows an empty state when the conversation has no lead.
+func (h *Handler) RenderNotesPanel(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	convID := c.Param("id")
+
+	hasLead, notes, err := h.notesService.NotesForConversation(c.Request.Context(), tenantID, convID)
+	if err != nil {
+		h.log.Error("failed to load notes", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.Error(err))
+		c.HTML(http.StatusInternalServerError, "whatsapp/notes_panel.html", gin.H{
+			"ConversationID": convID,
+			"Error":          "Erro ao carregar notas",
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "whatsapp/notes_panel.html", gin.H{
+		"ConversationID": convID,
+		"HasLead":        hasLead,
+		"Notes":          notes,
+	})
+}
+
+// HandleCreateNote creates a note on the current lead of the conversation and
+// re-renders the notes panel with the updated list.
+func (h *Handler) HandleCreateNote(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	convID := c.Param("id")
+	content := c.PostForm("content")
+	userID := c.GetString("user_id")
+
+	if content == "" {
+		c.HTML(http.StatusBadRequest, "whatsapp/notes_panel.html", gin.H{
+			"ConversationID": convID,
+			"HasLead":        true,
+			"Error":          "A nota nao pode ser vazia",
+		})
+		return
+	}
+
+	notes, err := h.notesService.AddNote(c.Request.Context(), tenantID, convID, content, userID)
+	if err != nil {
+		h.log.Error("failed to create note", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.String("user_id", userID), zap.Error(err))
+		c.HTML(http.StatusUnprocessableEntity, "whatsapp/notes_panel.html", gin.H{
+			"ConversationID": convID,
+			"HasLead":        true,
+			"Error":          "Erro ao adicionar nota",
+		})
+		return
+	}
+
+	c.HTML(http.StatusOK, "whatsapp/notes_panel.html", gin.H{
+		"ConversationID": convID,
+		"HasLead":        true,
+		"Notes":          notes,
+	})
 }

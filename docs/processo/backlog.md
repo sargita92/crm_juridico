@@ -80,14 +80,18 @@ Suporte interno, não faz parte do produto final.
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F19 | [Dashboards (Admin + Tenant)](../features/F19-dashboards.md) | concluído | F06, F07, F08, F10 | média |
+| F25 | [Filtro de Dashboard por Usuário (Tenant)](../features/F25-dashboard-filtro-por-usuario.md) | backlog | F19, F08 | média |
 
 ## Épico 11: Manutenção e Qualidade Técnica
 
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F21 | [Saneamento Técnico (one-shot)](../features/F21-saneamento-tecnico.md) | concluído | F01 | alta |
+| F26 | [Bug: gargalo intermitente de banco (delays até ~19s)](../features/F26-gargalo-banco.md) | backlog | — | alta |
 
 > Após F21, manutenção contínua segue o processo recorrente em [manutencao-tecnica.md](manutencao-tecnica.md) (não vai ao backlog).
+>
+> F26 (reportado 2026-05-25): em alguns momentos o banco gargala e o tempo de resposta chega a ~19s. Suspeita inicial: AI Playground (F17), mas a **causa-raiz não está confirmada**. Primeiro passo é instrumentar/profilar (queries lentas, N+1, pool de conexões, locks) para localizar o gargalo antes de propor a correção.
 
 ## Épico 12: Qualificação Avançada
 

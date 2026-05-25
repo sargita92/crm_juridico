@@ -28,6 +28,10 @@ type LeadRepository interface {
 	Update(ctx context.Context, lead *Lead) error
 	FindByContactAndTenant(ctx context.Context, tenantID, contactID string) (*Lead, error)
 	FindByConversationID(ctx context.Context, conversationID string) (*Lead, error)
+	// FindCurrentByConversationID returns the most recent lead (by created_at) of a
+	// conversation within a tenant. After a cross-sell, the newest lead is the one the
+	// conversation is currently on. Returns ErrLeadNotFound when none.
+	FindCurrentByConversationID(ctx context.Context, tenantID, conversationID string) (*Lead, error)
 	FindByFunnelID(ctx context.Context, funnelID string, filter LeadFilter) (*LeadList, error)
 	CountByColumnID(ctx context.Context, columnID string) (int, error)
 	// FindByTenantAndSearch returns up to limit leads in the tenant whose contact

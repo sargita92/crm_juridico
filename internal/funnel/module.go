@@ -11,18 +11,21 @@ import (
 	funnelhttp "github.com/sasrgita/crm-juridico/internal/funnel/interfaces/http"
 	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
+	whatsappdomain "github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
 )
 
 type Module struct {
-	handler       *funnelhttp.Handler
-	leadCreator   *application.CreateLeadUseCase
-	listFunnelsUC *application.ListFunnelsUseCase
-	moveLeadUC    *application.MoveLeadUseCase
-	assignLeadUC  *application.AssignLeadUseCase
-	leadRepo      domain.LeadRepository
-	noteRepo      domain.LeadNoteRepository
-	columnRepo    domain.ColumnRepository
-	funnelRepo    domain.FunnelRepository
+	handler          *funnelhttp.Handler
+	leadCreator      *application.CreateLeadUseCase
+	listFunnelsUC    *application.ListFunnelsUseCase
+	moveLeadUC       *application.MoveLeadUseCase
+	assignLeadUC     *application.AssignLeadUseCase
+	leadRepo         domain.LeadRepository
+	noteRepo         domain.LeadNoteRepository
+	columnRepo       domain.ColumnRepository
+	funnelRepo       domain.FunnelRepository
+	createLeadNoteUC *application.CreateLeadNoteUseCase
+	userNameProvider domain.UserNameProvider
 }
 
 func NewModule(
@@ -72,15 +75,17 @@ func NewModule(
 	)
 
 	return &Module{
-		handler:       handler,
-		leadCreator:   createLeadUC,
-		listFunnelsUC: listFunnelsUC,
-		moveLeadUC:    moveLeadUC,
-		assignLeadUC:  assignLeadUC,
-		leadRepo:      leadRepo,
-		noteRepo:      noteRepo,
-		columnRepo:    columnRepo,
-		funnelRepo:    funnelRepo,
+		handler:          handler,
+		leadCreator:      createLeadUC,
+		listFunnelsUC:    listFunnelsUC,
+		moveLeadUC:       moveLeadUC,
+		assignLeadUC:     assignLeadUC,
+		leadRepo:         leadRepo,
+		noteRepo:         noteRepo,
+		columnRepo:       columnRepo,
+		funnelRepo:       funnelRepo,
+		createLeadNoteUC: createLeadNoteUC,
+		userNameProvider: userNameProvider,
 	}
 }
 
@@ -119,6 +124,13 @@ func (m *Module) AssignLeadUC() *application.AssignLeadUseCase {
 
 func (m *Module) NoteRepo() domain.LeadNoteRepository {
 	return m.noteRepo
+}
+
+// LeadNotesService returns an adapter implementing the whatsapp module's
+// LeadNotesService port, giving the WhatsApp chat access to the notes of the lead a
+// conversation is currently on.
+func (m *Module) LeadNotesService() whatsappdomain.LeadNotesService {
+	return infrastructure.NewWhatsAppNotesAdapter(m.leadRepo, m.noteRepo, m.userNameProvider, m.createLeadNoteUC)
 }
 
 func (m *Module) ColumnRepo() domain.ColumnRepository {

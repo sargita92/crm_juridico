@@ -14,6 +14,13 @@
         <div class="wa-chat-header-info">
             <h3>Conversa</h3>
         </div>
+        <button class="wa-notes-btn" type="button"
+                hx-get="/tenant/whatsapp/conversations/{{.ConversationID}}/notes"
+                hx-target="#wa-notes-drawer-body"
+                hx-swap="innerHTML"
+                hx-on:click="document.getElementById('wa-notes-drawer').classList.add('open')">
+            📝 Notas
+        </button>
     </div>
     <div class="wa-messages" id="messages-area">
         {{if .Messages}}
@@ -46,6 +53,9 @@
             </button>
         </form>
     </div>
+    <aside id="wa-notes-drawer" class="wa-notes-drawer" aria-label="Notas do cliente">
+        <div id="wa-notes-drawer-body"></div>
+    </aside>
 </div>
 {{end}}
 {{end}}

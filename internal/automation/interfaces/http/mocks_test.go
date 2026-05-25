@@ -226,6 +226,10 @@ func (m *mockLeadRepo) FindByConversationID(_ context.Context, _ string) (*funne
 	return nil, funneldomain.ErrLeadNotFound
 }
 
+func (m *mockLeadRepo) FindCurrentByConversationID(_ context.Context, _, _ string) (*funneldomain.Lead, error) {
+	return nil, funneldomain.ErrLeadNotFound
+}
+
 func (m *mockLeadRepo) FindByFunnelID(_ context.Context, _ string, _ funneldomain.LeadFilter) (*funneldomain.LeadList, error) {
 	return &funneldomain.LeadList{}, nil
 }

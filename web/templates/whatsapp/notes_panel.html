@@ -1,0 +1,37 @@
+{{define "whatsapp/notes_panel.html"}}
+<div class="wa-notes-header">
+    <h3>📝 Notas do cliente</h3>
+    <button class="wa-notes-close" type="button"
+            hx-on:click="document.getElementById('wa-notes-drawer').classList.remove('open')">✕</button>
+</div>
+{{if .Error}}
+<p class="wa-notes-error">{{.Error}}</p>
+{{end}}
+{{if .HasLead}}
+<form class="wa-notes-form"
+      hx-post="/tenant/whatsapp/conversations/{{.ConversationID}}/notes"
+      hx-target="#wa-notes-drawer-body"
+      hx-swap="innerHTML"
+      hx-on::after-request="if(event.detail.successful) this.reset()">
+    <textarea name="content" rows="2" required placeholder="Adicionar anotacao..."></textarea>
+    <button type="submit">Adicionar</button>
+</form>
+{{if .Notes}}
+<div class="wa-notes-list">
+    {{range .Notes}}
+    <div class="wa-note">
+        <div class="wa-note-meta">
+            <span class="wa-note-author">{{if .AuthorName}}{{.AuthorName}}{{else}}Usuario{{end}}</span>
+            <span class="wa-note-time">{{.CreatedAt.Format "02/01/2006 15:04"}}</span>
+        </div>
+        <p class="wa-note-content">{{.Content}}</p>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<p class="wa-notes-empty">Nenhuma anotacao</p>
+{{end}}
+{{else}}
+<p class="wa-notes-empty">Nenhum lead associado a esta conversa ainda.</p>
+{{end}}
+{{end}}
