@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -426,14 +427,17 @@ func TestOWASP_A07_InvalidTokenString_Returns401(t *testing.T) {
 
 	// Token base valido
 	validToken := env.tenantToken(t, "tenant-a")
-	// Corrompe ultimo caractere (signature segment) com um valor garantido
-	// diferente do original (senao a tampering vira no-op em ~1.5% dos runs).
-	last := validToken[len(validToken)-1]
-	replacement := byte('X')
-	if last == replacement {
-		replacement = 'Y'
-	}
-	tampered := validToken[:len(validToken)-1] + string(replacement)
+	// Corrompe a assinatura de forma deterministica: decodifica o 3o segmento
+	// (base64url), inverte o 1o byte e re-encoda. Mexer apenas no ultimo
+	// CARACTERE base64 nao bastava: ele carrega 2 bits de padding, entao ~1/16
+	// dos tokens decodificava para a mesma assinatura (no-op) -> teste flaky.
+	parts := strings.Split(validToken, ".")
+	require.Len(t, parts, 3, "JWT deve ter header.payload.signature")
+	sig, err := base64.RawURLEncoding.DecodeString(parts[2])
+	require.NoError(t, err)
+	sig[0] ^= 0xFF
+	parts[2] = base64.RawURLEncoding.EncodeToString(sig)
+	tampered := strings.Join(parts, ".")
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/tenant/leads", nil)
