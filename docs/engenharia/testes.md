@@ -29,6 +29,17 @@
 - cada teste cria e destrói seu próprio container/estado
 - helper compartilhado para setup/teardown em `internal/shared/testhelper/`
 
+### Execução: pre-push não-bloqueante (fora do CI)
+
+Os testes de integração (`go test` **sem** `-short` → incluem os de testcontainers) **não rodam no GitHub Actions** — o testcontainers está quebrado no ambiente (WSL2) desde ~maio/2026, e um job sempre vermelho não agrega sinal. Em vez disso, rodam via **git hook de pre-push, não-bloqueante**:
+
+- `scripts/test-integration.sh` — roda `go test -p 1 -count=1 ./cmd/... ./internal/...` com timeout (`INTEGRATION_TIMEOUT`, default 180s). Também serve para rodar à mão.
+- `scripts/hooks/pre-push` — chama o script no `git push`, mostra o resultado, mas **nunca bloqueia** o push.
+- Instalar uma vez após clonar o repo: `bash scripts/install-hooks.sh` (aponta `core.hooksPath` para `scripts/hooks/`).
+- Pular o hook num push específico: `git push --no-verify`.
+
+O CI mantém os testes `-short` (job `Tests (short)`) e o gate de cobertura (informativo, modo `-short`).
+
 ### Testes end-to-end (build tag `integration`)
 
 Testes que sobem o pipeline inteiro (HTTP → router → use case → DB real → fixture completa) são marcados com:
