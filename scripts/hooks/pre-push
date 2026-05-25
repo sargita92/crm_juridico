@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# git pre-push hook (versionado em scripts/hooks/, instalado via scripts/install-hooks.sh).
+#
+# Roda os testes de integração de forma NÃO-BLOQUEANTE: informa o resultado mas
+# NUNCA impede o push (sempre exit 0). Enquanto o testcontainers estiver quebrado,
+# um hook bloqueante travaria todo push.
+#
+# Para pular o hook de vez: git push --no-verify
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+echo ""
+echo "▶ pre-push: testes de integração (não-bloqueante)"
+
+bash "$REPO_ROOT/scripts/test-integration.sh" < /dev/null
+code=$?
+
+echo ""
+if [[ $code -eq 0 ]]; then
+  echo "✅ integração passou."
+elif [[ $code -eq 124 ]]; then
+  echo "⚠️  integração deu timeout — push liberado mesmo assim."
+else
+  echo "⚠️  integração falhou (exit $code) — push liberado mesmo assim (hook não-bloqueante)."
+fi
+echo "   (para pular o hook: git push --no-verify)"
+
+exit 0
