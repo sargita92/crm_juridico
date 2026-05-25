@@ -1448,6 +1448,37 @@ body:has(.admin-layout) { background: var(--admin-bg); }
     width: 16px; height: 16px;
 }
 
+/* Botao "Trocar de escritorio" / "Entrar em escritorio" -> /select-tenant.
+   Mesma forma do logout, com hover neutro (azul) por ser acao nao destrutiva. */
+.admin-sidebar .sidebar-footer .sidebar-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+    padding: 0.55rem 0.85rem;
+    margin-bottom: 0.5rem;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--dur-fast, 150ms) var(--ease-out, ease-out),
+                border-color var(--dur-fast, 150ms) var(--ease-out, ease-out),
+                color var(--dur-fast, 150ms) var(--ease-out, ease-out);
+}
+.admin-sidebar .sidebar-footer .sidebar-switch-btn:hover {
+    background: rgba(59, 130, 246, 0.14);
+    border-color: rgba(59, 130, 246, 0.40);
+    color: #bfdbfe;
+}
+.admin-sidebar .sidebar-footer .sidebar-switch-btn svg {
+    width: 16px; height: 16px;
+}
+
 /* WhatsApp status pill no footer da sidebar (ajustado ao tema escuro) */
 .admin-sidebar .sidebar-footer .tenant-wa-status {
     width: 100%;
