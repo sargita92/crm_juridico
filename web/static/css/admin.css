@@ -1448,6 +1448,18 @@ body:has(.admin-layout) { background: var(--admin-bg); }
     width: 16px; height: 16px;
 }
 
+/* Footer empilhado em coluna: cada acao ocupa a linha inteira (sobrescreve o
+   flex em linha de main.css). Vale para as duas sidebars (ambas usam .admin-sidebar). */
+.admin-sidebar .sidebar-footer {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.5rem;
+}
+.admin-sidebar .sidebar-footer > form {
+    margin: 0;
+}
+
 /* Botao "Trocar de escritorio" / "Entrar em escritorio" -> /select-tenant.
    Mesma forma do logout, com hover neutro (azul) por ser acao nao destrutiva. */
 .admin-sidebar .sidebar-footer .sidebar-switch-btn {
@@ -1457,7 +1469,6 @@ body:has(.admin-layout) { background: var(--admin-bg); }
     width: 100%;
     justify-content: center;
     padding: 0.55rem 0.85rem;
-    margin-bottom: 0.5rem;
     border-radius: 9px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.10);
