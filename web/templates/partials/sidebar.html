@@ -61,9 +61,14 @@
                 <span class="sidebar-user-role">Super admin</span>
             </div>
         </div>
+        <a href="/select-tenant" class="sidebar-switch-btn" title="Entrar em escritório">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+            Entrar em escritório
+        </a>
         <form hx-post="/logout" style="margin:0">
-            <button type="submit" aria-label="Sair">
+            <button type="submit" class="sidebar-logout-btn" aria-label="Sair">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Sair
             </button>
         </form>
     </div>
