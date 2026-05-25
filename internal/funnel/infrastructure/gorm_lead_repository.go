@@ -66,6 +66,20 @@ func (r *GormLeadRepository) FindByConversationID(ctx context.Context, conversat
 	return leadToDomain(&model), nil
 }
 
+func (r *GormLeadRepository) FindCurrentByConversationID(ctx context.Context, tenantID, conversationID string) (*domain.Lead, error) {
+	var model leadModel
+	if err := r.db.WithContext(ctx).
+		Where("conversation_id = ? AND tenant_id = ?", conversationID, tenantID).
+		Order("created_at DESC").
+		First(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrLeadNotFound
+		}
+		return nil, err
+	}
+	return leadToDomain(&model), nil
+}
+
 func (r *GormLeadRepository) FindByContactAndTenant(ctx context.Context, tenantID, contactID string) (*domain.Lead, error) {
 	var model leadModel
 	if err := r.db.WithContext(ctx).

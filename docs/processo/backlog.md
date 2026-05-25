@@ -80,6 +80,7 @@ Suporte interno, não faz parte do produto final.
 | # | Feature | Status | Dependência | Prioridade |
 |---|---------|--------|-------------|------------|
 | F19 | [Dashboards (Admin + Tenant)](../features/F19-dashboards.md) | concluído | F06, F07, F08, F10 | média |
+| F25 | [Filtro de Dashboard por Usuário (Tenant)](../features/F25-dashboard-filtro-por-usuario.md) | backlog | F19, F08 | média |
 
 ## Épico 11: Manutenção e Qualidade Técnica
 

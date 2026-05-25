@@ -196,6 +196,10 @@ func (m *owaspMockLeadRepo) FindByConversationID(_ context.Context, conversation
 	return nil, domain.ErrLeadNotFound
 }
 
+func (m *owaspMockLeadRepo) FindCurrentByConversationID(_ context.Context, _, conversationID string) (*domain.Lead, error) {
+	return nil, domain.ErrLeadNotFound
+}
+
 func (m *owaspMockLeadRepo) FindByTenantAndSearch(_ context.Context, tenantID, query string, limit int) ([]domain.Lead, error) {
 	return nil, nil
 }
