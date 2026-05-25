@@ -67,6 +67,19 @@ content=Ola, como posso ajuda-lo?
 GET {{base_url}}/tenant/whatsapp/events
 Cookie: token={{tenant_token}}
 
+### --- Notas do cliente (F24) ---
+
+### Painel de notas da conversa (lead atual)
+GET {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}/notes
+Cookie: token={{tenant_token}}
+
+### Adicionar nota ao lead atual da conversa
+POST {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}/notes
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
+
+content=Cliente pediu retorno na proxima semana.
+
 ### ============================================
 ### Testes OWASP
 ### ============================================
@@ -85,6 +98,13 @@ Cookie: token={{tenant_token}}
 
 ### A03 — XSS no envio de mensagem (template deve escapar)
 POST {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}/messages
+Cookie: token={{tenant_token}}
+Content-Type: application/x-www-form-urlencoded
+
+content=<script>alert('xss')</script>
+
+### A03 — XSS no conteudo da nota (template deve escapar)
+POST {{base_url}}/tenant/whatsapp/conversations/{{conversation_id}}/notes
 Cookie: token={{tenant_token}}
 Content-Type: application/x-www-form-urlencoded
 

@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,17 +16,24 @@ import (
 // --- in-memory fakes (no DB) for the notes adapter unit test ---
 
 type notesFakeLeadRepo struct {
-	leads map[string]*domain.Lead // by ID
+	leads    map[string]*domain.Lead // by ID
+	forceErr error                   // when set, FindCurrentByConversationID returns it
 }
 
-func (r *notesFakeLeadRepo) Create(_ context.Context, l *domain.Lead) error { r.leads[l.ID] = l; return nil }
+func (r *notesFakeLeadRepo) Create(_ context.Context, l *domain.Lead) error {
+	r.leads[l.ID] = l
+	return nil
+}
 func (r *notesFakeLeadRepo) FindByID(_ context.Context, id string) (*domain.Lead, error) {
 	if l, ok := r.leads[id]; ok {
 		return l, nil
 	}
 	return nil, domain.ErrLeadNotFound
 }
-func (r *notesFakeLeadRepo) Update(_ context.Context, l *domain.Lead) error { r.leads[l.ID] = l; return nil }
+func (r *notesFakeLeadRepo) Update(_ context.Context, l *domain.Lead) error {
+	r.leads[l.ID] = l
+	return nil
+}
 func (r *notesFakeLeadRepo) FindByContactAndTenant(_ context.Context, _, _ string) (*domain.Lead, error) {
 	return nil, domain.ErrLeadNotFound
 }
@@ -33,6 +41,9 @@ func (r *notesFakeLeadRepo) FindByConversationID(_ context.Context, _ string) (*
 	return nil, domain.ErrLeadNotFound
 }
 func (r *notesFakeLeadRepo) FindCurrentByConversationID(_ context.Context, tenantID, conversationID string) (*domain.Lead, error) {
+	if r.forceErr != nil {
+		return nil, r.forceErr
+	}
 	for _, l := range r.leads {
 		if l.ConversationID == conversationID && l.TenantID == tenantID {
 			return l, nil
@@ -113,4 +124,25 @@ func TestNotesAdapter_AddNote_NoLead(t *testing.T) {
 	a, _ := newNotesAdapterTest()
 	_, err := a.AddNote(context.Background(), "tenant-1", "conv-x", "x", "user-1")
 	assert.ErrorIs(t, err, domain.ErrLeadNotFound)
+}
+
+func TestNotesAdapter_AddNote_EmptyContentRejected(t *testing.T) {
+	ctx := context.Background()
+	a, leadRepo := newNotesAdapterTest()
+
+	lead, err := domain.NewLead(uuid.New().String(), "tenant-1", "f1", "c1", "contact-1", "conv-1")
+	require.NoError(t, err)
+	require.NoError(t, leadRepo.Create(ctx, lead))
+
+	_, err = a.AddNote(ctx, "tenant-1", "conv-1", "", "user-1")
+	assert.ErrorIs(t, err, domain.ErrNoteContentRequired)
+}
+
+func TestNotesAdapter_GenericLookupErrorPropagates(t *testing.T) {
+	a, leadRepo := newNotesAdapterTest()
+	leadRepo.forceErr = errors.New("db down")
+
+	_, _, err := a.NotesForConversation(context.Background(), "tenant-1", "conv-1")
+	assert.Error(t, err)
+	assert.NotErrorIs(t, err, domain.ErrLeadNotFound)
 }

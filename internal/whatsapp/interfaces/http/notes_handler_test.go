@@ -18,9 +18,13 @@ type mockNotesService struct {
 	hasLead bool
 	notes   []domain.ConversationNote
 	addErr  error
+	listErr error
 }
 
 func (m *mockNotesService) NotesForConversation(_ context.Context, _, _ string) (bool, []domain.ConversationNote, error) {
+	if m.listErr != nil {
+		return false, nil, m.listErr
+	}
 	return m.hasLead, m.notes, nil
 }
 
@@ -53,6 +57,16 @@ func TestRenderNotesPanel_NoLead(t *testing.T) {
 	deps.router.ServeHTTP(w, makeRequest(http.MethodGet, "/tenant/whatsapp/conversations/c1/notes"))
 
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRenderNotesPanel_ServiceError(t *testing.T) {
+	deps := setupTest()
+	deps.handler.SetNotesService(&mockNotesService{listErr: errors.New("boom")})
+
+	w := httptest.NewRecorder()
+	deps.router.ServeHTTP(w, makeRequest(http.MethodGet, "/tenant/whatsapp/conversations/c1/notes"))
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestHandleCreateNote_Success(t *testing.T) {

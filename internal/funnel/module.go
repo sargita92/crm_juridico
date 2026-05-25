@@ -15,11 +15,11 @@ import (
 )
 
 type Module struct {
-	handler       *funnelhttp.Handler
-	leadCreator   *application.CreateLeadUseCase
-	listFunnelsUC *application.ListFunnelsUseCase
-	moveLeadUC    *application.MoveLeadUseCase
-	assignLeadUC  *application.AssignLeadUseCase
+	handler          *funnelhttp.Handler
+	leadCreator      *application.CreateLeadUseCase
+	listFunnelsUC    *application.ListFunnelsUseCase
+	moveLeadUC       *application.MoveLeadUseCase
+	assignLeadUC     *application.AssignLeadUseCase
 	leadRepo         domain.LeadRepository
 	noteRepo         domain.LeadNoteRepository
 	columnRepo       domain.ColumnRepository
