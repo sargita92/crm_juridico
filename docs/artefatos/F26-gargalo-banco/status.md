@@ -1,7 +1,13 @@
 # Status F26 — Gargalo intermitente de banco
 
-**Branches**: `feature/F26-gargalo-banco` (instrumentação, PR #15) · `feature/F26-sse-conexao-unica` (correção)
-**Status**: causa-raiz **CONFIRMADA** (não era o banco) — correção em implementação
+**Branches**: `feature/F26-gargalo-banco` (instrumentação, PR #15) · `feature/F26-sse-conexao-unica` (correção, PR #16)
+**Status**: **RESOLVIDO** — causa-raiz era SSE (não o banco); correção validada (usuário: "funcionando sem engasgar")
+
+> Correção final: **SharedWorker** = 1 conexão SSE por navegador (`sse-worker.js` + `sse-bridge.js`),
+> compartilhada entre abas e fechando na hora ao navegar. Evidência: 58/60 conexões `/tenant/stream`
+> fecharam em <2s (mediana 407ms), `sse_active_streams=1`, nenhum slow request fora do SSE.
+> "1 SSE por página" sozinho não bastou (page load recria a conexão). Ver revisão v2 em
+> [correcao-sse-design-v1.md](correcao-sse-design-v1.md).
 **Doc da feature**: [../../features/F26-gargalo-banco.md](../../features/F26-gargalo-banco.md)
 **Investigação**: [investigacao-v1.md](investigacao-v1.md)
 **Plano (instrumentação)**: [plan-v1.md](plan-v1.md)
