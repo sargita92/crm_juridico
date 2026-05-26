@@ -26,6 +26,12 @@ func New(cfg config.DatabaseConfig, log *zap.Logger, ctxFields ContextFieldExtra
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	// Emite um span OTel por query (usa o tracer provider global, já inicializado
+	// em main antes desta chamada). Torna o tempo de banco visível no trace.
+	if err := EnableQueryTracing(db, nil); err != nil {
+		return nil, fmt.Errorf("failed to enable query tracing: %w", err)
+	}
+
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
