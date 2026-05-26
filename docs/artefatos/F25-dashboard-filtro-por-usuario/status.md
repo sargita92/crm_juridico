@@ -1,8 +1,19 @@
 # Status F25 — Filtro de Dashboard por Usuário (Tenant)
 
 **Branch**: `feature/F25-dashboard-filtro-por-usuario`
-**Status**: implementação concluída — testes verdes (unit + integração + OWASP); pendente verificação final + PR
+**Status**: concluída — verificada (unit + integração + OWASP + smoke no app); PR aberta
 **Plano**: [plan-v1.md](plan-v1.md)
+
+## Verificação (2026-05-26)
+
+- `go build ./internal/... ./cmd/...` → exit 0; `go vet` → exit 0; `golangci-lint` → 0 issues.
+- Cobertura: application **98.3%**, infrastructure **84.9%**, interfaces/http **84.0%** (todas ≥80%).
+- Integração (testcontainers MySQL) verde.
+- Smoke no app dev (DoD "containers ok"), owner `ricardo@mendescosta.adv.br` no tenant
+  Mendes & Costa: seletor lista "Consolidado (todos)" + Dra. Ana Costa + Juliana Rocha
+  (ordenado); drill-down em Ana → "Vendo dados de Dra. Ana Costa"; `?user` inválido →
+  consolidado. OWASP: Ana (não-owner) **não vê o seletor** e ao forçar `?user=<Juliana>`
+  permanece vendo os próprios dados (escopo travado).
 **Doc da feature**: [../../features/F25-dashboard-filtro-por-usuario.md](../../features/F25-dashboard-filtro-por-usuario.md)
 **Design**: [design-v1.md](design-v1.md)
 
