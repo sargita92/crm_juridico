@@ -66,7 +66,7 @@ func setupOWASPRouter(t *testing.T) *owaspEnv {
 	// (apenas com filtro de userID). Suficiente para os testes de fronteira de auth.
 	ut := &fakeUserTenants{}
 
-	h := dashhttp.NewHandler(tUC, aUC, ut, zap.NewNop())
+	h := dashhttp.NewHandler(tUC, aUC, ut, &fakeOperatorLister{}, zap.NewNop())
 
 	provider := authinfra.NewJWTProvider("test-secret-owasp-f19", time.Hour)
 	mw := module.Middlewares{

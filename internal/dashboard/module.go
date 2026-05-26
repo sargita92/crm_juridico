@@ -46,7 +46,7 @@ func NewModule(
 	tenantUC := application.NewGetTenantDashboard(tenantRepo, ul, clk)
 	adminUC := application.NewGetAdminDashboard(adminRepo, infraProv, clk)
 
-	handler := dashboardhttp.NewHandler(tenantUC, adminUC, userTenants, log)
+	handler := dashboardhttp.NewHandler(tenantUC, adminUC, userTenants, ul, log)
 
 	return &Module{
 		tenantUC: tenantUC,

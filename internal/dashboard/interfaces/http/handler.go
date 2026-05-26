@@ -1,7 +1,9 @@
 package http
 
 import (
+	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +11,7 @@ import (
 
 	authdomain "github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/dashboard/application"
+	"github.com/sasrgita/crm-juridico/internal/dashboard/domain"
 	"github.com/sasrgita/crm-juridico/internal/dashboard/infrastructure"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
@@ -20,6 +23,7 @@ type Handler struct {
 	tenantUC    *application.GetTenantDashboard
 	adminUC     *application.GetAdminDashboard
 	userTenants authdomain.UserTenantRepository
+	operators   application.OperatorLister
 	log         *zap.Logger
 }
 
@@ -27,6 +31,7 @@ func NewHandler(
 	tenantUC *application.GetTenantDashboard,
 	adminUC *application.GetAdminDashboard,
 	userTenants authdomain.UserTenantRepository,
+	operators application.OperatorLister,
 	log *zap.Logger,
 ) *Handler {
 	if log == nil {
@@ -36,6 +41,7 @@ func NewHandler(
 		tenantUC:    tenantUC,
 		adminUC:     adminUC,
 		userTenants: userTenants,
+		operators:   operators,
 		log:         log,
 	}
 }
@@ -102,10 +108,35 @@ func (h *Handler) renderTenant(c *gin.Context, tmpl string) {
 	if claims.Role == authdomain.UserRoleAdmin {
 		isOwner = true
 	}
+
+	// F25 — seletor de operador: só o owner monta a lista e pode drillar num
+	// usuário específico via ?user=<id>. Não-owner ignora o parâmetro e fica
+	// sempre travado no próprio escopo.
+	var (
+		operators      []domain.Operator
+		selectedUserID string
+		viewUserID     *string
+	)
+	if isOwner {
+		operators = h.listOperators(ctx, tenantID)
+		if q := strings.TrimSpace(c.Query("user")); q != "" {
+			if h.isValidOperator(ctx, q, tenantID) {
+				id := q
+				viewUserID = &id
+				selectedUserID = q
+			} else {
+				h.log.Warn("dashboard tenant: invalid user selection ignored",
+					zap.String("tenant_id", tenantID),
+					zap.String("requested_user", q))
+			}
+		}
+	}
+
 	stats, err := h.tenantUC.Execute(ctx, application.TenantInput{
-		TenantID: tenantID,
-		UserID:   claims.UserID,
-		IsOwner:  isOwner,
+		TenantID:   tenantID,
+		UserID:     claims.UserID,
+		IsOwner:    isOwner,
+		ViewUserID: viewUserID,
 	})
 	if err != nil {
 		outcome = "error"
@@ -118,16 +149,44 @@ func (h *Handler) renderTenant(c *gin.Context, tmpl string) {
 	}
 	vm := ToTenantView(stats)
 	c.HTML(http.StatusOK, tmpl, gin.H{
-		"Stats":    vm,
-		"TenantID": tenantID,
+		"Stats":          vm,
+		"TenantID":       tenantID,
+		"Operators":      operators,
+		"SelectedUserID": selectedUserID,
+		"CanSelectUser":  isOwner,
 	})
 
 	h.log.Info("dashboard_rendered",
 		zap.String("scope", scope),
 		zap.String("tenant_id", tenantID),
 		zap.String("user_id", claims.UserID),
-		zap.Bool("scope_is_user", !isOwner),
+		zap.Bool("scope_is_user", stats.ScopeIsUser),
+		zap.String("viewed_user_id", selectedUserID),
 		zap.Duration("took", time.Since(start)))
+}
+
+// listOperators devolve os operadores do tenant para o seletor; em caso de erro
+// loga e devolve lista vazia (o dashboard ainda renderiza, só sem seletor populado).
+func (h *Handler) listOperators(ctx context.Context, tenantID string) []domain.Operator {
+	ops, err := h.operators.Operators(ctx, tenantID)
+	if err != nil {
+		h.log.Warn("dashboard tenant: list operators",
+			zap.Error(err), zap.String("tenant_id", tenantID))
+		return nil
+	}
+	return ops
+}
+
+// isValidOperator confirma que userID é um operador (não-owner) membro do tenant.
+// Falso para não-membro, owner ou erro — nesses casos o owner cai em consolidado.
+func (h *Handler) isValidOperator(ctx context.Context, userID, tenantID string) bool {
+	ut, err := h.userTenants.FindByUserAndTenant(ctx, userID, tenantID)
+	if err != nil {
+		h.log.Warn("dashboard tenant: validate selected user",
+			zap.Error(err), zap.String("tenant_id", tenantID))
+		return false
+	}
+	return ut != nil && !ut.IsOwner
 }
 
 func (h *Handler) adminPage(c *gin.Context) {
