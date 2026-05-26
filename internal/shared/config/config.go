@@ -59,6 +59,9 @@ type DatabaseConfig struct {
 	User     string
 	Password string
 	Name     string
+	// SlowQueryThresholdMs: queries que demoram mais que isto (ms) são logadas
+	// em Warn pelo logger do Gorm. 0 desativa o slow-query log.
+	SlowQueryThresholdMs int
 }
 
 type LogConfig struct {
@@ -90,6 +93,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("database.user", "crm")
 	viper.SetDefault("database.password", "crm_secret")
 	viper.SetDefault("database.name", "crm_juridico")
+	viper.SetDefault("database.slowquerythresholdms", 200)
+	_ = viper.BindEnv("database.slowquerythresholdms", "DB_SLOW_QUERY_THRESHOLD_MS")
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("jwt.secret", "change-me-in-production")
 	viper.SetDefault("jwt.expiration", "24h")
@@ -136,11 +141,12 @@ func Load() (*Config, error) {
 			SecureCookie: viper.GetBool("server.securecookie"),
 		},
 		Database: DatabaseConfig{
-			Host:     viper.GetString("database.host"),
-			Port:     viper.GetString("database.port"),
-			User:     viper.GetString("database.user"),
-			Password: viper.GetString("database.password"),
-			Name:     viper.GetString("database.name"),
+			Host:                 viper.GetString("database.host"),
+			Port:                 viper.GetString("database.port"),
+			User:                 viper.GetString("database.user"),
+			Password:             viper.GetString("database.password"),
+			Name:                 viper.GetString("database.name"),
+			SlowQueryThresholdMs: viper.GetInt("database.slowquerythresholdms"),
 		},
 		Log: LogConfig{
 			Level: viper.GetString("log.level"),

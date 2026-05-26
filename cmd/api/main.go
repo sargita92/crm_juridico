@@ -86,7 +86,20 @@ func main() {
 		}
 	}()
 
-	db, err := database.New(cfg.Database, log)
+	// Campos de contexto anexados a cada log de slow query / erro de banco,
+	// permitindo correlacionar a query lenta com o request que a originou (F26).
+	dbCtxFields := func(ctx context.Context) []zap.Field {
+		var f []zap.Field
+		if rid := middleware.GetRequestID(ctx); rid != "" {
+			f = append(f, zap.String("request_id", rid))
+		}
+		if tid := middleware.GetTenantID(ctx); tid != "" {
+			f = append(f, zap.String("tenant_id", tid))
+		}
+		return f
+	}
+
+	db, err := database.New(cfg.Database, log, dbCtxFields)
 	if err != nil {
 		log.Fatal("failed to connect to database", zap.Error(err))
 	}
