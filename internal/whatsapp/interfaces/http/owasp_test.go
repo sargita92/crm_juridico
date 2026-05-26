@@ -48,7 +48,7 @@ func setupOwaspEnv() *owaspEnv {
 	disconnectUC := application.NewDisconnectWhatsAppUseCase(prov)
 
 	testLog, _ := zap.NewDevelopment()
-	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, eventBus, testLog)
+	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, testLog)
 
 	router := gin.New()
 
@@ -121,7 +121,6 @@ func TestOWASP_A01_NoToken_Returns401(t *testing.T) {
 		{http.MethodPost, "/tenant/whatsapp/conversations/some-id/notes"},
 		{http.MethodPost, "/tenant/whatsapp/connect"},
 		{http.MethodPost, "/tenant/whatsapp/disconnect"},
-		{http.MethodGet, "/tenant/whatsapp/events"},
 	}
 
 	for _, route := range routes {
@@ -272,16 +271,6 @@ func TestOWASP_A04_ConnectWithoutAuth(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/tenant/whatsapp/connect", nil)
-	env.router.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-}
-
-func TestOWASP_A04_SSEWithoutAuth(t *testing.T) {
-	env := setupOwaspEnv()
-
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/tenant/whatsapp/events", nil)
 	env.router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)

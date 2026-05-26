@@ -1,10 +1,26 @@
 # Status F26 — Gargalo intermitente de banco
 
-**Branch**: `feature/F26-gargalo-banco`
-**Status**: em andamento — entrega de **instrumentação** (Fase 1 → 2 do debugging)
+**Branches**: `feature/F26-gargalo-banco` (instrumentação, PR #15) · `feature/F26-sse-conexao-unica` (correção, PR #16)
+**Status**: **RESOLVIDO** — causa-raiz era SSE (não o banco); correção validada (usuário: "funcionando sem engasgar")
+
+> Correção final: **SharedWorker** = 1 conexão SSE por navegador (`sse-worker.js` + `sse-bridge.js`),
+> compartilhada entre abas e fechando na hora ao navegar. Evidência: 58/60 conexões `/tenant/stream`
+> fecharam em <2s (mediana 407ms), `sse_active_streams=1`, nenhum slow request fora do SSE.
+> "1 SSE por página" sozinho não bastou (page load recria a conexão). Ver revisão v2 em
+> [correcao-sse-design-v1.md](correcao-sse-design-v1.md).
 **Doc da feature**: [../../features/F26-gargalo-banco.md](../../features/F26-gargalo-banco.md)
 **Investigação**: [investigacao-v1.md](investigacao-v1.md)
-**Plano**: [plan-v1.md](plan-v1.md)
+**Plano (instrumentação)**: [plan-v1.md](plan-v1.md)
+**Design (correção)**: [correcao-sse-design-v1.md](correcao-sse-design-v1.md)
+
+## Causa-raiz confirmada (diagnóstico ao vivo)
+
+Com a instrumentação ligada, durante a lentidão o app estava a ~0% CPU, pool com
+`go_sql_wait_count=0`, MySQL ocioso e **6 conexões TCP** no app = teto de ~6 do
+HTTP/1.1. **Não era o banco**: cada página abria **2 SSE persistentes** (sino +
+WhatsApp); ao trocar de aba rápido (page load completo), as conexões se sobrepõem
+e estouram o limite → requests enfileiram no browser. Correção: **uma única
+conexão SSE por página** (endpoint unificado `/tenant/stream`).
 
 ## Resumo
 

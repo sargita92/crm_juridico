@@ -22,7 +22,7 @@
         <div id="messages-list"
              style="display:flex;flex-direction:column;gap:0.25rem;"
              hx-get="/tenant/ai/playground/conversation/{{.Contact.ID}}"
-             hx-trigger="sse:new-message"
+             hx-trigger="new-message from:body"
              hx-target="this"
              hx-select="#messages-list"
              hx-swap="outerHTML">

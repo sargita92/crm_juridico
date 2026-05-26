@@ -62,9 +62,11 @@ content=Ola, como posso ajuda-lo?
 
 ### --- SSE (tempo real) ---
 
-### Stream de eventos SSE (abrir no navegador ou curl)
-# curl -N -H "Cookie: token={{tenant_token}}" {{base_url}}/tenant/whatsapp/events
-GET {{base_url}}/tenant/whatsapp/events
+### Stream unificado de eventos SSE (F26: uma conexão por página)
+# Emite "notification" (fragmento HTML) e encaminha new-message, conversation-update, lead-*.
+# Substitui /tenant/whatsapp/events e /notifications/stream.
+# curl -N -H "Cookie: token={{tenant_token}}" {{base_url}}/tenant/stream
+GET {{base_url}}/tenant/stream
 Cookie: token={{tenant_token}}
 
 ### --- Notas do cliente (F24) ---

@@ -83,7 +83,15 @@ func (h *Handler) StreamNotifications(c *gin.Context) {
 		select {
 		case event := <-ch:
 			if event.Type != events.EventNotification {
-				notifinfra.SSEEventsEmittedTotal.WithLabelValues("skipped").Inc()
+				// Stream unificado (F26): encaminha eventos que não são notificação
+				// (new-message, conversation-update, lead-*) como eventos SSE nomeados,
+				// para que os consumidores htmx (hx-trigger="sse:<tipo>") disparem a
+				// partir de uma única conexão por página.
+				c.SSEvent(string(event.Type), "{}")
+				if canFlush {
+					flusher.Flush()
+				}
+				notifinfra.SSEEventsEmittedTotal.WithLabelValues("forwarded").Inc()
 				continue
 			}
 			notif, ok := event.Payload.(*domain.Notification)

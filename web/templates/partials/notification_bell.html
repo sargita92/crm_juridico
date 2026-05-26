@@ -16,9 +16,8 @@
     <div id="notification-dropdown" class="notification-dropdown" style="display:none"></div>
 </div>
 
-<div id="toast-container" class="toast-container"
-     hx-ext="sse"
-     sse-connect="/notifications/stream"
-     sse-swap="notification"
-     hx-swap="beforeend"></div>
+<!-- Alvo dos toasts de notificação. F26: o sse-bridge.js (SharedWorker, 1 conexão
+     SSE por navegador) insere os fragmentos aqui via htmx.swap ao receber o evento
+     "notification". -->
+<div id="toast-container" class="toast-container"></div>
 {{end}}

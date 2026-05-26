@@ -11,7 +11,7 @@
     {{template "partials/notification_bell.html" .}}
     <main class="admin-content wa-main">
         {{if .Connected}}
-        <div class="wa-container" hx-ext="sse" sse-connect="/tenant/whatsapp/events">
+        <div class="wa-container">
             <div class="wa-sidebar" id="conversations-panel">
                 <div class="wa-sidebar-header">
                     <h2>Conversas</h2>
@@ -24,7 +24,7 @@
                 </div>
                 <div id="conversations-list"
                      hx-get="/tenant/whatsapp/conversations"
-                     hx-trigger="load, sse:conversation-update"
+                     hx-trigger="load, conversation-update from:body"
                      hx-target="#conversations-list">
                 </div>
             </div>
