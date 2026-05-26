@@ -36,6 +36,12 @@ type UserLookup interface {
 	UserName(ctx context.Context, userID string) (string, error)
 }
 
+// OperatorLister lista os operadores (não-owners) de um tenant para popular o
+// seletor de usuário do dashboard (F25).
+type OperatorLister interface {
+	Operators(ctx context.Context, tenantID string) ([]domain.Operator, error)
+}
+
 // Clock — injetável para testes determinísticos.
 type Clock interface {
 	Now() time.Time
