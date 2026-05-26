@@ -51,6 +51,9 @@ type ServerConfig struct {
 	ReadTimeout  int
 	WriteTimeout int
 	SecureCookie bool
+	// PprofEnabled habilita /debug/pprof/* (atrás de auth+admin). Default false;
+	// ligar só sob demanda para investigação (env PPROF_ENABLED).
+	PprofEnabled bool
 }
 
 type DatabaseConfig struct {
@@ -88,6 +91,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("server.readtimeout", 10)
 	viper.SetDefault("server.writetimeout", 10)
 	viper.SetDefault("server.securecookie", false)
+	viper.SetDefault("server.pprofenabled", false)
+	_ = viper.BindEnv("server.pprofenabled", "PPROF_ENABLED")
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", "3307")
 	viper.SetDefault("database.user", "crm")
@@ -139,6 +144,7 @@ func Load() (*Config, error) {
 			ReadTimeout:  viper.GetInt("server.readtimeout"),
 			WriteTimeout: viper.GetInt("server.writetimeout"),
 			SecureCookie: viper.GetBool("server.securecookie"),
+			PprofEnabled: viper.GetBool("server.pprofenabled"),
 		},
 		Database: DatabaseConfig{
 			Host:                 viper.GetString("database.host"),

@@ -52,6 +52,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
+	"github.com/sasrgita/crm-juridico/internal/shared/profiling"
 	"github.com/sasrgita/crm-juridico/internal/specialist"
 	"github.com/sasrgita/crm-juridico/internal/tenant"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp"
@@ -359,6 +360,13 @@ func main() {
 
 	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
 	notificationMod.SetRenderer(notifhttp.NewToastRenderer(tmpl))
+
+	// pprof — desabilitado por padrão; quando ligado (PPROF_ENABLED), fica atrás
+	// de auth+admin. Usado para investigar gargalos fora do banco (F26).
+	profiling.RegisterPprof(router, cfg.Server.PprofEnabled, authMw, adminMw)
+	if cfg.Server.PprofEnabled {
+		log.Warn("pprof endpoints ENABLED at /debug/pprof (admin-only)")
+	}
 
 	// F12 Step 8: rotas /admin/logs e /admin/logs/:id.
 	// Registradas fora do for-modules porque o audit.Module nao
