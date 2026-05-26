@@ -81,7 +81,7 @@ func TestCrossSellRule_List_Success(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec List", "prompt")
 	token := env.adminToken(t)
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	seedCrossSellRule(t, env, s.ID, productID, 1)
 	seedCrossSellRule(t, env, s.ID, productID, 2)
@@ -105,13 +105,14 @@ func TestCrossSellRule_Create_Success(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec Create", "prompt")
 	token := env.adminToken(t)
+	productID := env.seedProduct(t)
 
 	body := map[string]any{
 		"trigger_type": "keyword",
 		"trigger_config": map[string]any{
 			"termos": []string{"contrato", "seguro"},
 		},
-		"target_product_id": uuid.New().String(),
+		"target_product_id": productID,
 		"ativo":             true,
 	}
 
@@ -199,11 +200,11 @@ func TestCrossSellRule_Update_Success(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec Update", "prompt")
 	token := env.adminToken(t)
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	rule := seedCrossSellRule(t, env, s.ID, productID, 1)
 
-	newProductID := uuid.New().String()
+	newProductID := env.seedProduct(t)
 	body := map[string]any{
 		"trigger_type": "keyword",
 		"trigger_config": map[string]any{
@@ -252,7 +253,7 @@ func TestCrossSellRule_Delete_Success(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec Delete", "prompt")
 	token := env.adminToken(t)
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	rule := seedCrossSellRule(t, env, s.ID, productID, 1)
 
@@ -287,7 +288,7 @@ func TestCrossSellRule_MoveUp_Success(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec Move Up", "prompt")
 	token := env.adminToken(t)
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	rule1 := seedCrossSellRule(t, env, s.ID, productID, 1)
 	rule2 := seedCrossSellRule(t, env, s.ID, productID, 2)
@@ -313,7 +314,7 @@ func TestCrossSellRule_MoveDown_Success(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec Move Down", "prompt")
 	token := env.adminToken(t)
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	rule1 := seedCrossSellRule(t, env, s.ID, productID, 1)
 	rule2 := seedCrossSellRule(t, env, s.ID, productID, 2)
@@ -339,7 +340,7 @@ func TestCrossSellRule_MoveUp_AlreadyFirst_Returns400(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec Move Up First", "prompt")
 	token := env.adminToken(t)
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	rule := seedCrossSellRule(t, env, s.ID, productID, 1)
 
@@ -354,7 +355,7 @@ func TestCrossSellRule_MoveDown_AlreadyLast_Returns400(t *testing.T) {
 	env := setupTestEnv(t)
 	s := env.seedSpecialist(t, "Spec Move Down Last", "prompt")
 	token := env.adminToken(t)
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	rule := seedCrossSellRule(t, env, s.ID, productID, 1)
 
