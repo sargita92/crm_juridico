@@ -16,22 +16,37 @@ alterar comportamento de negócio. A correção definitiva vem em entrega poster
 
 - PO: doc da feature (relato + critérios) — concluído
 - Arquiteto: investigação Fase 1 + plano de steps — concluído
-- Dev Backend: em andamento (instrumentação, TDD por step)
-- QA: pendente (testes por step + OWASP no /debug/pprof)
-- Segurança: pendente (acesso ao pprof, vazamento de dados em logs)
+- Dev Backend: instrumentação (5 steps, TDD) — concluído
+- QA: testes por step + OWASP no /debug/pprof — concluído (unitários verdes)
+- Segurança: pprof atrás de auth+admin (401/403), SQL logado sem valores (placeholders) — coberto; revisão final pendente
 
 ## Progresso por step
 
 | Step | Descrição | Status |
 |------|-----------|--------|
-| 1 | Métricas do pool (`sql.DBStats` → /metrics) | pendente |
-| 2 | Slow-query log (Gorm + zap, limiar configurável) | pendente |
-| 3 | Tracing OTel por query (plugin Gorm) | pendente |
-| 4 | Endpoint pprof protegido (flag + admin) | pendente |
-| 5 | Config, dashboards, docs e .http | pendente |
+| 1 | Métricas do pool (`sql.DBStats` → /metrics) | concluído |
+| 2 | Slow-query log (Gorm + zap, limiar configurável) | concluído |
+| 3 | Tracing OTel por query (tracer custom, sem deps novas) | concluído |
+| 4 | Endpoint pprof protegido (flag + admin) | concluído |
+| 5 | Config, dashboard `banco`, docs e .http | concluído |
+
+> Nota Step 3: descartado o plugin oficial `gorm.io/plugin/opentelemetry` por
+> arrastar drivers clickhouse/postgres (~18 deps) num app MySQL-only; implementado
+> tracer custom via callbacks do Gorm, zero dependências novas.
 
 ## Commits da feature
 
 | Commit | Descrição |
 |--------|-----------|
-| _(pendente)_ | |
+| `0489451` | docs(f26): investigação Fase 1 + plano |
+| `604c2a6` | feat(observability): métricas do pool (sql.DBStats) |
+| `f33b166` | feat(database): slow-query log (Gorm + zap) |
+| `9eb1a20` | feat(database): tracing OTel por query |
+| `7938bd8` | feat(profiling): /debug/pprof protegido |
+| _(pendente)_ | docs/config/dashboard (Step 5) |
+
+## Próximo passo (após esta entrega)
+
+Observar/reproduzir com a instrumentação ligada e **confirmar a causa-raiz**
+(H4 pool / H5 query lenta / H6 fora do banco — ver investigacao-v1.md). A
+correção definitiva é uma entrega separada.

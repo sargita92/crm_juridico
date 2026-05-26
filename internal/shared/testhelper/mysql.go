@@ -16,6 +16,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+
+	"github.com/sasrgita/crm-juridico/internal/shared/config"
 )
 
 const (
@@ -114,6 +116,18 @@ func (mc *MySQLContainer) DB(t *testing.T) *gorm.DB {
 func (mc *MySQLContainer) Logger() *zap.Logger {
 	log, _ := zap.NewDevelopment()
 	return log
+}
+
+// Config devolve um config.DatabaseConfig apontando para o container, para
+// testar database.New (e seu wiring de logger/tracing/pool) contra um MySQL real.
+func (mc *MySQLContainer) Config() config.DatabaseConfig {
+	return config.DatabaseConfig{
+		Host:     mc.Host,
+		Port:     mc.Port,
+		User:     dbUser,
+		Password: dbPassword,
+		Name:     dbName,
+	}
 }
 
 func projectRoot() string {

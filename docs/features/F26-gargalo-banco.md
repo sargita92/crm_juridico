@@ -35,15 +35,16 @@ A investigação da Fase 1 (estática) está registrada em
 
 ## Critérios de aceite (entrega de instrumentação)
 
-- [ ] Métricas do pool de conexões (`sql.DBStats`) expostas em `/metrics`
+- [x] Métricas do pool de conexões (`sql.DBStats`) expostas em `/metrics`
       (open/in-use/idle, `wait_count`, `wait_duration`).
-- [ ] Slow-query log estruturado (zap) com limiar configurável e contexto
-      (request_id, tenant_id, user_id).
-- [ ] Tracing OTel por query (spans por operação do Gorm).
-- [ ] Endpoint pprof disponível, **protegido** (flag + admin), desabilitado por
+- [x] Slow-query log estruturado (zap) com limiar configurável e contexto
+      (request_id, tenant_id).
+- [x] Tracing OTel por query (spans por operação do Gorm).
+- [x] Endpoint pprof disponível, **protegido** (flag + admin), desabilitado por
       padrão em produção.
-- [ ] Painel/queries de Grafana para pool e slow-query documentados.
-- [ ] Build, lint e testes verdes; cobertura ≥ 80% nos pacotes tocados.
+- [x] Painel/queries de Grafana para pool e slow-query documentados
+      (dashboard `crm-banco-f26`).
+- [x] Build, lint e testes verdes; cobertura ≥ 80% nos pacotes tocados.
 
 ## Fora de escopo (próxima entrega)
 

@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/profiling"
 )
 
@@ -56,4 +57,13 @@ func TestRegisterPprof_EnabledServesIndexAndGoroutine(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, do(r, http.MethodGet, "/debug/pprof/").Code)
 	assert.Equal(t, http.StatusOK, do(r, http.MethodGet, "/debug/pprof/goroutine").Code)
+}
+
+// OWASP (rule 13): com o guard real RequireAdmin, acesso sem autenticação a
+// /debug/pprof retorna 401 — não expõe profiles de runtime a anônimos.
+func TestRegisterPprof_RequireAdminBlocksUnauthenticated(t *testing.T) {
+	r := newRouter()
+	profiling.RegisterPprof(r, true, middleware.RequireAdmin())
+
+	assert.Equal(t, http.StatusUnauthorized, do(r, http.MethodGet, "/debug/pprof/heap").Code)
 }

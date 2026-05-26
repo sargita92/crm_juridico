@@ -5,4 +5,23 @@ GET {{base_url}}/health
 GET {{base_url}}/ready
 
 ### Métricas Prometheus
+# Inclui as métricas do pool de conexões do banco (go_sql_*): open/in_use/idle,
+# wait_count_total e wait_duration_seconds_total (evidência de exaustão de pool — F26).
 GET {{base_url}}/metrics
+
+### pprof — índice (requer PPROF_ENABLED=true e login admin)
+# Profiles de runtime para investigar gargalos fora do banco (F26).
+GET {{base_url}}/debug/pprof/
+Authorization: Bearer {{admin_token}}
+
+### pprof — heap (snapshot de memória)
+GET {{base_url}}/debug/pprof/heap
+Authorization: Bearer {{admin_token}}
+
+### pprof — goroutines
+GET {{base_url}}/debug/pprof/goroutine?debug=1
+Authorization: Bearer {{admin_token}}
+
+### pprof — CPU profile (30s; cuidado em produção)
+GET {{base_url}}/debug/pprof/profile?seconds=30
+Authorization: Bearer {{admin_token}}
