@@ -82,8 +82,11 @@ func (r *GormLeadRepository) FindCurrentByConversationID(ctx context.Context, te
 
 func (r *GormLeadRepository) FindByContactAndTenant(ctx context.Context, tenantID, contactID string) (*domain.Lead, error) {
 	var model leadModel
+	// A contact may have more than one lead over time (cross-sell, re-engagement);
+	// return the most recent one as the contact's current lead.
 	if err := r.db.WithContext(ctx).
 		Where("tenant_id = ? AND contact_id = ?", tenantID, contactID).
+		Order("created_at DESC").
 		First(&model).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrLeadNotFound
