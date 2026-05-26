@@ -18,5 +18,5 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.Handle
 	tenant.POST("/conversations/:id/notes", h.HandleCreateNote)
 	tenant.POST("/connect", h.HandleConnect)
 	tenant.POST("/disconnect", h.HandleDisconnect)
-	tenant.GET("/events", h.HandleSSE)
+	// SSE migrou para o stream unificado /tenant/stream (F26): uma única conexão por página.
 }

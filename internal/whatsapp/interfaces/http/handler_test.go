@@ -217,7 +217,7 @@ func setupTest() *testDeps {
 	disconnectUC := application.NewDisconnectWhatsAppUseCase(provider)
 
 	testLog, _ := zap.NewDevelopment()
-	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, eventBus, testLog)
+	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, testLog)
 
 	router := gin.New()
 

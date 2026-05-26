@@ -44,7 +44,7 @@ func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, eventBus events.Ev
 
 	handler := whatsapphttp.NewHandler(
 		sendMessageUC, listConversationsUC, getMessagesUC,
-		connectUC, statusUC, disconnectUC, eventBus, log,
+		connectUC, statusUC, disconnectUC, log,
 	)
 
 	return &Module{

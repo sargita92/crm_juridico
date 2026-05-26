@@ -11,7 +11,6 @@ import (
 	qrcode "github.com/skip2/go-qrcode"
 	"go.uber.org/zap"
 
-	"github.com/sasrgita/crm-juridico/internal/shared/events"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/application"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
@@ -32,7 +31,6 @@ type Handler struct {
 	connectUC     *application.ConnectWhatsAppUseCase
 	statusUC      *application.GetConnectionStatusUseCase
 	disconnectUC  *application.DisconnectWhatsAppUseCase
-	eventBus      events.EventBus
 	log           *zap.Logger
 	notesService  domain.LeadNotesService
 
@@ -51,7 +49,6 @@ func NewHandler(
 	connectUC *application.ConnectWhatsAppUseCase,
 	statusUC *application.GetConnectionStatusUseCase,
 	disconnectUC *application.DisconnectWhatsAppUseCase,
-	eventBus events.EventBus,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
@@ -61,7 +58,6 @@ func NewHandler(
 		connectUC:     connectUC,
 		statusUC:      statusUC,
 		disconnectUC:  disconnectUC,
-		eventBus:      eventBus,
 		log:           log,
 		connStates:    make(map[string]*connectState),
 	}

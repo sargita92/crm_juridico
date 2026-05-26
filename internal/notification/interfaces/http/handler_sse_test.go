@@ -119,6 +119,78 @@ func TestSSEStream_DoesNotLeakOtherUsers(t *testing.T) {
 	require.False(t, strings.Contains(w.Body.String(), "toast-n-2"))
 }
 
+// O stream unificado encaminha eventos que NÃO são notificação (ex.: new-message,
+// conversation-update) como eventos SSE nomeados, para que os consumidores htmx
+// (hx-trigger="sse:<tipo>") disparem a partir de uma única conexão por página (F26).
+func TestSSEStream_ForwardsNonNotificationEvents(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	repo := newMockNotifRepo()
+	prefRepo := newMockPrefRepo()
+	bus := sharedevents.NewMemoryEventBus()
+	notifySvc := application.NewNotifyService(repo, prefRepo, bus)
+	listUC := application.NewListNotificationsUseCase(repo)
+	markReadUC := application.NewMarkReadUseCase(repo)
+	prefsUC := application.NewManagePreferencesUseCase(prefRepo)
+	renderer := NewToastRenderer(buildSSETemplates(t))
+
+	h := NewHandler(notifySvc, listUC, markReadUC, prefsUC, bus, renderer, zap.NewNop())
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		ctx := middleware.SetClaimsForTest(c.Request.Context(), &authdomain.TokenClaims{UserID: "u-1", TenantID: "t-1"})
+		ctx = middleware.SetTenantIDForTest(ctx, "t-1")
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+	})
+	router.GET("/tenant/stream", h.StreamNotifications)
+
+	w := httptest.NewRecorder()
+	ctx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest("GET", "/tenant/stream", nil).WithContext(ctx)
+
+	done := make(chan struct{})
+	go func() {
+		router.ServeHTTP(w, req)
+		close(done)
+	}()
+	time.Sleep(20 * time.Millisecond)
+
+	bus.Publish(sharedevents.Event{Type: sharedevents.EventNewMessage, TenantID: "t-1"})
+
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+	<-done
+
+	require.Contains(t, w.Body.String(), "event:new-message",
+		"o stream unificado deve encaminhar eventos não-notification como eventos SSE nomeados")
+}
+
+// OWASP: o stream unificado /tenant/stream exige autenticação — sem claims,
+// responde 401 (não expõe eventos a anônimos).
+func TestSSEStream_RequiresAuth(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	repo := newMockNotifRepo()
+	prefRepo := newMockPrefRepo()
+	bus := sharedevents.NewMemoryEventBus()
+	h := NewHandler(
+		application.NewNotifyService(repo, prefRepo, bus),
+		application.NewListNotificationsUseCase(repo),
+		application.NewMarkReadUseCase(repo),
+		application.NewManagePreferencesUseCase(prefRepo),
+		bus, NewToastRenderer(buildSSETemplates(t)), zap.NewNop(),
+	)
+
+	router := gin.New()
+	router.GET("/tenant/stream", h.StreamNotifications) // sem middleware que injeta claims
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, httptest.NewRequest("GET", "/tenant/stream", nil))
+
+	require.Equal(t, 401, w.Code)
+}
+
 func buildSSETemplates(t *testing.T) *template.Template {
 	t.Helper()
 	tmpl := template.New("").Funcs(template.FuncMap{
