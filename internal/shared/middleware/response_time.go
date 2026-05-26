@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -55,6 +56,11 @@ func ResponseTime(log *zap.Logger, slowThreshold time.Duration) gin.HandlerFunc 
 
 		duration := time.Since(start)
 		if slowThreshold <= 0 || duration < slowThreshold {
+			return
+		}
+		// Respostas SSE (text/event-stream) são long-lived por natureza; não são
+		// "slow requests" e poluiriam o log (F26).
+		if strings.Contains(c.Writer.Header().Get("Content-Type"), "text/event-stream") {
 			return
 		}
 

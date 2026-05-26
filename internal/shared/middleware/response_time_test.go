@@ -66,6 +66,25 @@ func TestResponseTime_NoWarnWhenFast(t *testing.T) {
 	assert.Empty(t, logs.FilterLevelExact(zapcore.WarnLevel).All())
 }
 
+// Respostas SSE (text/event-stream) são longas por natureza e NÃO devem gerar
+// warn de "slow http request" (evita falso positivo — F26).
+func TestResponseTime_SkipsSlowWarnForSSE(t *testing.T) {
+	log, logs := observedLogger()
+	r := gin.New()
+	r.Use(ResponseTime(log, 1*time.Millisecond))
+	r.GET("/stream", func(c *gin.Context) {
+		c.Header("Content-Type", "text/event-stream")
+		time.Sleep(20 * time.Millisecond)
+		c.String(http.StatusOK, "data: x\n\n")
+	})
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/stream", nil))
+
+	assert.Empty(t, logs.FilterLevelExact(zapcore.WarnLevel).All(),
+		"endpoint SSE não deve ser logado como slow http request")
+}
+
 // Limiar 0 desativa o Warn, mas o header continua presente.
 func TestResponseTime_ZeroThresholdDisablesWarn(t *testing.T) {
 	log, logs := observedLogger()
