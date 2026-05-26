@@ -6,12 +6,12 @@
     <link rel="stylesheet" href="/static/css/whatsapp.css">
 </head>
 <body>
-<div class="admin-layout">
+<div class="admin-layout" hx-ext="sse" sse-connect="/tenant/stream">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "whatsapp")}}
     {{template "partials/notification_bell.html" .}}
     <main class="admin-content wa-main">
         {{if .Connected}}
-        <div class="wa-container" hx-ext="sse" sse-connect="/tenant/whatsapp/events">
+        <div class="wa-container">
             <div class="wa-sidebar" id="conversations-panel">
                 <div class="wa-sidebar-header">
                     <h2>Conversas</h2>

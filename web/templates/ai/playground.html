@@ -6,11 +6,11 @@
     <link rel="stylesheet" href="/static/css/whatsapp.css">
 </head>
 <body>
-<div class="admin-layout">
+<div class="admin-layout" hx-ext="sse" sse-connect="/tenant/stream">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "ai_playground")}}
     {{template "partials/notification_bell.html" .}}
     <main class="admin-content wa-main">
-        <div class="wa-container" hx-ext="sse" sse-connect="/tenant/whatsapp/events">
+        <div class="wa-container">
             <div class="wa-sidebar" id="contacts-panel">
                 <div class="wa-sidebar-header">
                     <h2>AI Playground</h2>

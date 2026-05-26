@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="/static/css/files.css">
 </head>
 <body class="no-auto-close-modals">
-<div class="admin-layout">
+<div class="admin-layout" hx-ext="sse" sse-connect="/tenant/stream">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "files")}}
     <main class="admin-content">
         {{template "partials/tenant_topbar.html" (dict "PageTitle" "Arquivos")}}

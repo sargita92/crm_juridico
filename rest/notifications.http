@@ -41,8 +41,9 @@ Authorization: Bearer {{token}}
 ### ============= SSE STREAM =============
 ###
 
-### Stream SSE (fragmentos HTML — toast + badge OOB swap)
-GET {{base_url}}/notifications/stream
+### Stream SSE unificado (F26): notificações (toast + badge OOB) + eventos encaminhados
+# Movido de /notifications/stream para /tenant/stream — uma conexão SSE por página.
+GET {{base_url}}/tenant/stream
 Accept: text/event-stream
 Authorization: Bearer {{token}}
 

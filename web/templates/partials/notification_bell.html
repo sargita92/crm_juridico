@@ -16,9 +16,9 @@
     <div id="notification-dropdown" class="notification-dropdown" style="display:none"></div>
 </div>
 
+<!-- Consumidor da conexão SSE única da página (sse-connect="/tenant/stream" no
+     .admin-layout). F26: uma só conexão por página. -->
 <div id="toast-container" class="toast-container"
-     hx-ext="sse"
-     sse-connect="/notifications/stream"
      sse-swap="notification"
      hx-swap="beforeend"></div>
 {{end}}

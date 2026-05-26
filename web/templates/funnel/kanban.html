@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="/static/css/kanban.css">
 </head>
 <body>
-<div class="admin-layout">
+<div class="admin-layout" hx-ext="sse" sse-connect="/tenant/stream">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "leads")}}
     {{template "partials/notification_bell.html" .}}
     <main class="admin-content kanban-main">
