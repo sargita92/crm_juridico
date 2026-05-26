@@ -42,6 +42,9 @@ A investigação da Fase 1 (estática) está registrada em
 - [x] Tracing OTel por query (spans por operação do Gorm).
 - [x] Endpoint pprof disponível, **protegido** (flag + admin), desabilitado por
       padrão em produção.
+- [x] Middleware de latência por request: header `X-Response-Time` + log
+      `Warn` "slow http request" acima de `HTTP_SLOW_REQUEST_THRESHOLD_MS`
+      (repro: lentidão ao trocar de aba rápido → rajada de requests).
 - [x] Painel/queries de Grafana para pool e slow-query documentados
       (dashboard `crm-banco-f26`).
 - [x] Build, lint e testes verdes; cobertura ≥ 80% nos pacotes tocados.

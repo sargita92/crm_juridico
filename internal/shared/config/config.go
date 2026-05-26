@@ -54,6 +54,9 @@ type ServerConfig struct {
 	// PprofEnabled habilita /debug/pprof/* (atrás de auth+admin). Default false;
 	// ligar só sob demanda para investigação (env PPROF_ENABLED).
 	PprofEnabled bool
+	// SlowRequestThresholdMs: requests acima deste tempo (ms) são logados em Warn
+	// ("slow http request"). 0 desativa. Header X-Response-Time é sempre adicionado.
+	SlowRequestThresholdMs int
 }
 
 type DatabaseConfig struct {
@@ -93,6 +96,8 @@ func Load() (*Config, error) {
 	viper.SetDefault("server.securecookie", false)
 	viper.SetDefault("server.pprofenabled", false)
 	_ = viper.BindEnv("server.pprofenabled", "PPROF_ENABLED")
+	viper.SetDefault("server.slowrequestthresholdms", 1000)
+	_ = viper.BindEnv("server.slowrequestthresholdms", "HTTP_SLOW_REQUEST_THRESHOLD_MS")
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", "3307")
 	viper.SetDefault("database.user", "crm")
@@ -140,11 +145,12 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		Server: ServerConfig{
-			Port:         viper.GetString("server.port"),
-			ReadTimeout:  viper.GetInt("server.readtimeout"),
-			WriteTimeout: viper.GetInt("server.writetimeout"),
-			SecureCookie: viper.GetBool("server.securecookie"),
-			PprofEnabled: viper.GetBool("server.pprofenabled"),
+			Port:                   viper.GetString("server.port"),
+			ReadTimeout:            viper.GetInt("server.readtimeout"),
+			WriteTimeout:           viper.GetInt("server.writetimeout"),
+			SecureCookie:           viper.GetBool("server.securecookie"),
+			PprofEnabled:           viper.GetBool("server.pprofenabled"),
+			SlowRequestThresholdMs: viper.GetInt("server.slowrequestthresholdms"),
 		},
 		Database: DatabaseConfig{
 			Host:                 viper.GetString("database.host"),

@@ -358,7 +358,7 @@ func main() {
 		officeNameMw(c)
 	}
 
-	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
+	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled, time.Duration(cfg.Server.SlowRequestThresholdMs)*time.Millisecond)
 	notificationMod.SetRenderer(notifhttp.NewToastRenderer(tmpl))
 
 	// pprof — desabilitado por padrão; quando ligado (PPROF_ENABLED), fica atrás
@@ -467,7 +467,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, auditPublisher auditapp.Publisher, tokenProvider authdomain.TokenProvider, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool) (*gin.Engine, *template.Template) {
+func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, auditPublisher auditapp.Publisher, tokenProvider authdomain.TokenProvider, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool, slowReqThreshold time.Duration) (*gin.Engine, *template.Template) {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -561,6 +561,9 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestID())
+	// ResponseTime adiciona o header X-Response-Time e loga "slow http request"
+	// acima do limiar — para flagrar a latência por request (F26).
+	router.Use(middleware.ResponseTime(log, slowReqThreshold))
 	// RequestMeta extrai IP/User-Agent e injeta no context — usado pelo
 	// publisher de auditoria (F12) e por qualquer feature futura que precise
 	// desses metadados sem reler headers.

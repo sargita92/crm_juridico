@@ -295,6 +295,16 @@ Permite ver, no trace, qual query consome o tempo.
 `/debug/pprof/*` atrás de auth + admin, para investigar gargalos fora do banco
 (CPU, alocação, goroutines). Ver `rest/00-health.http`.
 
+### Latência por request (`middleware.ResponseTime`)
+
+Middleware cedo na cadeia (após `RequestID`) que:
+- adiciona o header **`X-Response-Time`** (ms) — visível no DevTools, útil para
+  flagrar páginas lentas ao navegar (ex.: troca rápida de abas);
+- loga **`Warn "slow http request"`** quando o request passa de
+  `HTTP_SLOW_REQUEST_THRESHOLD_MS` (default 1000; `0` desativa), com
+  `method`/`path`/`status`/`duration_ms` e `request_id`/`tenant_id` para
+  correlacionar com o slow-query log e os spans `gorm.*` da mesma requisição.
+
 ### Dashboard
 
 | Dashboard | UID | Foco |

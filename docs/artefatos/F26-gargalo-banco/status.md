@@ -29,6 +29,11 @@ alterar comportamento de negócio. A correção definitiva vem em entrega poster
 | 3 | Tracing OTel por query (tracer custom, sem deps novas) | concluído |
 | 4 | Endpoint pprof protegido (flag + admin) | concluído |
 | 5 | Config, dashboard `banco`, docs e .http | concluído |
+| 6 | Middleware `ResponseTime` (header X-Response-Time + Warn slow request) | concluído |
+
+> Step 6 (pós-feedback): repro relatado é **lentidão ao trocar de aba rápido**
+> (rajada de requests concorrentes → reforça H4 exaustão de pool). O middleware
+> expõe a latência por request para flagrar qual endpoint trava na rajada.
 
 > Nota Step 3: descartado o plugin oficial `gorm.io/plugin/opentelemetry` por
 > arrastar drivers clickhouse/postgres (~18 deps) num app MySQL-only; implementado

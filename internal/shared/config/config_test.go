@@ -18,6 +18,7 @@ func TestLoad_Defaults(t *testing.T) {
 	// F26
 	assert.Equal(t, 200, cfg.Database.SlowQueryThresholdMs, "slow-query threshold default = 200ms")
 	assert.False(t, cfg.Server.PprofEnabled, "pprof deve vir desabilitado por padrão")
+	assert.Equal(t, 1000, cfg.Server.SlowRequestThresholdMs, "slow-request threshold default = 1000ms")
 
 	// Sanity de alguns defaults pré-existentes.
 	assert.Equal(t, "8533", cfg.Server.Port)
