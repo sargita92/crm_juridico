@@ -183,6 +183,34 @@ func TestOWASP_Tenant_UserScope_PassesUserIDToProvider(t *testing.T) {
 }
 
 // ============================================================
+// OWASP A01 — F25: usuário comum não escala pelo ?user (escopo travado em si)
+// ============================================================
+
+func TestOWASP_Tenant_NonOwner_UserParam_StaysSelfScoped(t *testing.T) {
+	e := setupOWASPRouter(t)
+	userID := uuid.NewString()
+	tok, err := e.provider.Generate(authdomain.TokenClaims{
+		UserID: userID, Role: authdomain.UserRoleUser, TenantID: e.tenantID,
+	})
+	require.NoError(t, err)
+	rec := httptest.NewRecorder()
+	// tenta ver o dashboard de OUTRO usuário via ?user — deve ser ignorado
+	e.router.ServeHTTP(rec, owaspGet("/dashboard?user="+uuid.NewString(), owaspCookie(tok)))
+	assert.Equal(t, http.StatusOK, rec.Code)
+	require.NotNil(t, e.tenantFake.lastUserFilter, "não-owner deve permanecer filtrado pelo próprio userID")
+	assert.Equal(t, userID, *e.tenantFake.lastUserFilter, "?user não pode mudar o escopo de um não-owner")
+}
+
+func TestOWASP_Tenant_UserParam_SQLi_NoEffect(t *testing.T) {
+	e := setupOWASPRouter(t)
+	tok := e.tokenUser(t, e.tenantID)
+	rec := httptest.NewRecorder()
+	// SQLi clássica no ?user; handler valida por pertencimento e usa query parametrizada
+	e.router.ServeHTTP(rec, owaspGet("/dashboard?user=1%27%20OR%20%271%27%3D%271", owaspCookie(tok)))
+	assert.Equal(t, http.StatusOK, rec.Code, "payload SQLi em ?user não deve quebrar o handler")
+}
+
+// ============================================================
 // OWASP A03 — Injection (defesa em profundidade — handler não consome query params em SQL)
 // ============================================================
 

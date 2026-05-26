@@ -109,3 +109,70 @@ Accept: text/html
         client.assert(!response.body.includes("<script>alert(1)</script>"), "payload XSS reflete sem escape");
     });
 %}
+
+### ============================================================
+### F25 — Filtro de Dashboard por Usuario (Tenant)
+### Requer cookie de um OWNER do tenant. Defina @operator_id com o id de um
+### operador (nao-owner) do mesmo escritorio.
+### ============================================================
+
+@operator_id = COLOQUE_O_ID_DE_UM_OPERADOR_AQUI
+
+### Owner: drill-down num operador -> 200 + indicador "Vendo dados de"
+GET {{host}}/dashboard?user={{operator_id}}
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("Drill-down do owner retorna 200", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+        client.assert(response.body.includes("Vendo dados de"), "deve indicar o operador filtrado");
+    });
+%}
+
+### Owner: fragmento HTMX filtrado por operador -> 200
+GET {{host}}/dashboard/content?user={{operator_id}}
+Cookie: token={{token}}
+HX-Request: true
+Accept: text/html
+
+> {%
+    client.test("Fragmento filtrado retorna 200", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+        client.assert(!response.body.includes("<html>"), "fragmento nao deve trazer <html>");
+    });
+%}
+
+### Owner: ?user inexistente/de outro tenant -> 200 consolidado (sem vazamento)
+GET {{host}}/dashboard?user=00000000-0000-0000-0000-000000000000
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("Selecao invalida cai em consolidado", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+    });
+%}
+
+### OWASP: usuario comum (nao-owner) com ?user -> 200, mas escopo travado em si
+### (autenticar com usuario COMUM para sobrescrever {{token}} antes desta chamada)
+GET {{host}}/dashboard?user={{operator_id}}
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("Nao-owner nao escala via ?user", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+    });
+%}
+
+### OWASP: SQLi no parametro ?user -> 200 (validado por pertencimento, query parametrizada)
+GET {{host}}/dashboard?user=1%27%20OR%20%271%27%3D%271
+Cookie: token={{token}}
+Accept: text/html
+
+> {%
+    client.test("SQLi em ?user nao quebra o handler", function() {
+        client.assert(response.status === 200, "esperado 200, obtido " + response.status);
+    });
+%}
