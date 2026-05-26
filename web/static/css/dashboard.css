@@ -50,6 +50,43 @@
     cursor: not-allowed;
 }
 
+/* F25 — seletor de operador (owner) */
+.head-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dashboard-user-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    background: #fff;
+    color: #2d3748;
+    font-size: 0.9rem;
+    cursor: pointer;
+    max-width: 16rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.dashboard-user-select:hover {
+    border-color: #a0aec0;
+}
+.dashboard-user-select:focus {
+    outline: none;
+    border-color: #2b6cb0;
+    box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+}
+
+/* F25 — indicador de escopo dentro do fragmento (recarrega com os dados) */
+.dashboard-scope-note {
+    grid-column: 1 / -1;
+    background: #ebf4ff;
+    color: #2b6cb0;
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
