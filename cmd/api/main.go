@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
@@ -90,6 +91,14 @@ func main() {
 		log.Fatal("failed to connect to database", zap.Error(err))
 	}
 	defer database.Close(db, log)
+
+	// Expõe métricas do pool de conexões (sql.DBStats) em /metrics. wait_count e
+	// wait_duration são a evidência direta de exaustão de pool (ver F26).
+	if sqlDB, sErr := db.DB(); sErr != nil {
+		log.Error("failed to get sql.DB for pool metrics", zap.Error(sErr))
+	} else if rErr := observability.RegisterDBStats(prometheus.DefaultRegisterer, sqlDB, cfg.Database.Name); rErr != nil {
+		log.Error("failed to register db pool metrics", zap.Error(rErr))
+	}
 
 	if err := database.RunMigrations(db, log); err != nil {
 		log.Fatal("failed to run migrations", zap.Error(err))
