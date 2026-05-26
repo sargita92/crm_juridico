@@ -90,7 +90,7 @@ func TestCrossSellRule_RejectsAccessToRuleOfOtherTenant(t *testing.T) {
 	specA := env.seedSpecialist(t, "OWASP SpecA", "prompt")
 	specB := env.seedSpecialist(t, "OWASP SpecB", "prompt")
 
-	productID := uuid.New().String()
+	productID := env.seedProduct(t)
 
 	// Seed a rule under specA
 	ruleA, err := domain.NewCrossSellRule(
@@ -170,8 +170,8 @@ func TestCrossSellRule_RejectsTargetProductFromOtherTenant(t *testing.T) {
 	specA := env.seedSpecialist(t, "OWASP IsolA", "prompt")
 	specB := env.seedSpecialist(t, "OWASP IsolB", "prompt")
 
-	productAID := uuid.New().String()
-	productBID := uuid.New().String()
+	productAID := env.seedProduct(t)
+	productBID := env.seedProduct(t)
 
 	repo := specialistinfra.NewGormCrossSellRuleRepository(env.db)
 

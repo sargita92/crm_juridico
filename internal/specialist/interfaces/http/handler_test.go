@@ -206,6 +206,26 @@ func (e *testEnv) seedTenant(t *testing.T, name, doc string) *tenantdomain.Tenan
 	return tenant
 }
 
+// seedProduct inserts a product row directly so cross-sell rules can satisfy
+// their target_product_id foreign key. Products are tenant-agnostic at the
+// table level (the tenant link lives in tenant_products), so no tenant is needed.
+func (e *testEnv) seedProduct(t *testing.T) string {
+	t.Helper()
+	id := uuid.New().String()
+	now := time.Now()
+	err := e.db.Table("products").Create(map[string]interface{}{
+		"id":          id,
+		"name":        "Test Product",
+		"description": "desc",
+		"keywords":    "[]",
+		"active":      true,
+		"created_at":  now,
+		"updated_at":  now,
+	}).Error
+	require.NoError(t, err)
+	return id
+}
+
 func tokenCookie(token string) *http.Cookie {
 	return &http.Cookie{Name: "token", Value: token}
 }

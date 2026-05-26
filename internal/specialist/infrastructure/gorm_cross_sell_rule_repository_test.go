@@ -77,7 +77,6 @@ func createTestProductForCSR(t *testing.T, db *gorm.DB, tenantID string) string 
 	now := time.Now()
 	err := db.Table("products").Create(map[string]interface{}{
 		"id":          id,
-		"tenant_id":   tenantID,
 		"name":        "Test Product",
 		"description": "desc",
 		"keywords":    "[]",
