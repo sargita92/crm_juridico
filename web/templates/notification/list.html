@@ -5,7 +5,7 @@
     {{template "partials/tenant_head.html" (dict "Title" "Notificações")}}
 </head>
 <body>
-<div class="admin-layout" hx-ext="sse" sse-connect="/tenant/stream">
+<div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" .ActiveNav)}}
     <main class="admin-content">
         {{template "partials/tenant_topbar.html" (dict "PageTitle" "Notificações")}}

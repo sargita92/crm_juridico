@@ -35,7 +35,7 @@
     </div>
     <div id="messages-poll"
          hx-get="/tenant/whatsapp/conversations/{{.ConversationID}}/messages/new"
-         hx-trigger="sse:new-message, every 5s"
+         hx-trigger="new-message from:body, every 5s"
          hx-target="#messages-area"
          hx-swap="innerHTML"
          style="display:none"></div>

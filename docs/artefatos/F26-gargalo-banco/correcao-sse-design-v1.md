@@ -89,6 +89,35 @@ real-time degrada para polling — sem quebra funcional.
 - Migrar a navegação para `hx-boost`/shell persistente (refactor maior).
 - Tuning de pool / índices (banco descartado como causa).
 
+## Revisão v2 — SharedWorker (1 conexão SSE por browser)
+
+**Motivo:** o teste no browser mostrou que "1 SSE por página" **não bastou** — com a
+instrumentação ligada, durante a troca rápida de abas havia **6 conexões
+`/tenant/stream` simultâneas** (teto do HTTP/1.1), servidor ocioso. Como cada page
+load recria a conexão e o navegador só faz HTTP/2 com HTTPS, a solução robusta é
+**uma única conexão SSE por browser**, compartilhada entre abas e persistente
+através das navegações.
+
+**Implementação:**
+- `web/static/js/sse-worker.js` — **SharedWorker**: abre UMA `EventSource('/tenant/stream')`
+  e repassa cada evento nomeado para todas as abas conectadas (broadcast por porta).
+  Reconecta em erro. Termina (e fecha a SSE) quando a última aba fecha.
+- `web/static/js/sse-bridge.js` — por aba (em `tenant_head.html`, defer): conecta ao
+  SharedWorker e entrega os eventos ao htmx desta aba. Só ativa se houver
+  `#toast-container` (marca de página tenant). Em `notification` → `htmx.swap` no
+  `#toast-container` (processa OOB do badge); demais eventos → `dispatchEvent` no
+  `body`.
+- Remove o uso da extensão `htmx-ext-sse`: tira `hx-ext="sse"`/`sse-connect` do
+  `.admin-layout` (15 páginas) e `sse-swap` do sino; troca `hx-trigger="sse:<evento>"`
+  por `hx-trigger="<evento> from:body"` (whatsapp/page, chat, playground_messages);
+  remove o `<script>` do htmx-ext-sse.
+- Backend `/tenant/stream` **inalterado** (o worker é só mais um cliente).
+- Fallbacks de polling (`every 5s`/`every 30s`) permanecem → degradação graciosa se
+  o SharedWorker não estiver disponível.
+
+**Validação server-side:** `crm_notifications_sse_active_streams` deve ficar em **1**
+mesmo com várias abas abertas e ao navegar (antes spike até 6).
+
 ## Rastreabilidade
 
 - Causa-raiz e medições: [investigacao-v1.md](investigacao-v1.md) (atualizar com o achado SSE) e a sessão de diagnóstico ao vivo.

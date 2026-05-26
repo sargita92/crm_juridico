@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
-<div class="admin-layout" hx-ext="sse" sse-connect="/tenant/stream">
+<div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "dashboard")}}
     <main class="admin-content">
         {{template "partials/tenant_topbar.html" (dict "PageTitle" "Dashboard")}}

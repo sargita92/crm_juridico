@@ -5,7 +5,7 @@
     {{template "partials/tenant_head.html" (dict "Title" "Automações")}}
 </head>
 <body class="no-auto-close-modals">
-<div class="admin-layout" hx-ext="sse" sse-connect="/tenant/stream">
+<div class="admin-layout">
     {{template "partials/tenant_sidebar.html" (dict "ActiveNav" "automations")}}
     <main class="admin-content">
         {{template "partials/tenant_topbar.html" (dict "PageTitle" "Automações")}}
