@@ -16,6 +16,13 @@ GET {{base_url}}/api/conversations
 Authorization: Bearer {{tenant_token}}
 X-Tenant-Id: outro-tenant-id-invalido
 
+### pprof sem autenticação (deve retornar 401; nunca expor profiles a anônimos)
+GET {{base_url}}/debug/pprof/heap
+
+### pprof com token de usuário comum (deve retornar 403; só admin)
+GET {{base_url}}/debug/pprof/heap
+Authorization: Bearer {{tenant_token}}
+
 ### --- A02: Cryptographic Failures ---
 
 ### Login e verificar que token não expõe dados sensíveis

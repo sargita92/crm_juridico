@@ -51,6 +51,12 @@ type ServerConfig struct {
 	ReadTimeout  int
 	WriteTimeout int
 	SecureCookie bool
+	// PprofEnabled habilita /debug/pprof/* (atrás de auth+admin). Default false;
+	// ligar só sob demanda para investigação (env PPROF_ENABLED).
+	PprofEnabled bool
+	// SlowRequestThresholdMs: requests acima deste tempo (ms) são logados em Warn
+	// ("slow http request"). 0 desativa. Header X-Response-Time é sempre adicionado.
+	SlowRequestThresholdMs int
 }
 
 type DatabaseConfig struct {
@@ -59,6 +65,9 @@ type DatabaseConfig struct {
 	User     string
 	Password string
 	Name     string
+	// SlowQueryThresholdMs: queries que demoram mais que isto (ms) são logadas
+	// em Warn pelo logger do Gorm. 0 desativa o slow-query log.
+	SlowQueryThresholdMs int
 }
 
 type LogConfig struct {
@@ -85,11 +94,17 @@ func Load() (*Config, error) {
 	viper.SetDefault("server.readtimeout", 10)
 	viper.SetDefault("server.writetimeout", 10)
 	viper.SetDefault("server.securecookie", false)
+	viper.SetDefault("server.pprofenabled", false)
+	_ = viper.BindEnv("server.pprofenabled", "PPROF_ENABLED")
+	viper.SetDefault("server.slowrequestthresholdms", 1000)
+	_ = viper.BindEnv("server.slowrequestthresholdms", "HTTP_SLOW_REQUEST_THRESHOLD_MS")
 	viper.SetDefault("database.host", "localhost")
 	viper.SetDefault("database.port", "3307")
 	viper.SetDefault("database.user", "crm")
 	viper.SetDefault("database.password", "crm_secret")
 	viper.SetDefault("database.name", "crm_juridico")
+	viper.SetDefault("database.slowquerythresholdms", 200)
+	_ = viper.BindEnv("database.slowquerythresholdms", "DB_SLOW_QUERY_THRESHOLD_MS")
 	viper.SetDefault("log.level", "info")
 	viper.SetDefault("jwt.secret", "change-me-in-production")
 	viper.SetDefault("jwt.expiration", "24h")
@@ -130,17 +145,20 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		Server: ServerConfig{
-			Port:         viper.GetString("server.port"),
-			ReadTimeout:  viper.GetInt("server.readtimeout"),
-			WriteTimeout: viper.GetInt("server.writetimeout"),
-			SecureCookie: viper.GetBool("server.securecookie"),
+			Port:                   viper.GetString("server.port"),
+			ReadTimeout:            viper.GetInt("server.readtimeout"),
+			WriteTimeout:           viper.GetInt("server.writetimeout"),
+			SecureCookie:           viper.GetBool("server.securecookie"),
+			PprofEnabled:           viper.GetBool("server.pprofenabled"),
+			SlowRequestThresholdMs: viper.GetInt("server.slowrequestthresholdms"),
 		},
 		Database: DatabaseConfig{
-			Host:     viper.GetString("database.host"),
-			Port:     viper.GetString("database.port"),
-			User:     viper.GetString("database.user"),
-			Password: viper.GetString("database.password"),
-			Name:     viper.GetString("database.name"),
+			Host:                 viper.GetString("database.host"),
+			Port:                 viper.GetString("database.port"),
+			User:                 viper.GetString("database.user"),
+			Password:             viper.GetString("database.password"),
+			Name:                 viper.GetString("database.name"),
+			SlowQueryThresholdMs: viper.GetInt("database.slowquerythresholdms"),
 		},
 		Log: LogConfig{
 			Level: viper.GetString("log.level"),

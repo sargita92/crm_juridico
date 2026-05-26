@@ -2,21 +2,34 @@ package database
 
 import (
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
 )
 
-func New(cfg config.DatabaseConfig, log *zap.Logger) (*gorm.DB, error) {
+// New abre a conexão com o banco e configura o pool. O logger do Gorm é
+// substituído por um logger respaldado em zap que registra erros e queries
+// lentas (acima de cfg.SlowQueryThresholdMs), enriquecidas com os campos de
+// contexto retornados por ctxFields (ex.: request_id, tenant_id). ctxFields
+// pode ser nil.
+func New(cfg config.DatabaseConfig, log *zap.Logger, ctxFields ContextFieldExtractor) (*gorm.DB, error) {
+	slowThreshold := time.Duration(cfg.SlowQueryThresholdMs) * time.Millisecond
+
 	db, err := gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{
-		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+		Logger: newZapGormLogger(log, slowThreshold, ctxFields),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	// Emite um span OTel por query (usa o tracer provider global, já inicializado
+	// em main antes desta chamada). Torna o tempo de banco visível no trace.
+	if err := EnableQueryTracing(db, nil); err != nil {
+		return nil, fmt.Errorf("failed to enable query tracing: %w", err)
 	}
 
 	sqlDB, err := db.DB()

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
@@ -51,6 +52,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
+	"github.com/sasrgita/crm-juridico/internal/shared/profiling"
 	"github.com/sasrgita/crm-juridico/internal/specialist"
 	"github.com/sasrgita/crm-juridico/internal/tenant"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp"
@@ -85,11 +87,32 @@ func main() {
 		}
 	}()
 
-	db, err := database.New(cfg.Database, log)
+	// Campos de contexto anexados a cada log de slow query / erro de banco,
+	// permitindo correlacionar a query lenta com o request que a originou (F26).
+	dbCtxFields := func(ctx context.Context) []zap.Field {
+		var f []zap.Field
+		if rid := middleware.GetRequestID(ctx); rid != "" {
+			f = append(f, zap.String("request_id", rid))
+		}
+		if tid := middleware.GetTenantID(ctx); tid != "" {
+			f = append(f, zap.String("tenant_id", tid))
+		}
+		return f
+	}
+
+	db, err := database.New(cfg.Database, log, dbCtxFields)
 	if err != nil {
 		log.Fatal("failed to connect to database", zap.Error(err))
 	}
 	defer database.Close(db, log)
+
+	// Expõe métricas do pool de conexões (sql.DBStats) em /metrics. wait_count e
+	// wait_duration são a evidência direta de exaustão de pool (ver F26).
+	if sqlDB, sErr := db.DB(); sErr != nil {
+		log.Error("failed to get sql.DB for pool metrics", zap.Error(sErr))
+	} else if rErr := observability.RegisterDBStats(prometheus.DefaultRegisterer, sqlDB, cfg.Database.Name); rErr != nil {
+		log.Error("failed to register db pool metrics", zap.Error(rErr))
+	}
 
 	if err := database.RunMigrations(db, log); err != nil {
 		log.Fatal("failed to run migrations", zap.Error(err))
@@ -335,8 +358,15 @@ func main() {
 		officeNameMw(c)
 	}
 
-	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled)
+	router, tmpl := setupRouter(log, authMod, modules, loginUC, auditPublisher, tokenProvider, mw, cfg.Server.SecureCookie, cfg.AI.PlaygroundEnabled, time.Duration(cfg.Server.SlowRequestThresholdMs)*time.Millisecond)
 	notificationMod.SetRenderer(notifhttp.NewToastRenderer(tmpl))
+
+	// pprof — desabilitado por padrão; quando ligado (PPROF_ENABLED), fica atrás
+	// de auth+admin. Usado para investigar gargalos fora do banco (F26).
+	profiling.RegisterPprof(router, cfg.Server.PprofEnabled, authMw, adminMw)
+	if cfg.Server.PprofEnabled {
+		log.Warn("pprof endpoints ENABLED at /debug/pprof (admin-only)")
+	}
 
 	// F12 Step 8: rotas /admin/logs e /admin/logs/:id.
 	// Registradas fora do for-modules porque o audit.Module nao
@@ -437,7 +467,7 @@ func renderAdminLoginError(c *gin.Context) {
 	c.HTML(http.StatusOK, tmpl, gin.H{"Error": "Email ou senha inválidos"})
 }
 
-func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, auditPublisher auditapp.Publisher, tokenProvider authdomain.TokenProvider, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool) (*gin.Engine, *template.Template) {
+func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module, loginUC *authapp.LoginUseCase, auditPublisher auditapp.Publisher, tokenProvider authdomain.TokenProvider, mw module.Middlewares, secureCookie bool, aiPlaygroundEnabled bool, slowReqThreshold time.Duration) (*gin.Engine, *template.Template) {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 
@@ -531,6 +561,9 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestID())
+	// ResponseTime adiciona o header X-Response-Time e loga "slow http request"
+	// acima do limiar — para flagrar a latência por request (F26).
+	router.Use(middleware.ResponseTime(log, slowReqThreshold))
 	// RequestMeta extrai IP/User-Agent e injeta no context — usado pelo
 	// publisher de auditoria (F12) e por qualquer feature futura que precise
 	// desses metadados sem reler headers.

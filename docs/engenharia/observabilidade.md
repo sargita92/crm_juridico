@@ -232,6 +232,7 @@ Spans existentes em `pagamentos/` e `dashboard/` (PascalCase) **não foram renom
 | especialistas | `crm-especialistas` | respostas/min, p95/p99, taxa de erro |
 | equipe | `crm-equipe` | convites por outcome, permissões por scope, load balance fallbacks |
 | pagamentos | `pagamentos-f11` | (F11 pré-existente) |
+| banco | `crm-banco-f26` | pool de conexões (in use/idle/open/max), esperas e duração de espera, saturação, p95/p99 do especialista |
 
 ### Alertas (`infra/prometheus/alerts.yml`) e runbooks
 
@@ -245,6 +246,74 @@ Regras validadas via `promtool test rules` em CI (`.github/workflows/ci.yml`):
 | `AutomationFailing` | warning | [automacao-falhando](../operacoes/runbooks/automacao-falhando.md) |
 
 `WhatsAppDisconnected` e `SlowDatabase` estavam previstos no escopo original mas foram descartados porque as métricas-fonte (`crm_whatsapp_sessions_active`, `crm_db_query_duration_seconds`) não existem — follow-up separado.
+
+## F26 — Instrumentação de banco (gargalo intermitente)
+
+Para diagnosticar gargalos intermitentes de banco sem chutar a correção, foram
+adicionados quatro instrumentos. Nenhum altera comportamento de negócio.
+
+### Métricas do pool de conexões (`/metrics`)
+
+`internal/shared/observability/RegisterDBStats` registra o `DBStatsCollector` do
+`client_golang`, expondo `go_sql_*` (label `db_name`):
+
+| Métrica | Uso |
+|---------|-----|
+| `go_sql_open_connections` / `go_sql_in_use_connections` / `go_sql_idle_connections` | ocupação do pool |
+| `go_sql_max_open_connections` | teto do pool (hoje 25) |
+| `go_sql_wait_count_total` | **nº de vezes que um request esperou por conexão** |
+| `go_sql_wait_duration_seconds_total` | **tempo total aguardando conexão** |
+
+PromQL úteis:
+
+```promql
+# Saturação do pool (0..1) — perto de 1 = exaustão iminente
+max(go_sql_in_use_connections / go_sql_max_open_connections)
+
+# Esperas por conexão por segundo (deveria ser ~0; >0 sustentado = gargalo)
+rate(go_sql_wait_count_total[5m])
+
+# Tempo médio aguardando uma conexão (s)
+rate(go_sql_wait_duration_seconds_total[5m]) / rate(go_sql_wait_count_total[5m])
+```
+
+### Slow-query log (Gorm + zap)
+
+`DB_SLOW_QUERY_THRESHOLD_MS` (default 200; `0` desativa). Queries acima do limiar
+são logadas em `Warn` ("slow query") com SQL truncado, duração, linhas e contexto
+(`request_id`, `tenant_id`). Erros de query (exceto `ErrRecordNotFound`) viram `Error`.
+
+### Tracing por query (spans `gorm.*`)
+
+`database.EnableQueryTracing` emite um span OTel por operação (`gorm.Query`,
+`gorm.Create`, …), filho do span do request, com `db.statement` (SQL com
+placeholders, **sem valores** → sem PII), `db.sql.table` e `db.rows_affected`.
+Permite ver, no trace, qual query consome o tempo.
+
+### pprof (`PPROF_ENABLED`, default false)
+
+`/debug/pprof/*` atrás de auth + admin, para investigar gargalos fora do banco
+(CPU, alocação, goroutines). Ver `rest/00-health.http`.
+
+### Latência por request (`middleware.ResponseTime`)
+
+Middleware cedo na cadeia (após `RequestID`) que:
+- adiciona o header **`X-Response-Time`** (ms) — visível no DevTools, útil para
+  flagrar páginas lentas ao navegar (ex.: troca rápida de abas);
+- loga **`Warn "slow http request"`** quando o request passa de
+  `HTTP_SLOW_REQUEST_THRESHOLD_MS` (default 1000; `0` desativa), com
+  `method`/`path`/`status`/`duration_ms` e `request_id`/`tenant_id` para
+  correlacionar com o slow-query log e os spans `gorm.*` da mesma requisição.
+
+### Dashboard
+
+| Dashboard | UID | Foco |
+|-----------|-----|------|
+| banco | `crm-banco-f26` | pool (in use/idle/open/max), esperas/duração de espera, saturação, p95/p99 do especialista |
+
+> Com `go_sql_wait_*` agora existente, o alerta `SlowDatabase` (antes descartado
+> por falta de métrica-fonte) pode ser reavaliado após a causa-raiz da F26 ser
+> confirmada.
 
 ### Padrões para novas features
 
