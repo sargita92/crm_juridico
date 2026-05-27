@@ -77,7 +77,7 @@ func (h *Handler) RenderList(c *gin.Context) {
 
 	output, err := h.listUC.Execute(c.Request.Context(), input)
 	if err != nil {
-		c.HTML(http.StatusInternalServerError, "tenant/list.html", gin.H{"Error": "Erro ao carregar tenants"})
+		c.HTML(http.StatusInternalServerError, "tenant/list.html", gin.H{"Error": "Erro ao carregar escritórios"})
 		return
 	}
 
@@ -139,10 +139,10 @@ func (h *Handler) RenderDetail(c *gin.Context) {
 	output, err := h.getUC.Execute(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
-			c.HTML(http.StatusNotFound, "tenant/detail.html", gin.H{"Error": "Tenant não encontrado"})
+			c.HTML(http.StatusNotFound, "tenant/detail.html", gin.H{"Error": "Escritório não encontrado"})
 			return
 		}
-		c.HTML(http.StatusInternalServerError, "tenant/detail.html", gin.H{"Error": "Erro ao carregar tenant"})
+		c.HTML(http.StatusInternalServerError, "tenant/detail.html", gin.H{"Error": "Erro ao carregar escritório"})
 		return
 	}
 
@@ -158,10 +158,10 @@ func (h *Handler) RenderEditForm(c *gin.Context) {
 	output, err := h.getUC.Execute(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
-			c.HTML(http.StatusNotFound, "tenant/form.html", gin.H{"Error": "Tenant não encontrado"})
+			c.HTML(http.StatusNotFound, "tenant/form.html", gin.H{"Error": "Escritório não encontrado"})
 			return
 		}
-		c.HTML(http.StatusInternalServerError, "tenant/form.html", gin.H{"Error": "Erro ao carregar tenant"})
+		c.HTML(http.StatusInternalServerError, "tenant/form.html", gin.H{"Error": "Erro ao carregar escritório"})
 		return
 	}
 
@@ -209,7 +209,7 @@ func (h *Handler) HandleDeactivate(c *gin.Context) {
 	err := h.deactivateUC.Execute(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Tenant não encontrado"})
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Escritório não encontrado"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": mapDomainError(err)})
@@ -232,14 +232,14 @@ func (h *Handler) HandleBlock(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Tenant não encontrado"})
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Escritório não encontrado"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": mapDomainError(err)})
 		return
 	}
 
-	h.renderDetailAfterAction(c, id, "Tenant bloqueado com sucesso")
+	h.renderDetailAfterAction(c, id, "Escritório bloqueado com sucesso")
 }
 
 func (h *Handler) HandleUnblock(c *gin.Context) {
@@ -254,14 +254,14 @@ func (h *Handler) HandleUnblock(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Tenant não encontrado"})
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Escritório não encontrado"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": mapDomainError(err)})
 		return
 	}
 
-	h.renderDetailAfterAction(c, id, "Tenant desbloqueado com sucesso")
+	h.renderDetailAfterAction(c, id, "Escritório desbloqueado com sucesso")
 }
 
 func (h *Handler) HandleGetBlockHistory(c *gin.Context) {
@@ -270,7 +270,7 @@ func (h *Handler) HandleGetBlockHistory(c *gin.Context) {
 	history, err := h.getBlockHistoryUC.Execute(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, domain.ErrTenantNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Tenant não encontrado"})
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Escritório não encontrado"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar histórico"})
@@ -286,7 +286,7 @@ func (h *Handler) HandleGetBlockHistory(c *gin.Context) {
 func (h *Handler) renderDetailAfterAction(c *gin.Context, id, successMsg string) {
 	output, err := h.getUC.Execute(c.Request.Context(), id)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar tenant"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar escritório"})
 		return
 	}
 
@@ -381,15 +381,15 @@ func mapDomainError(err error) string {
 	case errors.Is(err, domain.ErrUnblockReasonRequired):
 		return "Motivo do desbloqueio é obrigatório"
 	case errors.Is(err, domain.ErrTenantAlreadyBlocked):
-		return "Tenant já está bloqueado"
+		return "Escritório já está bloqueado"
 	case errors.Is(err, domain.ErrTenantNotBlocked):
-		return "Tenant não está bloqueado"
+		return "Escritório não está bloqueado"
 	case errors.Is(err, domain.ErrReasonTooLong):
 		return "Motivo deve ter no máximo 500 caracteres"
 	case errors.Is(err, domain.ErrTenantInactive):
-		return "Tenant está inativo"
+		return "Escritório está inativo"
 	case errors.Is(err, domain.ErrTenantNotFound):
-		return "Tenant não encontrado"
+		return "Escritório não encontrado"
 	case errors.Is(err, pagdomain.ErrInvalidPlano):
 		return "Configuração de cobrança inválida: plano mensal/annual requer valor, dia (1-28) e data de início"
 	case errors.Is(err, pagdomain.ErrValorInvalido):

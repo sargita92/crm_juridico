@@ -251,7 +251,7 @@ func (h *Handler) HandleListTenants(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Especialista não encontrado"})
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar tenants"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar escritórios"})
 		return
 	}
 
@@ -267,7 +267,7 @@ func (h *Handler) HandleListAvailable(c *gin.Context) {
 
 	items, err := h.listAvailableUC.Execute(c.Request.Context(), id, search)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar tenants disponíveis"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar escritórios disponíveis"})
 		return
 	}
 
@@ -287,11 +287,11 @@ func (h *Handler) HandleAssociateTenants(c *gin.Context) {
 	}
 
 	if len(tenantIDs) == 0 {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Selecione pelo menos um tenant"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Selecione pelo menos um escritório"})
 		return
 	}
 	if len(tenantIDs) > 50 {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Máximo de 50 tenants por associação"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Máximo de 50 escritórios por associação"})
 		return
 	}
 
@@ -330,10 +330,10 @@ func (h *Handler) HandleDissociateTenant(c *gin.Context) {
 			return
 		}
 		if errors.Is(err, domain.ErrTenantNotAssociated) {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Tenant não está associado"})
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Escritório não está associado"})
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao desassociar tenant"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao desassociar escritório"})
 		return
 	}
 
@@ -347,7 +347,7 @@ func (h *Handler) HandleSetDefault(c *gin.Context) {
 
 	if err := h.specTenantRepo.SetDefault(c.Request.Context(), id, tenantID); err != nil {
 		if errors.Is(err, domain.ErrTenantNotAssociated) {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Tenant não está associado"})
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Escritório não está associado"})
 			return
 		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao definir default"})
@@ -404,15 +404,15 @@ func mapDomainError(err error) string {
 	case errors.Is(err, domain.ErrSpecialistInactive):
 		return "Especialista está inativo"
 	case errors.Is(err, domain.ErrTenantAlreadyAssociated):
-		return "Tenant já está associado"
+		return "Escritório já está associado"
 	case errors.Is(err, domain.ErrTenantNotAssociated):
-		return "Tenant não está associado"
+		return "Escritório não está associado"
 	case errors.Is(err, domain.ErrSpecialistNotFound):
 		return "Especialista não encontrado"
 	case errors.Is(err, tenantdomain.ErrTenantNotFound):
-		return "Tenant não encontrado"
+		return "Escritório não encontrado"
 	case errors.Is(err, tenantdomain.ErrTenantInactive):
-		return "Tenant está inativo"
+		return "Escritório está inativo"
 	default:
 		return "Erro interno"
 	}

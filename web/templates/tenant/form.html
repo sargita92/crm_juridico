@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{if .IsEdit}}Editar{{else}}Novo{{end}} Tenant — CRM Juridico</title>
+    <title>{{if .IsEdit}}Editar{{else}}Novo{{end}} Escritório — CRM Juridico</title>
     <link rel="stylesheet" href="/static/css/tokens.css">
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/animations.css">
@@ -20,17 +20,17 @@
         <div class="page-header">
             <div>
                 <div class="breadcrumb">
-                    <a href="/admin/tenants">Tenants</a>
+                    <a href="/admin/tenants">Escritórios</a>
                     <span>/</span>
                     {{if .IsEdit}}
                     <a href="/admin/tenants/{{.Tenant.ID}}">{{.Tenant.Name}}</a>
                     <span>/</span>
                     Editar
                     {{else}}
-                    Novo Tenant
+                    Novo Escritório
                     {{end}}
                 </div>
-                <h1>{{if .IsEdit}}Editar Tenant{{else}}Novo Tenant{{end}}</h1>
+                <h1>{{if .IsEdit}}Editar Escritório{{else}}Novo Escritório{{end}}</h1>
             </div>
         </div>
         <div class="form-page">
@@ -49,7 +49,7 @@
                     <div class="form-group">
                         <label for="name">Nome</label>
                         <input type="text" id="name" name="name"
-                               placeholder="Nome do tenant"
+                               placeholder="Nome do escritório"
                                value="{{if .Tenant}}{{.Tenant.Name}}{{end}}"
                                required autofocus>
                     </div>
@@ -101,7 +101,7 @@
                             <label class="checkbox">
                                 <input type="checkbox" name="exibir_pagamentos" value="true"
                                        {{if .Tenant.ExibirPagamentos}}checked{{end}}>
-                                Exibir aba de pagamentos para o tenant
+                                Exibir aba de pagamentos para o escritório
                             </label>
                         </div>
                     </fieldset>
