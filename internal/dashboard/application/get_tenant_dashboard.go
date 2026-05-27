@@ -12,6 +12,12 @@ type TenantInput struct {
 	TenantID string
 	UserID   string
 	IsOwner  bool // owner/admin do tenant → sem filtro por user
+
+	// ViewUserID, quando setado, faz o owner ver o dashboard de um operador
+	// específico (drill-down). Só tem efeito para owner; é ignorado para
+	// não-owner (que fica sempre travado no próprio UserID). Deve ser validado
+	// pelo handler (pertencimento ao tenant) antes de chegar aqui.
+	ViewUserID *string
 }
 
 type GetTenantDashboard struct {
@@ -36,9 +42,14 @@ func (uc *GetTenantDashboard) Execute(ctx context.Context, in TenantInput) (*dom
 	span.SetAttributes(attribute.String("tenant_id", in.TenantID), attribute.Bool("is_owner", in.IsOwner))
 
 	var userFilter *string
-	if !in.IsOwner {
+	switch {
+	case !in.IsOwner:
+		// não-owner: sempre travado no próprio usuário (ignora ViewUserID)
 		uid := in.UserID
 		userFilter = &uid
+	case in.ViewUserID != nil:
+		// owner drillando num operador específico
+		userFilter = in.ViewUserID
 	}
 	now := uc.clock.Now()
 
@@ -73,7 +84,9 @@ func (uc *GetTenantDashboard) Execute(ctx context.Context, in TenantInput) (*dom
 		ScopeIsUser:       userFilter != nil,
 	}
 	if out.ScopeIsUser {
-		name, err := uc.users.UserName(ctx, in.UserID)
+		// resolve o nome do usuário efetivamente filtrado (próprio, p/ não-owner;
+		// operador escolhido, p/ owner em drill-down)
+		name, err := uc.users.UserName(ctx, *userFilter)
 		if err == nil {
 			out.CurrentUserName = name
 		}

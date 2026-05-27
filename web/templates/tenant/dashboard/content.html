@@ -1,5 +1,8 @@
 {{define "tenant/dashboard/content.html"}}
 <div id="dashboard-content" class="dashboard-grid">
+    {{if .Stats.ScopeIsUser}}
+    <div class="dashboard-scope-note">Vendo dados de <strong>{{.Stats.CurrentUserName}}</strong></div>
+    {{end}}
     {{template "tenant/dashboard/_bloco1_funil.html" .}}
     {{template "tenant/dashboard/_bloco2_whatsapp.html" .}}
     {{template "tenant/dashboard/_bloco3_responsaveis.html" .}}

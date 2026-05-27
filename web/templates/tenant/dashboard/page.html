@@ -16,16 +16,28 @@
         <div class="admin-page-shell">
             <div class="admin-page-head">
                 <div>
-                    <h1>Dashboard
-                        {{if .Stats.ScopeIsUser}}<span class="scope-badge">{{.Stats.CurrentUserName}}</span>{{end}}
-                    </h1>
+                    <h1>Dashboard</h1>
                     <p class="lede">Visão consolidada do escritório, conversas e funil em tempo real.</p>
                 </div>
                 <div class="head-actions">
+                    {{if .CanSelectUser}}
+                    <select name="user" class="dashboard-user-select"
+                            aria-label="Filtrar dashboard por operador"
+                            hx-get="/dashboard/content"
+                            hx-target="#dashboard-content"
+                            hx-swap="outerHTML"
+                            hx-trigger="change">
+                        <option value="">Consolidado (todos)</option>
+                        {{range .Operators}}
+                        <option value="{{.ID}}" {{if eq .ID $.SelectedUserID}}selected{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
+                    {{end}}
                     <button class="dashboard-refresh-btn"
                             hx-get="/dashboard/content"
                             hx-target="#dashboard-content"
-                            hx-swap="outerHTML">
+                            hx-swap="outerHTML"
+                            hx-include="[name='user']">
                         Atualizar
                     </button>
                 </div>

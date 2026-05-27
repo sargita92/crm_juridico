@@ -76,7 +76,7 @@ func newAdminHandler(t *testing.T, errAny error) *dashhttp.Handler {
 	// tenantUC unused for admin tests; provide a no-op via the existing fakes from tenant_handler_test.go.
 	tUC := application.NewGetTenantDashboard(&fakeTenantHTTPProvider{}, fakeUserLookup{}, fixedClock{t: time.Now()})
 	ut := &fakeUserTenants{}
-	return dashhttp.NewHandler(tUC, aUC, ut, zap.NewNop())
+	return dashhttp.NewHandler(tUC, aUC, ut, &fakeOperatorLister{}, zap.NewNop())
 }
 
 func newAdminTestRouter(t *testing.T, h *dashhttp.Handler) *gin.Engine {

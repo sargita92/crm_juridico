@@ -66,7 +66,7 @@ func setupOWASPRouter(t *testing.T) *owaspEnv {
 	// (apenas com filtro de userID). Suficiente para os testes de fronteira de auth.
 	ut := &fakeUserTenants{}
 
-	h := dashhttp.NewHandler(tUC, aUC, ut, zap.NewNop())
+	h := dashhttp.NewHandler(tUC, aUC, ut, &fakeOperatorLister{}, zap.NewNop())
 
 	provider := authinfra.NewJWTProvider("test-secret-owasp-f19", time.Hour)
 	mw := module.Middlewares{
@@ -180,6 +180,34 @@ func TestOWASP_Tenant_UserScope_PassesUserIDToProvider(t *testing.T) {
 	// Como IsOwner=false (mapa vazio) e Role=user, o UC deve passar &UserID.
 	require.NotNil(t, e.tenantFake.lastUserFilter, "common user (não-owner) deve passar filtro userID p/ provider")
 	assert.Equal(t, userID, *e.tenantFake.lastUserFilter)
+}
+
+// ============================================================
+// OWASP A01 — F25: usuário comum não escala pelo ?user (escopo travado em si)
+// ============================================================
+
+func TestOWASP_Tenant_NonOwner_UserParam_StaysSelfScoped(t *testing.T) {
+	e := setupOWASPRouter(t)
+	userID := uuid.NewString()
+	tok, err := e.provider.Generate(authdomain.TokenClaims{
+		UserID: userID, Role: authdomain.UserRoleUser, TenantID: e.tenantID,
+	})
+	require.NoError(t, err)
+	rec := httptest.NewRecorder()
+	// tenta ver o dashboard de OUTRO usuário via ?user — deve ser ignorado
+	e.router.ServeHTTP(rec, owaspGet("/dashboard?user="+uuid.NewString(), owaspCookie(tok)))
+	assert.Equal(t, http.StatusOK, rec.Code)
+	require.NotNil(t, e.tenantFake.lastUserFilter, "não-owner deve permanecer filtrado pelo próprio userID")
+	assert.Equal(t, userID, *e.tenantFake.lastUserFilter, "?user não pode mudar o escopo de um não-owner")
+}
+
+func TestOWASP_Tenant_UserParam_SQLi_NoEffect(t *testing.T) {
+	e := setupOWASPRouter(t)
+	tok := e.tokenUser(t, e.tenantID)
+	rec := httptest.NewRecorder()
+	// SQLi clássica no ?user; handler valida por pertencimento e usa query parametrizada
+	e.router.ServeHTTP(rec, owaspGet("/dashboard?user=1%27%20OR%20%271%27%3D%271", owaspCookie(tok)))
+	assert.Equal(t, http.StatusOK, rec.Code, "payload SQLi em ?user não deve quebrar o handler")
 }
 
 // ============================================================

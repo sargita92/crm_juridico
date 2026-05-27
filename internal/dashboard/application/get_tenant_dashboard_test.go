@@ -64,6 +64,50 @@ func TestGetTenantDashboard_CommonUser_FiltersByResponsible(t *testing.T) {
 	assert.Equal(t, "João", out.CurrentUserName)
 }
 
+func TestGetTenantDashboard_Owner_DrillsIntoOperator(t *testing.T) {
+	fp := newFakes()
+	ul := fakeUserLookup{m: map[string]string{"op1": "Bia"}}
+	uc := application.NewGetTenantDashboard(fp, ul, fixedClock{t: time.Now()})
+	view := "op1"
+	out, err := uc.Execute(context.Background(), application.TenantInput{
+		TenantID: "t1", UserID: "owner1", IsOwner: true, ViewUserID: &view,
+	})
+	require.NoError(t, err)
+	assert.True(t, out.ScopeIsUser)
+	// owner drillando: filtro vai pro provider em todos os blocos (fan-out)
+	require.NotNil(t, fp.lastUserFilter)
+	assert.Equal(t, "op1", *fp.lastUserFilter)
+	assert.Equal(t, "op1", *fp.lastUserFilterProd)
+	// nome resolvido é o do usuário VISTO, não do requisitante
+	assert.Equal(t, "Bia", out.CurrentUserName)
+}
+
+func TestGetTenantDashboard_Owner_NoView_Consolidated(t *testing.T) {
+	fp := newFakes()
+	uc := application.NewGetTenantDashboard(fp, fakeUserLookup{}, fixedClock{t: time.Now()})
+	out, err := uc.Execute(context.Background(), application.TenantInput{
+		TenantID: "t1", UserID: "owner1", IsOwner: true, ViewUserID: nil,
+	})
+	require.NoError(t, err)
+	assert.False(t, out.ScopeIsUser)
+	assert.Nil(t, fp.lastUserFilter)
+}
+
+func TestGetTenantDashboard_NonOwner_IgnoresViewUserID(t *testing.T) {
+	fp := newFakes()
+	ul := fakeUserLookup{m: map[string]string{"u2": "João"}}
+	uc := application.NewGetTenantDashboard(fp, ul, fixedClock{t: time.Now()})
+	view := "someoneElse"
+	out, err := uc.Execute(context.Background(), application.TenantInput{
+		TenantID: "t1", UserID: "u2", IsOwner: false, ViewUserID: &view,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, fp.lastUserFilter)
+	// não-owner: escopo travado em si mesmo, ViewUserID ignorado
+	assert.Equal(t, "u2", *fp.lastUserFilter)
+	assert.Equal(t, "João", out.CurrentUserName)
+}
+
 func TestGetTenantDashboard_RejectsEmptyTenant(t *testing.T) {
 	uc := application.NewGetTenantDashboard(newFakes(), fakeUserLookup{}, fixedClock{t: time.Now()})
 	_, err := uc.Execute(context.Background(), application.TenantInput{TenantID: "", UserID: "u1", IsOwner: true})
