@@ -1,7 +1,7 @@
 # Status F27 — Sininho de notificações (visibilidade + posição)
 
 **Branch**: `feat/F27-sininho-notificacao`
-**Status**: design aprovado — aguardando plano de implementação
+**Status**: implementado (CSS) — build + testes verdes; smoke visual no app pendente
 **Design**: [design-v1.md](design-v1.md)
 
 ## Resumo
@@ -28,10 +28,17 @@ Melhoria de UI (somente CSS) no sino de notificações:
 
 | Step | Descrição | Status | Commit |
 |------|-----------|--------|--------|
-| — | design-v1 aprovado | concluído | (este) |
-| 1 | Visibilidade + reposição base + dropdown para cima + toasts | pendente | — |
-| 2 | Exceção escopada `.wa-main` (sino/toasts acima do compositor) | pendente | — |
+| — | design-v1 aprovado | concluído | — |
+| 1 | Visibilidade via `:has` + reposição inferior-direito + dropdown p/ cima + toasts acima | concluído | (impl) |
+| 2 | Exceção escopada `.wa-main` (sino/toasts acima do compositor) | concluído | (impl) |
 
 ## Verificação
 
-Manual/visual (sem lógica Go nova) — ver checklist em [design-v1.md](design-v1.md#verificação-manualvisual).
+- `go build ./cmd/... ./internal/... ./pkg/...` → sucesso.
+- `go test ./internal/notification/...` → 84 testes verdes (nenhuma lógica Go alterada).
+- CSS relido e conferido; static servido do disco (`router.Static("/static","web/static")`),
+  então é aplicado em runtime sem rebuild.
+- **Pendente (manual/visual no app logado):** checklist em
+  [design-v1.md](design-v1.md#verificação-manualvisual) — sino some sem não lidas; aparece ao
+  chegar não lida; dropdown abre para cima; toasts acima do sino; no chat o sino fica acima do
+  compositor; topbar sem o sino por cima.
