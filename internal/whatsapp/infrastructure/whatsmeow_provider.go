@@ -58,7 +58,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 	}
 	dbPath := filepath.Join(p.storeDir, sanitizeTenantID(tenantID)+".db")
 	dsn := fmt.Sprintf("file:%s?_foreign_keys=on&_journal_mode=WAL", dbPath)
-	container, err := sqlstore.New(ctx, "sqlite3", dsn, nil)
+	container, err := sqlstore.New(ctx, "sqlite3", dsn, newWaLogger(p.log, "Database"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create whatsmeow store: %w", err)
 	}
@@ -73,7 +73,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 		return nil, fmt.Errorf("failed to get device: %w", err)
 	}
 
-	client := whatsmeow.NewClient(deviceStore, nil)
+	client := whatsmeow.NewClient(deviceStore, newWaLogger(p.log, "Client"))
 	p.stores[tenantID] = container
 
 	// Output channel for our callers (simple strings)
@@ -170,9 +170,51 @@ func (p *WhatsmeowProvider) handleEvent(tenantID string, evt interface{}) {
 	case *events.Message:
 		p.handleIncomingMessage(tenantID, v)
 	case *events.Connected:
+		connectionUp.WithLabelValues(tenantID).Set(1)
 		p.log.Info("whatsapp connected", zap.String("tenant_id", tenantID))
+	case *events.Disconnected:
+		// Transient by nature: whatsmeow auto-reconnects (EnableAutoReconnect).
+		// Logged so a flapping connection is visible, not a terminal failure.
+		connectionUp.WithLabelValues(tenantID).Set(0)
+		disconnectTotal.WithLabelValues(tenantID, "disconnected").Inc()
+		p.log.Warn("whatsapp disconnected", zap.String("tenant_id", tenantID))
+	case *events.StreamReplaced:
+		// The same account connected elsewhere; whatsmeow stops reconnecting.
+		connectionUp.WithLabelValues(tenantID).Set(0)
+		disconnectTotal.WithLabelValues(tenantID, "stream_replaced").Inc()
+		p.log.Warn("whatsapp stream replaced", zap.String("tenant_id", tenantID))
+	case *events.StreamError:
+		disconnectTotal.WithLabelValues(tenantID, "stream_error").Inc()
+		p.log.Error("whatsapp stream error",
+			zap.String("tenant_id", tenantID),
+			zap.String("code", v.Code),
+		)
+	case *events.ConnectFailure:
+		disconnectTotal.WithLabelValues(tenantID, "connect_failure").Inc()
+		p.log.Error("whatsapp connect failure",
+			zap.String("tenant_id", tenantID),
+			zap.String("reason", v.Reason.String()),
+			zap.String("message", v.Message),
+		)
+	case *events.TemporaryBan:
+		disconnectTotal.WithLabelValues(tenantID, "temporary_ban").Inc()
+		p.log.Error("whatsapp temporary ban",
+			zap.String("tenant_id", tenantID),
+			zap.Int("code", int(v.Code)),
+			zap.Duration("expire", v.Expire),
+		)
+	case *events.KeepAliveTimeout:
+		disconnectTotal.WithLabelValues(tenantID, "keepalive_timeout").Inc()
+		p.log.Warn("whatsapp keepalive timeout", zap.String("tenant_id", tenantID))
+	case *events.KeepAliveRestored:
+		p.log.Info("whatsapp keepalive restored", zap.String("tenant_id", tenantID))
 	case *events.LoggedOut:
-		p.log.Warn("whatsapp logged out", zap.String("tenant_id", tenantID))
+		connectionUp.WithLabelValues(tenantID).Set(0)
+		disconnectTotal.WithLabelValues(tenantID, "logged_out").Inc()
+		p.log.Warn("whatsapp logged out",
+			zap.String("tenant_id", tenantID),
+			zap.Bool("on_connect", v.OnConnect),
+		)
 		p.mu.Lock()
 		delete(p.clients, tenantID)
 		p.mu.Unlock()
