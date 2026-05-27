@@ -1,13 +1,13 @@
 {{define "admin/dashboard/_bloco3_health.html"}}
 <section class="dashboard-card full-width">
-    <header><h2>Saúde dos tenants</h2></header>
+    <header><h2>Saúde dos escritórios</h2></header>
     <div class="card-split">
         <div class="card-split-pane">
             <h3 class="card-split-title">Top 10 mais ativos</h3>
             {{if .Stats.Bloco3_Health.Top10Active}}
             <div class="table-scroll">
                 <table class="dashboard-table">
-                    <thead><tr><th>Tenant</th><th class="num">Leads</th></tr></thead>
+                    <thead><tr><th>Escritório</th><th class="num">Leads</th></tr></thead>
                     <tbody>
                         {{range .Stats.Bloco3_Health.Top10Active}}
                         <tr><td>{{.TenantName}}</td><td class="num">{{.LeadCount}}</td></tr>
@@ -16,7 +16,7 @@
                 </table>
             </div>
             {{else}}
-            <div class="dashboard-empty">Nenhum tenant ativo.</div>
+            <div class="dashboard-empty">Nenhum escritório ativo.</div>
             {{end}}
         </div>
         <div class="card-split-pane">
@@ -24,7 +24,7 @@
             {{if .Stats.Bloco3_Health.InactiveList}}
             <div class="table-scroll">
                 <table class="dashboard-table">
-                    <thead><tr><th>Tenant</th><th class="num">Dias inativo</th></tr></thead>
+                    <thead><tr><th>Escritório</th><th class="num">Dias inativo</th></tr></thead>
                     <tbody>
                         {{range .Stats.Bloco3_Health.InactiveList}}
                         <tr><td>{{.TenantName}}</td><td class="num">{{.DaysInactive}}</td></tr>
@@ -33,7 +33,7 @@
                 </table>
             </div>
             {{else}}
-            <div class="dashboard-empty">Nenhum tenant inativo.</div>
+            <div class="dashboard-empty">Nenhum escritório inativo.</div>
             {{end}}
         </div>
     </div>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamentos do tenant — CRM Juridico</title>
+    <title>Pagamentos do escritório — CRM Juridico</title>
     <link rel="stylesheet" href="/static/css/tokens.css">
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/animations.css">
@@ -20,9 +20,9 @@
         <div class="page-header">
             <div>
                 <div class="breadcrumb">
-                    <a href="/admin/tenants">Tenants</a>
+                    <a href="/admin/tenants">Escritórios</a>
                     <span>/</span>
-                    <a href="/admin/tenants/{{.TenantID}}">Tenant</a>
+                    <a href="/admin/tenants/{{.TenantID}}">Escritório</a>
                     <span>/</span>
                     Pagamentos
                 </div>
@@ -51,7 +51,7 @@
                 {{range .Items}}
                     {{template "pagamentos/partials/payment_row.html" (dict "Row" .)}}
                 {{else}}
-                    <tr><td colspan="6" class="empty">Nenhum lançamento para este tenant.</td></tr>
+                    <tr><td colspan="6" class="empty">Nenhum lançamento para este escritório.</td></tr>
                 {{end}}
             </tbody>
         </table>

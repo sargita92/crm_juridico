@@ -55,12 +55,12 @@
             {{if .Product}}
             <!-- Tenant Associations Section -->
             <div class="form-card" style="margin-top:1.5rem">
-                <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem">Tenants vinculados</h3>
+                <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem">Escritórios vinculados</h3>
                 {{if .LinkedTenants}}
                 <table class="data-table" style="margin-bottom:1rem">
                     <thead>
                         <tr>
-                            <th>Tenant</th>
+                            <th>Escritório</th>
                             <th>Acoes</th>
                         </tr>
                     </thead>
@@ -72,21 +72,21 @@
                                 <button class="btn btn-sm btn-danger"
                                         hx-delete="/admin/products/{{$.Product.ID}}/tenants/{{.TenantID}}"
                                         hx-swap="none"
-                                        hx-confirm="Desvincular este tenant?">Desvincular</button>
+                                        hx-confirm="Desvincular este escritório?">Desvincular</button>
                             </td>
                         </tr>
                         {{end}}
                     </tbody>
                 </table>
                 {{else}}
-                <p style="color:#9ca3af;font-size:0.8125rem;font-style:italic;margin-bottom:1rem">Nenhum tenant vinculado</p>
+                <p style="color:#9ca3af;font-size:0.8125rem;font-style:italic;margin-bottom:1rem">Nenhum escritório vinculado</p>
                 {{end}}
 
                 {{if .AvailableTenants}}
-                <h4 style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;margin-bottom:0.5rem;letter-spacing:0.05em">Vincular novo tenant</h4>
+                <h4 style="font-size:0.8125rem;text-transform:uppercase;color:#9ca3af;margin-bottom:0.5rem;letter-spacing:0.05em">Vincular novo escritório</h4>
                 <form hx-post="/admin/products/{{.Product.ID}}/tenants" hx-swap="none" style="display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap">
                     <div style="flex:1;min-width:150px">
-                        <label style="display:block;font-size:0.75rem;color:#4a5568;margin-bottom:0.25rem">Tenant</label>
+                        <label style="display:block;font-size:0.75rem;color:#4a5568;margin-bottom:0.25rem">Escritório</label>
                         <select name="tenant_id" required style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">
                             <option value="">Selecione...</option>
                             {{range .AvailableTenants}}

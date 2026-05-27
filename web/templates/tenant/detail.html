@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{if .Tenant}}{{.Tenant.Name}}{{else}}Tenant{{end}} — CRM Juridico</title>
+    <title>{{if .Tenant}}{{.Tenant.Name}}{{else}}Escritório{{end}} — CRM Juridico</title>
     <link rel="stylesheet" href="/static/css/tokens.css">
     <link rel="stylesheet" href="/static/css/main.css">
     <link rel="stylesheet" href="/static/css/animations.css">
@@ -20,11 +20,11 @@
         <div class="page-header">
             <div>
                 <div class="breadcrumb">
-                    <a href="/admin/tenants">Tenants</a>
+                    <a href="/admin/tenants">Escritórios</a>
                     <span>/</span>
                     {{if .Tenant}}{{.Tenant.Name}}{{else}}—{{end}}
                 </div>
-                <h1>{{if .Tenant}}{{.Tenant.Name}}{{else}}Tenant{{end}}</h1>
+                <h1>{{if .Tenant}}{{.Tenant.Name}}{{else}}Escritório{{end}}</h1>
             </div>
             <a href="/admin/tenants" class="btn btn-outline">Voltar</a>
         </div>
@@ -90,8 +90,8 @@
             <!-- Modal: Bloquear -->
             <div id="block-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('block-modal')">
                 <div class="modal-card">
-                    <h2>Bloquear Tenant</h2>
-                    <p>Ao bloquear, o tenant <strong>{{.Tenant.Name}}</strong> perdera acesso ao sistema.</p>
+                    <h2>Bloquear Escritório</h2>
+                    <p>Ao bloquear, o escritório <strong>{{.Tenant.Name}}</strong> perdera acesso ao sistema.</p>
                     <form hx-post="/admin/tenants/{{.Tenant.ID}}/block" hx-target="#tenant-detail" hx-swap="outerHTML">
                         <div class="form-group">
                             <label for="block-reason">Motivo</label>
@@ -112,8 +112,8 @@
             <!-- Modal: Desbloquear -->
             <div id="unblock-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('unblock-modal')">
                 <div class="modal-card">
-                    <h2>Desbloquear Tenant</h2>
-                    <p>O tenant <strong>{{.Tenant.Name}}</strong> voltara a ter acesso ao sistema.</p>
+                    <h2>Desbloquear Escritório</h2>
+                    <p>O escritório <strong>{{.Tenant.Name}}</strong> voltara a ter acesso ao sistema.</p>
                     <form hx-post="/admin/tenants/{{.Tenant.ID}}/unblock" hx-target="#tenant-detail" hx-swap="outerHTML">
                         <div class="form-group">
                             <label for="unblock-reason">Motivo</label>
@@ -134,8 +134,8 @@
             <!-- Modal: Desativar -->
             <div id="deactivate-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('deactivate-modal')">
                 <div class="modal-card">
-                    <h2>Desativar Tenant</h2>
-                    <p>Tem certeza que deseja desativar o tenant <strong>{{.Tenant.Name}}</strong>? Essa acao pode ser revertida apenas por um administrador.</p>
+                    <h2>Desativar Escritório</h2>
+                    <p>Tem certeza que deseja desativar o escritório <strong>{{.Tenant.Name}}</strong>? Essa acao pode ser revertida apenas por um administrador.</p>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeModal('deactivate-modal')">Cancelar</button>
                         <button class="btn btn-danger"

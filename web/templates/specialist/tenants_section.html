@@ -28,7 +28,7 @@
                         hx-post="/admin/specialists/{{$.SpecialistID}}/tenants/{{.TenantID}}/default"
                         hx-target="#tenants-section"
                         hx-swap="innerHTML"
-                        title="Tornar este especialista o default para este tenant">
+                        title="Tornar este especialista o default para este escritório">
                     Tornar Default
                 </button>
                 {{end}}
@@ -38,7 +38,7 @@
                         hx-delete="/admin/specialists/{{$.SpecialistID}}/tenants/{{.TenantID}}"
                         hx-target="#tenants-section"
                         hx-swap="innerHTML"
-                        hx-confirm="Desassociar este tenant?">
+                        hx-confirm="Desassociar este escritório?">
                     Remover
                 </button>
             </td>
@@ -48,7 +48,7 @@
 </table>
 {{else}}
 <div class="empty-state" style="padding:2rem 1rem">
-    <p class="text-muted">Nenhum tenant associado</p>
+    <p class="text-muted">Nenhum escritório associado</p>
 </div>
 {{end}}
 {{end}}

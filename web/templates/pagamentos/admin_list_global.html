@@ -22,7 +22,7 @@
         </div>
 
         <form class="filters" method="get" action="/admin/payment">
-            <input type="search" name="tenant_id" placeholder="ID do tenant" value="{{.Filters.TenantID}}">
+            <input type="search" name="tenant_id" placeholder="ID do escritório" value="{{.Filters.TenantID}}">
             <select name="status">
                 <option value="">Todos os status</option>
                 <option value="pendente"  {{if eq .Filters.Status "pendente"}}selected{{end}}>Pendente</option>
@@ -38,7 +38,7 @@
         <table class="payments-table">
             <thead>
                 <tr>
-                    <th>Tenant</th>
+                    <th>Escritório</th>
                     <th>Tipo</th>
                     <th>Descrição/Comp.</th>
                     <th>Valor</th>

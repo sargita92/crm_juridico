@@ -183,7 +183,7 @@ func TestListPage_FullPage_RendersTable(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
 	assert.Contains(t, body, "Logs de auditoria", "deve renderizar layout completo")
-	assert.Contains(t, body, "Tenant bloqueado", "deve renderizar humanized da action")
+	assert.Contains(t, body, "Escritório bloqueado", "deve renderizar humanized da action")
 	assert.NotContains(t, body, "Excluir", "S4-C16: nao deve mostrar acoes destrutivas")
 }
 
@@ -318,7 +318,7 @@ func TestDetailPage_RendersAllFields(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
 	assert.Contains(t, body, "Detalhe do log")
-	assert.Contains(t, body, "Tenant bloqueado")
+	assert.Contains(t, body, "Escritório bloqueado")
 	assert.Contains(t, body, "admin@crm.com")
 	assert.Contains(t, body, "127.0.0.1")
 	assert.NotContains(t, body, "Editar", "S4-C16: imutavel — sem botao editar")
@@ -367,7 +367,7 @@ func TestDetailPage_HxRequest_ReturnsFragment(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
 	assert.NotContains(t, body, "<!DOCTYPE html>", "fragment nao deve ter doctype")
-	assert.Contains(t, body, "Tenant atualizado")
+	assert.Contains(t, body, "Escritório atualizado")
 }
 
 // HX-Request + id inexistente -> 404 com pagina generica (mantida igual

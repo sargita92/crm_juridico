@@ -84,14 +84,14 @@
             <!-- Tenants Associados (lazy-load) -->
             <div class="detail-card">
                 <div class="card-header">
-                    <h3>Tenants Associados</h3>
-                    <button class="btn btn-sm btn-primary" onclick="openModal('tenants-modal')">Gerenciar Tenants</button>
+                    <h3>Escritórios Associados</h3>
+                    <button class="btn btn-sm btn-primary" onclick="openModal('tenants-modal')">Gerenciar Escritórios</button>
                 </div>
                 <div id="tenants-section"
                      hx-get="/admin/specialists/{{.Specialist.ID}}/tenants"
                      hx-trigger="load"
                      hx-swap="innerHTML">
-                    <p class="text-muted">Carregando tenants...</p>
+                    <p class="text-muted">Carregando escritórios...</p>
                 </div>
             </div>
 
@@ -425,7 +425,7 @@
                 <div class="modal-card">
                     <h2>Desativar Especialista</h2>
                     <p>Tem certeza que deseja desativar o especialista <strong>{{.Specialist.Name}}</strong>?</p>
-                    <p class="text-muted">Ele nao podera ser associado a novos tenants enquanto estiver inativo. Tenants ja associados manterao a associacao, mas o especialista nao atendera novos leads.</p>
+                    <p class="text-muted">Ele nao podera ser associado a novos escritórios enquanto estiver inativo. Escritórios ja associados manterao a associacao, mas o especialista nao atendera novos leads.</p>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeModal('deactivate-modal')">Cancelar</button>
                         <button class="btn btn-danger"
@@ -443,8 +443,8 @@
             <!-- Modal: Gerenciar Tenants -->
             <div id="tenants-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('tenants-modal')">
                 <div class="modal-card modal-card-lg">
-                    <h2>Associar Tenants</h2>
-                    <input type="search" placeholder="Buscar tenant por nome..."
+                    <h2>Associar Escritórios</h2>
+                    <input type="search" placeholder="Buscar escritório por nome..."
                            hx-get="/admin/specialists/{{.Specialist.ID}}/tenants/available"
                            hx-trigger="input changed delay:300ms, search"
                            hx-target="#available-tenants"
@@ -456,7 +456,7 @@
                              hx-get="/admin/specialists/{{.Specialist.ID}}/tenants/available"
                              hx-trigger="load"
                              hx-swap="innerHTML">
-                            <p class="text-muted">Carregando tenants disponiveis...</p>
+                            <p class="text-muted">Carregando escritórios disponiveis...</p>
                         </div>
                         <div class="modal-actions">
                             <button type="button" class="btn btn-secondary" onclick="closeModal('tenants-modal')">Cancelar</button>

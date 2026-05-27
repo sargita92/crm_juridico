@@ -6,7 +6,7 @@
             <th>Nome</th>
             <th>Descricao</th>
             <th>Status</th>
-            <th>Tenants</th>
+            <th>Escritórios</th>
             <th>Criado em</th>
             <th></th>
         </tr>
@@ -21,7 +21,7 @@
                     {{if eq .Status "active"}}Ativo{{else}}Inativo{{end}}
                 </span>
             </td>
-            <td>{{.TenantCount}} tenants</td>
+            <td>{{.TenantCount}} escritórios</td>
             <td>{{.CreatedAt.Format "02/01/2006"}}</td>
             <td>
                 <a href="/admin/specialists/{{.ID}}" class="btn btn-sm btn-outline" onclick="event.stopPropagation()">

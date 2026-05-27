@@ -1,6 +1,6 @@
 {{define "admin/dashboard/_bloco1_tenants.html"}}
 <section class="dashboard-card">
-    <header><h2>Tenants</h2></header>
+    <header><h2>Escritórios</h2></header>
     <div class="dashboard-counter-row">
         <div class="dashboard-counter success"><span class="label">Ativos</span><span class="value">{{.Stats.Bloco1_Tenants.Active}}</span></div>
         <div class="dashboard-counter"><span class="label">Inativos</span><span class="value">{{.Stats.Bloco1_Tenants.Inactive}}</span></div>
@@ -18,7 +18,7 @@
             type: 'bar',
             data: {
                 labels: months.map(m => m.Label),
-                datasets: [{ label: 'Novos tenants', data: months.map(m => m.Count), backgroundColor: '#4299e1' }]
+                datasets: [{ label: 'Novos escritórios', data: months.map(m => m.Count), backgroundColor: '#4299e1' }]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
