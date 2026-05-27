@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/sasrgita/crm-juridico/internal/ai"
+	aiapp "github.com/sasrgita/crm-juridico/internal/ai/application"
 	aidomain "github.com/sasrgita/crm-juridico/internal/ai/domain"
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
@@ -154,8 +155,9 @@ func setupTestEnv(t *testing.T, opts ...testEnvOpt) *testEnv {
 	cleanupPlaygroundContact(t, db)
 
 	// --- Wire modules (mirrors cmd/api/main.go). ---
+	toolRegistry := aiapp.NewToolRegistry()
 	tenantMod := tenant.NewModule(db)
-	specialistMod := specialist.NewModule(db, tenantMod.TenantRepo())
+	specialistMod := specialist.NewModule(db, tenantMod.TenantRepo(), toolRegistry)
 	documentMod := document.NewModule(db, specialistMod.SpecialistRepo())
 
 	whatsmeowProvider := &fakeWhatsAppProvider{}
@@ -222,6 +224,7 @@ func setupTestEnv(t *testing.T, opts ...testEnvOpt) *testEnv {
 		MoveLeadUC:       funnelMod.MoveLeadUC(),
 		FunnelRepo:       funnelMod.FunnelRepo(),
 		ColumnRepo:       funnelMod.ColumnRepo(),
+		ToolRegistry:     toolRegistry,
 	})
 	whatsappMod.SetAIHandler(aiMod)
 
