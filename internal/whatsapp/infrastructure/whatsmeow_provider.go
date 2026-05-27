@@ -165,6 +165,58 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 	return outChan, nil
 }
 
+// hasPairedSession reports whether tenantID already has a paired whatsmeow
+// session persisted on disk. It never creates a store file: a missing file
+// means no session, so we avoid materializing an empty store (which would also
+// risk triggering a QR flow on reconnect).
+func (p *WhatsmeowProvider) hasPairedSession(ctx context.Context, tenantID string) (bool, error) {
+	dbPath := filepath.Join(p.storeDir, sanitizeTenantID(tenantID)+".db")
+	if _, err := os.Stat(dbPath); err != nil {
+		return false, nil
+	}
+
+	dsn := fmt.Sprintf("file:%s?_foreign_keys=on&_journal_mode=WAL", dbPath)
+	container, err := sqlstore.New(ctx, "sqlite3", dsn, newWaLogger(p.log, "Database"))
+	if err != nil {
+		return false, fmt.Errorf("open store: %w", err)
+	}
+	defer func() { _ = container.Close() }()
+
+	if err := container.Upgrade(ctx); err != nil {
+		return false, fmt.Errorf("upgrade store: %w", err)
+	}
+	device, err := container.GetFirstDevice(ctx)
+	if err != nil {
+		return false, fmt.Errorf("get device: %w", err)
+	}
+	return device.ID != nil, nil
+}
+
+// ReconnectExisting reconnects whatsmeow sessions that were already paired in a
+// previous run. Call it once on startup so a process restart (deploy, Air
+// hot-reload in dev) does not leave tenants disconnected until a manual
+// reconnect. Tenants without a paired session are skipped — no QR pairing is
+// ever triggered here.
+func (p *WhatsmeowProvider) ReconnectExisting(ctx context.Context, tenantIDs []string) {
+	for _, tenantID := range tenantIDs {
+		paired, err := p.hasPairedSession(ctx, tenantID)
+		if err != nil {
+			p.log.Error("whatsapp startup reconnect: session check failed",
+				zap.String("tenant_id", tenantID), zap.Error(err))
+			continue
+		}
+		if !paired {
+			continue
+		}
+		if _, err := p.Connect(ctx, tenantID); err != nil {
+			p.log.Error("whatsapp startup reconnect failed",
+				zap.String("tenant_id", tenantID), zap.Error(err))
+			continue
+		}
+		p.log.Info("whatsapp session reconnected on startup", zap.String("tenant_id", tenantID))
+	}
+}
+
 func (p *WhatsmeowProvider) handleEvent(tenantID string, evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
