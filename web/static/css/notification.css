@@ -1,10 +1,22 @@
 /* Notification bell + badge */
 .notification-bell-container {
     position: fixed;
-    top: 16px;
+    bottom: 16px;
     right: 16px;
     z-index: 1000;
+    display: none; /* F27: só aparece quando há notificações não lidas */
 }
+/* F27: mostra o sino só quando o badge está visível (count > 0). O estado de
+   "não lidas" é mantido pela classe notification-badge-hidden, atualizada em
+   tempo real (OOB do SSE), no poll de 30s e no evento refreshBadge. */
+.notification-bell-container:has(.notification-badge:not(.notification-badge-hidden)) {
+    display: block;
+}
+/* F27: nas páginas de chat (WhatsApp e AI Playground, classe .wa-main) o compositor
+   de mensagem ocupa o canto inferior-direito; sobe o sino e os toasts para não cobrir
+   o botão de enviar. */
+.admin-layout:has(.wa-main) .notification-bell-container { bottom: 84px; }
+.admin-layout:has(.wa-main) .toast-container { bottom: 140px; }
 .notification-bell-btn {
     position: relative;
     background: #fff;
@@ -46,7 +58,7 @@
 /* Dropdown */
 .notification-dropdown {
     position: absolute;
-    top: 52px;
+    bottom: 56px; /* F27: abre para cima (sino agora fica no rodapé) */
     right: 0;
     width: 400px;
     max-height: 500px;
@@ -128,7 +140,7 @@
 /* Toast */
 .toast-container {
     position: fixed;
-    bottom: 16px;
+    bottom: 72px; /* F27: empilha acima do sino (16 + 44 do botão + 12 de folga) */
     right: 16px;
     z-index: 1100;
     display: flex;
