@@ -58,7 +58,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 	}
 	dbPath := filepath.Join(p.storeDir, sanitizeTenantID(tenantID)+".db")
 	dsn := fmt.Sprintf("file:%s?_foreign_keys=on&_journal_mode=WAL", dbPath)
-	container, err := sqlstore.New(ctx, "sqlite3", dsn, nil)
+	container, err := sqlstore.New(ctx, "sqlite3", dsn, newWaLogger(p.log, "Database"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create whatsmeow store: %w", err)
 	}
@@ -73,7 +73,7 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 		return nil, fmt.Errorf("failed to get device: %w", err)
 	}
 
-	client := whatsmeow.NewClient(deviceStore, nil)
+	client := whatsmeow.NewClient(deviceStore, newWaLogger(p.log, "Client"))
 	p.stores[tenantID] = container
 
 	// Output channel for our callers (simple strings)
@@ -165,14 +165,108 @@ func (p *WhatsmeowProvider) Connect(ctx context.Context, tenantID string) (<-cha
 	return outChan, nil
 }
 
+// hasPairedSession reports whether tenantID already has a paired whatsmeow
+// session persisted on disk. It never creates a store file: a missing file
+// means no session, so we avoid materializing an empty store (which would also
+// risk triggering a QR flow on reconnect).
+func (p *WhatsmeowProvider) hasPairedSession(ctx context.Context, tenantID string) (bool, error) {
+	dbPath := filepath.Join(p.storeDir, sanitizeTenantID(tenantID)+".db")
+	if _, err := os.Stat(dbPath); err != nil {
+		return false, nil
+	}
+
+	dsn := fmt.Sprintf("file:%s?_foreign_keys=on&_journal_mode=WAL", dbPath)
+	container, err := sqlstore.New(ctx, "sqlite3", dsn, newWaLogger(p.log, "Database"))
+	if err != nil {
+		return false, fmt.Errorf("open store: %w", err)
+	}
+	defer func() { _ = container.Close() }()
+
+	if err := container.Upgrade(ctx); err != nil {
+		return false, fmt.Errorf("upgrade store: %w", err)
+	}
+	device, err := container.GetFirstDevice(ctx)
+	if err != nil {
+		return false, fmt.Errorf("get device: %w", err)
+	}
+	return device.ID != nil, nil
+}
+
+// ReconnectExisting reconnects whatsmeow sessions that were already paired in a
+// previous run. Call it once on startup so a process restart (deploy, Air
+// hot-reload in dev) does not leave tenants disconnected until a manual
+// reconnect. Tenants without a paired session are skipped — no QR pairing is
+// ever triggered here.
+func (p *WhatsmeowProvider) ReconnectExisting(ctx context.Context, tenantIDs []string) {
+	for _, tenantID := range tenantIDs {
+		paired, err := p.hasPairedSession(ctx, tenantID)
+		if err != nil {
+			p.log.Error("whatsapp startup reconnect: session check failed",
+				zap.String("tenant_id", tenantID), zap.Error(err))
+			continue
+		}
+		if !paired {
+			continue
+		}
+		if _, err := p.Connect(ctx, tenantID); err != nil {
+			p.log.Error("whatsapp startup reconnect failed",
+				zap.String("tenant_id", tenantID), zap.Error(err))
+			continue
+		}
+		p.log.Info("whatsapp session reconnected on startup", zap.String("tenant_id", tenantID))
+	}
+}
+
 func (p *WhatsmeowProvider) handleEvent(tenantID string, evt interface{}) {
 	switch v := evt.(type) {
 	case *events.Message:
 		p.handleIncomingMessage(tenantID, v)
 	case *events.Connected:
+		connectionUp.WithLabelValues(tenantID).Set(1)
 		p.log.Info("whatsapp connected", zap.String("tenant_id", tenantID))
+	case *events.Disconnected:
+		// Transient by nature: whatsmeow auto-reconnects (EnableAutoReconnect).
+		// Logged so a flapping connection is visible, not a terminal failure.
+		connectionUp.WithLabelValues(tenantID).Set(0)
+		disconnectTotal.WithLabelValues(tenantID, "disconnected").Inc()
+		p.log.Warn("whatsapp disconnected", zap.String("tenant_id", tenantID))
+	case *events.StreamReplaced:
+		// The same account connected elsewhere; whatsmeow stops reconnecting.
+		connectionUp.WithLabelValues(tenantID).Set(0)
+		disconnectTotal.WithLabelValues(tenantID, "stream_replaced").Inc()
+		p.log.Warn("whatsapp stream replaced", zap.String("tenant_id", tenantID))
+	case *events.StreamError:
+		disconnectTotal.WithLabelValues(tenantID, "stream_error").Inc()
+		p.log.Error("whatsapp stream error",
+			zap.String("tenant_id", tenantID),
+			zap.String("code", v.Code),
+		)
+	case *events.ConnectFailure:
+		disconnectTotal.WithLabelValues(tenantID, "connect_failure").Inc()
+		p.log.Error("whatsapp connect failure",
+			zap.String("tenant_id", tenantID),
+			zap.String("reason", v.Reason.String()),
+			zap.String("message", v.Message),
+		)
+	case *events.TemporaryBan:
+		disconnectTotal.WithLabelValues(tenantID, "temporary_ban").Inc()
+		p.log.Error("whatsapp temporary ban",
+			zap.String("tenant_id", tenantID),
+			zap.Int("code", int(v.Code)),
+			zap.Duration("expire", v.Expire),
+		)
+	case *events.KeepAliveTimeout:
+		disconnectTotal.WithLabelValues(tenantID, "keepalive_timeout").Inc()
+		p.log.Warn("whatsapp keepalive timeout", zap.String("tenant_id", tenantID))
+	case *events.KeepAliveRestored:
+		p.log.Info("whatsapp keepalive restored", zap.String("tenant_id", tenantID))
 	case *events.LoggedOut:
-		p.log.Warn("whatsapp logged out", zap.String("tenant_id", tenantID))
+		connectionUp.WithLabelValues(tenantID).Set(0)
+		disconnectTotal.WithLabelValues(tenantID, "logged_out").Inc()
+		p.log.Warn("whatsapp logged out",
+			zap.String("tenant_id", tenantID),
+			zap.Bool("on_connect", v.OnConnect),
+		)
 		p.mu.Lock()
 		delete(p.clients, tenantID)
 		p.mu.Unlock()

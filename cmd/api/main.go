@@ -374,6 +374,23 @@ func main() {
 	// recebe tokenProvider para o middleware AdminPageAuth especifico).
 	auditMod.RegisterRoutes(router, tokenProvider)
 
+	// Reconnect WhatsApp sessions paired in a previous run so a restart (deploy,
+	// or Air hot-reload in dev) doesn't leave tenants disconnected until a manual
+	// reconnect. Runs in the background to avoid delaying startup; tenants without
+	// a paired session are skipped (no QR pairing is triggered).
+	go func() {
+		tenants, err := tenantMod.TenantRepo().FindAll(context.Background())
+		if err != nil {
+			log.Error("whatsapp startup reconnect: failed to list tenants", zap.Error(err))
+			return
+		}
+		ids := make([]string, 0, len(tenants))
+		for _, t := range tenants {
+			ids = append(ids, t.ID)
+		}
+		whatsmeowProvider.ReconnectExisting(context.Background(), ids)
+	}()
+
 	srv := &http.Server{
 		Addr:         ":" + cfg.Server.Port,
 		Handler:      router,
