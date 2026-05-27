@@ -3,6 +3,7 @@ package playground
 import (
 	"context"
 	"errors"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +15,16 @@ import (
 
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
+
+// newRouterWithMessagesTemplate returns a gin engine with the playground
+// conversation fragment stubbed, so handlers that render it can be tested.
+func newRouterWithMessagesTemplate() *gin.Engine {
+	r := gin.New()
+	tmpl := template.New("")
+	template.Must(tmpl.New("ai/playground_messages.html").Parse("ok"))
+	r.SetHTMLTemplate(tmpl)
+	return r
+}
 
 type fakeContacts struct {
 	list []ContactSummary
@@ -96,14 +107,14 @@ func TestHandleReset_ContactNotFound_Returns404(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-func TestHandleReset_ClearsHistoryAfterReset(t *testing.T) {
+func TestHandleReset_ClearsHistoryAndRendersEmptyConversation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	contacts := &fakeContacts{list: []ContactSummary{{ID: "c1", ConversationID: "conv-1"}}}
 	resetter := &fakeResetter{}
 	clearer := &fakeClearer{count: 5}
 	h := NewHandler(contacts, &fakeMessages{}, nil, resetter, clearer, zap.NewNop())
 
-	r := gin.New()
+	r := newRouterWithMessagesTemplate()
 	r.POST("/p/:contact_id/reset", func(c *gin.Context) {
 		setTenant(c, "tenant-1")
 		h.HandleReset(c)
@@ -113,7 +124,10 @@ func TestHandleReset_ClearsHistoryAfterReset(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusNoContent, w.Code)
+	// Renders the (now empty) conversation fragment so HTMX updates #chat
+	// immediately — no F5 needed.
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "ok", w.Body.String(), "should render the conversation fragment")
 	assert.True(t, resetter.called, "reset use case should run")
 	assert.True(t, clearer.called, "history should be cleared")
 	assert.Equal(t, "conv-1", clearer.convID, "should clear the contact's conversation")

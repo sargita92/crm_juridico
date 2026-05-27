@@ -114,6 +114,13 @@ func (h *Handler) RenderConversation(c *gin.Context) {
 		return
 	}
 
+	h.renderConversation(c, tenantID, selected)
+}
+
+// renderConversation lists the conversation's messages and renders the chat
+// fragment. Shared by RenderConversation and HandleReset so a reset returns the
+// (now empty) conversation immediately, updating #chat without a page refresh.
+func (h *Handler) renderConversation(c *gin.Context, tenantID string, selected *ContactSummary) {
 	msgs, err := h.messages.ListByConversation(c.Request.Context(), tenantID, selected.ConversationID, 100)
 	if err != nil {
 		h.log.Error("playground: list messages failed", zap.Error(err))
@@ -232,5 +239,7 @@ func (h *Handler) HandleReset(c *gin.Context) {
 	h.log.Info("playground: history cleared",
 		zap.String("conversation_id", selected.ConversationID),
 		zap.Int64("deleted", deleted))
-	c.Status(http.StatusNoContent)
+	// Re-render the now-empty conversation so HTMX swaps #chat immediately
+	// (the reset form targets #chat); avoids needing a manual page refresh.
+	h.renderConversation(c, tenantID, selected)
 }
