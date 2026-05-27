@@ -175,6 +175,18 @@ func (m *mockMessageRepo) Update(_ context.Context, msg *domain.Message) error {
 	return nil
 }
 
+func (m *mockMessageRepo) DeleteByConversationID(_ context.Context, conversationID string) (int64, error) {
+	msgs := m.byConvID[conversationID]
+	for _, msg := range msgs {
+		delete(m.messages, msg.ID)
+		if msg.WhatsAppMsgID != "" {
+			delete(m.byWaMsgID, msg.WhatsAppMsgID)
+		}
+	}
+	delete(m.byConvID, conversationID)
+	return int64(len(msgs)), nil
+}
+
 // --- Mock WhatsAppProvider ---
 
 type mockProvider struct {

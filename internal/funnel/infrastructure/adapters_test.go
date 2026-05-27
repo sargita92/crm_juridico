@@ -98,6 +98,9 @@ func (s *stubMessageRepo) FindByWhatsAppMsgID(context.Context, string) (*whatsap
 	return nil, errors.New("not used")
 }
 func (s *stubMessageRepo) Update(context.Context, *whatsappdomain.Message) error { return nil }
+func (s *stubMessageRepo) DeleteByConversationID(context.Context, string) (int64, error) {
+	return 0, nil
+}
 
 func TestWhatsAppMessageAdapter_FindRecent_Success(t *testing.T) {
 	now := time.Now()

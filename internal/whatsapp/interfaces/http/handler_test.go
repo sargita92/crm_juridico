@@ -115,6 +115,15 @@ func (m *mockMsgRepo) Update(_ context.Context, msg *domain.Message) error {
 	return nil
 }
 
+func (m *mockMsgRepo) DeleteByConversationID(_ context.Context, convID string) (int64, error) {
+	msgs := m.byConv[convID]
+	for _, msg := range msgs {
+		delete(m.messages, msg.ID)
+	}
+	delete(m.byConv, convID)
+	return int64(len(msgs)), nil
+}
+
 type mockContactRepo struct {
 	contacts map[string]*domain.Contact
 }

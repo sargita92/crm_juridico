@@ -60,6 +60,18 @@ func (r *GormMessageRepository) FindByWhatsAppMsgID(ctx context.Context, whatsap
 	return msgToDomain(&model), nil
 }
 
+// DeleteByConversationID hard-deletes every message belonging to the given
+// conversation and returns how many rows were removed. Used by the playground
+// reset to wipe the conversation history (a true clean slate). Deleting a
+// conversation with no messages is a no-op that returns 0.
+func (r *GormMessageRepository) DeleteByConversationID(ctx context.Context, conversationID string) (int64, error) {
+	result := r.db.WithContext(ctx).Where("conversation_id = ?", conversationID).Delete(&messageModel{})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
+}
+
 func (r *GormMessageRepository) Update(ctx context.Context, msg *domain.Message) error {
 	model := msgToModel(msg)
 	result := r.db.WithContext(ctx).Save(model)

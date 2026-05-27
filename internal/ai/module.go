@@ -278,6 +278,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 			messageAdapter,
 			deps.ReceiveMessageUC,
 			resetUC,
+			messageAdapter,
 			log,
 		)
 		log.Info("ai playground: ENABLED — dev routes registered at /tenant/ai/playground")

@@ -78,7 +78,7 @@ func newOwaspHandler() *Handler {
 			},
 		},
 	}
-	return NewHandler(contacts, &fakeMessages{}, nil, nil, zap.NewNop())
+	return NewHandler(contacts, &fakeMessages{}, nil, nil, nil, zap.NewNop())
 }
 
 // TestOWASP_Playground_NoTenantContext_ConversationRoutes_Returns404 verifies

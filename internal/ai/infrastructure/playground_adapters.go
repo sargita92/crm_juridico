@@ -83,3 +83,14 @@ func (a *PlaygroundMessageAdapter) ListByConversation(ctx context.Context, _ str
 	}
 	return views, nil
 }
+
+// ClearHistory deletes every message of the conversation and returns how many
+// were removed. Satisfies playground.MessageHistoryClearer; used by the
+// playground reset to give the LLM a clean slate.
+func (a *PlaygroundMessageAdapter) ClearHistory(ctx context.Context, conversationID string) (int64, error) {
+	deleted, err := a.messageRepo.DeleteByConversationID(ctx, conversationID)
+	if err != nil {
+		return 0, fmt.Errorf("playground_message_adapter: delete by conversation: %w", err)
+	}
+	return deleted, nil
+}
