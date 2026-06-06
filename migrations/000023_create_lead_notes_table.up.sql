@@ -8,4 +8,4 @@ CREATE TABLE lead_notes (
     FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE,
     INDEX idx_lead_notes_lead_id (lead_id),
     INDEX idx_lead_notes_tenant_id (tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

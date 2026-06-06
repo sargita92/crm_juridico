@@ -10,4 +10,4 @@ CREATE TABLE products (
     FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
     INDEX idx_products_tenant_id (tenant_id),
     INDEX idx_products_tenant_active (tenant_id, active)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

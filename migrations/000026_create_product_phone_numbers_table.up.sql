@@ -5,4 +5,4 @@ CREATE TABLE product_phone_numbers (
     created_at DATETIME NOT NULL,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     UNIQUE INDEX idx_product_phone_unique (phone_number)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

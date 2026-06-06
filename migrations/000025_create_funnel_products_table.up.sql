@@ -8,4 +8,4 @@ CREATE TABLE funnel_products (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     UNIQUE INDEX idx_funnel_products_unique (funnel_id, product_id),
     INDEX idx_funnel_products_product_priority (product_id, priority DESC)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

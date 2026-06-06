@@ -7,7 +7,7 @@ CREATE TABLE tenant_products (
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
     UNIQUE INDEX idx_tenant_products_unique (tenant_id, product_id),
     INDEX idx_tenant_products_tenant (tenant_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Migrate existing data: create tenant_products entries from products.tenant_id
 INSERT INTO tenant_products (id, tenant_id, product_id, created_at)

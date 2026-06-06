@@ -12,4 +12,4 @@ CREATE TABLE cross_sell_rules (
     KEY idx_csr_target (target_product_id),
     CONSTRAINT fk_csr_spec FOREIGN KEY (specialist_id) REFERENCES specialists(id) ON DELETE CASCADE,
     CONSTRAINT fk_csr_product FOREIGN KEY (target_product_id) REFERENCES products(id) ON DELETE RESTRICT
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
