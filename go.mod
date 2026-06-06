@@ -1,6 +1,6 @@
 module github.com/sasrgita/crm-juridico
 
-go 1.26.3
+go 1.26
 
 require (
 	github.com/docker/go-connections v0.7.0
