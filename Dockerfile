@@ -9,7 +9,13 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/api ./cmd/api/
+# CGO precisa estar habilitado por causa do mattn/go-sqlite3 (usado pelo whatsmeow).
+# Link estatico com musl para o binario rodar na imagem alpine final sem depender
+# de bibliotecas do sistema.
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -tags "sqlite_omit_load_extension" \
+    -ldflags '-linkmode external -extldflags "-static"' \
+    -o /bin/api ./cmd/api/
 
 FROM alpine:3.21
 
