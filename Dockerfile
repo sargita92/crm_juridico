@@ -16,6 +16,9 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /bin/api /bin/api
+COPY ./web ./web
+COPY ./migrations ./migrations
+
 
 EXPOSE ${SERVER_PORT}
 
