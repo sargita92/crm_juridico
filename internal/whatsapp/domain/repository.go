@@ -22,6 +22,9 @@ type MessageRepository interface {
 	FindByConversationID(ctx context.Context, conversationID string, filter MessageFilter) ([]Message, error)
 	FindByWhatsAppMsgID(ctx context.Context, whatsappMsgID string) (*Message, error)
 	Update(ctx context.Context, msg *Message) error
+	// DeleteByConversationID removes every message of a conversation and
+	// returns how many rows were deleted.
+	DeleteByConversationID(ctx context.Context, conversationID string) (int64, error)
 }
 
 type ConversationFilter struct {

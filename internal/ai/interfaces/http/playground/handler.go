@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	aiapp "github.com/sasrgita/crm-juridico/internal/ai/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 	whatsappApp "github.com/sasrgita/crm-juridico/internal/whatsapp/application"
 	whatsappDomain "github.com/sasrgita/crm-juridico/internal/whatsapp/domain"
@@ -42,13 +41,27 @@ type MessageView struct {
 	Timestamp time.Time
 }
 
+// ConversationResetter zeroes conversation state and moves the lead back to
+// the entry column. Satisfied by *application.ResetConversationUseCase.
+type ConversationResetter interface {
+	Execute(ctx context.Context, tenantID, conversationID, source string) error
+}
+
+// MessageHistoryClearer deletes every message of a conversation, returning how
+// many were removed. The playground reset uses it to wipe the history so the
+// LLM starts from a true clean slate (no stale context to mimic).
+type MessageHistoryClearer interface {
+	ClearHistory(ctx context.Context, conversationID string) (int64, error)
+}
+
 // Handler exposes dev-only endpoints for simulating inbound messages and
 // resetting conversation state.
 type Handler struct {
 	contacts ContactLister
 	messages MessageLister
 	receive  *whatsappApp.ReceiveMessageUseCase
-	resetUC  *aiapp.ResetConversationUseCase
+	resetUC  ConversationResetter
+	clearer  MessageHistoryClearer
 	log      *zap.Logger
 }
 
@@ -56,7 +69,8 @@ func NewHandler(
 	contacts ContactLister,
 	messages MessageLister,
 	receive *whatsappApp.ReceiveMessageUseCase,
-	resetUC *aiapp.ResetConversationUseCase,
+	resetUC ConversationResetter,
+	clearer MessageHistoryClearer,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
@@ -64,6 +78,7 @@ func NewHandler(
 		messages: messages,
 		receive:  receive,
 		resetUC:  resetUC,
+		clearer:  clearer,
 		log:      log,
 	}
 }
@@ -99,6 +114,13 @@ func (h *Handler) RenderConversation(c *gin.Context) {
 		return
 	}
 
+	h.renderConversation(c, tenantID, selected)
+}
+
+// renderConversation lists the conversation's messages and renders the chat
+// fragment. Shared by RenderConversation and HandleReset so a reset returns the
+// (now empty) conversation immediately, updating #chat without a page refresh.
+func (h *Handler) renderConversation(c *gin.Context, tenantID string, selected *ContactSummary) {
 	msgs, err := h.messages.ListByConversation(c.Request.Context(), tenantID, selected.ConversationID, 100)
 	if err != nil {
 		h.log.Error("playground: list messages failed", zap.Error(err))
@@ -203,5 +225,21 @@ func (h *Handler) HandleReset(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	c.Status(http.StatusNoContent)
+	// Wipe the message history so the LLM starts from a clean slate. Done after
+	// the reset so the just-sent confirmation is cleared too — otherwise the
+	// reset phrase lingers in the context and the model parrots it back.
+	deleted, err := h.clearer.ClearHistory(c.Request.Context(), selected.ConversationID)
+	if err != nil {
+		h.log.Error("playground: clear history failed",
+			zap.String("conversation_id", selected.ConversationID),
+			zap.Error(err))
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	h.log.Info("playground: history cleared",
+		zap.String("conversation_id", selected.ConversationID),
+		zap.Int64("deleted", deleted))
+	// Re-render the now-empty conversation so HTMX swaps #chat immediately
+	// (the reset form targets #chat); avoids needing a manual page refresh.
+	h.renderConversation(c, tenantID, selected)
 }

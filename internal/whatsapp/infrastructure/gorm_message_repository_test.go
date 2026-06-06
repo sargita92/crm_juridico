@@ -181,6 +181,50 @@ func TestGormMessageRepository_DuplicateWhatsAppMsgID_ReturnsError(t *testing.T)
 	assert.Error(t, err)
 }
 
+func TestGormMessageRepository_DeleteByConversationID(t *testing.T) {
+	db := setupDB(t)
+	repo := NewGormMessageRepository(db)
+	tenant := createTenant(t, db)
+	c1 := createContact(t, db, tenant.ID)
+	c2 := createContact(t, db, tenant.ID)
+	conv1 := createConversation(t, db, tenant.ID, c1.ID)
+	conv2 := createConversation(t, db, tenant.ID, c2.ID)
+	ctx := context.Background()
+
+	m1a, _ := domain.NewMessage(uuid.New().String(), conv1.ID, domain.MessageDirectionIncoming, "A1", domain.MessageTypeText, "wa-a1", time.Now())
+	m1b, _ := domain.NewMessage(uuid.New().String(), conv1.ID, domain.MessageDirectionOutgoing, "A2", domain.MessageTypeText, "", time.Now())
+	m2, _ := domain.NewMessage(uuid.New().String(), conv2.ID, domain.MessageDirectionIncoming, "B1", domain.MessageTypeText, "wa-b1", time.Now())
+	require.NoError(t, repo.Create(ctx, m1a))
+	require.NoError(t, repo.Create(ctx, m1b))
+	require.NoError(t, repo.Create(ctx, m2))
+
+	deleted, err := repo.DeleteByConversationID(ctx, conv1.ID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), deleted, "should delete exactly the two messages of conv1")
+
+	// conv1 history is gone.
+	msgs1, err := repo.FindByConversationID(ctx, conv1.ID, domain.MessageFilter{Limit: 50})
+	require.NoError(t, err)
+	assert.Empty(t, msgs1)
+
+	// conv2 is untouched (isolation).
+	msgs2, err := repo.FindByConversationID(ctx, conv2.ID, domain.MessageFilter{Limit: 50})
+	require.NoError(t, err)
+	assert.Len(t, msgs2, 1)
+}
+
+func TestGormMessageRepository_DeleteByConversationID_NoMessages(t *testing.T) {
+	db := setupDB(t)
+	repo := NewGormMessageRepository(db)
+	tenant := createTenant(t, db)
+	contact := createContact(t, db, tenant.ID)
+	conv := createConversation(t, db, tenant.ID, contact.ID)
+
+	deleted, err := repo.DeleteByConversationID(context.Background(), conv.ID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), deleted, "deleting an empty conversation returns 0, no error")
+}
+
 func TestGormMessageRepository_NullWhatsAppMsgID_MultipleAllowed(t *testing.T) {
 	db := setupDB(t)
 	repo := NewGormMessageRepository(db)
