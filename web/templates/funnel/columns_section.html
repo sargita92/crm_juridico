@@ -6,7 +6,7 @@
         <div class="column-row-color" style="background: {{$col.Color}}"></div>
         <span class="column-row-order">#{{add $i 1}}</span>
         <span class="column-row-name">{{$col.Name}}</span>
-        <span class="badge badge-sm">{{$col.Type}}</span>
+        <span class="badge badge-sm">{{columnTypeLabel $col.Type}}</span>
         <span class="column-row-leads">{{$col.LeadCount}} leads</span>
         <div class="column-row-actions">
             {{if gt $i 0}}
@@ -50,8 +50,8 @@
         <div style="min-width:140px">
             <label style="display:block;font-size:0.75rem;margin-bottom:0.25rem;color:#667781">Tipo</label>
             <select name="type" style="width:100%;padding:0.4rem 0.6rem;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">
-                <option value="intermediate">Intermediaria</option>
                 <option value="entry">Entrada</option>
+                <option value="intermediate">Intermediária</option>
                 <option value="won">Ganho</option>
                 <option value="lost">Perdido</option>
             </select>
