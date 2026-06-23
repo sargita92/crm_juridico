@@ -7,13 +7,13 @@
         <thead>
             <tr>
                 <th>Recurso</th>
-                {{range .Actions}}<th>{{.}}</th>{{end}}
+                {{range .Actions}}<th>{{permissionActionLabel .}}</th>{{end}}
             </tr>
         </thead>
         <tbody>
             {{range .Rows}}
             <tr>
-                <td><strong>{{.Resource}}</strong></td>
+                <td><strong>{{permissionResourceLabel .Resource}}</strong></td>
                 {{range .Cells}}
                 <td style="text-align:center">
                     {{if .Available}}
