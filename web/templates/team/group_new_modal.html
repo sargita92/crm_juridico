@@ -1,12 +1,19 @@
 {{define "team/group_new_modal.html"}}
-<form hx-post="/tenant/team/groups">
-    <label>Nome</label>
-    <input type="text" name="name" required>
-    <label>Descrição</label>
-    <textarea name="description" rows="3"></textarea>
+<form hx-post="/tenant/team/groups" hx-target="#team-modal-body" hx-swap="innerHTML">
+    <div class="form-group">
+        <label for="group-name">Nome</label>
+        <input type="text" id="group-name" name="name" required placeholder="Ex.: Analistas"
+               style="width: 100%; padding: 0.7rem 1rem; font-size: 0.9rem; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #f8fafc; color: #1a202c;">
+    </div>
+    <div class="form-group">
+        <label for="group-description">Descrição</label>
+        <textarea id="group-description" name="description" rows="3" placeholder="Descreva o papel deste grupo no escritório."
+                  style="width: 100%; padding: 0.7rem 1rem; font-size: 0.9rem; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #f8fafc; color: #1a202c; resize: vertical;"></textarea>
+    </div>
     <div class="modal-actions">
-        <button type="button" class="btn" onclick="closeModal('team-modal')">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Criar</button>
+        <button type="button" class="btn" onclick="closeModal('team-modal')"
+                style="padding: 0.6rem 1.25rem; font-size: 0.9rem; border: 1.5px solid #e2e8f0; background: #fff; color: #4a5568; border-radius: 8px; cursor: pointer; transition: all 0.2s;">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.25rem; font-size: 0.9rem; width: auto;">Criar</button>
     </div>
 </form>
 {{end}}
