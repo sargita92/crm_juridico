@@ -167,9 +167,9 @@ func TemplateGlobs() []string {
 
 func TemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"add":                 func(a, b int) int { return a + b },
-		"sub":                 func(a, b int) int { return a - b },
-		"aiPlaygroundEnabled": func() bool { return false },
+		"add":                     func(a, b int) int { return a + b },
+		"sub":                     func(a, b int) int { return a - b },
+		"aiPlaygroundEnabled":     func() bool { return false },
 		"typeIcon":                func(t string) string { return "🔔" },
 		"typeLabel":               func(t string) string { return "" },
 		"columnTypeLabel":         ui.ColumnTypeLabel,

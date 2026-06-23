@@ -25,10 +25,10 @@ import (
 // ---------------------------------------------------------------------------
 
 type stubInviteUC struct {
-	listFn     func(ctx context.Context, tenantID string) ([]application.InviteOutput, error)
-	genFn      func(ctx context.Context, tenantID, createdBy string, groupIDs []string, days int) (*application.InviteOutput, error)
-	previewFn  func(ctx context.Context, token string) (*application.PreviewOutput, error)
-	acceptFn   func(ctx context.Context, token, name, email, password string) (*application.AcceptOutput, error)
+	listFn    func(ctx context.Context, tenantID string) ([]application.InviteOutput, error)
+	genFn     func(ctx context.Context, tenantID, createdBy string, groupIDs []string, days int) (*application.InviteOutput, error)
+	previewFn func(ctx context.Context, token string) (*application.PreviewOutput, error)
+	acceptFn  func(ctx context.Context, token, name, email, password string) (*application.AcceptOutput, error)
 }
 
 func (s *stubInviteUC) ListInvites(ctx context.Context, tenantID string) ([]application.InviteOutput, error) {

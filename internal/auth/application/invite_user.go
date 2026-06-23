@@ -97,8 +97,8 @@ func (uc *InviteUserUseCase) GenerateInvite(
 	}, nil
 }
 
-// PreviewInvite valida o token sem consumi-lo, devolvendo metadados para a
-// tela pública de aceite. Retorna ErrInviteTokenNotFound/Expired/Used quando
+// PreviewInvite valida o token sem consumi-lo e retorna metadados para a
+// tela pública de aceite. Devolve ErrInviteTokenNotFound/Expired/Used quando
 // o convite não pode mais ser aceito.
 func (uc *InviteUserUseCase) PreviewInvite(ctx context.Context, token string) (*PreviewOutput, error) {
 	ctx, span := observability.StartSpan(ctx, "auth.usecase.preview_invite")

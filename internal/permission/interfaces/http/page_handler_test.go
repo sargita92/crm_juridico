@@ -52,10 +52,10 @@ func newPageRouter(ph *PageHandler) *gin.Engine {
 			}
 			return m
 		},
-		"add":                 func(a, b int) int { return a + b },
-		"sub":                 func(a, b int) int { return a - b },
-		"aiPlaygroundEnabled": func() bool { return false },
-		"formatFileSize":      func(size int64) string { return "0 B" },
+		"add":                     func(a, b int) int { return a + b },
+		"sub":                     func(a, b int) int { return a - b },
+		"aiPlaygroundEnabled":     func() bool { return false },
+		"formatFileSize":          func(size int64) string { return "0 B" },
 		"typeIcon":                func(t string) string { return "🔔" },
 		"typeLabel":               func(t string) string { return "" },
 		"columnTypeLabel":         ui.ColumnTypeLabel,
