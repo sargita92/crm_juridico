@@ -53,6 +53,7 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/shared/module"
 	"github.com/sasrgita/crm-juridico/internal/shared/observability"
 	"github.com/sasrgita/crm-juridico/internal/shared/profiling"
+	"github.com/sasrgita/crm-juridico/internal/shared/ui"
 	"github.com/sasrgita/crm-juridico/internal/specialist"
 	"github.com/sasrgita/crm-juridico/internal/tenant"
 	"github.com/sasrgita/crm-juridico/internal/whatsapp"
@@ -506,7 +507,10 @@ func setupRouter(log *zap.Logger, authMod *auth.Module, modules []module.Module,
 		"typeLabel": func(t string) string {
 			return notifhttp.TypeLabel(notifdomain.NotificationType(t))
 		},
-		"relativeTime": notifhttp.RelativeTime,
+		"columnTypeLabel":         ui.ColumnTypeLabel,
+		"permissionActionLabel":   ui.PermissionActionLabel,
+		"permissionResourceLabel": ui.PermissionResourceLabel,
+		"relativeTime":            notifhttp.RelativeTime,
 		"formatFileSize": func(size int64) string {
 			const (
 				kb = 1024
