@@ -25,8 +25,10 @@ import (
 // ---------------------------------------------------------------------------
 
 type stubInviteUC struct {
-	listFn func(ctx context.Context, tenantID string) ([]application.InviteOutput, error)
-	genFn  func(ctx context.Context, tenantID, createdBy string, groupIDs []string, days int) (*application.InviteOutput, error)
+	listFn     func(ctx context.Context, tenantID string) ([]application.InviteOutput, error)
+	genFn      func(ctx context.Context, tenantID, createdBy string, groupIDs []string, days int) (*application.InviteOutput, error)
+	previewFn  func(ctx context.Context, token string) (*application.PreviewOutput, error)
+	acceptFn   func(ctx context.Context, token, name, email, password string) (*application.AcceptOutput, error)
 }
 
 func (s *stubInviteUC) ListInvites(ctx context.Context, tenantID string) ([]application.InviteOutput, error) {
@@ -41,6 +43,20 @@ func (s *stubInviteUC) GenerateInvite(ctx context.Context, tenantID, createdBy s
 		return nil, nil
 	}
 	return s.genFn(ctx, tenantID, createdBy, groupIDs, days)
+}
+
+func (s *stubInviteUC) PreviewInvite(ctx context.Context, token string) (*application.PreviewOutput, error) {
+	if s.previewFn == nil {
+		return &application.PreviewOutput{TenantID: "tenant-1"}, nil
+	}
+	return s.previewFn(ctx, token)
+}
+
+func (s *stubInviteUC) AcceptInvite(ctx context.Context, token, name, email, password string) (*application.AcceptOutput, error) {
+	if s.acceptFn == nil {
+		return &application.AcceptOutput{UserID: "user-1"}, nil
+	}
+	return s.acceptFn(ctx, token, name, email, password)
 }
 
 type stubManageUsers struct {
@@ -140,6 +156,8 @@ func buildPageRouter(h *PageHandler, claims *authdomain.TokenClaims) *gin.Engine
 	r.POST("/team/users/:id/permissions", h.SetUserPermissionsHTML)
 	r.GET("/team/users/:id/whatsapp-modal", h.UserWhatsAppModal)
 	r.POST("/team/users/:id/whatsapp", h.SetUserWhatsApp)
+	r.GET("/invite/:token", h.InviteAcceptPage)
+	r.POST("/invite/:token/accept", h.AcceptInviteSubmit)
 
 	return r
 }
@@ -570,4 +588,139 @@ func TestPageHandler_SetUserWhatsApp_SetError(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
+}
+
+// ---------------------------------------------------------------------------
+// Invite accept page (public)
+// ---------------------------------------------------------------------------
+
+func TestPageHandler_InviteAcceptPage_RendersHTMLForm(t *testing.T) {
+	h := newTestPageHandler(&stubInviteUC{}, &stubManageUsers{}, &stubListGroups{}, &stubManageUserPerms{})
+	r := buildPageRouter(h, nil)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/invite/abc123token", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, w.Header().Get("Content-Type"), "text/html", "deve responder HTML, não JSON")
+	assert.NotContains(t, body, `{"token"`, "não deve renderizar JSON cru")
+	assert.Contains(t, body, "/invite/abc123token/accept", "form deve postar no /accept")
+	assert.Contains(t, body, "name=\"name\"")
+	assert.Contains(t, body, "name=\"email\"")
+	assert.Contains(t, body, "name=\"password\"")
+}
+
+func TestPageHandler_InviteAcceptPage_ShowsErrorForExpiredToken(t *testing.T) {
+	h := newTestPageHandler(
+		&stubInviteUC{previewFn: func(_ context.Context, _ string) (*application.PreviewOutput, error) {
+			return nil, authdomain.ErrInviteTokenExpired
+		}},
+		&stubManageUsers{}, &stubListGroups{}, &stubManageUserPerms{},
+	)
+	r := buildPageRouter(h, nil)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/invite/expired", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusGone, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "expirou", "deve explicar que o convite expirou")
+	assert.NotContains(t, body, `name="password"`, "não deve mostrar o form quando o convite é inválido")
+}
+
+func TestPageHandler_InviteAcceptPage_ShowsErrorForUsedToken(t *testing.T) {
+	h := newTestPageHandler(
+		&stubInviteUC{previewFn: func(_ context.Context, _ string) (*application.PreviewOutput, error) {
+			return nil, authdomain.ErrInviteTokenUsed
+		}},
+		&stubManageUsers{}, &stubListGroups{}, &stubManageUserPerms{},
+	)
+	r := buildPageRouter(h, nil)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/invite/used", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusGone, w.Code)
+	assert.Contains(t, w.Body.String(), "já foi utilizado")
+}
+
+func TestPageHandler_InviteAcceptPage_ShowsErrorForUnknownToken(t *testing.T) {
+	h := newTestPageHandler(
+		&stubInviteUC{previewFn: func(_ context.Context, _ string) (*application.PreviewOutput, error) {
+			return nil, authdomain.ErrInviteTokenNotFound
+		}},
+		&stubManageUsers{}, &stubListGroups{}, &stubManageUserPerms{},
+	)
+	r := buildPageRouter(h, nil)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/invite/missing", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Contains(t, w.Body.String(), "não foi encontrado")
+}
+
+func TestPageHandler_AcceptInviteSubmit_Success_RedirectsToLogin(t *testing.T) {
+	called := false
+	h := newTestPageHandler(
+		&stubInviteUC{acceptFn: func(_ context.Context, token, name, email, _ string) (*application.AcceptOutput, error) {
+			called = true
+			assert.Equal(t, "tk", token)
+			assert.Equal(t, "Maria", name)
+			assert.Equal(t, "maria@email.com", email)
+			return &application.AcceptOutput{UserID: "u-1"}, nil
+		}},
+		&stubManageUsers{}, &stubListGroups{}, &stubManageUserPerms{},
+	)
+	r := buildPageRouter(h, nil)
+
+	form := url.Values{"name": {"Maria"}, "email": {"maria@email.com"}, "password": {"senha-forte-1"}}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/invite/tk/accept", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	require.True(t, called, "AcceptInvite deve ser chamado")
+	assert.Equal(t, http.StatusSeeOther, w.Code)
+	assert.Equal(t, "/login?invited=1", w.Header().Get("Location"))
+}
+
+func TestPageHandler_AcceptInviteSubmit_ShortPassword_400(t *testing.T) {
+	h := newTestPageHandler(&stubInviteUC{}, &stubManageUsers{}, &stubListGroups{}, &stubManageUserPerms{})
+	r := buildPageRouter(h, nil)
+
+	form := url.Values{"name": {"M"}, "email": {"m@e.com"}, "password": {"123"}}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/invite/tk/accept", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, w.Body.String(), "pelo menos 8 caracteres")
+}
+
+func TestPageHandler_AcceptInviteSubmit_ExpiredToken_ShowsInvalidCard(t *testing.T) {
+	h := newTestPageHandler(
+		&stubInviteUC{acceptFn: func(_ context.Context, _, _, _, _ string) (*application.AcceptOutput, error) {
+			return nil, authdomain.ErrInviteTokenExpired
+		}},
+		&stubManageUsers{}, &stubListGroups{}, &stubManageUserPerms{},
+	)
+	r := buildPageRouter(h, nil)
+
+	form := url.Values{"name": {"Maria"}, "email": {"maria@email.com"}, "password": {"senha-forte-1"}}
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/invite/tk/accept", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusGone, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "expirou")
+	assert.NotContains(t, body, `name="password"`, "form não deve aparecer após expiração")
 }

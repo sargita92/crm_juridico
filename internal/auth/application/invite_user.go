@@ -29,6 +29,13 @@ type AcceptOutput struct {
 	GroupIDs []string
 }
 
+// PreviewOutput é o resumo de um convite usado pela tela pública de aceite,
+// antes do usuário preencher seus dados. Contém só campos não-sensíveis.
+type PreviewOutput struct {
+	TenantID  string
+	ExpiresAt time.Time
+}
+
 // InviteUserUseCase handles invite lifecycle operations.
 type InviteUserUseCase struct {
 	inviteRepo     domain.InviteTokenRepository
@@ -88,6 +95,23 @@ func (uc *InviteUserUseCase) GenerateInvite(
 		ExpiresAt: invite.ExpiresAt,
 		GroupIDs:  invite.GroupIDs,
 	}, nil
+}
+
+// PreviewInvite valida o token sem consumi-lo, devolvendo metadados para a
+// tela pública de aceite. Retorna ErrInviteTokenNotFound/Expired/Used quando
+// o convite não pode mais ser aceito.
+func (uc *InviteUserUseCase) PreviewInvite(ctx context.Context, token string) (*PreviewOutput, error) {
+	ctx, span := observability.StartSpan(ctx, "auth.usecase.preview_invite")
+	defer span.End()
+
+	invite, err := uc.inviteRepo.FindByToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+	if err := invite.Validate(); err != nil {
+		return nil, err
+	}
+	return &PreviewOutput{TenantID: invite.TenantID, ExpiresAt: invite.ExpiresAt}, nil
 }
 
 // AcceptInvite redeems an invite token, creating or associating the user to the tenant.

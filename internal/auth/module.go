@@ -161,9 +161,15 @@ func (m *Module) AttachPermissionDeps(
 }
 
 // registerInvitePublicRoutes registers routes that do not require authentication.
+// O GET renderiza a tela HTML de aceite; o POST aceita form-encoded e redireciona
+// para o login em sucesso. Depende do pageHandler estar wireado via
+// AttachPermissionDeps antes de RegisterRoutes — ordem garantida em cmd/api/main.go.
 func (m *Module) registerInvitePublicRoutes(router *gin.Engine) {
-	router.GET("/invite/:token", m.handleGetInviteInfo)
-	router.POST("/invite/:token/accept", m.handleAcceptInvite)
+	if m.pageHandler == nil {
+		return
+	}
+	router.GET("/invite/:token", m.pageHandler.InviteAcceptPage)
+	router.POST("/invite/:token/accept", m.pageHandler.AcceptInviteSubmit)
 }
 
 // registerTenantRoutes registers invite and user-management routes that require auth + tenant.
