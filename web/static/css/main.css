@@ -978,8 +978,22 @@ body {
     padding: 2rem;
     width: 100%;
     max-width: 480px;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
     animation: slideUp 0.2s ease-out;
+}
+
+/* Variante mais larga, usada por modais com formulários extensos
+   (automações, especialistas). Antes a classe era usada nos templates sem
+   estilo correspondente — o modal caía no max-width:480px e os botões
+   sumiam abaixo da viewport em telas menores. */
+.modal-card-lg {
+    max-width: 720px;
+}
+
+.modal-card-sm {
+    max-width: 360px;
 }
 
 .modal-card h2 {

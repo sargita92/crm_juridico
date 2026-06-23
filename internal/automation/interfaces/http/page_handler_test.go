@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -21,6 +20,7 @@ import (
 	funnelapp "github.com/sasrgita/crm-juridico/internal/funnel/application"
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
+	"github.com/sasrgita/crm-juridico/internal/shared/testhelper"
 	specialistdomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 )
 
@@ -208,24 +208,10 @@ func setupTestEnv(t *testing.T) *testEnv {
 
 	router := gin.New()
 
-	// Minimal in-memory templates — we only assert routing + data flow, not HTML structure.
-	tmpl := template.New("")
-	for _, name := range []string{
-		"automation/list.html",
-		"automation/table.html",
-		"automation/modal_form.html",
-		"automation/modal_logs.html",
-		"automation/fields_expiration.html",
-		"automation/fields_move_funnel.html",
-		"automation/fields_auto_message.html",
-		"automation/fields_auto_note.html",
-		"automation/fields_switch_specialist.html",
-		"automation/fields_rate_limit.html",
-		"automation/fields_detect_product.html",
-	} {
-		template.Must(tmpl.New(name).Parse("ok"))
-	}
-	router.SetHTMLTemplate(tmpl)
+	// Carrega os templates reais para que os testes possam asserir estrutura HTML
+	// (campos, botões), além do routing — e capturem regressões como o feedback
+	// do modal de automação sem botão de criar.
+	router.SetHTMLTemplate(testhelper.ParseTemplates())
 
 	// Tenant injection middleware — shortcut around real auth/JWT.
 	router.Use(func(c *gin.Context) {
@@ -346,6 +332,16 @@ func TestRenderCreateForm_ExplicitFunnel(t *testing.T) {
 
 	w := do(env.router, http.MethodGet, "/tenant/automations/create-form?funnel_id=fn-1", "")
 	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Regressão: o feedback de testes reportou o modal abrindo só com os
+	// campos dinâmicos (Ação/Tempo) e sem botão. Garante que o form inteiro
+	// — Coluna, Tipo, Prioridade e botões de ação — está no HTML retornado.
+	body := w.Body.String()
+	assert.Contains(t, body, `name="column_id"`, "select de Coluna deve estar presente")
+	assert.Contains(t, body, `name="type"`, "select de Tipo deve estar presente")
+	assert.Contains(t, body, `name="priority"`, "input de Prioridade deve estar presente")
+	assert.Contains(t, body, `type="submit"`, "modal precisa ter botão de submit")
+	assert.Contains(t, body, "Cancelar", "modal precisa ter botão de cancelar")
 }
 
 func TestRenderCreateForm_FallbackToFirstFunnel(t *testing.T) {
