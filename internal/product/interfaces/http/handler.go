@@ -414,7 +414,14 @@ func (h *Handler) RenderTenantProductList(c *gin.Context) {
 		return
 	}
 
-	// Resolve funnel names for display
+	// Carrega funnels do tenant uma única vez e monta o índice para resolução
+	// do nome de cada vínculo — antes o lookup rodava dentro do laço de produtos.
+	var availableFunnels []FunnelInfo
+	if h.funnelLister != nil {
+		availableFunnels, _ = h.funnelLister.ListFunnels(c, tenantID)
+	}
+	funnelByID := funnelNameIndex(availableFunnels)
+
 	type funnelLinkDisplay struct {
 		FunnelID   string
 		FunnelName string
@@ -432,31 +439,16 @@ func (h *Handler) RenderTenantProductList(c *gin.Context) {
 	for _, p := range products {
 		var funnels []funnelLinkDisplay
 		for _, fl := range p.Funnels {
-			name := fl.FunnelID
-			if h.funnelLister != nil {
-				if flist, err := h.funnelLister.ListFunnels(c, tenantID); err == nil {
-					for _, f := range flist {
-						if f.ID == fl.FunnelID {
-							name = f.Name
-							break
-						}
-					}
-				}
-			}
 			funnels = append(funnels, funnelLinkDisplay{
-				FunnelID: fl.FunnelID, FunnelName: name, Priority: fl.Priority,
+				FunnelID:   fl.FunnelID,
+				FunnelName: resolveFunnelName(fl.FunnelID, funnelByID),
+				Priority:   fl.Priority,
 			})
 		}
 		displayProducts = append(displayProducts, productDisplay{
 			ID: p.ID, Name: p.Name, Description: p.Description,
 			Keywords: p.Keywords, Funnels: funnels,
 		})
-	}
-
-	// Get available funnels for the link form
-	var availableFunnels []FunnelInfo
-	if h.funnelLister != nil {
-		availableFunnels, _ = h.funnelLister.ListFunnels(c, tenantID)
 	}
 
 	c.HTML(http.StatusOK, "product/product_list.html", gin.H{

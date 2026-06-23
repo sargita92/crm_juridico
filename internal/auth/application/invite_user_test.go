@@ -57,6 +57,51 @@ func TestGenerateInvite_DefaultExpiry(t *testing.T) {
 	assert.Less(t, diff.Abs().Seconds(), float64(5), "expiry should be ~7 days from now")
 }
 
+func TestPreviewInvite_Valid(t *testing.T) {
+	uc, inviteRepo, _, _ := setupInviteUC()
+	ctx := context.Background()
+
+	invite, err := domain.NewInviteToken("inv-prev", "tenant-7", "creator-1", []string{"group-1"}, time.Now().Add(48*time.Hour))
+	require.NoError(t, err)
+	inviteRepo.tokens[invite.ID] = invite
+	inviteRepo.byToken[invite.Token] = invite
+
+	out, err := uc.PreviewInvite(ctx, invite.Token)
+	require.NoError(t, err)
+	assert.Equal(t, "tenant-7", out.TenantID)
+	assert.True(t, out.ExpiresAt.After(time.Now()))
+}
+
+func TestPreviewInvite_NotFound(t *testing.T) {
+	uc, _, _, _ := setupInviteUC()
+	_, err := uc.PreviewInvite(context.Background(), "token-inexistente")
+	assert.ErrorIs(t, err, domain.ErrInviteTokenNotFound)
+}
+
+func TestPreviewInvite_Expired(t *testing.T) {
+	uc, inviteRepo, _, _ := setupInviteUC()
+	invite, err := domain.NewInviteToken("inv-exp", "tenant-1", "creator-1", []string{"group-1"}, time.Now().Add(1*time.Hour))
+	require.NoError(t, err)
+	invite.ExpiresAt = time.Now().Add(-1 * time.Hour) // força expiração
+	inviteRepo.tokens[invite.ID] = invite
+	inviteRepo.byToken[invite.Token] = invite
+
+	_, err = uc.PreviewInvite(context.Background(), invite.Token)
+	assert.ErrorIs(t, err, domain.ErrInviteTokenExpired)
+}
+
+func TestPreviewInvite_AlreadyUsed(t *testing.T) {
+	uc, inviteRepo, _, _ := setupInviteUC()
+	invite, err := domain.NewInviteToken("inv-used", "tenant-1", "creator-1", []string{"group-1"}, time.Now().Add(24*time.Hour))
+	require.NoError(t, err)
+	invite.MarkUsed("user-1")
+	inviteRepo.tokens[invite.ID] = invite
+	inviteRepo.byToken[invite.Token] = invite
+
+	_, err = uc.PreviewInvite(context.Background(), invite.Token)
+	assert.ErrorIs(t, err, domain.ErrInviteTokenUsed)
+}
+
 func TestAcceptInvite_Success_NewUser(t *testing.T) {
 	uc, inviteRepo, userRepo, userTenantRepo := setupInviteUC()
 	ctx := context.Background()

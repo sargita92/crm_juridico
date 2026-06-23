@@ -1,0 +1,65 @@
+{{define "auth/invite_accept.html"}}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aceitar convite — CRM Jurídico</title>
+    <link rel="stylesheet" href="/static/css/tokens.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/animations.css">
+    <link rel="stylesheet" href="/static/css/components-pro.css">
+    <link rel="stylesheet" href="/static/css/auth.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+    <script src="/static/js/ui.js" defer></script>
+</head>
+<body class="auth-page">
+    <div class="htmx-progress"></div>
+    <div class="auth-shell">
+        <aside class="auth-brand" aria-hidden="true">
+            <span class="auth-orb auth-orb-1"></span>
+            <span class="auth-orb auth-orb-2"></span>
+            <span class="auth-orb auth-orb-3"></span>
+            <span class="auth-grid"></span>
+
+            <a href="/" class="auth-brand-logo">
+                <span class="auth-brand-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3v18"/>
+                        <path d="M5 8h14"/>
+                        <path d="M5 8l-2 7a5 5 0 0 0 10 0L11 8"/>
+                        <path d="M19 8l-2 7a5 5 0 0 0 10 0L25 8" transform="translate(-6,0)"/>
+                    </svg>
+                </span>
+                <span>CRM Jurídico</span>
+            </a>
+
+            <div class="auth-brand-content anim-fade-in-up">
+                <span class="auth-kicker">Bem-vindo ao escritório</span>
+                <h2 class="auth-headline">
+                    Você foi convidado para entrar em um <span class="grad">escritório</span>.
+                </h2>
+                <p class="auth-sub">
+                    Confirme seu cadastro abaixo para acessar o painel. Se já tem conta, use o mesmo e-mail e a sua senha atual.
+                </p>
+            </div>
+
+            <p class="auth-brand-foot">
+                © 2026 CRM Jurídico
+                <span aria-hidden="true">·</span>
+                <a href="/">Voltar ao site</a>
+            </p>
+        </aside>
+
+        <main class="auth-form-side">
+            <a href="/" class="auth-back" aria-label="Voltar ao site">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                Voltar
+            </a>
+            {{template "auth/invite_accept_card.html" .}}
+        </main>
+    </div>
+    <script src="/static/js/auth.js"></script>
+</body>
+</html>
+{{end}}

@@ -7,7 +7,6 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/sasrgita/crm-juridico/internal/auth/application"
-	"github.com/sasrgita/crm-juridico/internal/auth/domain"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
 )
 
@@ -79,64 +78,6 @@ func (m *Module) handleRevokeInvite(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"ok": true})
-}
-
-// handleGetInviteInfo handles GET /invite/:token — public.
-// Returns basic info about the invite (non-sensitive). Full validation happens on accept.
-func (m *Module) handleGetInviteInfo(c *gin.Context) {
-	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.invite.get_info")
-	defer span.End()
-	c.Request = c.Request.WithContext(ctx)
-	token := c.Param("token")
-	if token == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "token is required"})
-		return
-	}
-	// Token validity is enforced on POST /invite/:token/accept.
-	// This endpoint is used to render the accept form and confirm the token exists.
-	c.JSON(http.StatusOK, gin.H{"token": token})
-}
-
-// handleAcceptInvite handles POST /invite/:token/accept — public.
-func (m *Module) handleAcceptInvite(c *gin.Context) {
-	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.invite.accept")
-	defer span.End()
-	c.Request = c.Request.WithContext(ctx)
-	token := c.Param("token")
-	if token == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "token is required"})
-		return
-	}
-
-	var req struct {
-		Name     string `json:"name"     binding:"required"`
-		Email    string `json:"email"    binding:"required,email"`
-		Password string `json:"password" binding:"required,min=8"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	out, err := m.inviteUC.AcceptInvite(c.Request.Context(), token, req.Name, req.Email, req.Password)
-	if err != nil {
-		switch err {
-		case domain.ErrInviteTokenNotFound:
-			c.JSON(http.StatusNotFound, gin.H{"error": "invite not found"})
-		case domain.ErrInviteTokenExpired, domain.ErrInviteTokenUsed:
-			c.JSON(http.StatusGone, gin.H{"error": err.Error()})
-		case application.ErrUserAlreadyInTenant:
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to accept invite"})
-		}
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"user_id":   out.UserID,
-		"group_ids": out.GroupIDs,
-	})
 }
 
 // handleListTenantUsers handles GET /tenant/users.

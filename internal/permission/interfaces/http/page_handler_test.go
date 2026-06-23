@@ -25,6 +25,7 @@ import (
 	funneldomain "github.com/sasrgita/crm-juridico/internal/funnel/domain"
 	"github.com/sasrgita/crm-juridico/internal/permission/application"
 	"github.com/sasrgita/crm-juridico/internal/shared/middleware"
+	"github.com/sasrgita/crm-juridico/internal/shared/ui"
 )
 
 // ---- helpers ----------------------------------------------------------------
@@ -51,13 +52,16 @@ func newPageRouter(ph *PageHandler) *gin.Engine {
 			}
 			return m
 		},
-		"add":                 func(a, b int) int { return a + b },
-		"sub":                 func(a, b int) int { return a - b },
-		"aiPlaygroundEnabled": func() bool { return false },
-		"formatFileSize":      func(size int64) string { return "0 B" },
-		"typeIcon":            func(t string) string { return "🔔" },
-		"typeLabel":           func(t string) string { return "" },
-		"relativeTime":        func(t time.Time) string { return "" },
+		"add":                     func(a, b int) int { return a + b },
+		"sub":                     func(a, b int) int { return a - b },
+		"aiPlaygroundEnabled":     func() bool { return false },
+		"formatFileSize":          func(size int64) string { return "0 B" },
+		"typeIcon":                func(t string) string { return "🔔" },
+		"typeLabel":               func(t string) string { return "" },
+		"columnTypeLabel":         ui.ColumnTypeLabel,
+		"permissionActionLabel":   ui.PermissionActionLabel,
+		"permissionResourceLabel": ui.PermissionResourceLabel,
+		"relativeTime":            func(t time.Time) string { return "" },
 		"formatValor": func(c *int64) string {
 			if c == nil {
 				return ""

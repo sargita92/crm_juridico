@@ -9,7 +9,7 @@
             {{range .AllPerms}}
             <label>
                 <input type="checkbox" name="perms" value="{{.Resource}}:{{.Action}}" {{if .Granted}}checked{{end}}>
-                <span class="perm-label"><strong>{{.Resource}}</strong>:{{.Action}}</span>
+                <span class="perm-label"><strong>{{permissionResourceLabel .Resource}}</strong>: {{permissionActionLabel .Action}}</span>
             </label>
             {{end}}
         </div>

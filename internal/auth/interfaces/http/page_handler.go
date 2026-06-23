@@ -19,6 +19,8 @@ import (
 type inviteUsecase interface {
 	ListInvites(ctx context.Context, tenantID string) ([]application.InviteOutput, error)
 	GenerateInvite(ctx context.Context, tenantID, createdBy string, groupIDs []string, expiresInDays int) (*application.InviteOutput, error)
+	PreviewInvite(ctx context.Context, token string) (*application.PreviewOutput, error)
+	AcceptInvite(ctx context.Context, token, name, email, password string) (*application.AcceptOutput, error)
 }
 
 // manageUsersUsecase is a local interface for testability.
@@ -313,4 +315,67 @@ func (h *PageHandler) SetUserWhatsApp(c *gin.Context) {
 
 	c.Header("HX-Trigger", "refreshTeam")
 	c.Status(http.StatusNoContent)
+}
+
+// InviteAcceptPage renderiza GET /invite/:token — pública.
+// Mostra o formulário de aceite se o token é válido; caso contrário, exibe
+// um cartão explicando o motivo (expirado, já usado, inexistente).
+func (h *PageHandler) InviteAcceptPage(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.invite_accept")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+	token := c.Param("token")
+
+	view := gin.H{"Token": token}
+	if token == "" {
+		view["Invalid"] = true
+		view["InvalidReason"] = "Link de convite incompleto."
+		c.HTML(http.StatusBadRequest, "auth/invite_accept.html", view)
+		return
+	}
+
+	if _, err := h.inviteUC.PreviewInvite(c.Request.Context(), token); err != nil {
+		view["Invalid"] = true
+		view["InvalidReason"] = inviteErrorMessage(err)
+		c.HTML(inviteErrorStatus(err), "auth/invite_accept.html", view)
+		return
+	}
+
+	c.HTML(http.StatusOK, "auth/invite_accept.html", view)
+}
+
+// AcceptInviteSubmit processa POST /invite/:token/accept — pública.
+// Aceita corpo `application/x-www-form-urlencoded`. Em sucesso, redireciona
+// para /login com flag de boas-vindas; em erro, re-renderiza o cartão com a mensagem.
+func (h *PageHandler) AcceptInviteSubmit(c *gin.Context) {
+	ctx, span := otel.Tracer("auth").Start(c.Request.Context(), "auth.page.invite_accept_submit")
+	defer span.End()
+	c.Request = c.Request.WithContext(ctx)
+	token := c.Param("token")
+
+	name := strings.TrimSpace(c.PostForm("name"))
+	email := strings.TrimSpace(c.PostForm("email"))
+	password := c.PostForm("password")
+
+	view := gin.H{"Token": token, "Name": name, "Email": email}
+
+	if token == "" || name == "" || email == "" || len(password) < 8 {
+		view["Error"] = "Preencha nome, e-mail e uma senha com pelo menos 8 caracteres."
+		c.HTML(http.StatusBadRequest, "auth/invite_accept.html", view)
+		return
+	}
+
+	if _, err := h.inviteUC.AcceptInvite(c.Request.Context(), token, name, email, password); err != nil {
+		h.log.Warn("failed to accept invite", zap.Error(err))
+		if isInviteFatal(err) {
+			view["Invalid"] = true
+			view["InvalidReason"] = inviteErrorMessage(err)
+		} else {
+			view["Error"] = inviteErrorMessage(err)
+		}
+		c.HTML(inviteErrorStatus(err), "auth/invite_accept.html", view)
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/login?invited=1")
 }

@@ -18,6 +18,7 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 
 	"github.com/sasrgita/crm-juridico/internal/shared/config"
+	"github.com/sasrgita/crm-juridico/internal/shared/ui"
 )
 
 const (
@@ -166,12 +167,15 @@ func TemplateGlobs() []string {
 
 func TemplateFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"add":                 func(a, b int) int { return a + b },
-		"sub":                 func(a, b int) int { return a - b },
-		"aiPlaygroundEnabled": func() bool { return false },
-		"typeIcon":            func(t string) string { return "🔔" },
-		"typeLabel":           func(t string) string { return "" },
-		"relativeTime":        func(t time.Time) string { return "" },
+		"add":                     func(a, b int) int { return a + b },
+		"sub":                     func(a, b int) int { return a - b },
+		"aiPlaygroundEnabled":     func() bool { return false },
+		"typeIcon":                func(t string) string { return "🔔" },
+		"typeLabel":               func(t string) string { return "" },
+		"columnTypeLabel":         ui.ColumnTypeLabel,
+		"permissionActionLabel":   ui.PermissionActionLabel,
+		"permissionResourceLabel": ui.PermissionResourceLabel,
+		"relativeTime":            func(t time.Time) string { return "" },
 		"dict": func(values ...interface{}) map[string]interface{} {
 			m := make(map[string]interface{})
 			for i := 0; i+1 < len(values); i += 2 {
