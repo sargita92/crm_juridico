@@ -1,28 +1,30 @@
 {{define "specialist/tenants_modal.html"}}
 {{if .AvailableTenants}}
-<table class="data-table" style="margin:1rem 0">
-    <thead>
-        <tr>
-            <th style="width:40px"></th>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Documento</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{range .AvailableTenants}}
-        <tr>
-            <td><input type="checkbox" name="tenant_ids[]" value="{{.TenantID}}"></td>
-            <td>{{.Name}}</td>
-            <td><span class="badge badge-{{if eq .Type "PJ"}}pj{{else}}pf{{end}}">{{.Type}}</span></td>
-            <td>{{.Document}}</td>
-        </tr>
-        {{end}}
-    </tbody>
-</table>
+<div class="checklist" style="max-height:340px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;margin:0 0 1rem">
+    {{range .AvailableTenants}}
+    <label class="checklist-row"
+           style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background 0.15s">
+        <input type="checkbox" name="tenant_ids[]" value="{{.TenantID}}"
+               style="width:18px;height:18px;cursor:pointer">
+        <div style="flex:1;min-width:0">
+            <div style="font-weight:500;color:#1a1a2e">{{.Name}}</div>
+            <div style="font-size:0.8125rem;color:#667781;margin-top:0.125rem">
+                <span class="badge badge-{{if eq .Type "PJ"}}pj{{else}}pf{{end}}">{{.Type}}</span>
+                <span style="margin-left:0.5rem">{{.Document}}</span>
+            </div>
+        </div>
+    </label>
+    {{end}}
+</div>
 {{else}}
-<div class="empty-state" style="padding:2rem 1rem">
-    <p class="text-muted">Nenhum escritório disponível</p>
+<div style="text-align:center;padding:2rem 1rem;border:1px dashed #e5e7eb;border-radius:8px;margin:0 0 1rem">
+    {{if .Search}}
+    <p class="text-muted" style="margin:0">Nenhum escritório encontrado para "{{.Search}}".</p>
+    <p class="text-muted" style="margin:0.25rem 0 0;font-size:0.8125rem">Tente buscar por outro termo ou limpe o filtro.</p>
+    {{else}}
+    <p class="text-muted" style="margin:0">Todos os escritórios já estão associados a este especialista.</p>
+    <p class="text-muted" style="margin:0.25rem 0 0;font-size:0.8125rem">Cadastre um novo escritório para associá-lo aqui.</p>
+    {{end}}
 </div>
 {{end}}
 {{end}}
