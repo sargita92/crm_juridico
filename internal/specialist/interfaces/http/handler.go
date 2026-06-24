@@ -499,8 +499,12 @@ func (h *Handler) HandleSetDefault(c *gin.Context) {
 		return
 	}
 
-	// Re-render tenants section
-	h.HandleListTenants(c)
+	// Tell the summary card outside the modal to reload so "Default: X" reflects
+	// the change without the user having to close/reopen the modal.
+	c.Header("HX-Trigger", "tenants-default-changed")
+
+	// Re-render the modal list so the badge moves to the newly-default row.
+	h.HandleListManageable(c)
 }
 
 func (h *Handler) renderDetailAfterAction(c *gin.Context, id, successMsg string) {
