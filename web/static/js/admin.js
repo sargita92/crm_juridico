@@ -60,44 +60,60 @@ document.addEventListener("htmx:afterSwap", function() {
     modals.forEach(function(m) { m.style.display = "none"; });
 });
 
-// --- Lista de seleção (modais com checklist) ---
-// Atualiza um contador e habilita o botão de submit conforme o usuário marca
-// checkboxes dentro de um container `data-tenants-list`. Usa delegação no body
-// porque o container é re-renderizado pelo HTMX a cada busca, perdendo handlers
-// presos diretamente nos filhos.
+// --- Modal "Gerenciar Escritórios" (lista única com diff) ---
+// O modal renderiza TODOS os escritórios marcando os já associados via
+// `data-initial="1"`. O usuário marca/desmarca livremente; calculamos um diff
+// (added/removed) vs o estado inicial e exibimos algo como
+// "2 a associar, 1 a desassociar". O submit só habilita quando há mudança.
+// O backend (POST /tenants/sync) recebe a lista FINAL de IDs marcados e
+// converge — não precisa receber explicitamente o diff. O listener fica em
+// document.body porque a lista é re-renderizada pelo HTMX a cada busca.
 (function() {
-    function updateChecklistState(scope) {
+    function diffOf(list) {
+        var checkboxes = list.querySelectorAll('input[type="checkbox"]');
+        var added = 0, removed = 0;
+        for (var i = 0; i < checkboxes.length; i++) {
+            var cb = checkboxes[i];
+            var initial = cb.getAttribute("data-initial") === "1";
+            if (cb.checked && !initial) added++;
+            else if (!cb.checked && initial) removed++;
+        }
+        return { added: added, removed: removed };
+    }
+
+    function formatDiff(d) {
+        if (d.added === 0 && d.removed === 0) return "Nenhuma alteração";
+        var parts = [];
+        if (d.added > 0) parts.push(d.added + (d.added === 1 ? " a associar" : " a associar"));
+        if (d.removed > 0) parts.push(d.removed + (d.removed === 1 ? " a desassociar" : " a desassociar"));
+        return parts.join(" · ");
+    }
+
+    function updateState(scope) {
         var list = scope.querySelector("[data-tenants-list]");
         if (!list) return;
         var form = list.closest("form");
         if (!form) return;
-        var counter = form.querySelector("[data-tenants-counter]");
+        var diffEl = form.querySelector("[data-tenants-diff]");
         var submit = form.querySelector("[data-tenants-submit]");
-        var count = list.querySelectorAll('input[type="checkbox"]:checked').length;
-        if (counter) {
-            counter.textContent = count === 0
-                ? "Nenhum escritório selecionado"
-                : (count === 1 ? "1 escritório selecionado" : count + " escritórios selecionados");
-        }
-        if (submit) {
-            submit.disabled = count === 0;
-        }
+        var d = diffOf(list);
+        if (diffEl) diffEl.textContent = formatDiff(d);
+        if (submit) submit.disabled = (d.added === 0 && d.removed === 0);
     }
 
     document.addEventListener("change", function(evt) {
         var list = evt.target.closest && evt.target.closest("[data-tenants-list]");
         if (!list) return;
-        updateChecklistState(list.parentElement || document);
+        updateState(list.closest("form") || document);
     });
 
-    // Quando a lista é re-renderizada (busca, lazy-load), reaplica o estado
-    // do contador — sem isso, o botão fica "habilitado" visualmente mesmo
-    // após o reset do form.
+    // Re-render do HTMX (busca / abertura inicial) zera os handlers de filhos,
+    // então reaplicamos o cálculo de diff/submit a partir do snapshot novo.
     document.body.addEventListener("htmx:afterSwap", function(evt) {
         if (!evt.target || !evt.target.matches) return;
         if (evt.target.matches("[data-tenants-list]") ||
             (evt.target.querySelector && evt.target.querySelector("[data-tenants-list]"))) {
-            updateChecklistState(evt.target.closest("form") || document);
+            updateState(evt.target.closest("form") || document);
         }
     });
 })();

@@ -73,11 +73,13 @@ func (m *mockSpecialistRepo) addSpecialist(s *domain.Specialist) {
 
 type mockSpecialistTenantRepo struct {
 	associations map[string]map[string]bool // specialistID -> tenantID -> true
+	defaults     map[string]map[string]bool // specialistID -> tenantID -> isDefault
 }
 
 func newMockSpecialistTenantRepo() *mockSpecialistTenantRepo {
 	return &mockSpecialistTenantRepo{
 		associations: make(map[string]map[string]bool),
+		defaults:     make(map[string]map[string]bool),
 	}
 }
 
@@ -97,6 +99,9 @@ func (m *mockSpecialistTenantRepo) Dissociate(_ context.Context, specialistID, t
 		return domain.ErrTenantNotAssociated
 	}
 	delete(m.associations[specialistID], tenantID)
+	if m.defaults[specialistID] != nil {
+		delete(m.defaults[specialistID], tenantID)
+	}
 	return nil
 }
 
@@ -111,9 +116,14 @@ func (m *mockSpecialistTenantRepo) FindTenantIDsBySpecialistID(_ context.Context
 func (m *mockSpecialistTenantRepo) FindBySpecialistID(_ context.Context, specialistID string) ([]domain.SpecialistTenant, error) {
 	var result []domain.SpecialistTenant
 	for tenantID := range m.associations[specialistID] {
+		isDefault := false
+		if m.defaults[specialistID] != nil {
+			isDefault = m.defaults[specialistID][tenantID]
+		}
 		result = append(result, domain.SpecialistTenant{
 			SpecialistID: specialistID,
 			TenantID:     tenantID,
+			IsDefault:    isDefault,
 		})
 	}
 	return result, nil
@@ -149,7 +159,20 @@ func (m *mockSpecialistTenantRepo) SetDefault(_ context.Context, specialistID, t
 	if m.associations[specialistID] == nil || !m.associations[specialistID][tenantID] {
 		return domain.ErrTenantNotAssociated
 	}
+	for sid, tenants := range m.defaults {
+		if tenants[tenantID] {
+			delete(m.defaults[sid], tenantID)
+		}
+	}
+	m.markDefault(specialistID, tenantID)
 	return nil
+}
+
+func (m *mockSpecialistTenantRepo) markDefault(specialistID, tenantID string) {
+	if m.defaults[specialistID] == nil {
+		m.defaults[specialistID] = make(map[string]bool)
+	}
+	m.defaults[specialistID][tenantID] = true
 }
 
 // --- mockTenantRepo ---

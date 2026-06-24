@@ -81,14 +81,13 @@
                 <pre class="prompt-display">{{.Specialist.Prompt}}</pre>
             </div>
 
-            <!-- Tenants Associados (lazy-load) -->
+            <!-- Tenants Associados (card compacto; gestão fica no modal) -->
             <div class="detail-card">
                 <div class="card-header">
                     <h3>Escritórios Associados</h3>
-                    <button class="btn btn-sm btn-primary" onclick="openModal('tenants-modal')">Gerenciar Escritórios</button>
                 </div>
                 <div id="tenants-section"
-                     hx-get="/admin/specialists/{{.Specialist.ID}}/tenants"
+                     hx-get="/admin/specialists/{{.Specialist.ID}}/tenants/summary"
                      hx-trigger="load"
                      hx-swap="innerHTML">
                     <p class="text-muted">Carregando escritórios...</p>
@@ -423,14 +422,14 @@
                 </div>
             </div>
 
-            <!-- Modal: Gerenciar Tenants -->
-            <div id="tenants-modal" class="modal-overlay" style="display:none">
+            <!-- Modal: Gerenciar Tenants (lista única com checkboxes) -->
+            <div id="tenants-modal" class="modal-overlay" style="display:none" data-manage-tenants>
                 <div class="modal-card modal-card-lg">
                     <div class="modal-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.75rem">
                         <div>
-                            <h2 style="margin:0">Associar Escritórios</h2>
+                            <h2 style="margin:0">Gerenciar Escritórios</h2>
                             <p class="text-muted" style="margin:0.25rem 0 0;font-size:0.875rem">
-                                Marque os escritórios que devem usar este especialista.
+                                Marque os escritórios que devem usar este especialista. Desmarque para desassociar.
                             </p>
                         </div>
                         <button type="button" class="modal-close" onclick="closeModal('tenants-modal')" aria-label="Fechar">&times;</button>
@@ -440,34 +439,31 @@
 
                     <input type="search" placeholder="Buscar escritório por nome..."
                            class="form-control"
-                           hx-get="/admin/specialists/{{.Specialist.ID}}/tenants/available"
+                           hx-get="/admin/specialists/{{.Specialist.ID}}/tenants/manage"
                            hx-trigger="input changed delay:300ms, search"
-                           hx-target="#available-tenants"
+                           hx-target="#tenants-manageable-list"
                            hx-swap="innerHTML"
                            name="search"
                            style="margin-bottom:0.75rem">
 
-                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/tenants"
+                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/tenants/sync"
                           hx-target="#tenants-section"
                           hx-swap="innerHTML"
                           hx-on::before-request="document.getElementById('tenants-modal-error').innerHTML=''"
-                          hx-on::after-request="if(event.detail.successful){closeModal('tenants-modal');this.reset();}">
-                        <div id="available-tenants"
-                             data-tenants-list
-                             hx-get="/admin/specialists/{{.Specialist.ID}}/tenants/available"
-                             hx-trigger="load"
-                             hx-swap="innerHTML">
-                            <p class="text-muted">Carregando escritórios disponíveis...</p>
+                          hx-on::after-request="if(event.detail.successful){closeModal('tenants-modal');}">
+                        <div id="tenants-manageable-list"
+                             data-tenants-list>
+                            <p class="text-muted">Carregando escritórios...</p>
                         </div>
                         <div class="modal-actions" style="align-items:center;justify-content:space-between">
-                            <span class="text-muted" style="font-size:0.875rem" data-tenants-counter aria-live="polite">
-                                Nenhum escritório selecionado
+                            <span class="text-muted" style="font-size:0.875rem" data-tenants-diff aria-live="polite">
+                                Nenhuma alteração
                             </span>
                             <div style="display:flex;gap:0.5rem">
                                 <button type="button" class="btn btn-secondary" onclick="closeModal('tenants-modal')">Cancelar</button>
                                 <button type="submit" class="btn btn-primary" data-tenants-submit disabled>
-                                    <span class="btn-text">Associar selecionados</span>
-                                    <span class="btn-loading-text">Associando...</span>
+                                    <span class="btn-text">Salvar alterações</span>
+                                    <span class="btn-loading-text">Salvando...</span>
                                     <span class="spinner"></span>
                                 </button>
                             </div>

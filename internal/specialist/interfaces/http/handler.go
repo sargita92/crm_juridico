@@ -20,17 +20,19 @@ func validUUID(id string) bool {
 }
 
 type Handler struct {
-	createUC        *application.CreateSpecialistUseCase
-	listUC          *application.ListSpecialistsUseCase
-	getUC           *application.GetSpecialistUseCase
-	updateUC        *application.UpdateSpecialistUseCase
-	deactivateUC    *application.DeactivateSpecialistUseCase
-	activateUC      *application.ActivateSpecialistUseCase
-	associateUC     *application.AssociateTenantUseCase
-	dissociateUC    *application.DissociateTenantUseCase
-	listTenantsUC   *application.ListSpecialistTenantsUseCase
-	listAvailableUC *application.ListAvailableTenantsUseCase
-	specTenantRepo  domain.SpecialistTenantRepository
+	createUC         *application.CreateSpecialistUseCase
+	listUC           *application.ListSpecialistsUseCase
+	getUC            *application.GetSpecialistUseCase
+	updateUC         *application.UpdateSpecialistUseCase
+	deactivateUC     *application.DeactivateSpecialistUseCase
+	activateUC       *application.ActivateSpecialistUseCase
+	associateUC      *application.AssociateTenantUseCase
+	dissociateUC     *application.DissociateTenantUseCase
+	listTenantsUC    *application.ListSpecialistTenantsUseCase
+	listAvailableUC  *application.ListAvailableTenantsUseCase
+	listManageableUC *application.ListManageableTenantsUseCase
+	syncTenantsUC    *application.SyncSpecialistTenantsUseCase
+	specTenantRepo   domain.SpecialistTenantRepository
 }
 
 func NewHandler(
@@ -44,20 +46,24 @@ func NewHandler(
 	dissociateUC *application.DissociateTenantUseCase,
 	listTenantsUC *application.ListSpecialistTenantsUseCase,
 	listAvailableUC *application.ListAvailableTenantsUseCase,
+	listManageableUC *application.ListManageableTenantsUseCase,
+	syncTenantsUC *application.SyncSpecialistTenantsUseCase,
 	specTenantRepo domain.SpecialistTenantRepository,
 ) *Handler {
 	return &Handler{
-		createUC:        createUC,
-		listUC:          listUC,
-		getUC:           getUC,
-		updateUC:        updateUC,
-		deactivateUC:    deactivateUC,
-		activateUC:      activateUC,
-		associateUC:     associateUC,
-		dissociateUC:    dissociateUC,
-		listTenantsUC:   listTenantsUC,
-		listAvailableUC: listAvailableUC,
-		specTenantRepo:  specTenantRepo,
+		createUC:         createUC,
+		listUC:           listUC,
+		getUC:            getUC,
+		updateUC:         updateUC,
+		deactivateUC:     deactivateUC,
+		activateUC:       activateUC,
+		associateUC:      associateUC,
+		dissociateUC:     dissociateUC,
+		listTenantsUC:    listTenantsUC,
+		listAvailableUC:  listAvailableUC,
+		listManageableUC: listManageableUC,
+		syncTenantsUC:    syncTenantsUC,
+		specTenantRepo:   specTenantRepo,
 	}
 }
 
@@ -74,8 +80,11 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.Handler
 	admin.POST("/:id/deactivate", h.HandleDeactivate)
 	admin.POST("/:id/activate", h.HandleActivate)
 	admin.GET("/:id/tenants", h.HandleListTenants)
+	admin.GET("/:id/tenants/summary", h.HandleTenantsSummary)
 	admin.GET("/:id/tenants/available", h.HandleListAvailable)
+	admin.GET("/:id/tenants/manage", h.HandleListManageable)
 	admin.POST("/:id/tenants", h.HandleAssociateTenants)
+	admin.POST("/:id/tenants/sync", h.HandleSyncTenants)
 	admin.DELETE("/:id/tenants/:tenant_id", h.HandleDissociateTenant)
 	admin.POST("/:id/tenants/:tenant_id/default", h.HandleSetDefault)
 }
@@ -277,6 +286,116 @@ func (h *Handler) HandleListAvailable(c *gin.Context) {
 		"SpecialistID":     id,
 		"Search":           search,
 	})
+}
+
+// HandleTenantsSummary renderiza o card compacto da página do especialista —
+// quantidade de associados + nome do escritório default (se houver). É o que
+// fica visível enquanto o modal "Gerenciar Escritórios" está fechado.
+func (h *Handler) HandleTenantsSummary(c *gin.Context) {
+	id := c.Param("id")
+
+	items, err := h.listTenantsUC.Execute(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, domain.ErrSpecialistNotFound) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Especialista não encontrado"})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar escritórios"})
+		return
+	}
+
+	var defaultName string
+	for _, it := range items {
+		if it.IsDefault {
+			defaultName = it.Name
+			break
+		}
+	}
+
+	c.HTML(http.StatusOK, "specialist/tenants_summary.html", gin.H{
+		"SpecialistID": id,
+		"Count":        len(items),
+		"DefaultName":  defaultName,
+	})
+}
+
+// HandleListManageable renderiza o corpo do modal — lista TODOS os escritórios
+// (associados + disponíveis) com checkboxes pré-marcados conforme o vínculo
+// atual. Substitui o modal anterior que só listava disponíveis.
+func (h *Handler) HandleListManageable(c *gin.Context) {
+	id := c.Param("id")
+	search := c.Query("search")
+
+	items, err := h.listManageableUC.Execute(c.Request.Context(), id, search)
+	if err != nil {
+		if errors.Is(err, domain.ErrSpecialistNotFound) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Especialista não encontrado"})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar escritórios"})
+		return
+	}
+
+	c.HTML(http.StatusOK, "specialist/tenants_manageable.html", gin.H{
+		"Tenants":      items,
+		"SpecialistID": id,
+		"Search":       search,
+	})
+}
+
+// HandleSyncTenants recebe a lista final de IDs selecionados no modal e
+// converge o estado — adiciona novos, remove os que saíram. Retorna o resumo
+// atualizado para re-render do card + toast com o que mudou.
+func (h *Handler) HandleSyncTenants(c *gin.Context) {
+	id := c.Param("id")
+	tenantIDs := c.PostFormArray("tenant_ids[]")
+	if len(tenantIDs) == 0 {
+		tenantIDs = c.PostFormArray("tenant_ids")
+	}
+
+	result, err := h.syncTenantsUC.Execute(c.Request.Context(), application.SyncSpecialistTenantsInput{
+		SpecialistID: id,
+		TenantIDs:    tenantIDs,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, application.ErrTooManyTenants):
+			respondAssociateError(c, http.StatusBadRequest, "Seleção excede o limite de 500 escritórios.")
+		case errors.Is(err, domain.ErrSpecialistNotFound):
+			respondAssociateError(c, http.StatusNotFound, "Especialista não encontrado.")
+		case errors.Is(err, domain.ErrSpecialistInactive):
+			respondAssociateError(c, http.StatusBadRequest, "Especialista está inativo. Reative antes de alterar escritórios.")
+		case errors.Is(err, tenantdomain.ErrTenantNotFound):
+			respondAssociateError(c, http.StatusBadRequest, "Um dos escritórios selecionados não existe mais.")
+		case errors.Is(err, tenantdomain.ErrTenantInactive):
+			respondAssociateError(c, http.StatusBadRequest, "Um dos escritórios selecionados está inativo.")
+		default:
+			respondAssociateError(c, http.StatusInternalServerError, "Erro ao salvar alterações.")
+		}
+		return
+	}
+
+	c.Header("HX-Trigger", buildToastTrigger(formatSyncMessage(result), "success"))
+	h.HandleTenantsSummary(c)
+}
+
+func formatSyncMessage(r application.SyncSpecialistTenantsResult) string {
+	switch {
+	case r.Added == 0 && r.Removed == 0:
+		return "Nenhuma alteração nas associações."
+	case r.Added > 0 && r.Removed == 0:
+		if r.Added == 1 {
+			return "1 escritório associado."
+		}
+		return fmt.Sprintf("%d escritórios associados.", r.Added)
+	case r.Added == 0 && r.Removed > 0:
+		if r.Removed == 1 {
+			return "1 escritório desassociado."
+		}
+		return fmt.Sprintf("%d escritórios desassociados.", r.Removed)
+	default:
+		return fmt.Sprintf("%d associado(s), %d desassociado(s).", r.Added, r.Removed)
+	}
 }
 
 func (h *Handler) HandleAssociateTenants(c *gin.Context) {

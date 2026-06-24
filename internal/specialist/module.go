@@ -46,12 +46,15 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 	dissociateUC := application.NewDissociateTenantUseCase(specialistRepo, specialistTenantRepo)
 	listTenantsUC := application.NewListSpecialistTenantsUseCase(specialistRepo, specialistTenantRepo, tenantRepo)
 	listAvailableUC := application.NewListAvailableTenantsUseCase(specialistTenantRepo, tenantRepo)
+	listManageableUC := application.NewListManageableTenantsUseCase(specialistRepo, specialistTenantRepo, tenantRepo)
+	syncTenantsUC := application.NewSyncSpecialistTenantsUseCase(specialistRepo, tenantRepo, specialistTenantRepo)
 
 	handler := specialisthttp.NewHandler(
 		createUC, listUC, getUC,
 		updateUC, deactivateUC, activateUC,
 		associateUC, dissociateUC,
 		listTenantsUC, listAvailableUC,
+		listManageableUC, syncTenantsUC,
 		specialistTenantRepo,
 	)
 
