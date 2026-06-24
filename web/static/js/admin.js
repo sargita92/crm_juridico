@@ -17,6 +17,31 @@ function closeModal(id) {
     if (modal) modal.style.display = "none";
 }
 
+// Click no overlay (fora do modal-card) fecha o modal — mas só quando o
+// mousedown ALSO acontece no overlay. Sem o pareamento, selecionar texto
+// dentro do modal e soltar o mouse fora dispara click no overlay e fechava
+// o modal acidentalmente (reportado em teste manual).
+(function() {
+    var pressedOnOverlay = null;
+    document.addEventListener("mousedown", function(evt) {
+        if (evt.target && evt.target.classList && evt.target.classList.contains("modal-overlay")) {
+            pressedOnOverlay = evt.target;
+        } else {
+            pressedOnOverlay = null;
+        }
+    });
+    document.addEventListener("click", function(evt) {
+        var t = evt.target;
+        if (!t || !t.classList || !t.classList.contains("modal-overlay")) return;
+        if (pressedOnOverlay !== t) {
+            // Press iniciou dentro do card — não fecha mesmo que o release tenha caído no overlay.
+            return;
+        }
+        t.style.display = "none";
+        pressedOnOverlay = null;
+    });
+})();
+
 // Close modals and notification dropdown on Escape key
 document.addEventListener("keydown", function(e) {
     if (e.key === "Escape") {

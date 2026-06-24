@@ -124,7 +124,7 @@
             </div>
 
             <!-- Modal: Gerenciar MCPs -->
-            <div id="mcps-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('mcps-modal')">
+            <div id="mcps-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card modal-card-lg">
                     <h2>Associar MCPs</h2>
                     <input type="search" placeholder="Buscar MCP por nome..."
@@ -154,7 +154,7 @@
             </div>
 
             <!-- Modal: Gerenciar Documentos -->
-            <div id="documents-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('documents-modal')">
+            <div id="documents-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card modal-card-lg">
                     <h2>Associar Documentos</h2>
                     <input type="search" placeholder="Buscar documento por nome..."
@@ -211,7 +211,7 @@
             </div>
 
             <!-- Modal: Adicionar Guardrail -->
-            <div id="guardrail-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('guardrail-modal')">
+            <div id="guardrail-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card" style="max-width:550px">
                     <h2>Novo Guardrail</h2>
                     <form hx-post="/admin/specialists/{{.Specialist.ID}}/guardrails"
@@ -257,7 +257,7 @@
             </div>
 
             <!-- Modal: Adicionar Step -->
-            <div id="step-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('step-modal')">
+            <div id="step-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card" style="max-width:550px">
                     <h2>Novo Step</h2>
                     <form hx-post="/admin/specialists/{{.Specialist.ID}}/steps"
@@ -327,7 +327,7 @@
             </div>
 
             <!-- Modal: Configurar Threshold -->
-            <div id="scoring-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('scoring-modal')">
+            <div id="scoring-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card" style="max-width:450px">
                     <h2>Configurar Qualificacao</h2>
                     <form hx-put="/admin/specialists/{{.Specialist.ID}}/scoring"
@@ -360,7 +360,7 @@
             </div>
 
             <!-- Modal: Adicionar Regra de Cross-sell -->
-            <div id="cross-sell-rule-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('cross-sell-rule-modal')">
+            <div id="cross-sell-rule-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card" style="max-width:560px">
                     <h2>Nova Regra de Cross-sell</h2>
                     <form hx-post="/admin/specialists/{{.Specialist.ID}}/cross-sell-rules/htmx"
@@ -421,7 +421,7 @@
             </div>
 
             <!-- Modal: Desativar -->
-            <div id="deactivate-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('deactivate-modal')">
+            <div id="deactivate-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card">
                     <h2>Desativar Especialista</h2>
                     <p>Tem certeza que deseja desativar o especialista <strong>{{.Specialist.Name}}</strong>?</p>
@@ -441,7 +441,7 @@
             </div>
 
             <!-- Modal: Gerenciar Tenants -->
-            <div id="tenants-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal('tenants-modal')">
+            <div id="tenants-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card modal-card-lg">
                     <div class="modal-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.75rem">
                         <div>
