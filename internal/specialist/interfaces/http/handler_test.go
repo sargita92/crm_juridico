@@ -128,7 +128,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	deleteStepUC := application.NewDeleteStepUseCase(stepRepo)
 	moveStepUC := application.NewMoveStepUseCase(stepRepo)
 	listStepsUC := application.NewListStepsUseCase(stepRepo)
-	stepHandler := NewStepHandler(createStepUC, updateStepUC, deleteStepUC, moveStepUC, listStepsUC)
+	stepHandler := NewStepHandler(createStepUC, updateStepUC, deleteStepUC, moveStepUC, listStepsUC, stepRepo)
 
 	// Scoring use cases
 	scoringRepo := specialistinfra.NewGormScoringConfigRepository(db)
@@ -1014,6 +1014,140 @@ func TestStep_CreateAndList(t *testing.T) {
 	env.router.ServeHTTP(w2, req2)
 	assert.Equal(t, http.StatusOK, w2.Code)
 	assert.Contains(t, w2.Body.String(), "Qual seu nome?")
+}
+
+func TestStep_RenderCreateForm_Empty(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	w := httptest.NewRecorder()
+	req := getReq("/admin/specialists/"+spec.ID+"/steps/new/form", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	// Modo create: aponta para POST, sem valor pré-preenchido em text.
+	assert.Contains(t, body, `hx-post="/admin/specialists/`+spec.ID+`/steps"`)
+	assert.Contains(t, body, "Adicionar step")
+	assert.NotContains(t, body, "hx-put=")
+}
+
+func TestStep_RenderEditForm_Prefilled(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	// cria um step pelo endpoint para garantir orderIndex correto
+	w0 := httptest.NewRecorder()
+	req0 := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Pergunta original"}, "data_type": {"number"}, "required": {"on"}, "score": {"15"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w0, req0)
+	require.Equal(t, http.StatusOK, w0.Code)
+
+	stepRepo := specialistinfra.NewGormStepRepository(env.db)
+	steps, err := stepRepo.FindBySpecialistID(ctx, spec.ID)
+	require.NoError(t, err)
+	require.Len(t, steps, 1)
+	sid := steps[0].ID
+
+	w := httptest.NewRecorder()
+	req := getReq("/admin/specialists/"+spec.ID+"/steps/"+sid+"/form", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, `hx-put="/admin/specialists/`+spec.ID+`/steps/`+sid+`"`)
+	assert.Contains(t, body, "Pergunta original")
+	assert.Contains(t, body, `value="15"`)
+	assert.Contains(t, body, `option value="number" selected`)
+	assert.Contains(t, body, "Salvar alterações")
+}
+
+func TestStep_RenderEditForm_NotFound(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(context.Background(), spec))
+
+	w := httptest.NewRecorder()
+	missing := uuid.New().String()
+	req := getReq("/admin/specialists/"+spec.ID+"/steps/"+missing+"/form", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestStep_Update_EmitsToastAndPersists(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	w0 := httptest.NewRecorder()
+	req0 := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"Qual idade?"}, "data_type": {"number"}, "required": {"on"}, "score": {"5"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w0, req0)
+
+	stepRepo := specialistinfra.NewGormStepRepository(env.db)
+	steps, _ := stepRepo.FindBySpecialistID(ctx, spec.ID)
+	require.Len(t, steps, 1)
+	sid := steps[0].ID
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/admin/specialists/"+spec.ID+"/steps/"+sid,
+		strings.NewReader(url.Values{
+			"text": {"Qual sua data de nascimento?"}, "data_type": {"date"},
+			"required": {"on"}, "score": {"20"},
+		}.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Header().Get("HX-Trigger"), "adminToast")
+	assert.Contains(t, w.Header().Get("HX-Trigger"), "atualizado com sucesso")
+
+	updated, err := stepRepo.FindByID(ctx, sid)
+	require.NoError(t, err)
+	assert.Equal(t, "Qual sua data de nascimento?", updated.Text)
+	assert.Equal(t, "date", string(updated.DataType))
+	assert.Equal(t, 20, updated.Score)
+}
+
+// Regressão: antes erros de validação iam como JSON 400 para #steps-section
+// (hx-target do form), destruindo a lista. Agora redirecionam para o slot
+// dedicado #step-form-error dentro do modal.
+func TestStep_Create_InvalidScore_ReturnsHTMLToFormError(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Especialista", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(context.Background(), spec))
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/steps", url.Values{
+		"text": {"x"}, "data_type": {"free_text"}, "score": {"não-é-número"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "#step-form-error", w.Header().Get("HX-Retarget"))
+	assert.Equal(t, "innerHTML", w.Header().Get("HX-Reswap"))
+	body := w.Body.String()
+	assert.NotContains(t, body, `{"error"`, "não deve devolver JSON cru")
+	assert.Contains(t, body, "Pontuação inválida")
 }
 
 func TestStep_MoveAndDelete(t *testing.T) {

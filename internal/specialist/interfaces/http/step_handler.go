@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -11,12 +12,24 @@ import (
 	"github.com/sasrgita/crm-juridico/internal/specialist/domain"
 )
 
+// stepDataTypes é a lista canônica de opções exibidas no select Tipo de dado.
+// Mantida aqui para evitar duplicação entre o template (que apenas itera) e o
+// backend (que precisa rejeitar valores fora do conjunto).
+var stepDataTypes = []struct{ Value, Label string }{
+	{"free_text", "Texto livre"},
+	{"number", "Número"},
+	{"date", "Data"},
+	{"document", "Documento"},
+	{"selection", "Seleção"},
+}
+
 type StepHandler struct {
 	createUC *application.CreateStepUseCase
 	updateUC *application.UpdateStepUseCase
 	deleteUC *application.DeleteStepUseCase
 	moveUC   *application.MoveStepUseCase
 	listUC   *application.ListStepsUseCase
+	stepRepo domain.StepRepository
 }
 
 func NewStepHandler(
@@ -25,10 +38,12 @@ func NewStepHandler(
 	deleteUC *application.DeleteStepUseCase,
 	moveUC *application.MoveStepUseCase,
 	listUC *application.ListStepsUseCase,
+	stepRepo domain.StepRepository,
 ) *StepHandler {
 	return &StepHandler{
 		createUC: createUC, updateUC: updateUC,
 		deleteUC: deleteUC, moveUC: moveUC, listUC: listUC,
+		stepRepo: stepRepo,
 	}
 }
 
@@ -37,6 +52,8 @@ func (h *StepHandler) RegisterRoutes(router *gin.Engine, authMw, adminMw gin.Han
 	admin.Use(authMw, adminMw)
 
 	admin.GET("/:id/steps", h.HandleList)
+	admin.GET("/:id/steps/new/form", h.RenderCreateForm)
+	admin.GET("/:id/steps/:sid/form", h.RenderEditForm)
 	admin.POST("/:id/steps", h.HandleCreate)
 	admin.PUT("/:id/steps/:sid", h.HandleUpdate)
 	admin.POST("/:id/steps/:sid/move-up", h.HandleMoveUp)
@@ -62,6 +79,52 @@ func (h *StepHandler) HandleList(c *gin.Context) {
 	})
 }
 
+// RenderCreateForm responde GET /admin/specialists/:id/steps/new/form com o
+// partial step_form.html vazio, consumido pelo #step-modal-body via HTMX.
+func (h *StepHandler) RenderCreateForm(c *gin.Context) {
+	id := c.Param("id")
+	if !validUUID(id) {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	c.HTML(http.StatusOK, "specialist/step_form.html", gin.H{
+		"SpecialistID": id,
+		"DataTypes":    stepDataTypes,
+	})
+}
+
+// RenderEditForm responde GET /admin/specialists/:id/steps/:sid/form com o
+// partial step_form.html pré-preenchido pelo step persistido. Antes só era
+// possível editar excluindo e recriando.
+func (h *StepHandler) RenderEditForm(c *gin.Context) {
+	id := c.Param("id")
+	sid := c.Param("sid")
+	if !validUUID(id) || !validUUID(sid) {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	step, err := h.stepRepo.FindByID(c.Request.Context(), sid)
+	if err != nil {
+		if errors.Is(err, domain.ErrStepNotFound) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Step não encontrado"})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar step"})
+		return
+	}
+	c.HTML(http.StatusOK, "specialist/step_form.html", gin.H{
+		"SpecialistID": id,
+		"DataTypes":    stepDataTypes,
+		"Step": gin.H{
+			"ID":       step.ID,
+			"Text":     step.Text,
+			"DataType": string(step.DataType),
+			"Required": step.Required,
+			"Score":    step.Score,
+		},
+	})
+}
+
 func (h *StepHandler) HandleCreate(c *gin.Context) {
 	id := c.Param("id")
 	if !validUUID(id) {
@@ -71,7 +134,7 @@ func (h *StepHandler) HandleCreate(c *gin.Context) {
 
 	score, err := parseScore(c.DefaultPostForm("score", "0"))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Pontuação inválida"})
+		respondStepFormError(c, http.StatusBadRequest, "Pontuação inválida. Use um número inteiro positivo.")
 		return
 	}
 	required := c.PostForm("required") == "on" || c.PostForm("required") == "true"
@@ -87,17 +150,18 @@ func (h *StepHandler) HandleCreate(c *gin.Context) {
 	_, err = h.createUC.Execute(c.Request.Context(), input)
 	if err != nil {
 		if errors.Is(err, domain.ErrSpecialistNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Especialista não encontrado"})
+			respondStepFormError(c, http.StatusNotFound, "Especialista não encontrado.")
 			return
 		}
 		if errors.Is(err, domain.ErrSpecialistInactive) {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Especialista está inativo"})
+			respondStepFormError(c, http.StatusBadRequest, "Especialista está inativo. Reative antes de adicionar steps.")
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": mapStepError(err)})
+		respondStepFormError(c, http.StatusBadRequest, mapStepError(err))
 		return
 	}
 
+	c.Header("HX-Trigger", buildStepToast("Step adicionado com sucesso.", "success"))
 	h.HandleList(c)
 }
 
@@ -110,7 +174,7 @@ func (h *StepHandler) HandleUpdate(c *gin.Context) {
 
 	score, err := parseScore(c.DefaultPostForm("score", "0"))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Pontuação inválida"})
+		respondStepFormError(c, http.StatusBadRequest, "Pontuação inválida. Use um número inteiro positivo.")
 		return
 	}
 	required := c.PostForm("required") == "on" || c.PostForm("required") == "true"
@@ -126,14 +190,30 @@ func (h *StepHandler) HandleUpdate(c *gin.Context) {
 	_, err = h.updateUC.Execute(c.Request.Context(), input)
 	if err != nil {
 		if errors.Is(err, domain.ErrStepNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Step não encontrado"})
+			respondStepFormError(c, http.StatusNotFound, "Step não encontrado.")
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": mapStepError(err)})
+		respondStepFormError(c, http.StatusBadRequest, mapStepError(err))
 		return
 	}
 
+	c.Header("HX-Trigger", buildStepToast("Step atualizado com sucesso.", "success"))
 	h.HandleList(c)
+}
+
+// respondStepFormError redireciona o alerta HTML para o slot #step-form-error
+// dentro do modal — antes o JSON 400 ia para o #steps-section (hx-target do
+// form) e corrompia a lista de steps. Mesmo padrão usado em tenants_modal.
+func respondStepFormError(c *gin.Context, status int, message string) {
+	c.Header("HX-Retarget", "#step-form-error")
+	c.Header("HX-Reswap", "innerHTML")
+	c.HTML(status, "specialist/step_form_error.html", gin.H{"Message": message})
+	c.Abort()
+}
+
+// buildStepToast monta o payload do HX-Trigger consumido por admin.js -> showAdminToast.
+func buildStepToast(message, kind string) string {
+	return fmt.Sprintf(`{"adminToast":{"message":%q,"kind":%q}}`, message, kind)
 }
 
 func (h *StepHandler) HandleMoveUp(c *gin.Context) {
