@@ -103,12 +103,15 @@ func setupTestEnv(t *testing.T) *testEnv {
 	dissociateUC := application.NewDissociateTenantUseCase(specialistRepo, stRepo)
 	listTenantsUC := application.NewListSpecialistTenantsUseCase(specialistRepo, stRepo, tenantRepo)
 	listAvailableUC := application.NewListAvailableTenantsUseCase(stRepo, tenantRepo)
+	listManageableUC := application.NewListManageableTenantsUseCase(specialistRepo, stRepo, tenantRepo)
+	syncTenantsUC := application.NewSyncSpecialistTenantsUseCase(specialistRepo, tenantRepo, stRepo)
 
 	handler := NewHandler(
 		createUC, listUC, getUC, updateUC,
 		deactivateUC, activateUC,
 		associateUC, dissociateUC,
 		listTenantsUC, listAvailableUC,
+		listManageableUC, syncTenantsUC,
 		stRepo,
 	)
 
@@ -520,6 +523,127 @@ func TestHandleListTenants_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "Escritorio A")
+}
+
+func TestHandleListManageable_FlagsAssociations(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Specialist", "prompt")
+	tenantA := env.seedTenant(t, "Escritorio A", "11.111.111/0001-11")
+	env.seedTenant(t, "Escritorio B", "22.222.222/0001-22")
+	require.NoError(t, env.stRepo.Associate(context.Background(), s.ID, tenantA.ID))
+
+	w := httptest.NewRecorder()
+	req := getReq("/admin/specialists/"+s.ID+"/tenants/manage", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "Escritorio A")
+	assert.Contains(t, body, "Escritorio B")
+	// O associado precisa vir pré-marcado para o modal mostrar o estado atual.
+	assert.Contains(t, body, `data-initial="1"`)
+	assert.Contains(t, body, `data-initial="0"`)
+}
+
+func TestHandleSyncTenants_AddsAndRemoves(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Specialist", "prompt")
+	keep := env.seedTenant(t, "Mantido", "11.111.111/0001-11")
+	gone := env.seedTenant(t, "Sai", "22.222.222/0001-22")
+	novo := env.seedTenant(t, "Novo", "33.333.333/0001-33")
+	require.NoError(t, env.stRepo.Associate(context.Background(), s.ID, keep.ID))
+	require.NoError(t, env.stRepo.Associate(context.Background(), s.ID, gone.ID))
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+s.ID+"/tenants/sync", url.Values{
+		"tenant_ids[]": {keep.ID, novo.ID},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	keepExists, _ := env.stRepo.Exists(context.Background(), s.ID, keep.ID)
+	goneExists, _ := env.stRepo.Exists(context.Background(), s.ID, gone.ID)
+	novoExists, _ := env.stRepo.Exists(context.Background(), s.ID, novo.ID)
+	assert.True(t, keepExists, "tenant mantido continua associado")
+	assert.False(t, goneExists, "tenant desmarcado foi desassociado")
+	assert.True(t, novoExists, "tenant novo foi associado")
+
+	// Toast sucesso + corpo do summary card.
+	hxTrigger := w.Header().Get("HX-Trigger")
+	assert.Contains(t, hxTrigger, "adminToast")
+	assert.Contains(t, w.Body.String(), "escritórios")
+}
+
+func TestHandleSyncTenants_EmptySelection_RemovesAll(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Specialist", "prompt")
+	tenant := env.seedTenant(t, "Escritorio A", "11.111.111/0001-11")
+	require.NoError(t, env.stRepo.Associate(context.Background(), s.ID, tenant.ID))
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+s.ID+"/tenants/sync", url.Values{}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	exists, _ := env.stRepo.Exists(context.Background(), s.ID, tenant.ID)
+	assert.False(t, exists)
+}
+
+func TestHandleTenantsSummary_RendersCountAndDefault(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Specialist", "prompt")
+	t1 := env.seedTenant(t, "Default Tenant", "11.111.111/0001-11")
+	t2 := env.seedTenant(t, "Outro", "22.222.222/0001-22")
+	require.NoError(t, env.stRepo.Associate(context.Background(), s.ID, t1.ID))
+	require.NoError(t, env.stRepo.Associate(context.Background(), s.ID, t2.ID))
+	require.NoError(t, env.stRepo.SetDefault(context.Background(), s.ID, t1.ID))
+
+	w := httptest.NewRecorder()
+	req := getReq("/admin/specialists/"+s.ID+"/tenants/summary", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "2 escritórios associados")
+	assert.Contains(t, body, "Default Tenant")
+	assert.Contains(t, body, "Gerenciar Escritórios")
+}
+
+func TestHandleTenantsSummary_NoAssociations(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Specialist", "prompt")
+
+	w := httptest.NewRecorder()
+	req := getReq("/admin/specialists/"+s.ID+"/tenants/summary", tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Nenhum escritório associado")
+}
+
+func TestHandleSyncTenants_InactiveSpecialist_ReturnsModalError(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Inativo", "prompt")
+	_ = s.Deactivate()
+	require.NoError(t, env.specialistRepo.Update(context.Background(), s))
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+s.ID+"/tenants/sync", url.Values{
+		"tenant_ids[]": {"any"},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "#tenants-modal-error", w.Header().Get("HX-Retarget"))
+	assert.Contains(t, w.Body.String(), "inativo")
 }
 
 func TestHandleListAvailable_Success(t *testing.T) {

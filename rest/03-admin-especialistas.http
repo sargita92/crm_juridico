@@ -66,19 +66,38 @@ Cookie: token={{token}}
 ### Associacao com Tenants
 ### =============================================
 
-### Listar tenants associados
+### Listar tenants associados (tabela completa)
 GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants
 Cookie: token={{token}}
 
-### Listar tenants disponiveis para associacao
+### Card resumo (count + default) usado pela pagina do especialista
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants/summary
+Cookie: token={{token}}
+
+### Listar tenants gerenciaveis (todos + flag is_associated) — corpo do modal
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants/manage
+Cookie: token={{token}}
+
+### Idem com busca
+GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants/manage?search=Escritorio
+Cookie: token={{token}}
+
+### Sincronizar tenants — envia lista final de IDs marcados; backend calcula diff
+POST {{base_url}}/admin/specialists/{{specialist_id}}/tenants/sync
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+tenant_ids[]={{tenant_id}}
+
+### Listar tenants disponiveis para associacao (endpoint legado)
 GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants/available
 Cookie: token={{token}}
 
-### Listar tenants disponiveis — com busca
+### Listar tenants disponiveis — com busca (endpoint legado)
 GET {{base_url}}/admin/specialists/{{specialist_id}}/tenants/available?search=Escritorio
 Cookie: token={{token}}
 
-### Associar tenant(s) ao especialista
+### Associar tenant(s) ao especialista (endpoint legado, mantido para API)
 POST {{base_url}}/admin/specialists/{{specialist_id}}/tenants
 Cookie: token={{token}}
 Content-Type: application/x-www-form-urlencoded

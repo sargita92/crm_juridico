@@ -1,0 +1,41 @@
+{{define "specialist/tenants_manageable.html"}}
+{{if .Tenants}}
+<div class="checklist" data-tenants-manageable
+     style="max-height:340px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px">
+    {{range .Tenants}}
+    <label class="checklist-row"
+           style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background 0.15s">
+        <input type="checkbox" name="tenant_ids[]" value="{{.TenantID}}"
+               data-initial="{{if .IsAssociated}}1{{else}}0{{end}}"
+               {{if .IsAssociated}}checked{{end}}
+               style="width:18px;height:18px;cursor:pointer">
+        <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-weight:500;color:#1a1a2e">
+                <span>{{.Name}}</span>
+                {{if .IsDefault}}
+                <span class="badge badge-active" title="Especialista default deste escritório">Default</span>
+                {{end}}
+                {{if ne .Status "active"}}
+                <span class="badge badge-inactive">Inativo</span>
+                {{end}}
+            </div>
+            <div style="font-size:0.8125rem;color:#667781;margin-top:0.125rem">
+                <span class="badge badge-{{if eq .Type "PJ"}}pj{{else}}pf{{end}}">{{.Type}}</span>
+                <span style="margin-left:0.5rem">{{.Document}}</span>
+            </div>
+        </div>
+    </label>
+    {{end}}
+</div>
+{{else}}
+<div style="text-align:center;padding:2rem 1rem;border:1px dashed #e5e7eb;border-radius:8px">
+    {{if .Search}}
+    <p class="text-muted" style="margin:0">Nenhum escritório encontrado para "{{.Search}}".</p>
+    <p class="text-muted" style="margin:0.25rem 0 0;font-size:0.8125rem">Tente outro termo ou limpe o filtro.</p>
+    {{else}}
+    <p class="text-muted" style="margin:0">Nenhum escritório cadastrado.</p>
+    <p class="text-muted" style="margin:0.25rem 0 0;font-size:0.8125rem">Cadastre um escritório para começar a associar.</p>
+    {{end}}
+</div>
+{{end}}
+{{end}}
