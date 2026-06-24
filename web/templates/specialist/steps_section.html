@@ -3,15 +3,19 @@
     {{if .Steps}}
     <div class="association-list">
         {{range .Steps}}
-        <div class="association-item" style="flex-wrap:wrap">
-            <div class="association-info" style="flex:1">
-                <strong>#{{.OrderIndex}}</strong>
-                <span style="margin-left:0.5rem">{{.Text}}</span>
+        <div class="association-item" style="flex-wrap:wrap;gap:0.5rem">
+            <div class="association-info" style="flex:1;min-width:240px">
+                <div style="display:flex;align-items:baseline;gap:0.5rem;margin-bottom:0.25rem">
+                    <strong style="color:#667781">#{{.OrderIndex}}</strong>
+                    <span style="flex:1">{{.Text}}</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:0.25rem;font-size:0.8125rem">
+                    <span class="badge badge-info">{{.DataType}}</span>
+                    {{if .Required}}<span class="badge badge-warning">Obrigatório</span>{{else}}<span class="badge badge-outline">Opcional</span>{{end}}
+                    {{if gt .Score 0}}<span class="badge badge-active">{{.Score}} pts</span>{{end}}
+                </div>
             </div>
             <div style="display:flex;gap:0.25rem;align-items:center;flex-wrap:wrap">
-                <span class="badge badge-info">{{.DataType}}</span>
-                {{if .Required}}<span class="badge badge-warning">Obrigatorio</span>{{else}}<span class="badge badge-outline">Opcional</span>{{end}}
-                {{if gt .Score 0}}<span class="badge badge-active">{{.Score}} pts</span>{{end}}
                 {{if gt .OrderIndex 1}}
                 <button class="btn btn-sm btn-outline"
                         hx-post="/admin/specialists/{{$.SpecialistID}}/steps/{{.ID}}/move-up"
@@ -26,13 +30,18 @@
                         hx-swap="outerHTML"
                         title="Mover para baixo">&#9660;</button>
                 {{end}}
+                <button class="btn btn-sm btn-outline"
+                        hx-get="/admin/specialists/{{$.SpecialistID}}/steps/{{.ID}}/form"
+                        hx-target="#step-modal-body"
+                        hx-swap="innerHTML"
+                        onclick="document.getElementById('step-modal-title').textContent='Editar step';openModal('step-modal')"
+                        title="Editar">Editar</button>
                 <button class="btn btn-sm btn-danger"
                         hx-delete="/admin/specialists/{{$.SpecialistID}}/steps/{{.ID}}"
                         hx-target="#steps-section"
                         hx-swap="outerHTML"
-                        hx-confirm="Excluir este step?">
-                    &times;
-                </button>
+                        hx-confirm="Excluir este step?"
+                        title="Excluir">&times;</button>
             </div>
         </div>
         {{end}}

@@ -78,6 +78,7 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 
 	stepHandler := specialisthttp.NewStepHandler(
 		createStepUC, updateStepUC, deleteStepUC, moveStepUC, listStepsUC,
+		stepRepo,
 	)
 
 	// Scoring use cases

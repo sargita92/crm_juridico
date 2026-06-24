@@ -246,50 +246,33 @@
             <div class="detail-card">
                 <div class="card-header">
                     <h3>Passo a Passo</h3>
-                    <button class="btn btn-sm btn-primary" onclick="openModal('step-modal')">Adicionar Step</button>
+                    <button class="btn btn-sm btn-primary"
+                            hx-get="/admin/specialists/{{.Specialist.ID}}/steps/new/form"
+                            hx-target="#step-modal-body"
+                            hx-swap="innerHTML"
+                            onclick="document.getElementById('step-modal-title').textContent='Novo step';openModal('step-modal')">
+                        Adicionar Step
+                    </button>
                 </div>
                 <div id="steps-section"
                      hx-get="/admin/specialists/{{.Specialist.ID}}/steps"
                      hx-trigger="load"
-                     hx-swap="innerHTML">
+                     hx-swap="outerHTML">
                     <p class="text-muted">Carregando steps...</p>
                 </div>
             </div>
 
-            <!-- Modal: Adicionar Step -->
+            <!-- Modal: Adicionar/Editar Step. O form é carregado via HTMX para
+                 reusar o mesmo template entre create e edit (step_form.html). -->
             <div id="step-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card" style="max-width:550px">
-                    <h2>Novo Step</h2>
-                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/steps"
-                          hx-target="#steps-section"
-                          hx-swap="innerHTML">
-                        <div class="form-group">
-                            <label for="step-text">Texto</label>
-                            <textarea id="step-text" name="text" placeholder="Qual pergunta ou instrucao o especialista deve fazer?" required style="min-height:100px"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="step-data-type">Tipo de dado esperado</label>
-                            <select id="step-data-type" name="data_type" required>
-                                <option value="free_text">Texto livre</option>
-                                <option value="number">Numero</option>
-                                <option value="date">Data</option>
-                                <option value="document">Documento</option>
-                                <option value="selection">Selecao</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label><input type="checkbox" name="required" checked> Obrigatorio</label>
-                        </div>
-                        <div class="form-group">
-                            <label for="step-score">Pontuacao</label>
-                            <input type="number" id="step-score" name="score" value="0" min="0" placeholder="0">
-                            <small class="form-hint">Pontuacao para qualificacao do lead (0 = sem pontuacao)</small>
-                        </div>
-                        <div class="modal-actions">
-                            <button type="button" class="btn btn-secondary" onclick="closeModal('step-modal')">Cancelar</button>
-                            <button type="submit" class="btn btn-primary" onclick="closeModal('step-modal')">Salvar</button>
-                        </div>
-                    </form>
+                    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+                        <h2 id="step-modal-title" style="margin:0">Novo step</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('step-modal')" aria-label="Fechar">&times;</button>
+                    </div>
+                    <div id="step-modal-body">
+                        <p class="text-muted">Carregando formulário...</p>
+                    </div>
                 </div>
             </div>
 

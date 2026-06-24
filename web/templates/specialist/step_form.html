@@ -1,0 +1,65 @@
+{{define "specialist/step_form.html"}}
+{{/*
+    Partial reutilizável do form de step (create + edit).
+    Espera no contexto:
+      - SpecialistID  (string)
+      - Step          (opcional) — quando presente, modo edit; ausente = create
+      - DataTypes     ([]struct{Value,Label}) — opções do select Tipo de dado
+*/}}
+<div id="step-form-error" aria-live="polite"></div>
+
+<form {{if .Step}}
+        hx-put="/admin/specialists/{{.SpecialistID}}/steps/{{.Step.ID}}"
+      {{else}}
+        hx-post="/admin/specialists/{{.SpecialistID}}/steps"
+      {{end}}
+      hx-target="#steps-section"
+      hx-swap="outerHTML"
+      hx-on::before-request="document.getElementById('step-form-error').innerHTML=''"
+      hx-on::after-request="if(event.detail.successful){closeModal('step-modal');}">
+
+    <div class="form-group">
+        <label for="step-text">Texto</label>
+        <textarea id="step-text" name="text"
+                  placeholder="Qual pergunta ou instrução o especialista deve fazer?"
+                  required style="min-height:100px">{{if .Step}}{{.Step.Text}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="step-data-type">Tipo de dado esperado</label>
+        <select id="step-data-type" name="data_type" required>
+            {{$selected := ""}}{{if .Step}}{{$selected = .Step.DataType}}{{end}}
+            {{range .DataTypes}}
+            <option value="{{.Value}}" {{if eq .Value $selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+            <input type="checkbox" name="required"
+                   {{if .Step}}{{if .Step.Required}}checked{{end}}{{else}}checked{{end}}>
+            <span>Obrigatório</span>
+        </label>
+        <small class="form-hint" style="display:block;margin-top:0.25rem">
+            Se marcado, o lead precisa responder antes de avançar para o próximo step.
+        </small>
+    </div>
+
+    <div class="form-group">
+        <label for="step-score">Pontuação</label>
+        <input type="number" id="step-score" name="score"
+               value="{{if .Step}}{{.Step.Score}}{{else}}0{{end}}" min="0" placeholder="0">
+        <small class="form-hint">Pontuação somada ao lead quando este step é concluído (0 = sem pontuação).</small>
+    </div>
+
+    <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('step-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            <span class="btn-text">{{if .Step}}Salvar alterações{{else}}Adicionar step{{end}}</span>
+            <span class="btn-loading-text">Salvando...</span>
+            <span class="spinner"></span>
+        </button>
+    </div>
+</form>
+{{end}}
