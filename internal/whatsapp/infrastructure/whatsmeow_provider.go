@@ -375,14 +375,13 @@ func (p *WhatsmeowProvider) handleIncomingMessage(tenantID string, msg *events.M
 		return
 	}
 
-	senderJID := recipientJID(msg.Info.Sender)
-	senderPhone := msg.Info.Sender.User
+	senderJID, senderPhone := resolveSenderIdentity(msg.Info.Sender, msg.Info.SenderAlt)
 
 	p.handler(context.Background(), domain.IncomingMessage{
 		TenantID:      tenantID,
 		SenderJID:     senderJID,
 		SenderName:    msg.Info.PushName,
-		SenderPhone:   "+" + senderPhone,
+		SenderPhone:   senderPhone,
 		Content:       content,
 		WhatsAppMsgID: msg.Info.ID,
 		Timestamp:     msg.Info.Timestamp,
@@ -545,8 +544,13 @@ func extFromMime(mime string) string {
 	return ""
 }
 
+// isDirectMessage reports whether the chat JID belongs to a 1:1 conversation
+// with a human user. WhatsApp now routes many direct chats through the LID
+// privacy system (HiddenUserServer == "lid") in addition to the legacy phone
+// number addressing (DefaultUserServer == "s.whatsapp.net"); both must be
+// accepted or LID-addressed messages are silently dropped here.
 func isDirectMessage(chat types.JID) bool {
-	return chat.Server == types.DefaultUserServer
+	return chat.Server == types.DefaultUserServer || chat.Server == types.HiddenUserServer
 }
 
 // recipientJID returns the user JID with no device part, suitable for use as
@@ -554,6 +558,21 @@ func isDirectMessage(chat types.JID) bool {
 // (e.g. "5511...:56@s.whatsapp.net"), which whatsmeow rejects when sending.
 func recipientJID(sender types.JID) string {
 	return sender.ToNonAD().String()
+}
+
+// resolveSenderIdentity picks the most stable identifier for the sender of an
+// incoming message. When WhatsApp delivers the message in LID addressing but
+// also exposes the phone-number alternative (SenderAlt), we prefer PN so the
+// contact stays the same one we created earlier from PN-addressed messages
+// from the same person. When only LID is available we fall back to it.
+//
+// Returns (jid, phone): both already device-stripped; phone is "+"-prefixed.
+func resolveSenderIdentity(sender, senderAlt types.JID) (jid, phone string) {
+	primary := sender
+	if sender.Server == types.HiddenUserServer && senderAlt.Server == types.DefaultUserServer && senderAlt.User != "" {
+		primary = senderAlt
+	}
+	return primary.ToNonAD().String(), "+" + primary.User
 }
 
 func sanitizeTenantID(id string) string {

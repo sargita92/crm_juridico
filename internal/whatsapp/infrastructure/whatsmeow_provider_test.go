@@ -72,6 +72,33 @@ func TestRecipientJID_NoDevice(t *testing.T) {
 	assert.Equal(t, "553184019118@s.whatsapp.net", recipientJID(sender))
 }
 
+func TestResolveSenderIdentity_PNOnly(t *testing.T) {
+	sender := types.JID{User: "5511999990001", Server: types.DefaultUserServer, Device: 12}
+	jid, phone := resolveSenderIdentity(sender, types.JID{})
+
+	assert.Equal(t, "5511999990001@s.whatsapp.net", jid)
+	assert.Equal(t, "+5511999990001", phone)
+}
+
+func TestResolveSenderIdentity_LIDWithPNAlt_PrefersPN(t *testing.T) {
+	sender := types.JID{User: "178945612345678", Server: types.HiddenUserServer, Device: 7}
+	senderAlt := types.JID{User: "5511999990001", Server: types.DefaultUserServer}
+
+	jid, phone := resolveSenderIdentity(sender, senderAlt)
+
+	assert.Equal(t, "5511999990001@s.whatsapp.net", jid)
+	assert.Equal(t, "+5511999990001", phone)
+}
+
+func TestResolveSenderIdentity_LIDOnly_FallsBackToLID(t *testing.T) {
+	sender := types.JID{User: "178945612345678", Server: types.HiddenUserServer, Device: 7}
+
+	jid, phone := resolveSenderIdentity(sender, types.JID{})
+
+	assert.Equal(t, "178945612345678@lid", jid)
+	assert.Equal(t, "+178945612345678", phone)
+}
+
 func TestIsDirectMessage(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -82,7 +109,7 @@ func TestIsDirectMessage(t *testing.T) {
 		{"group", types.GroupServer, false},
 		{"newsletter", types.NewsletterServer, false},
 		{"broadcast", types.BroadcastServer, false},
-		{"hidden lid", types.HiddenUserServer, false},
+		{"hidden lid", types.HiddenUserServer, true},
 		{"empty", "", false},
 	}
 	for _, c := range cases {
