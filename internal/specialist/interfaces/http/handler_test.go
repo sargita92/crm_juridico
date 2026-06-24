@@ -440,6 +440,54 @@ func TestHandleAssociateTenants_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "Escritorio A")
+
+	// Sucesso emite HX-Trigger consumido pelo admin.js → showAdminToast.
+	// Antes o usuário não tinha feedback de que a associação realmente persistiu.
+	hxTrigger := w.Header().Get("HX-Trigger")
+	assert.Contains(t, hxTrigger, "adminToast")
+	assert.Contains(t, hxTrigger, "success")
+}
+
+// Regressão: antes o handler devolvia {"error":"..."} no #tenants-section,
+// corrompendo o card de escritórios associados. Agora retorna HTML alvo do
+// #tenants-modal-error via HX-Retarget, mantendo o card intacto.
+func TestHandleAssociateTenants_NoSelection_ReturnsHTMLToModalError(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Specialist", "prompt")
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+s.ID+"/tenants", url.Values{}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "#tenants-modal-error", w.Header().Get("HX-Retarget"))
+	assert.Equal(t, "innerHTML", w.Header().Get("HX-Reswap"))
+
+	body := w.Body.String()
+	assert.NotContains(t, body, `{"error"`, "response não deve ser JSON cru")
+	assert.Contains(t, body, "Selecione pelo menos um escritório")
+	assert.Contains(t, body, "alert", "deve renderizar como alerta visual")
+}
+
+func TestHandleAssociateTenants_TooMany_ReturnsHTMLToModalError(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	s := env.seedSpecialist(t, "Specialist", "prompt")
+
+	tooMany := make([]string, 51)
+	for i := range tooMany {
+		tooMany[i] = "tid"
+	}
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+s.ID+"/tenants", url.Values{
+		"tenant_ids[]": tooMany,
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "#tenants-modal-error", w.Header().Get("HX-Retarget"))
+	assert.Contains(t, w.Body.String(), "Máximo de 50")
 }
 
 func TestHandleDissociateTenant_Success(t *testing.T) {
