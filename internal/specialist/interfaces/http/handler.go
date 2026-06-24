@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -287,11 +288,11 @@ func (h *Handler) HandleAssociateTenants(c *gin.Context) {
 	}
 
 	if len(tenantIDs) == 0 {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Selecione pelo menos um escritório"})
+		respondAssociateError(c, http.StatusBadRequest, "Selecione pelo menos um escritório para associar.")
 		return
 	}
 	if len(tenantIDs) > 50 {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Máximo de 50 escritórios por associação"})
+		respondAssociateError(c, http.StatusBadRequest, "Máximo de 50 escritórios por associação. Reduza a seleção e tente novamente.")
 		return
 	}
 
@@ -301,19 +302,44 @@ func (h *Handler) HandleAssociateTenants(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, domain.ErrSpecialistNotFound) {
-			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Especialista não encontrado"})
+			respondAssociateError(c, http.StatusNotFound, "Especialista não encontrado.")
 			return
 		}
 		if errors.Is(err, domain.ErrSpecialistInactive) {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Especialista está inativo"})
+			respondAssociateError(c, http.StatusBadRequest, "Especialista está inativo. Reative antes de associar escritórios.")
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": mapDomainError(err)})
+		respondAssociateError(c, http.StatusBadRequest, mapDomainError(err))
 		return
 	}
 
-	// Re-render tenants section
+	// Emite toast de sucesso (consumido por admin.js -> showAdminToast) e
+	// re-renderiza a seção. O fechamento do modal é responsabilidade do
+	// template via hx-on::after-request — só fecha em sucesso.
+	count := len(tenantIDs)
+	msg := "Escritório associado com sucesso."
+	if count > 1 {
+		msg = fmt.Sprintf("%d escritórios associados com sucesso.", count)
+	}
+	c.Header("HX-Trigger", buildToastTrigger(msg, "success"))
 	h.HandleListTenants(c)
+}
+
+// respondAssociateError renderiza um alerta HTML para o cabeçalho do modal de
+// tenants (id="tenants-modal-error") em vez de despejar JSON 400 no
+// #tenants-section, que destruía o card de escritórios associados.
+func respondAssociateError(c *gin.Context, status int, message string) {
+	c.Header("HX-Retarget", "#tenants-modal-error")
+	c.Header("HX-Reswap", "innerHTML")
+	c.HTML(status, "specialist/tenants_modal_error.html", gin.H{"Message": message})
+	c.Abort()
+}
+
+// buildToastTrigger serializa um evento HX-Trigger consumido por admin.js.
+// Manter como string literal evita dependência de encoding/json aqui — os
+// valores são controlados pelo backend (não há input do usuário no payload).
+func buildToastTrigger(message, kind string) string {
+	return fmt.Sprintf(`{"adminToast":{"message":%q,"kind":%q}}`, message, kind)
 }
 
 func (h *Handler) HandleDissociateTenant(c *gin.Context) {

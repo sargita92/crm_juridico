@@ -996,6 +996,38 @@ body {
     max-width: 360px;
 }
 
+/* Botão de fechar (×) usado no canto superior direito dos modais.
+   Originalmente vivia só em kanban.css; promovido para main.css porque
+   modais fora do kanban (especialistas, etc.) precisavam do mesmo estilo. */
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #667781;
+    padding: 0 0.25rem;
+}
+
+.modal-close:hover {
+    color: #1a1a2e;
+}
+
+/* Lista de seleção (checkboxes em modais de associação).
+   Adiciona hover sutil para sinalizar que a linha inteira é clicável,
+   complementando o input type="checkbox" embutido. */
+.checklist-row:hover {
+    background: #f9fafb;
+}
+
+.checklist-row:has(input:checked) {
+    background: #eff6ff;
+}
+
+.checklist-row:last-child {
+    border-bottom: none !important;
+}
+
 .modal-card h2 {
     font-size: 1.15rem;
     font-weight: 700;
