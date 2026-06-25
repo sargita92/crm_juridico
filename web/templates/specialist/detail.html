@@ -88,7 +88,7 @@
                 </div>
                 <div id="tenants-section"
                      hx-get="/admin/specialists/{{.Specialist.ID}}/tenants/summary"
-                     hx-trigger="load"
+                     hx-trigger="load, tenants-default-changed from:body"
                      hx-swap="innerHTML">
                     <p class="text-muted">Carregando escritórios...</p>
                 </div>

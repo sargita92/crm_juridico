@@ -14,6 +14,16 @@
                 <span>{{.Name}}</span>
                 {{if .IsDefault}}
                 <span class="badge badge-active" title="Especialista default deste escritório">Default</span>
+                {{else if .IsAssociated}}
+                <button type="button" class="btn btn-sm btn-outline"
+                        hx-post="/admin/specialists/{{$.SpecialistID}}/tenants/{{.TenantID}}/default"
+                        hx-target="#tenants-manageable-list"
+                        hx-swap="innerHTML"
+                        title="Tornar este especialista o default deste escritório"
+                        onclick="event.preventDefault();event.stopPropagation();"
+                        style="padding:0.125rem 0.5rem;font-size:0.75rem">
+                    Tornar Default
+                </button>
                 {{end}}
                 {{if ne .Status "active"}}
                 <span class="badge badge-inactive">Inativo</span>
