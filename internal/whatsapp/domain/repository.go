@@ -15,6 +15,9 @@ type ConversationRepository interface {
 	FindByContactID(ctx context.Context, tenantID, contactID string) (*Conversation, error)
 	Update(ctx context.Context, conv *Conversation) error
 	FindByTenantID(ctx context.Context, tenantID string, filter ConversationFilter) (*ConversationList, error)
+	// SumUnreadByTenantID retorna a soma de unread_count de todas as conversas do
+	// tenant. Usado pelo badge da sidebar para sinalizar mensagens novas.
+	SumUnreadByTenantID(ctx context.Context, tenantID string) (int, error)
 }
 
 type MessageRepository interface {

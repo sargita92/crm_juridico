@@ -65,6 +65,22 @@ func (r *GormConversationRepository) Update(ctx context.Context, conv *domain.Co
 	return nil
 }
 
+func (r *GormConversationRepository) SumUnreadByTenantID(ctx context.Context, tenantID string) (int, error) {
+	var total *int64
+	err := r.db.WithContext(ctx).
+		Table("conversations").
+		Where("tenant_id = ?", tenantID).
+		Select("COALESCE(SUM(unread_count), 0)").
+		Scan(&total).Error
+	if err != nil {
+		return 0, err
+	}
+	if total == nil {
+		return 0, nil
+	}
+	return int(*total), nil
+}
+
 func (r *GormConversationRepository) FindByTenantID(ctx context.Context, tenantID string, filter domain.ConversationFilter) (*domain.ConversationList, error) {
 	page := filter.Page
 	if page < 1 {

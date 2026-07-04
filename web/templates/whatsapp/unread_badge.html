@@ -1,0 +1,8 @@
+{{define "whatsapp/unread_badge.html"}}
+<span id="wa-unread-badge"
+      class="wa-menu-badge{{if le .Count 0}} wa-menu-badge-hidden{{end}}"
+      aria-label="Mensagens não lidas"
+      hx-get="/tenant/whatsapp/unread-badge"
+      hx-trigger="load, new-message from:body, conversation-update from:body, every 30s"
+      hx-swap="outerHTML">{{if gt .Count 0}}{{.Count}}{{end}}</span>
+{{end}}

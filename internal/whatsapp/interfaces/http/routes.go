@@ -10,6 +10,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine, authMw, tenantMw gin.Handle
 	tenant.GET("/qr", h.RenderQR)
 	tenant.GET("/qr.png", h.ServeQRImage)
 	tenant.GET("/status", h.RenderStatus)
+	tenant.GET("/unread-badge", h.RenderUnreadBadge)
 	tenant.GET("/conversations", h.RenderConversations)
 	tenant.GET("/conversations/:id", h.RenderChat)
 	tenant.GET("/conversations/:id/messages/new", h.RenderNewMessages)

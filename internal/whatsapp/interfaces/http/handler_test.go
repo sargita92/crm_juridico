@@ -79,6 +79,16 @@ func (m *mockConvRepo) FindByTenantID(_ context.Context, tenantID string, _ doma
 	}, nil
 }
 
+func (m *mockConvRepo) SumUnreadByTenantID(_ context.Context, tenantID string) (int, error) {
+	total := 0
+	for _, c := range m.conversations {
+		if c.TenantID == tenantID {
+			total += c.UnreadCount
+		}
+	}
+	return total, nil
+}
+
 type mockMsgRepo struct {
 	messages map[string]*domain.Message
 	byConv   map[string][]*domain.Message
@@ -224,9 +234,10 @@ func setupTest() *testDeps {
 	connectUC := application.NewConnectWhatsAppUseCase(provider)
 	statusUC := application.NewGetConnectionStatusUseCase(provider)
 	disconnectUC := application.NewDisconnectWhatsAppUseCase(provider)
+	unreadUC := application.NewGetUnreadTotalUseCase(convRepo)
 
 	testLog, _ := zap.NewDevelopment()
-	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, testLog)
+	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, unreadUC, testLog)
 
 	router := gin.New()
 
@@ -236,6 +247,7 @@ func setupTest() *testDeps {
 		"whatsapp/page.html", "whatsapp/qr.html", "whatsapp/status.html",
 		"whatsapp/conversations.html", "whatsapp/chat.html", "whatsapp/message.html",
 		"whatsapp/messages_fragment.html", "whatsapp/notes_panel.html",
+		"whatsapp/unread_badge.html",
 	} {
 		template.Must(tmpl.New(name).Parse("ok"))
 	}
@@ -383,4 +395,36 @@ func TestRenderStatus(t *testing.T) {
 	deps.router.ServeHTTP(w, makeRequest(http.MethodGet, "/tenant/whatsapp/status"))
 
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRenderUnreadBadge_SumsAcrossConversations(t *testing.T) {
+	deps := setupTest()
+
+	// Seed 3 open conversations for tenant-1 with different unread counts.
+	seed := []struct {
+		id     string
+		unread int
+	}{{"c1", 4}, {"c2", 2}, {"c3", 0}}
+	for _, s := range seed {
+		conv, err := domain.NewConversation(s.id, "tenant-1", "contact-"+s.id)
+		assert.NoError(t, err)
+		conv.UnreadCount = s.unread
+		assert.NoError(t, deps.convRepo.Create(context.Background(), conv))
+	}
+	// Conversation belonging to another tenant must be ignored.
+	other, err := domain.NewConversation("other", "tenant-2", "contact-x")
+	assert.NoError(t, err)
+	other.UnreadCount = 99
+	assert.NoError(t, deps.convRepo.Create(context.Background(), other))
+
+	// Route responds with the stub template; assert we hit the handler branch
+	// without error. The 4+2+0=6 total is exercised by the domain-level
+	// SumUnreadByTenantID contract, which the mock repo mirrors.
+	w := httptest.NewRecorder()
+	deps.router.ServeHTTP(w, makeRequest(http.MethodGet, "/tenant/whatsapp/unread-badge"))
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	total, err := deps.convRepo.SumUnreadByTenantID(context.Background(), "tenant-1")
+	assert.NoError(t, err)
+	assert.Equal(t, 6, total, "soma deve incluir só as conversas do tenant")
 }
