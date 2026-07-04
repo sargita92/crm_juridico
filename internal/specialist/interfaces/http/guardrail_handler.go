@@ -67,6 +67,7 @@ func (h *GuardrailHandler) HandleCreate(c *gin.Context) {
 	}
 	input := application.CreateGuardrailInput{
 		SpecialistID: id,
+		Name:         c.PostForm("name"),
 		Type:         c.PostForm("type"),
 		Rule:         c.PostForm("rule"),
 		Message:      c.PostForm("message"),
@@ -97,6 +98,7 @@ func (h *GuardrailHandler) HandleUpdate(c *gin.Context) {
 	}
 	input := application.UpdateGuardrailInput{
 		ID:      gid,
+		Name:    c.PostForm("name"),
 		Type:    c.PostForm("type"),
 		Rule:    c.PostForm("rule"),
 		Message: c.PostForm("message"),
@@ -153,6 +155,10 @@ func (h *GuardrailHandler) HandleDelete(c *gin.Context) {
 
 func mapGuardrailError(err error) string {
 	switch {
+	case errors.Is(err, domain.ErrGuardrailNameRequired):
+		return "Nome é obrigatório"
+	case errors.Is(err, domain.ErrGuardrailNameTooLong):
+		return "Nome excede o tamanho máximo"
 	case errors.Is(err, domain.ErrGuardrailRuleRequired):
 		return "Regra é obrigatória"
 	case errors.Is(err, domain.ErrGuardrailRuleTooLong):

@@ -13,6 +13,7 @@ import (
 type guardrailModel struct {
 	ID           string `gorm:"primaryKey;column:id;type:char(36)"`
 	SpecialistID string `gorm:"column:specialist_id;type:char(36);not null"`
+	Name         string `gorm:"column:name;type:varchar(120);not null"`
 	Type         string `gorm:"column:type;not null"`
 	Rule         string `gorm:"column:rule;type:text;not null"`
 	Message      string `gorm:"column:message;type:text"`
@@ -25,7 +26,7 @@ func (guardrailModel) TableName() string { return "guardrails" }
 
 func guardrailToModel(g *domain.Guardrail) *guardrailModel {
 	return &guardrailModel{
-		ID: g.ID, SpecialistID: g.SpecialistID, Type: string(g.Type),
+		ID: g.ID, SpecialistID: g.SpecialistID, Name: g.Name, Type: string(g.Type),
 		Rule: g.Rule, Message: g.Message, Active: g.Active,
 		CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
 	}
@@ -33,7 +34,7 @@ func guardrailToModel(g *domain.Guardrail) *guardrailModel {
 
 func guardrailToDomain(m *guardrailModel) *domain.Guardrail {
 	return &domain.Guardrail{
-		ID: m.ID, SpecialistID: m.SpecialistID, Type: domain.GuardrailType(m.Type),
+		ID: m.ID, SpecialistID: m.SpecialistID, Name: m.Name, Type: domain.GuardrailType(m.Type),
 		Rule: m.Rule, Message: m.Message, Active: m.Active,
 		CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt,
 	}

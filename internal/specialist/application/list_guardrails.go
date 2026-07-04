@@ -23,7 +23,7 @@ func (uc *ListGuardrailsUseCase) Execute(ctx context.Context, specialistID strin
 	items := make([]GuardrailOutput, len(guardrails))
 	for i, g := range guardrails {
 		items[i] = GuardrailOutput{
-			ID: g.ID, SpecialistID: g.SpecialistID, Type: string(g.Type),
+			ID: g.ID, SpecialistID: g.SpecialistID, Name: g.Name, Type: string(g.Type),
 			Rule: g.Rule, Message: g.Message, Active: g.Active,
 			CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
 		}

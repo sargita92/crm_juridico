@@ -21,7 +21,7 @@ const (
 	CrossSellModeConfirm  CrossSellMode = "confirm"
 )
 
-const MaxPromptLength = 10000
+const MaxPromptLength = 50000
 const MaxDescriptionLength = 500
 
 var (
@@ -39,6 +39,8 @@ var (
 	// Guardrail errors
 	ErrSpecialistIDRequired    = errors.New("specialist ID is required")
 	ErrGuardrailNotFound       = errors.New("guardrail not found")
+	ErrGuardrailNameRequired   = errors.New("guardrail name is required")
+	ErrGuardrailNameTooLong    = errors.New("guardrail name exceeds maximum length")
 	ErrGuardrailRuleRequired   = errors.New("guardrail rule is required")
 	ErrGuardrailRuleTooLong    = errors.New("guardrail rule exceeds maximum length")
 	ErrGuardrailMessageTooLong = errors.New("guardrail message exceeds maximum length")

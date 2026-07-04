@@ -8,6 +8,7 @@ import (
 
 type UpdateGuardrailInput struct {
 	ID      string
+	Name    string
 	Type    string
 	Rule    string
 	Message string
@@ -27,7 +28,7 @@ func (uc *UpdateGuardrailUseCase) Execute(ctx context.Context, input UpdateGuard
 		return nil, err
 	}
 
-	if err := g.Update(domain.GuardrailType(input.Type), input.Rule, input.Message); err != nil {
+	if err := g.Update(input.Name, domain.GuardrailType(input.Type), input.Rule, input.Message); err != nil {
 		return nil, err
 	}
 
@@ -36,7 +37,7 @@ func (uc *UpdateGuardrailUseCase) Execute(ctx context.Context, input UpdateGuard
 	}
 
 	return &GuardrailOutput{
-		ID: g.ID, SpecialistID: g.SpecialistID, Type: string(g.Type),
+		ID: g.ID, SpecialistID: g.SpecialistID, Name: g.Name, Type: string(g.Type),
 		Rule: g.Rule, Message: g.Message, Active: g.Active,
 		CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
 	}, nil
