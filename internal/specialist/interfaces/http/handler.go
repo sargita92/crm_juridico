@@ -455,10 +455,10 @@ func respondAssociateError(c *gin.Context, status int, message string) {
 }
 
 // buildToastTrigger serializa um evento HX-Trigger consumido por admin.js.
-// Manter como string literal evita dependência de encoding/json aqui — os
-// valores são controlados pelo backend (não há input do usuário no payload).
+// QuoteToASCII escapa não-ASCII como \uXXXX: HTTP headers são ISO-8859-1
+// (RFC 7230); UTF-8 cru viraria mojibake ("escritório" → "escritÃ³rio").
 func buildToastTrigger(message, kind string) string {
-	return fmt.Sprintf(`{"adminToast":{"message":%q,"kind":%q}}`, message, kind)
+	return fmt.Sprintf(`{"adminToast":{"message":%s,"kind":%s}}`, strconv.QuoteToASCII(message), strconv.QuoteToASCII(kind))
 }
 
 func (h *Handler) HandleDissociateTenant(c *gin.Context) {

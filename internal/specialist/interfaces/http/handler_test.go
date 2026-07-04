@@ -449,6 +449,17 @@ func TestHandleAssociateTenants_Success(t *testing.T) {
 	hxTrigger := w.Header().Get("HX-Trigger")
 	assert.Contains(t, hxTrigger, "adminToast")
 	assert.Contains(t, hxTrigger, "success")
+
+	// Regressão de encoding: HTTP header é ISO-8859-1 (RFC 7230), então
+	// UTF-8 cru no HX-Trigger vira mojibake no browser ("escritório" →
+	// "escritÃ³rio"). O header precisa conter só bytes ASCII (\uXXXX escapes
+	// pra não-ASCII), que o JSON.parse do admin.js restaura ao caractere.
+	for i := 0; i < len(hxTrigger); i++ {
+		require.Less(t, hxTrigger[i], byte(0x80),
+			"HX-Trigger deve ser ASCII-only (byte 0x%02x em pos %d de %q)",
+			hxTrigger[i], i, hxTrigger)
+	}
+	assert.Contains(t, hxTrigger, `\u00f3`, "esperado escape unicode \\u00f3 (ó) de 'escritório'")
 }
 
 // Regressão: antes o handler devolvia {"error":"..."} no #tenants-section,
@@ -1050,7 +1061,7 @@ func TestGuardrail_CreateAndList(t *testing.T) {
 	// Create guardrail
 	w := httptest.NewRecorder()
 	req := postForm("/admin/specialists/"+spec.ID+"/guardrails", url.Values{
-		"type": {"forbidden_topics"}, "rule": {"Nao falar sobre precos"}, "message": {"Nao posso informar"},
+		"name": {"G-01 Sem precos"}, "type": {"forbidden_topics"}, "rule": {"Nao falar sobre precos"}, "message": {"Nao posso informar"},
 	}, tokenCookie(token))
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -1074,7 +1085,7 @@ func TestGuardrail_Toggle(t *testing.T) {
 	// Create
 	w := httptest.NewRecorder()
 	req := postForm("/admin/specialists/"+spec.ID+"/guardrails", url.Values{
-		"type": {"scope_limit"}, "rule": {"Limite de escopo"}, "message": {""},
+		"name": {"G-02 Escopo"}, "type": {"scope_limit"}, "rule": {"Limite de escopo"}, "message": {""},
 	}, tokenCookie(token))
 	env.router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -1102,7 +1113,7 @@ func TestGuardrail_Delete(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := postForm("/admin/specialists/"+spec.ID+"/guardrails", url.Values{
-		"type": {"response_tone"}, "rule": {"Ser formal"}, "message": {""},
+		"name": {"G-03 Tom"}, "type": {"response_tone"}, "rule": {"Ser formal"}, "message": {""},
 	}, tokenCookie(token))
 	env.router.ServeHTTP(w, req)
 
