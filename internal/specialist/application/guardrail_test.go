@@ -19,10 +19,10 @@ func TestCreateGuardrailUseCase_Success(t *testing.T) {
 	specRepo.addSpecialist(spec)
 
 	output, err := uc.Execute(context.Background(), CreateGuardrailInput{
-		SpecialistID: "spec-1",
-		Type:         "forbidden_topics",
-		Rule:         "Nao falar sobre precos",
-		Message:      "Nao posso informar precos",
+		Name: "nome-teste", SpecialistID: "spec-1",
+		Type:    "forbidden_topics",
+		Rule:    "Nao falar sobre precos",
+		Message: "Nao posso informar precos",
 	})
 
 	require.NoError(t, err)
@@ -38,7 +38,7 @@ func TestCreateGuardrailUseCase_SpecialistNotFound(t *testing.T) {
 	uc := NewCreateGuardrailUseCase(specRepo, guardrailRepo)
 
 	_, err := uc.Execute(context.Background(), CreateGuardrailInput{
-		SpecialistID: "nonexistent", Type: "forbidden_topics", Rule: "regra",
+		Name: "nome-teste", SpecialistID: "nonexistent", Type: "forbidden_topics", Rule: "regra",
 	})
 
 	assert.ErrorIs(t, err, domain.ErrSpecialistNotFound)
@@ -54,7 +54,7 @@ func TestCreateGuardrailUseCase_SpecialistInactive(t *testing.T) {
 	specRepo.addSpecialist(spec)
 
 	_, err := uc.Execute(context.Background(), CreateGuardrailInput{
-		SpecialistID: "spec-1", Type: "forbidden_topics", Rule: "regra",
+		Name: "nome-teste", SpecialistID: "spec-1", Type: "forbidden_topics", Rule: "regra",
 	})
 
 	assert.ErrorIs(t, err, domain.ErrSpecialistInactive)
@@ -69,7 +69,7 @@ func TestCreateGuardrailUseCase_EmptyRule(t *testing.T) {
 	specRepo.addSpecialist(spec)
 
 	_, err := uc.Execute(context.Background(), CreateGuardrailInput{
-		SpecialistID: "spec-1", Type: "forbidden_topics", Rule: "",
+		Name: "nome-teste", SpecialistID: "spec-1", Type: "forbidden_topics", Rule: "",
 	})
 
 	assert.ErrorIs(t, err, domain.ErrGuardrailRuleRequired)
@@ -84,7 +84,7 @@ func TestCreateGuardrailUseCase_InvalidType(t *testing.T) {
 	specRepo.addSpecialist(spec)
 
 	_, err := uc.Execute(context.Background(), CreateGuardrailInput{
-		SpecialistID: "spec-1", Type: "invalid", Rule: "regra",
+		Name: "nome-teste", SpecialistID: "spec-1", Type: "invalid", Rule: "regra",
 	})
 
 	assert.ErrorIs(t, err, domain.ErrGuardrailTypeInvalid)
@@ -94,11 +94,11 @@ func TestUpdateGuardrailUseCase_Success(t *testing.T) {
 	guardrailRepo := newMockGuardrailRepo()
 	uc := NewUpdateGuardrailUseCase(guardrailRepo)
 
-	g, _ := domain.NewGuardrail("g-1", "spec-1", domain.GuardrailTypeForbiddenTopics, "regra antiga", "msg antiga")
+	g, _ := domain.NewGuardrail("g-1", "spec-1", "nome-teste", domain.GuardrailTypeForbiddenTopics, "regra antiga", "msg antiga")
 	guardrailRepo.addGuardrail(g)
 
 	output, err := uc.Execute(context.Background(), UpdateGuardrailInput{
-		ID: "g-1", Type: "scope_limit", Rule: "regra nova", Message: "msg nova",
+		Name: "nome-teste", ID: "g-1", Type: "scope_limit", Rule: "regra nova", Message: "msg nova",
 	})
 
 	require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestUpdateGuardrailUseCase_NotFound(t *testing.T) {
 	uc := NewUpdateGuardrailUseCase(guardrailRepo)
 
 	_, err := uc.Execute(context.Background(), UpdateGuardrailInput{
-		ID: "nonexistent", Type: "forbidden_topics", Rule: "regra",
+		Name: "nome-teste", ID: "nonexistent", Type: "forbidden_topics", Rule: "regra",
 	})
 
 	assert.ErrorIs(t, err, domain.ErrGuardrailNotFound)
@@ -121,7 +121,7 @@ func TestToggleGuardrailUseCase_Success(t *testing.T) {
 	guardrailRepo := newMockGuardrailRepo()
 	uc := NewToggleGuardrailUseCase(guardrailRepo)
 
-	g, _ := domain.NewGuardrail("g-1", "spec-1", domain.GuardrailTypeForbiddenTopics, "regra", "msg")
+	g, _ := domain.NewGuardrail("g-1", "spec-1", "nome-teste", domain.GuardrailTypeForbiddenTopics, "regra", "msg")
 	guardrailRepo.addGuardrail(g)
 	assert.True(t, g.Active)
 
@@ -146,7 +146,7 @@ func TestDeleteGuardrailUseCase_Success(t *testing.T) {
 	guardrailRepo := newMockGuardrailRepo()
 	uc := NewDeleteGuardrailUseCase(guardrailRepo)
 
-	g, _ := domain.NewGuardrail("g-1", "spec-1", domain.GuardrailTypeForbiddenTopics, "regra", "msg")
+	g, _ := domain.NewGuardrail("g-1", "spec-1", "nome-teste", domain.GuardrailTypeForbiddenTopics, "regra", "msg")
 	guardrailRepo.addGuardrail(g)
 
 	err := uc.Execute(context.Background(), "g-1")
@@ -166,8 +166,8 @@ func TestListGuardrailsUseCase_Success(t *testing.T) {
 	guardrailRepo := newMockGuardrailRepo()
 	uc := NewListGuardrailsUseCase(guardrailRepo)
 
-	g1, _ := domain.NewGuardrail("g-1", "spec-1", domain.GuardrailTypeForbiddenTopics, "regra 1", "msg 1")
-	g2, _ := domain.NewGuardrail("g-2", "spec-1", domain.GuardrailTypeScopeLimit, "regra 2", "msg 2")
+	g1, _ := domain.NewGuardrail("g-1", "spec-1", "nome-teste", domain.GuardrailTypeForbiddenTopics, "regra 1", "msg 1")
+	g2, _ := domain.NewGuardrail("g-2", "spec-1", "nome-teste", domain.GuardrailTypeScopeLimit, "regra 2", "msg 2")
 	guardrailRepo.addGuardrail(g1)
 	guardrailRepo.addGuardrail(g2)
 

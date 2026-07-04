@@ -11,6 +11,7 @@ import (
 
 type CreateGuardrailInput struct {
 	SpecialistID string
+	Name         string
 	Type         string
 	Rule         string
 	Message      string
@@ -19,6 +20,7 @@ type CreateGuardrailInput struct {
 type GuardrailOutput struct {
 	ID           string
 	SpecialistID string
+	Name         string
 	Type         string
 	Rule         string
 	Message      string
@@ -45,7 +47,7 @@ func (uc *CreateGuardrailUseCase) Execute(ctx context.Context, input CreateGuard
 		return nil, domain.ErrSpecialistInactive
 	}
 
-	g, err := domain.NewGuardrail(uuid.New().String(), input.SpecialistID, domain.GuardrailType(input.Type), input.Rule, input.Message)
+	g, err := domain.NewGuardrail(uuid.New().String(), input.SpecialistID, input.Name, domain.GuardrailType(input.Type), input.Rule, input.Message)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +57,7 @@ func (uc *CreateGuardrailUseCase) Execute(ctx context.Context, input CreateGuard
 	}
 
 	return &GuardrailOutput{
-		ID: g.ID, SpecialistID: g.SpecialistID, Type: string(g.Type),
+		ID: g.ID, SpecialistID: g.SpecialistID, Name: g.Name, Type: string(g.Type),
 		Rule: g.Rule, Message: g.Message, Active: g.Active,
 		CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
 	}, nil

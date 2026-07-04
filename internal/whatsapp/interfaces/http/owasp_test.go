@@ -46,9 +46,10 @@ func setupOwaspEnv() *owaspEnv {
 	connectUC := application.NewConnectWhatsAppUseCase(prov)
 	statusUC := application.NewGetConnectionStatusUseCase(prov)
 	disconnectUC := application.NewDisconnectWhatsAppUseCase(prov)
+	unreadUC := application.NewGetUnreadTotalUseCase(convRepo)
 
 	testLog, _ := zap.NewDevelopment()
-	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, testLog)
+	handler := NewHandler(sendUC, listUC, getUC, connectUC, statusUC, disconnectUC, unreadUC, testLog)
 
 	router := gin.New()
 
@@ -57,6 +58,7 @@ func setupOwaspEnv() *owaspEnv {
 		"whatsapp/page.html", "whatsapp/qr.html", "whatsapp/status.html",
 		"whatsapp/conversations.html", "whatsapp/chat.html", "whatsapp/message.html",
 		"whatsapp/messages_fragment.html", "whatsapp/notes_panel.html",
+		"whatsapp/unread_badge.html",
 	} {
 		template.Must(tmpl.New(name).Parse("ok"))
 	}
@@ -114,6 +116,7 @@ func TestOWASP_A01_NoToken_Returns401(t *testing.T) {
 		{http.MethodGet, "/tenant/whatsapp"},
 		{http.MethodGet, "/tenant/whatsapp/qr"},
 		{http.MethodGet, "/tenant/whatsapp/status"},
+		{http.MethodGet, "/tenant/whatsapp/unread-badge"},
 		{http.MethodGet, "/tenant/whatsapp/conversations"},
 		{http.MethodGet, "/tenant/whatsapp/conversations/some-id"},
 		{http.MethodPost, "/tenant/whatsapp/conversations/some-id/messages"},

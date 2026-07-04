@@ -5,17 +5,24 @@ import "time"
 type GuardrailType string
 
 const (
-	GuardrailTypeForbiddenTopics GuardrailType = "forbidden_topics"
-	GuardrailTypeScopeLimit      GuardrailType = "scope_limit"
-	GuardrailTypeResponseTone    GuardrailType = "response_tone"
+	GuardrailTypeForbiddenTopics  GuardrailType = "forbidden_topics"
+	GuardrailTypeScopeLimit       GuardrailType = "scope_limit"
+	GuardrailTypeResponseTone     GuardrailType = "response_tone"
+	GuardrailTypeSecurityLGPD     GuardrailType = "security_lgpd"
+	GuardrailTypeHumanEscalation  GuardrailType = "human_escalation"
+	GuardrailTypeOutputValidation GuardrailType = "output_validation"
 )
 
-const MaxGuardrailRuleLength = 2000
-const MaxGuardrailMessageLength = 1000
+const (
+	MaxGuardrailNameLength    = 120
+	MaxGuardrailRuleLength    = 2000
+	MaxGuardrailMessageLength = 1000
+)
 
 type Guardrail struct {
 	ID           string
 	SpecialistID string
+	Name         string
 	Type         GuardrailType
 	Rule         string
 	Message      string
@@ -24,9 +31,15 @@ type Guardrail struct {
 	UpdatedAt    time.Time
 }
 
-func NewGuardrail(id, specialistID string, gType GuardrailType, rule, message string) (*Guardrail, error) {
+func NewGuardrail(id, specialistID, name string, gType GuardrailType, rule, message string) (*Guardrail, error) {
 	if specialistID == "" {
 		return nil, ErrSpecialistIDRequired
+	}
+	if name == "" {
+		return nil, ErrGuardrailNameRequired
+	}
+	if len(name) > MaxGuardrailNameLength {
+		return nil, ErrGuardrailNameTooLong
 	}
 	if rule == "" {
 		return nil, ErrGuardrailRuleRequired
@@ -43,13 +56,19 @@ func NewGuardrail(id, specialistID string, gType GuardrailType, rule, message st
 
 	now := time.Now()
 	return &Guardrail{
-		ID: id, SpecialistID: specialistID, Type: gType,
+		ID: id, SpecialistID: specialistID, Name: name, Type: gType,
 		Rule: rule, Message: message, Active: true,
 		CreatedAt: now, UpdatedAt: now,
 	}, nil
 }
 
-func (g *Guardrail) Update(gType GuardrailType, rule, message string) error {
+func (g *Guardrail) Update(name string, gType GuardrailType, rule, message string) error {
+	if name == "" {
+		return ErrGuardrailNameRequired
+	}
+	if len(name) > MaxGuardrailNameLength {
+		return ErrGuardrailNameTooLong
+	}
 	if rule == "" {
 		return ErrGuardrailRuleRequired
 	}
@@ -62,6 +81,7 @@ func (g *Guardrail) Update(gType GuardrailType, rule, message string) error {
 	if !isValidGuardrailType(gType) {
 		return ErrGuardrailTypeInvalid
 	}
+	g.Name = name
 	g.Type = gType
 	g.Rule = rule
 	g.Message = message
@@ -76,7 +96,12 @@ func (g *Guardrail) Toggle() {
 
 func isValidGuardrailType(t GuardrailType) bool {
 	switch t {
-	case GuardrailTypeForbiddenTopics, GuardrailTypeScopeLimit, GuardrailTypeResponseTone:
+	case GuardrailTypeForbiddenTopics,
+		GuardrailTypeScopeLimit,
+		GuardrailTypeResponseTone,
+		GuardrailTypeSecurityLGPD,
+		GuardrailTypeHumanEscalation,
+		GuardrailTypeOutputValidation:
 		return true
 	}
 	return false

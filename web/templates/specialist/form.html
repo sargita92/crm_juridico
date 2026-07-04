@@ -69,10 +69,10 @@
                                   placeholder="Defina o comportamento do especialista..."
                                   rows="12"
                                   style="font-family:monospace;min-height:300px"
-                                  maxlength="10000"
+                                  maxlength="50000"
                                   required
-                                  oninput="updateCounter('prompt', 10000)">{{if .Specialist}}{{.Specialist.Prompt}}{{end}}</textarea>
-                        <small class="char-counter" id="prompt-counter">0 / 10.000</small>
+                                  oninput="updateCounter('prompt', 50000)">{{if .Specialist}}{{.Specialist.Prompt}}{{end}}</textarea>
+                        <small class="char-counter" id="prompt-counter">0 / 50.000</small>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">
@@ -106,7 +106,7 @@ function updateCounter(fieldId, max) {
 }
 document.addEventListener('DOMContentLoaded', function() {
     updateCounter('description', 500);
-    updateCounter('prompt', 10000);
+    updateCounter('prompt', 50000);
 });
 </script>
 </body>

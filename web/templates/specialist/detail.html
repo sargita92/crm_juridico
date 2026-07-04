@@ -217,11 +217,20 @@
                           hx-target="#guardrails-section"
                           hx-swap="innerHTML">
                         <div class="form-group">
+                            <label for="guardrail-name">Nome</label>
+                            <input id="guardrail-name" name="name" type="text" required maxlength="120"
+                                   placeholder="Ex: Guardrail 01 — Senhas, tokens, códigos e acessos">
+                            <small class="form-hint">Nome distintivo — usado em auditoria e busca</small>
+                        </div>
+                        <div class="form-group">
                             <label for="guardrail-type">Tipo</label>
                             <select id="guardrail-type" name="type" required>
-                                <option value="forbidden_topics">Topicos proibidos</option>
+                                <option value="forbidden_topics">Tópicos proibidos</option>
                                 <option value="scope_limit">Limite de escopo</option>
                                 <option value="response_tone">Tom de resposta</option>
+                                <option value="security_lgpd">Segurança / LGPD</option>
+                                <option value="human_escalation">Escalonamento humano</option>
+                                <option value="output_validation">Validação de saída</option>
                             </select>
                         </div>
                         <div class="form-group">

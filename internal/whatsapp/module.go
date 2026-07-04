@@ -37,6 +37,7 @@ func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, eventBus events.Ev
 	connectUC := application.NewConnectWhatsAppUseCase(provider)
 	statusUC := application.NewGetConnectionStatusUseCase(provider)
 	disconnectUC := application.NewDisconnectWhatsAppUseCase(provider)
+	unreadUC := application.NewGetUnreadTotalUseCase(conversationRepo)
 
 	provider.SetMessageHandler(func(ctx context.Context, event domain.IncomingMessage) {
 		_ = receiveMessageUC.Execute(ctx, event)
@@ -44,7 +45,7 @@ func NewModule(db *gorm.DB, provider domain.WhatsAppProvider, eventBus events.Ev
 
 	handler := whatsapphttp.NewHandler(
 		sendMessageUC, listConversationsUC, getMessagesUC,
-		connectUC, statusUC, disconnectUC, log,
+		connectUC, statusUC, disconnectUC, unreadUC, log,
 	)
 
 	return &Module{

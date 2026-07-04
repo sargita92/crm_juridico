@@ -100,6 +100,16 @@ func (m *mockConversationRepo) Update(_ context.Context, conv *domain.Conversati
 	return nil
 }
 
+func (m *mockConversationRepo) SumUnreadByTenantID(_ context.Context, tenantID string) (int, error) {
+	total := 0
+	for _, c := range m.conversations {
+		if c.TenantID == tenantID {
+			total += c.UnreadCount
+		}
+	}
+	return total, nil
+}
+
 func (m *mockConversationRepo) FindByTenantID(_ context.Context, tenantID string, filter domain.ConversationFilter) (*domain.ConversationList, error) {
 	var result []domain.ConversationWithContact
 	for _, c := range m.conversations {

@@ -158,6 +158,32 @@ body { background: var(--admin-bg); }
 }
 .sidebar-nav a.active svg { color: #93c5fd; }
 
+/* Badge de mensagens não lidas no item WhatsApp da sidebar. Atualizado via
+   HTMX polling (30s) e pelos eventos new-message/conversation-update
+   propagados pelo SharedWorker (sse-worker.js). */
+.wa-menu-badge {
+    margin-left: auto;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+.wa-menu-badge-hidden { display: none; }
+/* Realce sutil no link quando há mensagens não lidas — a presença do badge
+   já é o sinal principal; o box-shadow reforça sem gritar. */
+.sidebar-nav a.wa-menu-link:has(.wa-menu-badge:not(.wa-menu-badge-hidden)) {
+    background: rgba(239, 68, 68, 0.08) !important;
+}
+
 .sidebar-footer {
     padding: 0.85rem 1rem !important;
     border-top: 1px solid rgba(255, 255, 255, 0.06) !important;

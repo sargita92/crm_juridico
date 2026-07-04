@@ -31,6 +31,7 @@ type Handler struct {
 	connectUC     *application.ConnectWhatsAppUseCase
 	statusUC      *application.GetConnectionStatusUseCase
 	disconnectUC  *application.DisconnectWhatsAppUseCase
+	unreadUC      *application.GetUnreadTotalUseCase
 	log           *zap.Logger
 	notesService  domain.LeadNotesService
 
@@ -49,6 +50,7 @@ func NewHandler(
 	connectUC *application.ConnectWhatsAppUseCase,
 	statusUC *application.GetConnectionStatusUseCase,
 	disconnectUC *application.DisconnectWhatsAppUseCase,
+	unreadUC *application.GetUnreadTotalUseCase,
 	log *zap.Logger,
 ) *Handler {
 	return &Handler{
@@ -58,6 +60,7 @@ func NewHandler(
 		connectUC:     connectUC,
 		statusUC:      statusUC,
 		disconnectUC:  disconnectUC,
+		unreadUC:      unreadUC,
 		log:           log,
 		connStates:    make(map[string]*connectState),
 	}
@@ -257,6 +260,20 @@ func (h *Handler) RenderStatus(c *gin.Context) {
 	c.HTML(http.StatusOK, "whatsapp/status.html", gin.H{
 		"Connected": connected,
 	})
+}
+
+// RenderUnreadBadge renderiza o pill do menu WhatsApp com a contagem de
+// mensagens não lidas do tenant. Endpoint é curto de propósito — chamado toda
+// vez que o SharedWorker propaga new-message/conversation-update (ver
+// sse-worker.js) e a cada 30s como fallback.
+func (h *Handler) RenderUnreadBadge(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c.Request.Context())
+	count, err := h.unreadUC.Execute(c.Request.Context(), tenantID)
+	if err != nil {
+		h.log.Error("whatsapp unread badge query failed", zap.String("tenant_id", tenantID), zap.Error(err))
+		count = 0
+	}
+	c.HTML(http.StatusOK, "whatsapp/unread_badge.html", gin.H{"Count": count})
 }
 
 func (h *Handler) RenderConversations(c *gin.Context) {

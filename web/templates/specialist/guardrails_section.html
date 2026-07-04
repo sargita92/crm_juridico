@@ -4,11 +4,20 @@
     <div class="association-list">
         {{range .Guardrails}}
         <div class="association-item">
-            <div class="association-info" style="flex:1">
-                <span class="badge {{if eq .Type "forbidden_topics"}}badge-danger{{else if eq .Type "scope_limit"}}badge-warning{{else}}badge-info{{end}}">
-                    {{if eq .Type "forbidden_topics"}}Topicos proibidos{{else if eq .Type "scope_limit"}}Limite de escopo{{else}}Tom de resposta{{end}}
-                </span>
-                <span style="margin-left:0.5rem">{{.Rule}}</span>
+            <div class="association-info" style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                    <strong>{{.Name}}</strong>
+                    <span class="badge {{if eq .Type "forbidden_topics"}}badge-danger{{else if eq .Type "scope_limit"}}badge-warning{{else if eq .Type "response_tone"}}badge-info{{else if eq .Type "security_lgpd"}}badge-danger{{else if eq .Type "human_escalation"}}badge-warning{{else}}badge-info{{end}}">
+                        {{if eq .Type "forbidden_topics"}}Tópicos proibidos
+                        {{else if eq .Type "scope_limit"}}Limite de escopo
+                        {{else if eq .Type "response_tone"}}Tom de resposta
+                        {{else if eq .Type "security_lgpd"}}Segurança / LGPD
+                        {{else if eq .Type "human_escalation"}}Escalonamento humano
+                        {{else if eq .Type "output_validation"}}Validação de saída
+                        {{else}}{{.Type}}{{end}}
+                    </span>
+                </div>
+                <div class="text-muted" style="font-size:0.85rem;margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis">{{.Rule}}</div>
             </div>
             <div class="association-actions" style="display:flex;gap:0.5rem;align-items:center">
                 <button class="btn btn-sm {{if .Active}}btn-success{{else}}btn-outline{{end}}"

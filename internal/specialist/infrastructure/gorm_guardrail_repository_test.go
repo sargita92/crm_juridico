@@ -61,7 +61,7 @@ func TestGormGuardrailRepository_Create_And_FindByID(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForGuardrail(t, db)
 
-	g, err := domain.NewGuardrail(uuid.New().String(), specialistID, domain.GuardrailTypeForbiddenTopics, "Nao falar sobre concorrentes", "Desculpe, nao posso ajudar com isso.")
+	g, err := domain.NewGuardrail(uuid.New().String(), specialistID, "nome-teste", domain.GuardrailTypeForbiddenTopics, "Nao falar sobre concorrentes", "Desculpe, nao posso ajudar com isso.")
 	require.NoError(t, err)
 
 	err = repo.Create(ctx, g)
@@ -90,11 +90,11 @@ func TestGormGuardrailRepository_Update_Success(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForGuardrail(t, db)
 
-	g, err := domain.NewGuardrail(uuid.New().String(), specialistID, domain.GuardrailTypeForbiddenTopics, "Regra original", "Mensagem original")
+	g, err := domain.NewGuardrail(uuid.New().String(), specialistID, "nome-teste", domain.GuardrailTypeForbiddenTopics, "Regra original", "Mensagem original")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, g))
 
-	require.NoError(t, g.Update(domain.GuardrailTypeScopeLimit, "Regra atualizada", "Mensagem atualizada"))
+	require.NoError(t, g.Update("nome-teste", domain.GuardrailTypeScopeLimit, "Regra atualizada", "Mensagem atualizada"))
 	err = repo.Update(ctx, g)
 	require.NoError(t, err)
 
@@ -111,7 +111,7 @@ func TestGormGuardrailRepository_Delete_Success(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForGuardrail(t, db)
 
-	g, err := domain.NewGuardrail(uuid.New().String(), specialistID, domain.GuardrailTypeResponseTone, "Sempre ser educado", "")
+	g, err := domain.NewGuardrail(uuid.New().String(), specialistID, "nome-teste", domain.GuardrailTypeResponseTone, "Sempre ser educado", "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, g))
 
@@ -135,11 +135,11 @@ func TestGormGuardrailRepository_FindBySpecialistID(t *testing.T) {
 	ctx := context.Background()
 	specialistID := createTestSpecialistForGuardrail(t, db)
 
-	g1, err := domain.NewGuardrail(uuid.New().String(), specialistID, domain.GuardrailTypeForbiddenTopics, "Nao falar de politica", "")
+	g1, err := domain.NewGuardrail(uuid.New().String(), specialistID, "nome-teste", domain.GuardrailTypeForbiddenTopics, "Nao falar de politica", "")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, g1))
 
-	g2, err := domain.NewGuardrail(uuid.New().String(), specialistID, domain.GuardrailTypeScopeLimit, "Somente assuntos juridicos", "Fora do escopo")
+	g2, err := domain.NewGuardrail(uuid.New().String(), specialistID, "nome-teste", domain.GuardrailTypeScopeLimit, "Somente assuntos juridicos", "Fora do escopo")
 	require.NoError(t, err)
 	require.NoError(t, repo.Create(ctx, g2))
 

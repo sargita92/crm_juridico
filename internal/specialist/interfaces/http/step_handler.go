@@ -212,8 +212,9 @@ func respondStepFormError(c *gin.Context, status int, message string) {
 }
 
 // buildStepToast monta o payload do HX-Trigger consumido por admin.js -> showAdminToast.
+// QuoteToASCII escapa não-ASCII: HTTP header é ISO-8859-1 e mangleia UTF-8 cru.
 func buildStepToast(message, kind string) string {
-	return fmt.Sprintf(`{"adminToast":{"message":%q,"kind":%q}}`, message, kind)
+	return fmt.Sprintf(`{"adminToast":{"message":%s,"kind":%s}}`, strconv.QuoteToASCII(message), strconv.QuoteToASCII(kind))
 }
 
 func (h *StepHandler) HandleMoveUp(c *gin.Context) {
