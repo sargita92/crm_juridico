@@ -20,9 +20,9 @@ func TestCreateGuardrailUseCase_Success(t *testing.T) {
 
 	output, err := uc.Execute(context.Background(), CreateGuardrailInput{
 		Name: "nome-teste", SpecialistID: "spec-1",
-		Type:         "forbidden_topics",
-		Rule:         "Nao falar sobre precos",
-		Message:      "Nao posso informar precos",
+		Type:    "forbidden_topics",
+		Rule:    "Nao falar sobre precos",
+		Message: "Nao posso informar precos",
 	})
 
 	require.NoError(t, err)
