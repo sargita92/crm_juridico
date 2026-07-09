@@ -199,7 +199,13 @@
             <div class="detail-card">
                 <div class="card-header">
                     <h3>Guardrails</h3>
-                    <button class="btn btn-sm btn-primary" onclick="openModal('guardrail-modal')">Adicionar Guardrail</button>
+                    <button class="btn btn-sm btn-primary"
+                            hx-get="/admin/specialists/{{.Specialist.ID}}/guardrails/new/form"
+                            hx-target="#guardrail-modal-body"
+                            hx-swap="innerHTML"
+                            onclick="document.getElementById('guardrail-modal-title').textContent='Novo Guardrail';openModal('guardrail-modal')">
+                        Adicionar Guardrail
+                    </button>
                 </div>
                 <div id="guardrails-section"
                      hx-get="/admin/specialists/{{.Specialist.ID}}/guardrails"
@@ -209,44 +215,17 @@
                 </div>
             </div>
 
-            <!-- Modal: Adicionar Guardrail -->
+            <!-- Modal: Adicionar/Editar Guardrail. O form é carregado via HTMX para
+                 reusar o mesmo template entre create e edit (guardrail_form.html). -->
             <div id="guardrail-modal" class="modal-overlay" style="display:none">
                 <div class="modal-card" style="max-width:550px">
-                    <h2>Novo Guardrail</h2>
-                    <form hx-post="/admin/specialists/{{.Specialist.ID}}/guardrails"
-                          hx-target="#guardrails-section"
-                          hx-swap="innerHTML">
-                        <div class="form-group">
-                            <label for="guardrail-name">Nome</label>
-                            <input id="guardrail-name" name="name" type="text" required maxlength="120"
-                                   placeholder="Ex: Guardrail 01 — Senhas, tokens, códigos e acessos">
-                            <small class="form-hint">Nome distintivo — usado em auditoria e busca</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="guardrail-type">Tipo</label>
-                            <select id="guardrail-type" name="type" required>
-                                <option value="forbidden_topics">Tópicos proibidos</option>
-                                <option value="scope_limit">Limite de escopo</option>
-                                <option value="response_tone">Tom de resposta</option>
-                                <option value="security_lgpd">Segurança / LGPD</option>
-                                <option value="human_escalation">Escalonamento humano</option>
-                                <option value="output_validation">Validação de saída</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="guardrail-rule">Regra</label>
-                            <textarea id="guardrail-rule" name="rule" placeholder="Ex: Nao falar sobre precos, nao recomendar concorrentes..." required style="min-height:120px"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="guardrail-message">Mensagem padrao (opcional)</label>
-                            <textarea id="guardrail-message" name="message" placeholder="Mensagem que o especialista usa quando o guardrail e acionado" style="min-height:80px"></textarea>
-                            <small class="form-hint">Se vazio, o especialista usara uma resposta generica</small>
-                        </div>
-                        <div class="modal-actions">
-                            <button type="button" class="btn btn-secondary" onclick="closeModal('guardrail-modal')">Cancelar</button>
-                            <button type="submit" class="btn btn-primary" onclick="closeModal('guardrail-modal')">Salvar</button>
-                        </div>
-                    </form>
+                    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+                        <h2 id="guardrail-modal-title" style="margin:0">Novo Guardrail</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('guardrail-modal')" aria-label="Fechar">&times;</button>
+                    </div>
+                    <div id="guardrail-modal-body">
+                        <p class="text-muted">Carregando formulário...</p>
+                    </div>
                 </div>
             </div>
 

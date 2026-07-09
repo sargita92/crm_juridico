@@ -122,7 +122,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	toggleGuardrailUC := application.NewToggleGuardrailUseCase(guardrailRepo)
 	deleteGuardrailUC := application.NewDeleteGuardrailUseCase(guardrailRepo)
 	listGuardrailsUC := application.NewListGuardrailsUseCase(guardrailRepo)
-	guardrailHandler := NewGuardrailHandler(createGuardrailUC, updateGuardrailUC, toggleGuardrailUC, deleteGuardrailUC, listGuardrailsUC)
+	guardrailHandler := NewGuardrailHandler(createGuardrailUC, updateGuardrailUC, toggleGuardrailUC, deleteGuardrailUC, listGuardrailsUC, guardrailRepo)
 
 	// Step use cases
 	stepRepo := specialistinfra.NewGormStepRepository(db)
