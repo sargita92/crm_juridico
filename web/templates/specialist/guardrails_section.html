@@ -27,6 +27,14 @@
                         title="{{if .Active}}Desativar{{else}}Ativar{{end}}">
                     {{if .Active}}Ativo{{else}}Inativo{{end}}
                 </button>
+                <button class="btn btn-sm btn-secondary"
+                        hx-get="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}/form"
+                        hx-target="#guardrail-modal-body"
+                        hx-swap="innerHTML"
+                        onclick="document.getElementById('guardrail-modal-title').textContent='Editar guardrail';openModal('guardrail-modal')"
+                        title="Editar">
+                    Editar
+                </button>
                 <button class="btn btn-sm btn-danger"
                         hx-delete="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}"
                         hx-target="#guardrails-section"

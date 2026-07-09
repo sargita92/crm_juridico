@@ -68,7 +68,7 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 
 	guardrailHandler := specialisthttp.NewGuardrailHandler(
 		createGuardrailUC, updateGuardrailUC, toggleGuardrailUC,
-		deleteGuardrailUC, listGuardrailsUC,
+		deleteGuardrailUC, listGuardrailsUC, guardrailRepo,
 	)
 
 	// Step use cases

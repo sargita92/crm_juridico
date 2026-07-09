@@ -1,0 +1,59 @@
+{{define "specialist/guardrail_form.html"}}
+{{/*
+    Partial reutilizável do form de guardrail (create + edit).
+    Espera no contexto:
+      - SpecialistID  (string)
+      - Guardrail     (opcional) — quando presente, modo edit; ausente = create
+      - Types         ([]struct{Value,Label}) — opções do select Tipo
+*/}}
+<div id="guardrail-form-error" aria-live="polite"></div>
+
+<form {{if .Guardrail}}
+        hx-put="/admin/specialists/{{.SpecialistID}}/guardrails/{{.Guardrail.ID}}"
+      {{else}}
+        hx-post="/admin/specialists/{{.SpecialistID}}/guardrails"
+      {{end}}
+      hx-target="#guardrails-section"
+      hx-swap="innerHTML"
+      hx-on::before-request="document.getElementById('guardrail-form-error').innerHTML=''"
+      hx-on::after-request="if(event.detail.successful){closeModal('guardrail-modal');}">
+
+    <div class="form-group">
+        <label for="guardrail-name">Nome</label>
+        <input id="guardrail-name" name="name" type="text" required maxlength="120"
+               placeholder="Ex: Guardrail 01 — Senhas, tokens, códigos e acessos"
+               value="{{if .Guardrail}}{{.Guardrail.Name}}{{end}}">
+        <small class="form-hint">Nome distintivo — usado em auditoria e busca</small>
+    </div>
+
+    <div class="form-group">
+        <label for="guardrail-type">Tipo</label>
+        <select id="guardrail-type" name="type" required>
+            {{$selected := ""}}{{if .Guardrail}}{{$selected = .Guardrail.Type}}{{end}}
+            {{range .Types}}
+            <option value="{{.Value}}" {{if eq .Value $selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="guardrail-rule">Regra</label>
+        <textarea id="guardrail-rule" name="rule" required style="min-height:120px"
+                  placeholder="Ex: Nao falar sobre precos, nao recomendar concorrentes...">{{if .Guardrail}}{{.Guardrail.Rule}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="guardrail-message">Mensagem padrao (opcional)</label>
+        <textarea id="guardrail-message" name="message" style="min-height:80px"
+                  placeholder="Mensagem que o especialista usa quando o guardrail e acionado">{{if .Guardrail}}{{.Guardrail.Message}}{{end}}</textarea>
+        <small class="form-hint">Se vazio, o especialista usara uma resposta generica</small>
+    </div>
+
+    <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('guardrail-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            {{if .Guardrail}}Salvar alterações{{else}}Adicionar guardrail{{end}}
+        </button>
+    </div>
+</form>
+{{end}}
