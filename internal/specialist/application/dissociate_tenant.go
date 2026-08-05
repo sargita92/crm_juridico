@@ -31,5 +31,11 @@ func (uc *DissociateTenantUseCase) Execute(ctx context.Context, input Dissociate
 		return err
 	}
 
-	return uc.stRepo.Dissociate(ctx, input.SpecialistID, input.TenantID)
+	if err := uc.stRepo.Dissociate(ctx, input.SpecialistID, input.TenantID); err != nil {
+		return err
+	}
+
+	// Removing the old specialist (often the default) may leave a single remaining
+	// specialist without a default — promote it so the tenant keeps routing.
+	return ensureTenantDefault(ctx, uc.stRepo, input.TenantID)
 }

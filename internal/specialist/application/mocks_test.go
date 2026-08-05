@@ -147,7 +147,9 @@ func (m *mockSpecialistTenantRepo) Exists(_ context.Context, specialistID, tenan
 }
 
 func (m *mockSpecialistTenantRepo) FindDefaultByTenantID(_ context.Context, tenantID string) (string, error) {
-	for specID, tenants := range m.associations {
+	// Faithful to the real repo: only a specialist explicitly flagged is_default
+	// counts as the tenant's default — association alone is not enough.
+	for specID, tenants := range m.defaults {
 		if tenants[tenantID] {
 			return specID, nil
 		}

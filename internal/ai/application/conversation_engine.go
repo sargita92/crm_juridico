@@ -55,6 +55,14 @@ type HandoffActivator interface {
 	Activate(ctx context.Context, conversationID string) error
 }
 
+// SpecialistTenantChecker reports whether a specialist is still associated with a
+// tenant. It enables the engine to self-heal a conversation whose specialist was
+// removed from the tenant in admin: on the next message the conversation re-adopts
+// the router's freshly-resolved specialist instead of staying stuck on the old one.
+type SpecialistTenantChecker interface {
+	Exists(ctx context.Context, specialistID, tenantID string) (bool, error)
+}
+
 // ConversationEngine orchestrates the AI conversation flow for a lead.
 type ConversationEngine struct {
 	providerRegistry    *domain.ProviderRegistry
@@ -76,7 +84,18 @@ type ConversationEngine struct {
 	crossSellRuleRepo  specDomain.CrossSellRuleRepository
 	crossSellEvaluator *CrossSellRuleEvaluator
 	crossSellExecutor  *CrossSellExecutor
-	log                *zap.Logger
+	// specialistTenantChecker is optional (nil-safe); when set, the engine heals a
+	// conversation whose specialist was dissociated from its tenant by re-adopting
+	// the router's freshly-resolved specialist. Nil disables healing.
+	specialistTenantChecker SpecialistTenantChecker
+	log                     *zap.Logger
+}
+
+// SetSpecialistTenantChecker installs the optional checker that enables persona
+// self-heal when a conversation's specialist is dissociated from its tenant.
+// Passing nil (the default) disables healing and preserves prior behavior.
+func (e *ConversationEngine) SetSpecialistTenantChecker(c SpecialistTenantChecker) {
+	e.specialistTenantChecker = c
 }
 
 // NewConversationEngine creates a ConversationEngine with all required dependencies.
@@ -176,6 +195,38 @@ func (e *ConversationEngine) HandleMessages(
 			return fmt.Errorf("conversation_engine: create state: %w", createErr)
 		}
 	}
+
+	// 1a. Self-heal the conversation's specialist. `specialistID` is the router's
+	// fresh decision for this message; state.SpecialistID is the one persisted on
+	// this conversation. They diverge legitimately after an explicit switch
+	// (cross-sell/tool/automation) — those must stick — but also when the persisted
+	// specialist was removed from the tenant in admin, in which case the conversation
+	// would otherwise stay stuck on it forever. Heal only in the latter case: adopt
+	// the router's specialist when the persisted one is no longer associated with the
+	// tenant. Then treat state.SpecialistID as the single source of truth downstream,
+	// keeping persona, config, scoring and guardrails consistent within the turn.
+	if e.specialistTenantChecker != nil && state.SpecialistID != specialistID {
+		stillAssociated, checkErr := e.specialistTenantChecker.Exists(ctx, state.SpecialistID, tenantID)
+		if checkErr != nil {
+			e.log.Warn("conversation_engine: specialist-tenant check failed, keeping persisted specialist",
+				zap.String("conversation_id", conversationID),
+				zap.String("specialist_id", state.SpecialistID),
+				zap.Error(checkErr),
+			)
+		} else if !stillAssociated {
+			e.log.Info("conversation_engine: persisted specialist removed from tenant, re-routing conversation",
+				zap.String("conversation_id", conversationID),
+				zap.String("from_specialist_id", state.SpecialistID),
+				zap.String("to_specialist_id", specialistID),
+			)
+			state.SpecialistID = specialistID
+			if updateErr := e.stateRepo.Update(ctx, state); updateErr != nil {
+				return fmt.Errorf("conversation_engine: persist healed specialist: %w", updateErr)
+			}
+		}
+	}
+	specialistID = state.SpecialistID
+	span.SetAttributes(attribute.String("specialist.id", specialistID))
 
 	// 2. If handoff is active, skip AI processing.
 	if state.HandoffActive {

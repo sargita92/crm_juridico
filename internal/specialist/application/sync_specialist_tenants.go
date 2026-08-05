@@ -112,6 +112,20 @@ func (uc *SyncSpecialistTenantsUseCase) Execute(ctx context.Context, input SyncS
 		}
 	}
 
+	// Every tenant touched by this sync may need its default settled: a newly-added
+	// sole specialist becomes routable, and a tenant whose default was removed gets
+	// its single remaining specialist promoted.
+	for _, id := range toAdd {
+		if err := ensureTenantDefault(ctx, uc.stRepo, id); err != nil {
+			return SyncSpecialistTenantsResult{}, err
+		}
+	}
+	for _, id := range toRemove {
+		if err := ensureTenantDefault(ctx, uc.stRepo, id); err != nil {
+			return SyncSpecialistTenantsResult{}, err
+		}
+	}
+
 	return SyncSpecialistTenantsResult{
 		Added:   len(toAdd),
 		Removed: len(toRemove),

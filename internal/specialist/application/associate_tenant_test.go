@@ -129,6 +129,56 @@ func TestAssociateTenantUseCase_TenantInactive(t *testing.T) {
 	assert.ErrorIs(t, err, tenantdomain.ErrTenantInactive)
 }
 
+func TestAssociateTenantUseCase_SingleAssociate_BecomesDefault(t *testing.T) {
+	specRepo := newMockSpecialistRepo()
+	tenantRepo := newMockTenantRepo()
+	stRepo := newMockSpecialistTenantRepo()
+
+	s, _ := domain.NewSpecialist("spec-1", "Assistente", "desc", "prompt")
+	specRepo.addSpecialist(s)
+	tenant, _ := tenantdomain.NewTenant("tenant-1", "Escritorio", tenantdomain.TenantTypePJ, "11.111.111/0001-11")
+	tenantRepo.addTenant(tenant)
+
+	uc := NewAssociateTenantUseCase(specRepo, tenantRepo, stRepo)
+	err := uc.Execute(context.Background(), AssociateTenantInput{
+		SpecialistID: "spec-1",
+		TenantIDs:    []string{"tenant-1"},
+	})
+
+	require.NoError(t, err)
+	def, err := stRepo.FindDefaultByTenantID(context.Background(), "tenant-1")
+	require.NoError(t, err, "a tenant with a single associated specialist must have a default")
+	assert.Equal(t, "spec-1", def)
+}
+
+func TestAssociateTenantUseCase_SecondAssociate_KeepsExistingDefault(t *testing.T) {
+	specRepo := newMockSpecialistRepo()
+	tenantRepo := newMockTenantRepo()
+	stRepo := newMockSpecialistTenantRepo()
+
+	s1, _ := domain.NewSpecialist("spec-1", "A", "desc", "prompt")
+	s2, _ := domain.NewSpecialist("spec-2", "B", "desc", "prompt")
+	specRepo.addSpecialist(s1)
+	specRepo.addSpecialist(s2)
+	tenant, _ := tenantdomain.NewTenant("tenant-1", "Escritorio", tenantdomain.TenantTypePJ, "11.111.111/0001-11")
+	tenantRepo.addTenant(tenant)
+
+	// tenant-1 already has spec-1 as its explicit default.
+	_ = stRepo.Associate(context.Background(), "spec-1", "tenant-1")
+	stRepo.markDefault("spec-1", "tenant-1")
+
+	uc := NewAssociateTenantUseCase(specRepo, tenantRepo, stRepo)
+	err := uc.Execute(context.Background(), AssociateTenantInput{
+		SpecialistID: "spec-2",
+		TenantIDs:    []string{"tenant-1"},
+	})
+
+	require.NoError(t, err)
+	def, err := stRepo.FindDefaultByTenantID(context.Background(), "tenant-1")
+	require.NoError(t, err)
+	assert.Equal(t, "spec-1", def, "existing default must be preserved when a second specialist is associated")
+}
+
 func TestAssociateTenantUseCase_AlreadyAssociated_Skips(t *testing.T) {
 	specRepo := newMockSpecialistRepo()
 	tenantRepo := newMockTenantRepo()
