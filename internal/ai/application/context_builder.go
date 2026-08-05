@@ -3,12 +3,30 @@ package application
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
 	domain "github.com/sasrgita/crm-juridico/internal/ai/domain"
 	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 )
+
+var (
+	reInlineSpace = regexp.MustCompile(`[ \t]+`)
+	reBlankLines  = regexp.MustCompile(`\n{3,}`)
+)
+
+// compressPrompt removes redundant whitespace from an assembled prompt to save
+// LLM tokens: collapses runs of spaces/tabs, drops spaces hugging newlines, and
+// caps blank runs at one empty line. Paragraph breaks (\n\n) are kept so the
+// prompt stays readable to the model.
+func compressPrompt(s string) string {
+	s = reInlineSpace.ReplaceAllString(s, " ")
+	s = strings.ReplaceAll(s, " \n", "\n")
+	s = strings.ReplaceAll(s, "\n ", "\n")
+	s = reBlankLines.ReplaceAllString(s, "\n\n")
+	return strings.TrimSpace(s)
+}
 
 // SpecialistFinder retrieves a specialist by its ID.
 type SpecialistFinder interface {
@@ -140,7 +158,7 @@ func (b *ContextBuilder) Build(ctx context.Context, state *domain.ConversationSt
 		}
 	}
 
-	systemPrompt := sb.String()
+	systemPrompt := compressPrompt(sb.String())
 
 	// 7. Message history.
 	history, _ := b.MessageHistoryFinder.FindHistory(ctx, state.ConversationID, historyLimit)
