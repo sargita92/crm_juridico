@@ -36,9 +36,6 @@ func (uc *UpdateGuardrailUseCase) Execute(ctx context.Context, input UpdateGuard
 		return nil, err
 	}
 
-	return &GuardrailOutput{
-		ID: g.ID, SpecialistID: g.SpecialistID, Name: g.Name, Type: string(g.Type),
-		Rule: g.Rule, Message: g.Message, Active: g.Active,
-		CreatedAt: g.CreatedAt, UpdatedAt: g.UpdatedAt,
-	}, nil
+	out := newGuardrailOutput(g)
+	return &out, nil
 }

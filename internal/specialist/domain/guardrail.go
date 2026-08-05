@@ -19,22 +19,21 @@ const (
 	MaxGuardrailMessageLength = 1000
 )
 
+// Guardrail is a reusable library item: a single guardrail can be attached to
+// many specialists through the specialist_guardrails join table. It therefore
+// carries no SpecialistID of its own — the attachment lives in the join.
 type Guardrail struct {
-	ID           string
-	SpecialistID string
-	Name         string
-	Type         GuardrailType
-	Rule         string
-	Message      string
-	Active       bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID        string
+	Name      string
+	Type      GuardrailType
+	Rule      string
+	Message   string
+	Active    bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-func NewGuardrail(id, specialistID, name string, gType GuardrailType, rule, message string) (*Guardrail, error) {
-	if specialistID == "" {
-		return nil, ErrSpecialistIDRequired
-	}
+func NewGuardrail(id, name string, gType GuardrailType, rule, message string) (*Guardrail, error) {
 	if name == "" {
 		return nil, ErrGuardrailNameRequired
 	}
@@ -56,7 +55,7 @@ func NewGuardrail(id, specialistID, name string, gType GuardrailType, rule, mess
 
 	now := time.Now()
 	return &Guardrail{
-		ID: id, SpecialistID: specialistID, Name: name, Type: gType,
+		ID: id, Name: name, Type: gType,
 		Rule: rule, Message: message, Active: true,
 		CreatedAt: now, UpdatedAt: now,
 	}, nil

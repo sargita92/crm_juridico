@@ -265,10 +265,15 @@ func (m *mockTenantRepo) addTenant(t *tenantdomain.Tenant) {
 
 type mockGuardrailRepo struct {
 	guardrails map[string]*domain.Guardrail
+	// links maps guardrailID -> set of specialistIDs it is attached to.
+	links map[string]map[string]bool
 }
 
 func newMockGuardrailRepo() *mockGuardrailRepo {
-	return &mockGuardrailRepo{guardrails: make(map[string]*domain.Guardrail)}
+	return &mockGuardrailRepo{
+		guardrails: make(map[string]*domain.Guardrail),
+		links:      make(map[string]map[string]bool),
+	}
 }
 
 func (m *mockGuardrailRepo) Create(_ context.Context, g *domain.Guardrail) error {
@@ -296,17 +301,50 @@ func (m *mockGuardrailRepo) Delete(_ context.Context, id string) error {
 		return domain.ErrGuardrailNotFound
 	}
 	delete(m.guardrails, id)
+	delete(m.links, id)
 	return nil
+}
+
+func (m *mockGuardrailRepo) FindAll(_ context.Context) ([]domain.Guardrail, error) {
+	result := make([]domain.Guardrail, 0, len(m.guardrails))
+	for _, g := range m.guardrails {
+		result = append(result, *g)
+	}
+	return result, nil
 }
 
 func (m *mockGuardrailRepo) FindBySpecialistID(_ context.Context, specialistID string) ([]domain.Guardrail, error) {
 	var result []domain.Guardrail
-	for _, g := range m.guardrails {
-		if g.SpecialistID == specialistID {
-			result = append(result, *g)
+	for id, specs := range m.links {
+		if specs[specialistID] {
+			if g, ok := m.guardrails[id]; ok {
+				result = append(result, *g)
+			}
 		}
 	}
 	return result, nil
+}
+
+func (m *mockGuardrailRepo) Attach(_ context.Context, specialistID, guardrailID string) error {
+	if m.links[guardrailID] == nil {
+		m.links[guardrailID] = make(map[string]bool)
+	}
+	if m.links[guardrailID][specialistID] {
+		return domain.ErrGuardrailAlreadyAttached
+	}
+	m.links[guardrailID][specialistID] = true
+	return nil
+}
+
+func (m *mockGuardrailRepo) Detach(_ context.Context, specialistID, guardrailID string) error {
+	if m.links[guardrailID] != nil {
+		delete(m.links[guardrailID], specialistID)
+	}
+	return nil
+}
+
+func (m *mockGuardrailRepo) CountSpecialistsByGuardrailID(_ context.Context, guardrailID string) (int, error) {
+	return len(m.links[guardrailID]), nil
 }
 
 func (m *mockGuardrailRepo) addGuardrail(g *domain.Guardrail) {

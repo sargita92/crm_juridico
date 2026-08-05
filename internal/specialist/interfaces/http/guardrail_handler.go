@@ -23,25 +23,29 @@ var guardrailTypes = []struct{ Value, Label string }{
 }
 
 type GuardrailHandler struct {
-	createUC      *application.CreateGuardrailUseCase
-	updateUC      *application.UpdateGuardrailUseCase
-	toggleUC      *application.ToggleGuardrailUseCase
-	deleteUC      *application.DeleteGuardrailUseCase
-	listUC        *application.ListGuardrailsUseCase
-	guardrailRepo domain.GuardrailRepository
+	createUC        *application.CreateGuardrailUseCase
+	updateUC        *application.UpdateGuardrailUseCase
+	toggleUC        *application.ToggleGuardrailUseCase
+	listUC          *application.ListGuardrailsUseCase
+	attachUC        *application.AttachGuardrailUseCase
+	detachUC        *application.DetachGuardrailUseCase
+	listAvailableUC *application.ListAvailableGuardrailsUseCase
+	guardrailRepo   domain.GuardrailRepository
 }
 
 func NewGuardrailHandler(
 	createUC *application.CreateGuardrailUseCase,
 	updateUC *application.UpdateGuardrailUseCase,
 	toggleUC *application.ToggleGuardrailUseCase,
-	deleteUC *application.DeleteGuardrailUseCase,
 	listUC *application.ListGuardrailsUseCase,
+	attachUC *application.AttachGuardrailUseCase,
+	detachUC *application.DetachGuardrailUseCase,
+	listAvailableUC *application.ListAvailableGuardrailsUseCase,
 	guardrailRepo domain.GuardrailRepository,
 ) *GuardrailHandler {
 	return &GuardrailHandler{
-		createUC: createUC, updateUC: updateUC,
-		toggleUC: toggleUC, deleteUC: deleteUC, listUC: listUC,
+		createUC: createUC, updateUC: updateUC, toggleUC: toggleUC, listUC: listUC,
+		attachUC: attachUC, detachUC: detachUC, listAvailableUC: listAvailableUC,
 		guardrailRepo: guardrailRepo,
 	}
 }
@@ -52,11 +56,14 @@ func (h *GuardrailHandler) RegisterRoutes(router *gin.Engine, authMw, adminMw gi
 
 	admin.GET("/:id/guardrails", h.HandleList)
 	admin.GET("/:id/guardrails/new/form", h.RenderCreateForm)
+	admin.GET("/:id/guardrails/available", h.RenderAttachList)
 	admin.GET("/:id/guardrails/:gid/form", h.RenderEditForm)
 	admin.POST("/:id/guardrails", h.HandleCreate)
+	admin.POST("/:id/guardrails/:gid/attach", h.HandleAttach)
 	admin.PUT("/:id/guardrails/:gid", h.HandleUpdate)
 	admin.POST("/:id/guardrails/:gid/toggle", h.HandleToggle)
-	admin.DELETE("/:id/guardrails/:gid", h.HandleDelete)
+	// DELETE here means DETACH from this specialist — the library item survives.
+	admin.DELETE("/:id/guardrails/:gid", h.HandleDetach)
 }
 
 func (h *GuardrailHandler) HandleList(c *gin.Context) {
@@ -197,18 +204,63 @@ func (h *GuardrailHandler) HandleToggle(c *gin.Context) {
 	h.HandleList(c)
 }
 
-func (h *GuardrailHandler) HandleDelete(c *gin.Context) {
+// HandleDetach removes the guardrail from this specialist (deletes the join row).
+// The library item itself is untouched and may still serve other specialists.
+func (h *GuardrailHandler) HandleDetach(c *gin.Context) {
+	id := c.Param("id")
 	gid := c.Param("gid")
-	if !validUUID(gid) {
+	if !validUUID(id) || !validUUID(gid) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
 		return
 	}
-	if err := h.deleteUC.Execute(c.Request.Context(), gid); err != nil {
-		if errors.Is(err, domain.ErrGuardrailNotFound) {
+	if err := h.detachUC.Execute(c.Request.Context(), id, gid); err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao remover guardrail"})
+		return
+	}
+
+	h.HandleList(c)
+}
+
+// RenderAttachList renders the picker of library guardrails not yet attached to
+// this specialist, consumed by the "Anexar existente" modal.
+func (h *GuardrailHandler) RenderAttachList(c *gin.Context) {
+	id := c.Param("id")
+	if !validUUID(id) {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	items, err := h.listAvailableUC.Execute(c.Request.Context(), id)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar guardrails"})
+		return
+	}
+	c.HTML(http.StatusOK, "specialist/guardrail_attach_list.html", gin.H{
+		"Available":    items,
+		"SpecialistID": id,
+	})
+}
+
+// HandleAttach links an existing library guardrail to this specialist.
+func (h *GuardrailHandler) HandleAttach(c *gin.Context) {
+	id := c.Param("id")
+	gid := c.Param("gid")
+	if !validUUID(id) || !validUUID(gid) {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+	if err := h.attachUC.Execute(c.Request.Context(), id, gid); err != nil {
+		switch {
+		case errors.Is(err, domain.ErrSpecialistNotFound):
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Especialista não encontrado"})
+		case errors.Is(err, domain.ErrGuardrailNotFound):
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Guardrail não encontrado"})
-			return
+		case errors.Is(err, domain.ErrSpecialistInactive):
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Especialista está inativo"})
+		case errors.Is(err, domain.ErrGuardrailAlreadyAttached):
+			c.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "Guardrail já anexado"})
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao anexar guardrail"})
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao excluir guardrail"})
 		return
 	}
 

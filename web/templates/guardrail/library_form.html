@@ -1,0 +1,57 @@
+{{define "guardrail/library_form.html"}}
+{{/*
+    Form de guardrail da biblioteca (create + edit). Contexto:
+      - Guardrail (opcional) — presente = edit; ausente = create
+      - Types     ([]struct{Value,Label})
+*/}}
+<div id="guardrail-form-error" aria-live="polite"></div>
+
+<form {{if .Guardrail}}
+        hx-put="/admin/guardrails/{{.Guardrail.ID}}"
+      {{else}}
+        hx-post="/admin/guardrails"
+      {{end}}
+      hx-target="#guardrail-library-section"
+      hx-swap="outerHTML"
+      hx-on::before-request="document.getElementById('guardrail-form-error').innerHTML=''"
+      hx-on::after-request="if(event.detail.successful){closeModal('guardrail-library-modal');}">
+
+    <div class="form-group">
+        <label for="glib-name">Nome</label>
+        <input id="glib-name" name="name" type="text" required maxlength="120"
+               placeholder="Ex: Guardrail 01 — Senhas, tokens, códigos e acessos"
+               value="{{if .Guardrail}}{{.Guardrail.Name}}{{end}}">
+        <small class="form-hint">Nome distintivo — usado em auditoria e busca</small>
+    </div>
+
+    <div class="form-group">
+        <label for="glib-type">Tipo</label>
+        <select id="glib-type" name="type" required>
+            {{$selected := ""}}{{if .Guardrail}}{{$selected = .Guardrail.Type}}{{end}}
+            {{range .Types}}
+            <option value="{{.Value}}" {{if eq .Value $selected}}selected{{end}}>{{.Label}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="glib-rule">Regra</label>
+        <textarea id="glib-rule" name="rule" required style="min-height:120px"
+                  placeholder="Ex: Nao falar sobre precos, nao recomendar concorrentes...">{{if .Guardrail}}{{.Guardrail.Rule}}{{end}}</textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="glib-message">Mensagem padrao (opcional)</label>
+        <textarea id="glib-message" name="message" style="min-height:80px"
+                  placeholder="Mensagem usada quando o guardrail e acionado">{{if .Guardrail}}{{.Guardrail.Message}}{{end}}</textarea>
+        <small class="form-hint">Se vazio, o especialista usara uma resposta generica</small>
+    </div>
+
+    <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('guardrail-library-modal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+            {{if .Guardrail}}Salvar alterações{{else}}Criar guardrail{{end}}
+        </button>
+    </div>
+</form>
+{{end}}

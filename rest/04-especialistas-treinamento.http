@@ -141,33 +141,71 @@ DELETE {{base_url}}/admin/specialists/{{specialist_id}}/mcps/{{mcp_id}}
 Cookie: token={{token}}
 
 ### =============================================
-### Guardrails
+### Guardrails (biblioteca compartilhada N:N)
 ### =============================================
 
-### Listar guardrails do especialista
+### Listar guardrails ANEXADOS ao especialista
 GET {{base_url}}/admin/specialists/{{specialist_id}}/guardrails
 Cookie: token={{token}}
 
-### Criar guardrail
+### Listar guardrails da biblioteca DISPONÍVEIS para anexar (não anexados ainda)
+GET {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/available
+Cookie: token={{token}}
+
+### Criar guardrail novo e já anexar a este especialista
 POST {{base_url}}/admin/specialists/{{specialist_id}}/guardrails
 Cookie: token={{token}}
 Content-Type: application/x-www-form-urlencoded
 
-type=forbidden_topics&rule=Nao falar sobre precos nem descontos&message=Nao posso informar valores
+name=Precos e descontos&type=forbidden_topics&rule=Nao falar sobre precos nem descontos&message=Nao posso informar valores
 
-### Editar guardrail
+### Anexar um guardrail EXISTENTE da biblioteca a este especialista
+POST {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/{{guardrail_id}}/attach
+Cookie: token={{token}}
+
+### Editar guardrail (biblioteca — vale para todos os especialistas que o usam)
 PUT {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/{{guardrail_id}}
 Cookie: token={{token}}
 Content-Type: application/x-www-form-urlencoded
 
-type=scope_limit&rule=Atender apenas direito trabalhista&message=Especializado em direito trabalhista
+name=Escopo trabalhista&type=scope_limit&rule=Atender apenas direito trabalhista&message=Especializado em direito trabalhista
 
-### Toggle guardrail (ativar/desativar)
+### Toggle guardrail (ativar/desativar — biblioteca)
 POST {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/{{guardrail_id}}/toggle
 Cookie: token={{token}}
 
-### Excluir guardrail
+### Desanexar guardrail DESTE especialista (permanece na biblioteca)
 DELETE {{base_url}}/admin/specialists/{{specialist_id}}/guardrails/{{guardrail_id}}
+Cookie: token={{token}}
+
+### =============================================
+### Guardrails — Biblioteca central (/admin/guardrails)
+### =============================================
+
+### Página da biblioteca
+GET {{base_url}}/admin/guardrails
+Cookie: token={{token}}
+
+### Criar guardrail na biblioteca (sem anexar a especialista)
+POST {{base_url}}/admin/guardrails
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=LGPD - dados sensiveis&type=security_lgpd&rule=Nao coletar CPF sem consentimento&message=Preciso do seu consentimento
+
+### Editar guardrail da biblioteca
+PUT {{base_url}}/admin/guardrails/{{guardrail_id}}
+Cookie: token={{token}}
+Content-Type: application/x-www-form-urlencoded
+
+name=LGPD - dados sensiveis&type=security_lgpd&rule=Nao coletar CPF sem consentimento explicito&message=Preciso do seu consentimento
+
+### Toggle guardrail da biblioteca
+POST {{base_url}}/admin/guardrails/{{guardrail_id}}/toggle
+Cookie: token={{token}}
+
+### Excluir guardrail da biblioteca (bloqueado se anexado a algum especialista)
+DELETE {{base_url}}/admin/guardrails/{{guardrail_id}}
 Cookie: token={{token}}
 
 ### =============================================
