@@ -145,7 +145,7 @@ func (h *GuardrailLibraryHandler) HandleToggle(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Guardrail não encontrado"})
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao alternar guardrail"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Erro ao ativar/desativar guardrail"})
 		return
 	}
 	h.renderSection(c, http.StatusOK, "")
