@@ -199,13 +199,24 @@
             <div class="detail-card">
                 <div class="card-header">
                     <h3>Guardrails</h3>
-                    <button class="btn btn-sm btn-primary"
-                            hx-get="/admin/specialists/{{.Specialist.ID}}/guardrails/new/form"
-                            hx-target="#guardrail-modal-body"
-                            hx-swap="innerHTML"
-                            onclick="document.getElementById('guardrail-modal-title').textContent='Novo Guardrail';openModal('guardrail-modal')">
-                        Adicionar Guardrail
-                    </button>
+                    <div style="display:flex;gap:0.5rem">
+                        <a class="btn btn-sm btn-outline" href="/admin/guardrails" target="_blank"
+                           title="Gerenciar a biblioteca de guardrails reutilizáveis">Biblioteca</a>
+                        <button class="btn btn-sm btn-secondary"
+                                hx-get="/admin/specialists/{{.Specialist.ID}}/guardrails/available"
+                                hx-target="#guardrail-attach-modal-body"
+                                hx-swap="innerHTML"
+                                onclick="openModal('guardrail-attach-modal')">
+                            Anexar existente
+                        </button>
+                        <button class="btn btn-sm btn-primary"
+                                hx-get="/admin/specialists/{{.Specialist.ID}}/guardrails/new/form"
+                                hx-target="#guardrail-modal-body"
+                                hx-swap="innerHTML"
+                                onclick="document.getElementById('guardrail-modal-title').textContent='Novo Guardrail';openModal('guardrail-modal')">
+                            Adicionar Guardrail
+                        </button>
+                    </div>
                 </div>
                 <div id="guardrails-section"
                      hx-get="/admin/specialists/{{.Specialist.ID}}/guardrails"
@@ -225,6 +236,20 @@
                     </div>
                     <div id="guardrail-modal-body">
                         <p class="text-muted">Carregando formulário...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Anexar guardrail existente da biblioteca. Lista via HTMX os
+                 guardrails ainda não anexados a este especialista. -->
+            <div id="guardrail-attach-modal" class="modal-overlay" style="display:none">
+                <div class="modal-card" style="max-width:600px">
+                    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+                        <h2 style="margin:0">Anexar guardrail existente</h2>
+                        <button type="button" class="modal-close" onclick="closeModal('guardrail-attach-modal')" aria-label="Fechar">&times;</button>
+                    </div>
+                    <div id="guardrail-attach-modal-body">
+                        <p class="text-muted">Carregando biblioteca...</p>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,6 @@
-{{define "specialist/guardrails_section.html"}}
-<div id="guardrails-section">
+{{define "guardrail/library_section.html"}}
+<div id="guardrail-library-section">
+    {{if .Error}}<div class="alert alert-danger" style="margin-bottom:0.75rem">{{.Error}}</div>{{end}}
     {{if .Guardrails}}
     <div class="association-list">
         {{range .Guardrails}}
@@ -21,35 +22,33 @@
             </div>
             <div class="association-actions" style="display:flex;gap:0.5rem;align-items:center">
                 <button class="btn btn-sm {{if .Active}}btn-success{{else}}btn-outline{{end}}"
-                        hx-post="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}/toggle"
-                        hx-target="#guardrails-section"
+                        hx-post="/admin/guardrails/{{.ID}}/toggle"
+                        hx-target="#guardrail-library-section"
                         hx-swap="outerHTML"
                         title="{{if .Active}}Desativar{{else}}Ativar{{end}}">
                     {{if .Active}}Ativo{{else}}Inativo{{end}}
                 </button>
                 <button class="btn btn-sm btn-secondary"
-                        hx-get="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}/form"
-                        hx-target="#guardrail-modal-body"
+                        hx-get="/admin/guardrails/{{.ID}}/form"
+                        hx-target="#guardrail-library-modal-body"
                         hx-swap="innerHTML"
-                        onclick="document.getElementById('guardrail-modal-title').textContent='Editar guardrail';openModal('guardrail-modal')"
-                        title="Editar">
+                        onclick="document.getElementById('guardrail-library-modal-title').textContent='Editar guardrail';openModal('guardrail-library-modal')">
                     Editar
                 </button>
                 <button class="btn btn-sm btn-danger"
-                        hx-delete="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}"
-                        hx-target="#guardrails-section"
+                        hx-delete="/admin/guardrails/{{.ID}}"
+                        hx-target="#guardrail-library-section"
                         hx-swap="outerHTML"
-                        hx-confirm="Remover este guardrail deste especialista? Ele continua na biblioteca."
-                        title="Remover deste especialista">
-                    &times;
+                        hx-confirm="Excluir este guardrail da biblioteca?">
+                    Excluir
                 </button>
             </div>
         </div>
         {{end}}
     </div>
     {{else}}
-    <div class="empty-state" style="padding:1.5rem">
-        Nenhum guardrail configurado
+    <div class="empty-state" style="padding:2rem">
+        Nenhum guardrail na biblioteca ainda. Crie o primeiro em "Novo Guardrail".
     </div>
     {{end}}
 </div>

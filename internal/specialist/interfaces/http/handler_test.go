@@ -120,9 +120,14 @@ func setupTestEnv(t *testing.T) *testEnv {
 	createGuardrailUC := application.NewCreateGuardrailUseCase(specialistRepo, guardrailRepo)
 	updateGuardrailUC := application.NewUpdateGuardrailUseCase(guardrailRepo)
 	toggleGuardrailUC := application.NewToggleGuardrailUseCase(guardrailRepo)
-	deleteGuardrailUC := application.NewDeleteGuardrailUseCase(guardrailRepo)
 	listGuardrailsUC := application.NewListGuardrailsUseCase(guardrailRepo)
-	guardrailHandler := NewGuardrailHandler(createGuardrailUC, updateGuardrailUC, toggleGuardrailUC, deleteGuardrailUC, listGuardrailsUC, guardrailRepo)
+	attachGuardrailUC := application.NewAttachGuardrailUseCase(specialistRepo, guardrailRepo)
+	detachGuardrailUC := application.NewDetachGuardrailUseCase(guardrailRepo)
+	listAvailableGuardrailsUC := application.NewListAvailableGuardrailsUseCase(guardrailRepo)
+	deleteGuardrailUC := application.NewDeleteGuardrailUseCase(guardrailRepo)
+	listAllGuardrailsUC := application.NewListAllGuardrailsUseCase(guardrailRepo)
+	guardrailHandler := NewGuardrailHandler(createGuardrailUC, updateGuardrailUC, toggleGuardrailUC, listGuardrailsUC, attachGuardrailUC, detachGuardrailUC, listAvailableGuardrailsUC, guardrailRepo)
+	guardrailLibraryHandler := NewGuardrailLibraryHandler(listAllGuardrailsUC, createGuardrailUC, updateGuardrailUC, toggleGuardrailUC, deleteGuardrailUC, guardrailRepo)
 
 	// Step use cases
 	stepRepo := specialistinfra.NewGormStepRepository(db)
@@ -159,6 +164,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	adminMw := middleware.RequireAdmin()
 	handler.RegisterRoutes(router, authMw, adminMw)
 	guardrailHandler.RegisterRoutes(router, authMw, adminMw)
+	guardrailLibraryHandler.RegisterRoutes(router, authMw, adminMw)
 	stepHandler.RegisterRoutes(router, authMw, adminMw)
 	scoringHandler.RegisterRoutes(router, authMw, adminMw)
 	crossSellRuleHandler.RegisterRoutes(router, authMw, adminMw)
@@ -908,12 +914,20 @@ func TestAdminRoutes_NoToken_Returns401(t *testing.T) {
 		{http.MethodGet, "/admin/specialists/some-id/tenants/available"},
 		{http.MethodPost, "/admin/specialists/some-id/tenants"},
 		{http.MethodDelete, "/admin/specialists/some-id/tenants/tid"},
-		// Guardrail routes
+		// Guardrail routes (specialist-scoped: attach/detach/create/list/toggle/edit)
 		{http.MethodGet, "/admin/specialists/some-id/guardrails"},
+		{http.MethodGet, "/admin/specialists/some-id/guardrails/available"},
 		{http.MethodPost, "/admin/specialists/some-id/guardrails"},
+		{http.MethodPost, "/admin/specialists/some-id/guardrails/gid/attach"},
 		{http.MethodPut, "/admin/specialists/some-id/guardrails/gid"},
 		{http.MethodPost, "/admin/specialists/some-id/guardrails/gid/toggle"},
 		{http.MethodDelete, "/admin/specialists/some-id/guardrails/gid"},
+		// Guardrail library routes (/admin/guardrails)
+		{http.MethodGet, "/admin/guardrails"},
+		{http.MethodPost, "/admin/guardrails"},
+		{http.MethodPut, "/admin/guardrails/gid"},
+		{http.MethodPost, "/admin/guardrails/gid/toggle"},
+		{http.MethodDelete, "/admin/guardrails/gid"},
 		// Step routes
 		{http.MethodGet, "/admin/specialists/some-id/steps"},
 		{http.MethodPost, "/admin/specialists/some-id/steps"},
@@ -963,12 +977,20 @@ func TestAdminRoutes_UserRole_Returns403(t *testing.T) {
 		{http.MethodGet, "/admin/specialists/some-id/tenants/available"},
 		{http.MethodPost, "/admin/specialists/some-id/tenants"},
 		{http.MethodDelete, "/admin/specialists/some-id/tenants/tid"},
-		// Guardrail routes
+		// Guardrail routes (specialist-scoped: attach/detach/create/list/toggle/edit)
 		{http.MethodGet, "/admin/specialists/some-id/guardrails"},
+		{http.MethodGet, "/admin/specialists/some-id/guardrails/available"},
 		{http.MethodPost, "/admin/specialists/some-id/guardrails"},
+		{http.MethodPost, "/admin/specialists/some-id/guardrails/gid/attach"},
 		{http.MethodPut, "/admin/specialists/some-id/guardrails/gid"},
 		{http.MethodPost, "/admin/specialists/some-id/guardrails/gid/toggle"},
 		{http.MethodDelete, "/admin/specialists/some-id/guardrails/gid"},
+		// Guardrail library routes (/admin/guardrails)
+		{http.MethodGet, "/admin/guardrails"},
+		{http.MethodPost, "/admin/guardrails"},
+		{http.MethodPut, "/admin/guardrails/gid"},
+		{http.MethodPost, "/admin/guardrails/gid/toggle"},
+		{http.MethodDelete, "/admin/guardrails/gid"},
 		// Step routes
 		{http.MethodGet, "/admin/specialists/some-id/steps"},
 		{http.MethodPost, "/admin/specialists/some-id/steps"},
@@ -1121,10 +1143,89 @@ func TestGuardrail_Delete(t *testing.T) {
 	guardrails, _ := guardrailRepo.FindBySpecialistID(ctx, spec.ID)
 	require.Len(t, guardrails, 1)
 
+	// DELETE on the specialist-scoped route means DETACH: the link is removed but
+	// the library item survives.
 	w2 := httptest.NewRecorder()
 	req2 := deleteReq("/admin/specialists/"+spec.ID+"/guardrails/"+guardrails[0].ID, tokenCookie(token))
 	env.router.ServeHTTP(w2, req2)
 	assert.Equal(t, http.StatusOK, w2.Code)
+
+	after, _ := guardrailRepo.FindBySpecialistID(ctx, spec.ID)
+	assert.Empty(t, after, "guardrail deve ser desanexado do especialista")
+	_, err := guardrailRepo.FindByID(ctx, guardrails[0].ID)
+	assert.NoError(t, err, "guardrail deve permanecer na biblioteca após detach")
+}
+
+// The reuse flow: create a library guardrail, then attach it to a second specialist.
+func TestGuardrail_AttachExistingToSecondSpecialist(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec1, _ := domain.NewSpecialist(uuid.New().String(), "Spec 1", "desc", "prompt")
+	spec2, _ := domain.NewSpecialist(uuid.New().String(), "Spec 2", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec1))
+	require.NoError(t, env.specialistRepo.Create(ctx, spec2))
+
+	// Create on spec1 (creates library item + attaches to spec1).
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec1.ID+"/guardrails", url.Values{
+		"name": {"Compartilhado"}, "type": {"forbidden_topics"}, "rule": {"regra comum"}, "message": {""},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	guardrailRepo := specialistinfra.NewGormGuardrailRepository(env.db)
+	gs, _ := guardrailRepo.FindBySpecialistID(ctx, spec1.ID)
+	require.Len(t, gs, 1)
+	gid := gs[0].ID
+
+	// Attach the same library guardrail to spec2.
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest(http.MethodPost, "/admin/specialists/"+spec2.ID+"/guardrails/"+gid+"/attach", nil)
+	req2.AddCookie(tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+
+	// The single library guardrail now serves both specialists.
+	l2, _ := guardrailRepo.FindBySpecialistID(ctx, spec2.ID)
+	require.Len(t, l2, 1)
+	assert.Equal(t, gid, l2[0].ID)
+	count, _ := guardrailRepo.CountSpecialistsByGuardrailID(ctx, gid)
+	assert.Equal(t, 2, count)
+}
+
+// Deleting a library guardrail that is attached to a specialist must be blocked.
+func TestGuardrailLibrary_DeleteInUse_Blocked(t *testing.T) {
+	env := setupTestEnv(t)
+	token := env.adminToken(t)
+	ctx := context.Background()
+
+	spec, _ := domain.NewSpecialist(uuid.New().String(), "Spec L", "desc", "prompt")
+	require.NoError(t, env.specialistRepo.Create(ctx, spec))
+
+	w := httptest.NewRecorder()
+	req := postForm("/admin/specialists/"+spec.ID+"/guardrails", url.Values{
+		"name": {"Em uso"}, "type": {"forbidden_topics"}, "rule": {"regra"}, "message": {""},
+	}, tokenCookie(token))
+	env.router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	guardrailRepo := specialistinfra.NewGormGuardrailRepository(env.db)
+	gs, _ := guardrailRepo.FindBySpecialistID(ctx, spec.ID)
+	require.Len(t, gs, 1)
+	gid := gs[0].ID
+
+	// Attempt to delete from the library while still attached.
+	w2 := httptest.NewRecorder()
+	req2 := deleteReq("/admin/guardrails/"+gid, tokenCookie(token))
+	env.router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Contains(t, w2.Body.String(), "Não é possível excluir")
+
+	// The guardrail must still exist.
+	_, err := guardrailRepo.FindByID(ctx, gid)
+	assert.NoError(t, err)
 }
 
 // --- Step functional tests ---

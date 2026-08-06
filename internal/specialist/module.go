@@ -14,20 +14,21 @@ import (
 )
 
 type Module struct {
-	specialistRepo       domain.SpecialistRepository
-	stepRepo             domain.StepRepository
-	guardrailRepo        domain.GuardrailRepository
-	specialistTenantRepo domain.SpecialistTenantRepository
-	specialistToolRepo   domain.SpecialistToolRepository
-	scoringConfigRepo    domain.ScoringConfigRepository
-	crossSellRuleRepo    domain.CrossSellRuleRepository
-	handler              *specialisthttp.Handler
-	guardrailHandler     *specialisthttp.GuardrailHandler
-	stepHandler          *specialisthttp.StepHandler
-	scoringHandler       *specialisthttp.ScoringHandler
-	toolHandler          *specialisthttp.ToolHandler
-	crossSellRuleHandler *specialisthttp.CrossSellRuleHandler
-	htmxCrossSellHandler *specialisthttp.HTMXCrossSellHandler
+	specialistRepo          domain.SpecialistRepository
+	stepRepo                domain.StepRepository
+	guardrailRepo           domain.GuardrailRepository
+	specialistTenantRepo    domain.SpecialistTenantRepository
+	specialistToolRepo      domain.SpecialistToolRepository
+	scoringConfigRepo       domain.ScoringConfigRepository
+	crossSellRuleRepo       domain.CrossSellRuleRepository
+	handler                 *specialisthttp.Handler
+	guardrailHandler        *specialisthttp.GuardrailHandler
+	guardrailLibraryHandler *specialisthttp.GuardrailLibraryHandler
+	stepHandler             *specialisthttp.StepHandler
+	scoringHandler          *specialisthttp.ScoringHandler
+	toolHandler             *specialisthttp.ToolHandler
+	crossSellRuleHandler    *specialisthttp.CrossSellRuleHandler
+	htmxCrossSellHandler    *specialisthttp.HTMXCrossSellHandler
 }
 
 func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegistry *aiapp.ToolRegistry) *Module {
@@ -58,17 +59,26 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 		specialistTenantRepo,
 	)
 
-	// Guardrail use cases
+	// Guardrail use cases (biblioteca compartilhada N:N)
 	guardrailRepo := infrastructure.NewGormGuardrailRepository(db)
 	createGuardrailUC := application.NewCreateGuardrailUseCase(specialistRepo, guardrailRepo)
 	updateGuardrailUC := application.NewUpdateGuardrailUseCase(guardrailRepo)
 	toggleGuardrailUC := application.NewToggleGuardrailUseCase(guardrailRepo)
 	deleteGuardrailUC := application.NewDeleteGuardrailUseCase(guardrailRepo)
 	listGuardrailsUC := application.NewListGuardrailsUseCase(guardrailRepo)
+	attachGuardrailUC := application.NewAttachGuardrailUseCase(specialistRepo, guardrailRepo)
+	detachGuardrailUC := application.NewDetachGuardrailUseCase(guardrailRepo)
+	listAvailableGuardrailsUC := application.NewListAvailableGuardrailsUseCase(guardrailRepo)
+	listAllGuardrailsUC := application.NewListAllGuardrailsUseCase(guardrailRepo)
 
 	guardrailHandler := specialisthttp.NewGuardrailHandler(
-		createGuardrailUC, updateGuardrailUC, toggleGuardrailUC,
-		deleteGuardrailUC, listGuardrailsUC, guardrailRepo,
+		createGuardrailUC, updateGuardrailUC, toggleGuardrailUC, listGuardrailsUC,
+		attachGuardrailUC, detachGuardrailUC, listAvailableGuardrailsUC, guardrailRepo,
+	)
+
+	guardrailLibraryHandler := specialisthttp.NewGuardrailLibraryHandler(
+		listAllGuardrailsUC, createGuardrailUC, updateGuardrailUC,
+		toggleGuardrailUC, deleteGuardrailUC, guardrailRepo,
 	)
 
 	// Step use cases
@@ -119,20 +129,21 @@ func NewModule(db *gorm.DB, tenantRepo tenantdomain.TenantRepository, toolRegist
 	)
 
 	return &Module{
-		specialistRepo:       specialistRepo,
-		stepRepo:             stepRepo,
-		guardrailRepo:        guardrailRepo,
-		specialistTenantRepo: specialistTenantRepo,
-		specialistToolRepo:   specialistToolRepo,
-		scoringConfigRepo:    scoringRepo,
-		crossSellRuleRepo:    crossSellRuleRepo,
-		handler:              handler,
-		guardrailHandler:     guardrailHandler,
-		stepHandler:          stepHandler,
-		scoringHandler:       scoringHandler,
-		toolHandler:          toolHandler,
-		crossSellRuleHandler: crossSellRuleHandler,
-		htmxCrossSellHandler: htmxCrossSellHandler,
+		specialistRepo:          specialistRepo,
+		stepRepo:                stepRepo,
+		guardrailRepo:           guardrailRepo,
+		specialistTenantRepo:    specialistTenantRepo,
+		specialistToolRepo:      specialistToolRepo,
+		scoringConfigRepo:       scoringRepo,
+		crossSellRuleRepo:       crossSellRuleRepo,
+		handler:                 handler,
+		guardrailHandler:        guardrailHandler,
+		guardrailLibraryHandler: guardrailLibraryHandler,
+		stepHandler:             stepHandler,
+		scoringHandler:          scoringHandler,
+		toolHandler:             toolHandler,
+		crossSellRuleHandler:    crossSellRuleHandler,
+		htmxCrossSellHandler:    htmxCrossSellHandler,
 	}
 }
 
@@ -141,6 +152,7 @@ func (m *Module) Name() string { return "specialist" }
 func (m *Module) RegisterRoutes(router *gin.Engine, mw module.Middlewares) {
 	m.handler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.guardrailHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
+	m.guardrailLibraryHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.stepHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.scoringHandler.RegisterRoutes(router, mw.Auth, mw.Admin)
 	m.toolHandler.RegisterRoutes(router, mw.Auth, mw.Admin)

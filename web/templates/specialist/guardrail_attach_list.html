@@ -1,0 +1,47 @@
+{{define "specialist/guardrail_attach_list.html"}}
+{{/*
+    Picker de guardrails da biblioteca ainda NÃO anexados a este especialista.
+    Contexto:
+      - Available    ([]GuardrailOutput)
+      - SpecialistID (string)
+    Cada "Anexar" faz POST .../guardrails/:gid/attach, atualiza a seção de
+    guardrails do especialista e fecha o modal.
+*/}}
+{{if .Available}}
+<div class="association-list">
+    {{range .Available}}
+    <div class="association-item">
+        <div class="association-info" style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                <strong>{{.Name}}</strong>
+                <span class="badge {{if eq .Type "forbidden_topics"}}badge-danger{{else if eq .Type "scope_limit"}}badge-warning{{else if eq .Type "response_tone"}}badge-info{{else if eq .Type "security_lgpd"}}badge-danger{{else if eq .Type "human_escalation"}}badge-warning{{else}}badge-info{{end}}">
+                    {{if eq .Type "forbidden_topics"}}Tópicos proibidos
+                    {{else if eq .Type "scope_limit"}}Limite de escopo
+                    {{else if eq .Type "response_tone"}}Tom de resposta
+                    {{else if eq .Type "security_lgpd"}}Segurança / LGPD
+                    {{else if eq .Type "human_escalation"}}Escalonamento humano
+                    {{else if eq .Type "output_validation"}}Validação de saída
+                    {{else}}{{.Type}}{{end}}
+                </span>
+                {{if not .Active}}<span class="badge badge-secondary">Inativo</span>{{end}}
+            </div>
+            <div class="text-muted" style="font-size:0.85rem;margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis">{{.Rule}}</div>
+        </div>
+        <div class="association-actions">
+            <button class="btn btn-sm btn-primary"
+                    hx-post="/admin/specialists/{{$.SpecialistID}}/guardrails/{{.ID}}/attach"
+                    hx-target="#guardrails-section"
+                    hx-swap="outerHTML"
+                    hx-on::after-request="if(event.detail.successful){closeModal('guardrail-attach-modal')}">
+                Anexar
+            </button>
+        </div>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<div class="empty-state" style="padding:1.5rem">
+    Nenhum guardrail disponível na biblioteca. <a href="/admin/guardrails" target="_blank">Criar na biblioteca</a>.
+</div>
+{{end}}
+{{end}}
