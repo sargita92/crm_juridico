@@ -247,6 +247,9 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		crossSellExecutor,
 		log,
 	)
+	// Enable persona self-heal: when a conversation's persisted specialist is
+	// dissociated from its tenant, the next message re-adopts the routed specialist.
+	engine.SetSpecialistTenantChecker(deps.SpecTenantRepo)
 
 	// 8. Create SpecialistRouter.
 	specialistRouter := application.NewSpecialistRouter(

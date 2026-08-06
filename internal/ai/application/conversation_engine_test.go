@@ -131,6 +131,20 @@ func (m *mockHandoffActivator) WasActivatedFor(conversationID string) bool {
 	return false
 }
 
+// mockSpecialistTenantChecker reports whether a specialist is associated with a
+// tenant. Any specialist ID present in `associated` is considered still linked.
+type mockSpecialistTenantChecker struct {
+	associated map[string]bool
+	err        error
+}
+
+func (m *mockSpecialistTenantChecker) Exists(_ context.Context, specialistID, _ string) (bool, error) {
+	if m.err != nil {
+		return false, m.err
+	}
+	return m.associated[specialistID], nil
+}
+
 // --- helpers ---
 
 func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr error) (
@@ -1020,6 +1034,45 @@ func TestConversationEngine_ConfirmMode_SetsPendingAndSendsQuestion(t *testing.T
 
 // TestConversationEngine_ConfirmMode_PositiveReply_CompletesTransition verifies that
 // when a pending confirm rule exists and the user replies affirmatively, CompleteTransition fires.
+// When the specialist persisted on an existing conversation was removed from the
+// tenant (dissociated in admin), the next message must re-adopt the router's fresh
+// specialist and persist it, so the conversation stops "falling into the first".
+func TestConversationEngine_HealsSpecialistWhenRemovedFromTenant(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-old")
+	engine, stateRepo, sender := buildEngineFixtures(t, state, nil)
+	// spec-old is no longer associated with the tenant; router now resolves spec-1.
+	engine.SetSpecialistTenantChecker(&mockSpecialistTenantChecker{
+		associated: map[string]bool{"spec-1": true},
+	})
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"olá"})
+
+	require.NoError(t, err)
+	require.NotNil(t, stateRepo.updated, "state must be persisted")
+	assert.Equal(t, "spec-1", stateRepo.updated.SpecialistID,
+		"conversation must migrate to the router-resolved specialist")
+	assert.True(t, sender.sent)
+}
+
+// An explicit switch (cross-sell/tool/automation) leaves the conversation on a
+// specialist that IS still associated with the tenant. Even if the router would
+// pick a different one, the engine must NOT override it — the switch sticks.
+func TestConversationEngine_KeepsSpecialistWhenStillAssociated(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-switched")
+	engine, stateRepo, _ := buildEngineFixtures(t, state, nil)
+	// spec-switched remains associated; router would pick spec-1.
+	engine.SetSpecialistTenantChecker(&mockSpecialistTenantChecker{
+		associated: map[string]bool{"spec-switched": true, "spec-1": true},
+	})
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"olá"})
+
+	require.NoError(t, err)
+	require.NotNil(t, stateRepo.updated, "state must be persisted")
+	assert.Equal(t, "spec-switched", stateRepo.updated.SpecialistID,
+		"an explicitly-switched specialist that is still associated must be preserved")
+}
+
 func TestConversationEngine_ConfirmMode_PositiveReply_CompletesTransition(t *testing.T) {
 	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-1")
 	state.SetPendingCrossSellRuleID("rule-confirm")

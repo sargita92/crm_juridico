@@ -42,6 +42,25 @@ func TestSyncSpecialistTenantsUseCase_AddsNew(t *testing.T) {
 	assert.Equal(t, []string{"tenant-1"}, ids)
 }
 
+func TestSyncSpecialistTenantsUseCase_SingleAssociate_BecomesDefault(t *testing.T) {
+	specRepo, stRepo, tenantRepo, uc := setupSyncTest(t)
+
+	s, _ := domain.NewSpecialist("spec-1", "Assistente", "desc", "prompt")
+	specRepo.addSpecialist(s)
+	t1, _ := tenantdomain.NewTenant("tenant-1", "Alpha", tenantdomain.TenantTypePJ, "11.111.111/0001-11")
+	tenantRepo.addTenant(t1)
+
+	_, err := uc.Execute(context.Background(), SyncSpecialistTenantsInput{
+		SpecialistID: "spec-1",
+		TenantIDs:    []string{"tenant-1"},
+	})
+	require.NoError(t, err)
+
+	def, err := stRepo.FindDefaultByTenantID(context.Background(), "tenant-1")
+	require.NoError(t, err, "syncing a single specialist onto a tenant must make it routable (default)")
+	assert.Equal(t, "spec-1", def)
+}
+
 func TestSyncSpecialistTenantsUseCase_RemovesMissing(t *testing.T) {
 	specRepo, stRepo, tenantRepo, uc := setupSyncTest(t)
 

@@ -61,6 +61,10 @@ func (uc *AssociateTenantUseCase) Execute(ctx context.Context, input AssociateTe
 		if err := uc.stRepo.Associate(ctx, input.SpecialistID, tenantID); err != nil {
 			return err
 		}
+
+		if err := ensureTenantDefault(ctx, uc.stRepo, tenantID); err != nil {
+			return err
+		}
 	}
 
 	return nil
