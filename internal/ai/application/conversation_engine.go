@@ -98,6 +98,28 @@ func (e *ConversationEngine) SetSpecialistTenantChecker(c SpecialistTenantChecke
 	e.specialistTenantChecker = c
 }
 
+// personaStillValid reports whether the specialist persisted on a conversation is
+// still a legitimate choice: associated with the tenant AND active. On any lookup
+// error (or when no checker is wired) it returns true, so the persisted specialist
+// is kept — healing only happens on a confirmed removal/deactivation, never on noise.
+func (e *ConversationEngine) personaStillValid(ctx context.Context, specialistID, tenantID string) bool {
+	if e.specialistTenantChecker == nil {
+		return true
+	}
+	associated, err := e.specialistTenantChecker.Exists(ctx, specialistID, tenantID)
+	if err != nil {
+		return true
+	}
+	if !associated {
+		return false
+	}
+	s, err := e.contextBuilder.SpecialistFinder.FindByID(ctx, specialistID)
+	if err != nil || s == nil {
+		return true
+	}
+	return s.IsActive()
+}
+
 // NewConversationEngine creates a ConversationEngine with all required dependencies.
 // scoringFinder is optional: when nil, scoring-based column movement is disabled
 // and only explicit step.TargetColumnID drives column transitions.
@@ -199,30 +221,21 @@ func (e *ConversationEngine) HandleMessages(
 	// 1a. Self-heal the conversation's specialist. `specialistID` is the router's
 	// fresh decision for this message; state.SpecialistID is the one persisted on
 	// this conversation. They diverge legitimately after an explicit switch
-	// (cross-sell/tool/automation) — those must stick — but also when the persisted
-	// specialist was removed from the tenant in admin, in which case the conversation
-	// would otherwise stay stuck on it forever. Heal only in the latter case: adopt
-	// the router's specialist when the persisted one is no longer associated with the
-	// tenant. Then treat state.SpecialistID as the single source of truth downstream,
-	// keeping persona, config, scoring and guardrails consistent within the turn.
-	if e.specialistTenantChecker != nil && state.SpecialistID != specialistID {
-		stillAssociated, checkErr := e.specialistTenantChecker.Exists(ctx, state.SpecialistID, tenantID)
-		if checkErr != nil {
-			e.log.Warn("conversation_engine: specialist-tenant check failed, keeping persisted specialist",
-				zap.String("conversation_id", conversationID),
-				zap.String("specialist_id", state.SpecialistID),
-				zap.Error(checkErr),
-			)
-		} else if !stillAssociated {
-			e.log.Info("conversation_engine: persisted specialist removed from tenant, re-routing conversation",
-				zap.String("conversation_id", conversationID),
-				zap.String("from_specialist_id", state.SpecialistID),
-				zap.String("to_specialist_id", specialistID),
-			)
-			state.SpecialistID = specialistID
-			if updateErr := e.stateRepo.Update(ctx, state); updateErr != nil {
-				return fmt.Errorf("conversation_engine: persist healed specialist: %w", updateErr)
-			}
+	// (cross-sell/tool/automation) — those must stick. But the persisted specialist
+	// stops being a valid choice when it is removed from the tenant OR deactivated in
+	// admin; otherwise the conversation stays stuck on it forever. Heal in those
+	// cases: adopt the router's specialist. Then treat state.SpecialistID as the
+	// single source of truth downstream, keeping persona, config, scoring and
+	// guardrails consistent within the turn.
+	if state.SpecialistID != specialistID && !e.personaStillValid(ctx, state.SpecialistID, tenantID) {
+		e.log.Info("conversation_engine: persisted specialist no longer valid (removed/inactive), re-routing conversation",
+			zap.String("conversation_id", conversationID),
+			zap.String("from_specialist_id", state.SpecialistID),
+			zap.String("to_specialist_id", specialistID),
+		)
+		state.SpecialistID = specialistID
+		if updateErr := e.stateRepo.Update(ctx, state); updateErr != nil {
+			return fmt.Errorf("conversation_engine: persist healed specialist: %w", updateErr)
 		}
 	}
 	specialistID = state.SpecialistID

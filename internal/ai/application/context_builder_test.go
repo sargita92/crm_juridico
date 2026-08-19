@@ -16,9 +16,19 @@ import (
 type mockSpecialistFinder struct {
 	specialist *specDomain.Specialist
 	err        error
+	// inactive: IDs for which FindByID returns a deactivated copy of specialist.
+	inactive map[string]bool
 }
 
-func (m *mockSpecialistFinder) FindByID(_ context.Context, _ string) (*specDomain.Specialist, error) {
+func (m *mockSpecialistFinder) FindByID(_ context.Context, id string) (*specDomain.Specialist, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.inactive[id] && m.specialist != nil {
+		cp := *m.specialist
+		cp.Status = specDomain.SpecialistStatusInactive
+		return &cp, nil
+	}
 	return m.specialist, m.err
 }
 
