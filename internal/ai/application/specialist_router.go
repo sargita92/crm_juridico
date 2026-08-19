@@ -32,10 +32,11 @@ type DefaultSpecialistFinder interface {
 
 // SpecialistRouter routes an inbound message to the appropriate specialist.
 type SpecialistRouter struct {
-	phoneFinder     PhoneNumberFinder
-	spFinder        SpecialistProductFinder
-	productDetector ProductDetectorForRouter
-	defaultSpFinder DefaultSpecialistFinder
+	phoneFinder      PhoneNumberFinder
+	spFinder         SpecialistProductFinder
+	productDetector  ProductDetectorForRouter
+	defaultSpFinder  DefaultSpecialistFinder
+	specialistFinder SpecialistFinder
 }
 
 // NewSpecialistRouter creates a SpecialistRouter with the required dependencies.
@@ -44,13 +45,32 @@ func NewSpecialistRouter(
 	spFinder SpecialistProductFinder,
 	productDetector ProductDetectorForRouter,
 	defaultSpFinder DefaultSpecialistFinder,
+	specialistFinder SpecialistFinder,
 ) *SpecialistRouter {
 	return &SpecialistRouter{
-		phoneFinder:     phoneFinder,
-		spFinder:        spFinder,
-		productDetector: productDetector,
-		defaultSpFinder: defaultSpFinder,
+		phoneFinder:      phoneFinder,
+		spFinder:         spFinder,
+		productDetector:  productDetector,
+		defaultSpFinder:  defaultSpFinder,
+		specialistFinder: specialistFinder,
 	}
+}
+
+// isActive reports whether a specialist exists and is active. On lookup error it
+// returns false so an inactive/missing specialist is never routed to.
+func (r *SpecialistRouter) isActive(ctx context.Context, specialistID string) bool {
+	s, err := r.specialistFinder.FindByID(ctx, specialistID)
+	return err == nil && s != nil && s.IsActive()
+}
+
+// firstActive returns the first active specialist in sps, or "" if none.
+func (r *SpecialistRouter) firstActive(ctx context.Context, sps []domain.SpecialistProduct) string {
+	for _, sp := range sps {
+		if r.isActive(ctx, sp.SpecialistID) {
+			return sp.SpecialistID
+		}
+	}
+	return ""
 }
 
 // Route returns the specialistID and productID for the given context.
@@ -59,22 +79,26 @@ func NewSpecialistRouter(
 //  2. Detect product from message text, pick first specialist for that product.
 //  3. Fall back to the tenant's default specialist (productID will be empty).
 func (r *SpecialistRouter) Route(ctx context.Context, tenantID, phone, messageText string) (specialistID, productID string, err error) {
-	// 1. Route by phone → product → specialist.
+	// 1. Route by phone → product → first active specialist.
 	if pid, phErr := r.phoneFinder.FindProductIDByPhone(ctx, phone); phErr == nil && pid != "" {
-		if sps, spErr := r.spFinder.FindByProductID(ctx, pid); spErr == nil && len(sps) > 0 {
-			return sps[0].SpecialistID, pid, nil
+		if sps, spErr := r.spFinder.FindByProductID(ctx, pid); spErr == nil {
+			if sid := r.firstActive(ctx, sps); sid != "" {
+				return sid, pid, nil
+			}
 		}
 	}
 
-	// 2. Route by message text → product → specialist.
+	// 2. Route by message text → product → first active specialist.
 	if pid, found, detErr := r.productDetector.DetectFromMessage(ctx, tenantID, messageText); detErr == nil && found {
-		if sps, spErr := r.spFinder.FindByProductID(ctx, pid); spErr == nil && len(sps) > 0 {
-			return sps[0].SpecialistID, pid, nil
+		if sps, spErr := r.spFinder.FindByProductID(ctx, pid); spErr == nil {
+			if sid := r.firstActive(ctx, sps); sid != "" {
+				return sid, pid, nil
+			}
 		}
 	}
 
-	// 3. Default specialist for tenant.
-	if sid, defErr := r.defaultSpFinder.FindDefaultByTenantID(ctx, tenantID); defErr == nil && sid != "" {
+	// 3. Default specialist for tenant (only if active).
+	if sid, defErr := r.defaultSpFinder.FindDefaultByTenantID(ctx, tenantID); defErr == nil && sid != "" && r.isActive(ctx, sid) {
 		return sid, "", nil
 	}
 

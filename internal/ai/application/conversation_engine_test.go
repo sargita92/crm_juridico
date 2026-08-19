@@ -147,12 +147,17 @@ func (m *mockSpecialistTenantChecker) Exists(_ context.Context, specialistID, _ 
 
 // --- helpers ---
 
-func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr error) (
+func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr error, inactiveSpecialists ...string) (
 	*ConversationEngine,
 	*mockConvStateRepo,
 	*mockMessageSender,
 ) {
 	t.Helper()
+
+	inactive := make(map[string]bool, len(inactiveSpecialists))
+	for _, id := range inactiveSpecialists {
+		inactive[id] = true
+	}
 
 	registry := domain.NewProviderRegistry()
 	provider := &mockAIProvider{
@@ -171,7 +176,7 @@ func buildEngineFixtures(t *testing.T, state *domain.ConversationState, findErr 
 
 	specialist, _ := specDomain.NewSpecialist("spec-1", "Ana", "Advogada", "Voce e uma advogada.")
 	contextBuilder := NewContextBuilder(
-		&mockSpecialistFinder{specialist: specialist},
+		&mockSpecialistFinder{specialist: specialist, inactive: inactive},
 		&mockStepFinder{},
 		&mockGuardrailFinder{},
 		&mockDocumentFetcher{},
@@ -1052,6 +1057,25 @@ func TestConversationEngine_HealsSpecialistWhenRemovedFromTenant(t *testing.T) {
 	assert.Equal(t, "spec-1", stateRepo.updated.SpecialistID,
 		"conversation must migrate to the router-resolved specialist")
 	assert.True(t, sender.sent)
+}
+
+// When the specialist persisted on an existing conversation is deactivated in admin
+// (still associated but inactive), the next message must re-adopt the router's
+// specialist — deactivating stops the conversation from using the old specialist.
+func TestConversationEngine_HealsSpecialistWhenDeactivated(t *testing.T) {
+	state, _ := domain.NewConversationState("s-1", "conv-1", "spec-old")
+	// spec-old is still associated with the tenant but has been deactivated.
+	engine, stateRepo, _ := buildEngineFixtures(t, state, nil, "spec-old")
+	engine.SetSpecialistTenantChecker(&mockSpecialistTenantChecker{
+		associated: map[string]bool{"spec-old": true, "spec-1": true},
+	})
+
+	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"olá"})
+
+	require.NoError(t, err)
+	require.NotNil(t, stateRepo.updated, "state must be persisted")
+	assert.Equal(t, "spec-1", stateRepo.updated.SpecialistID,
+		"a deactivated specialist must be replaced by the router-resolved one")
 }
 
 // An explicit switch (cross-sell/tool/automation) leaves the conversation on a

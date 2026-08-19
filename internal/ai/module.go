@@ -257,6 +257,7 @@ func NewModule(db *gorm.DB, cfg config.AIConfigEnv, log *zap.Logger, deps Module
 		spProductRepo,
 		productDetectorAdapter,
 		defaultSpFinderAdapter,
+		specialistFinderAdapter,
 	)
 
 	// 10. Create ProductListerAdapter and HTTP handler.
