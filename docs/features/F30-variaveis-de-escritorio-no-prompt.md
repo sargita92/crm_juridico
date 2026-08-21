@@ -1,4 +1,4 @@
-# F27 — Variáveis de escritório no prompt do especialista
+# F30 — Variáveis de escritório no prompt do especialista
 
 - **Épico**: 2 — Admin — Tenants e Especialistas
 - **Prioridade**: alta
