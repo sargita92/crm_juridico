@@ -21,7 +21,7 @@
 | F03 | [CRUD de Tenants](../features/F03-crud-tenants-admin.md) | concluído | F02 | alta |
 | F04 | [CRUD de Especialistas](../features/F04-especialistas-crud.md) | concluído | F03 | alta |
 | F05 | [Treinamento de Especialistas](../features/F05-especialistas-treinamento.md) | concluído | F04 | alta |
-| F27 | [Variáveis de escritório no prompt do especialista](../features/F27-variaveis-de-escritorio-no-prompt.md) | backlog | F04, F05 | alta |
+| F30 | [Variáveis de escritório no prompt do especialista](../features/F30-variaveis-de-escritorio-no-prompt.md) | backlog | F04, F05 | alta |
 
 ## Épico 3: WhatsApp e Funil de Vendas
 
@@ -31,7 +31,8 @@
 | F07 | [Funis de Vendas (Kanban)](../features/F07-funis-kanban.md) | concluído | F06 | alta |
 | F20 | [WhatsApp Business API (Meta) — Provider de Produção](../features/F20-whatsapp-meta-provider.md) | backlog | F06 | alta |
 | F22 | [WhatsApp Meta — Onboarding e Billing Avançado](../features/F22-whatsapp-meta-onboarding-billing.md) | backlog | F20, F11 | média |
-| F28 | [Sinal de não-lido nas notas da conversa](../features/F28-notas-sinal-de-nao-lido.md) | backlog | F06, F07 | média |
+| F24 | [Notas no WhatsApp](../artefatos/F24-notas-no-whatsapp/) | concluído | F06, F07 | média |
+| F28 | [Sinal de não-lido nas notas da conversa](../features/F28-notas-sinal-de-nao-lido.md) | backlog | F24, F27 | média |
 
 ## Épico 4: Gestão de Equipe e Operação
 
@@ -40,6 +41,7 @@
 | F08 | [Usuários e Permissões](../features/F08-usuarios-permissoes.md) | concluído | F07 | média |
 | F09 | [Automações](../features/F09-automacoes.md) | concluído | F07 | média |
 | F10 | [Produtos](../features/F10-produtos.md) | concluído | F07 | alta |
+| F27 | [Sininho de notificações](../artefatos/F27-sininho-notificacao/) | concluído | F08 | baixa |
 
 ## Épico 5: Gestão de Arquivos
 
@@ -128,6 +130,8 @@ Iteração 18: F23 (qualificação multi-destino)
 ```
 
 ## Notas
+- **numeração**: antes de criar uma FXX nova, conferir o maior número em uso em `docs/features/`, `docs/artefatos/` E no histórico do Git — F24 e F27 foram entregues sem entrar nesta tabela e uma numeração escolhida só por ela colide
+- feature entregue entra aqui como `concluído`, mesmo quando nasceu fora do backlog
 - cada feature é uma iteração/entrega independente
 - features dentro do mesmo épico podem ser desenvolvidas em sequência
 - F06 pode começar em paralelo com F04/F05 se houver capacidade
