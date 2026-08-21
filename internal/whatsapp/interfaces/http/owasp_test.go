@@ -64,7 +64,7 @@ func setupOwaspEnv() *owaspEnv {
 	}
 	router.SetHTMLTemplate(tmpl)
 
-	handler.SetNotesService(&mockNotesService{hasLead: true})
+	handler.SetNotesService(&mockNotesService{})
 
 	jwtProvider := authinfra.NewJWTProvider("test-secret-owasp", 24*time.Hour)
 	authMw := middleware.Auth(jwtProvider)

@@ -52,6 +52,36 @@ O script dropa e recria o banco, roda todas as migrations e carrega as fixtures 
 - graceful shutdown configurado
 - variáveis de ambiente via variáveis do ambiente de deploy (não `.env`)
 
+### Persistência (obrigatória)
+
+Todo dado que precisa sobreviver a um deploy mora num volume nomeado. Sem isso a
+atualização apaga dados silenciosamente — sem erro, como se fosse instalação nova.
+
+| Volume | Montagem | Guarda | Se faltar |
+|---|---|---|---|
+| `crm-juridico-mysql-data` | `/var/lib/mysql` | banco | sobe vazio a cada deploy |
+| `crm-juridico-app-storage` | `/storage` | anexos (`files/`) e sessão do WhatsApp (`whatsmeow/`) | arquivo "quebra pra abrir" e o WhatsApp pede QR de novo |
+
+Os dois usam `name:` fixo **de propósito**. Sem `name:`, o Docker prefixa o volume
+com o nome do projeto compose, que por padrão vem do nome do diretório. Um
+orquestrador que publique cada deploy num diretório novo (Dokploy, por exemplo)
+gera um nome de projeto novo a cada vez, o volume anterior fica órfão e o serviço
+sobe do zero.
+
+Conferir o que está em uso no host:
+
+```bash
+docker volume ls | grep crm-juridico
+docker volume inspect crm-juridico-mysql-data
+```
+
+Antes de qualquer mudança de volume em produção, **fazer backup**:
+
+```bash
+docker exec <container-mysql> mysqldump -u root -p"$DATABASE_ROOT_PASSWORD" \
+  --all-databases > backup-$(date +%F).sql
+```
+
 ## Healthchecks
 
 - app: `GET /health` retorna 200 com status dos serviços

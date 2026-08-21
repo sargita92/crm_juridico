@@ -424,25 +424,25 @@ func (h *Handler) HandleDisconnect(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// RenderNotesPanel renders the notes drawer body for the lead the conversation is
-// currently on. Shows an empty state when the conversation has no lead.
+// RenderNotesPanel renders the notes drawer body for the conversation. The note
+// form is always present: a conversation without a lead yet gets one created on
+// the first note (see WhatsAppNotesAdapter.AddNote).
 func (h *Handler) RenderNotesPanel(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	convID := c.Param("id")
 
-	hasLead, notes, err := h.notesService.NotesForConversation(c.Request.Context(), tenantID, convID)
+	notes, err := h.notesService.NotesForConversation(c.Request.Context(), tenantID, convID)
 	if err != nil {
 		h.log.Error("failed to load notes", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.Error(err))
 		c.HTML(http.StatusInternalServerError, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"Error":          "Erro ao carregar notas",
+			"Error":          "Erro ao carregar notas! Caso persista entre em contato com o suporte",
 		})
 		return
 	}
 
 	c.HTML(http.StatusOK, "whatsapp/notes_panel.html", gin.H{
 		"ConversationID": convID,
-		"HasLead":        hasLead,
 		"Notes":          notes,
 	})
 }
@@ -458,7 +458,6 @@ func (h *Handler) HandleCreateNote(c *gin.Context) {
 	if content == "" {
 		c.HTML(http.StatusBadRequest, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"HasLead":        true,
 			"Error":          "A nota nao pode ser vazia",
 		})
 		return
@@ -469,15 +468,17 @@ func (h *Handler) HandleCreateNote(c *gin.Context) {
 		h.log.Error("failed to create note", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.String("user_id", userID), zap.Error(err))
 		c.HTML(http.StatusUnprocessableEntity, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"HasLead":        true,
-			"Error":          "Erro ao adicionar nota",
+			// A causa real (ex: tenant sem funil default, que impede criar o lead
+			// onde a nota seria guardada) fica no log acima. Na tela vale a
+			// orientacao: o operador nao resolve funil, mas sabe a quem recorrer
+			// quando o erro nao e passageiro.
+			"Error": "Erro ao adicionar nota! Caso persista entre em contato com o suporte",
 		})
 		return
 	}
 
 	c.HTML(http.StatusOK, "whatsapp/notes_panel.html", gin.H{
 		"ConversationID": convID,
-		"HasLead":        true,
 		"Notes":          notes,
 	})
 }

@@ -16,11 +16,15 @@ type ConversationNote struct {
 // LeadNotesService gives the WhatsApp screen access to the notes of the lead that a
 // conversation is currently on. Implemented by the funnel module.
 type LeadNotesService interface {
-	// NotesForConversation resolves the current lead of the conversation and lists its
-	// notes. hasLead is false (with no error) when the conversation has no lead in this
-	// tenant.
-	NotesForConversation(ctx context.Context, tenantID, conversationID string) (hasLead bool, notes []ConversationNote, err error)
-	// AddNote creates a note on the current lead of the conversation and returns the
+	// NotesForConversation lists the notes of the lead behind the conversation. A
+	// conversation with no lead yet simply has no notes — empty, not an error.
+	//
+	// It used to also report whether a lead existed, and the panel hid the note
+	// form when it did not. That coupling is gone on purpose: the chat always
+	// offers the field, and AddNote creates the lead if it is missing.
+	NotesForConversation(ctx context.Context, tenantID, conversationID string) (notes []ConversationNote, err error)
+	// AddNote creates a note on the lead behind the conversation, promoting the
+	// conversation to a lead first when it does not have one, and returns the
 	// refreshed list.
 	AddNote(ctx context.Context, tenantID, conversationID, content, createdBy string) (notes []ConversationNote, err error)
 }

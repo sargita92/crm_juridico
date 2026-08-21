@@ -15,17 +15,16 @@ import (
 )
 
 type mockNotesService struct {
-	hasLead bool
 	notes   []domain.ConversationNote
 	addErr  error
 	listErr error
 }
 
-func (m *mockNotesService) NotesForConversation(_ context.Context, _, _ string) (bool, []domain.ConversationNote, error) {
+func (m *mockNotesService) NotesForConversation(_ context.Context, _, _ string) ([]domain.ConversationNote, error) {
 	if m.listErr != nil {
-		return false, nil, m.listErr
+		return nil, m.listErr
 	}
-	return m.hasLead, m.notes, nil
+	return m.notes, nil
 }
 
 func (m *mockNotesService) AddNote(_ context.Context, _, _, content, _ string) ([]domain.ConversationNote, error) {
@@ -39,8 +38,7 @@ func (m *mockNotesService) AddNote(_ context.Context, _, _, content, _ string) (
 func TestRenderNotesPanel_HasLead(t *testing.T) {
 	deps := setupTest()
 	deps.handler.SetNotesService(&mockNotesService{
-		hasLead: true,
-		notes:   []domain.ConversationNote{{Content: "oi"}},
+		notes: []domain.ConversationNote{{Content: "oi"}},
 	})
 
 	w := httptest.NewRecorder()
@@ -49,9 +47,9 @@ func TestRenderNotesPanel_HasLead(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-func TestRenderNotesPanel_NoLead(t *testing.T) {
+func TestRenderNotesPanel_NoNotes(t *testing.T) {
 	deps := setupTest()
-	deps.handler.SetNotesService(&mockNotesService{hasLead: false})
+	deps.handler.SetNotesService(&mockNotesService{})
 
 	w := httptest.NewRecorder()
 	deps.router.ServeHTTP(w, makeRequest(http.MethodGet, "/tenant/whatsapp/conversations/c1/notes"))
@@ -71,7 +69,7 @@ func TestRenderNotesPanel_ServiceError(t *testing.T) {
 
 func TestHandleCreateNote_Success(t *testing.T) {
 	deps := setupTest()
-	svc := &mockNotesService{hasLead: true}
+	svc := &mockNotesService{}
 	deps.handler.SetNotesService(svc)
 
 	form := url.Values{"content": {"nota nova"}}
@@ -84,7 +82,7 @@ func TestHandleCreateNote_Success(t *testing.T) {
 
 func TestHandleCreateNote_Empty(t *testing.T) {
 	deps := setupTest()
-	deps.handler.SetNotesService(&mockNotesService{hasLead: true})
+	deps.handler.SetNotesService(&mockNotesService{})
 
 	form := url.Values{"content": {""}}
 	w := httptest.NewRecorder()
@@ -95,7 +93,7 @@ func TestHandleCreateNote_Empty(t *testing.T) {
 
 func TestHandleCreateNote_ServiceError(t *testing.T) {
 	deps := setupTest()
-	deps.handler.SetNotesService(&mockNotesService{hasLead: true, addErr: errors.New("boom")})
+	deps.handler.SetNotesService(&mockNotesService{addErr: errors.New("boom")})
 
 	form := url.Values{"content": {"x"}}
 	w := httptest.NewRecorder()

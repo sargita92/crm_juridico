@@ -129,8 +129,11 @@ func (m *Module) NoteRepo() domain.LeadNoteRepository {
 // LeadNotesService returns an adapter implementing the whatsapp module's
 // LeadNotesService port, giving the WhatsApp chat access to the notes of the lead a
 // conversation is currently on.
-func (m *Module) LeadNotesService() whatsappdomain.LeadNotesService {
-	return infrastructure.NewWhatsAppNotesAdapter(m.leadRepo, m.noteRepo, m.userNameProvider, m.createLeadNoteUC)
+func (m *Module) LeadNotesService(conversations infrastructure.ConversationFinder) whatsappdomain.LeadNotesService {
+	return infrastructure.NewWhatsAppNotesAdapter(
+		m.leadRepo, m.noteRepo, m.userNameProvider, m.createLeadNoteUC,
+		conversations, m.leadCreator,
+	)
 }
 
 func (m *Module) ColumnRepo() domain.ColumnRepository {

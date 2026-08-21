@@ -13,6 +13,19 @@ services:
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
       - DATABASE_NAME=${DATABASE_NAME}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      # Caminho absoluto de proposito: o binario roda com CWD=/ (o estagio final do
+      # Dockerfile nao define WORKDIR), entao o default relativo "storage/files"
+      # resolveria para /storage/files por acidente. Explicito, o mount abaixo nao
+      # depende desse detalhe.
+      - FILES_STORAGE_ROOT=/storage/files
+    volumes:
+      # SEM ISTO O CONTAINER PERDE DADOS A CADA DEPLOY. Debaixo de /storage ficam:
+      #   files/     — anexos enviados pelo cliente e pela equipe
+      #   whatsmeow/ — sessao pareada do WhatsApp, um .db por tenant
+      # Ambos moram no filesystem do container, que e descartado a cada rebuild:
+      # os anexos somem (o registro no banco sobrevive e aponta para o vazio, e o
+      # arquivo "quebra pra abrir") e o WhatsApp exige novo QR code.
+      - app-storage:/storage
     depends_on:
       mysql:
         condition: service_healthy
@@ -41,4 +54,13 @@ services:
     restart: unless-stopped
 
 volumes:
+  # `name:` fixo de proposito. Sem ele o Docker prefixa o volume com o nome do
+  # projeto compose, que por padrao vem do nome do diretorio. Orquestrador que
+  # publique cada deploy num diretorio novo (Dokploy, por exemplo) gera um nome
+  # de projeto novo a cada vez, o volume anterior fica orfao e o banco sobe
+  # VAZIO — sem erro nenhum, como se fosse a primeira instalacao.
+  # Conferir qual volume esta em uso: `docker volume ls | grep crm-juridico`
   mysql-data:
+    name: crm-juridico-mysql-data
+  app-storage:
+    name: crm-juridico-app-storage
