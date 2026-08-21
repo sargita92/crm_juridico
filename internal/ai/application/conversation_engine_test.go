@@ -698,7 +698,10 @@ func TestConversationEngine_ProviderError(t *testing.T) {
 	err := engine.HandleMessages(context.Background(), "tenant-1", "conv-1", "spec-1", "", []string{"oi"})
 
 	require.Error(t, err)
-	assert.False(t, sender.sent)
+	// The turn fails, but the client hears the fallback instead of silence.
+	// See TestConversationEngine_SendsFallbackWhenProviderFails.
+	assert.True(t, sender.sent)
+	assert.Equal(t, aiUnavailableFallbackMessage, sender.content)
 }
 
 func TestConversationEngine_ScoringInHumanZone_PausesAIAndMovesLead(t *testing.T) {
