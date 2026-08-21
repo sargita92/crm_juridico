@@ -7,7 +7,13 @@
 {{if .Error}}
 <p class="wa-notes-error">{{.Error}}</p>
 {{end}}
-{{if .HasLead}}
+{{/*
+    O formulario e incondicional de proposito. Ele ja dependeu de HasLead, e
+    conversa sem lead perdia o campo: da tela nao havia como distinguir isso de
+    "sem anotacao ainda", entao anotacao parecia quebrada. Hoje AddNote promove a
+    conversa a lead na primeira nota, e nao existe mais estado em que a janela de
+    notas nao aceite escrever.
+*/}}
 <form class="wa-notes-form"
       hx-post="/tenant/whatsapp/conversations/{{.ConversationID}}/notes"
       hx-target="#wa-notes-drawer-body"
@@ -30,18 +36,5 @@
 </div>
 {{else}}
 <p class="wa-notes-empty">Nenhuma anotacao</p>
-{{end}}
-{{else}}
-{{/*
-    Sem lead nao existe onde guardar a nota, entao o formulario nao e renderizado.
-    O texto precisa dizer isso: com a mesma cara de "Nenhuma anotacao" (era o mesmo
-    .wa-notes-empty), o operador so via o campo sumido e concluia que anotacao
-    estava quebrada.
-*/}}
-<div class="wa-notes-blocked">
-    <p><strong>Ainda nao da para anotar aqui.</strong></p>
-    <p>As anotacoes ficam guardadas no lead, e esta conversa ainda nao virou um.
-       Assim que ela entrar no funil, o campo de anotacao aparece nesta janela.</p>
-</div>
 {{end}}
 {{end}}

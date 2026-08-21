@@ -424,23 +424,18 @@ func (h *Handler) HandleDisconnect(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-// RenderNotesPanel renders the notes drawer body for the lead the conversation is
-// currently on. Shows an empty state when the conversation has no lead.
+// RenderNotesPanel renders the notes drawer body for the conversation. The note
+// form is always present: a conversation without a lead yet gets one created on
+// the first note (see WhatsAppNotesAdapter.AddNote).
 func (h *Handler) RenderNotesPanel(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c.Request.Context())
 	convID := c.Param("id")
 
-	hasLead, notes, err := h.notesService.NotesForConversation(c.Request.Context(), tenantID, convID)
+	notes, err := h.notesService.NotesForConversation(c.Request.Context(), tenantID, convID)
 	if err != nil {
 		h.log.Error("failed to load notes", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.Error(err))
-		// HasLead:true on purpose. The lookup failed, so whether this conversation
-		// has a lead is unknown — and the false branch renders "nenhum lead
-		// associado", stating as fact something we did not establish and removing
-		// the form, which leaves no way to retry. Showing the error over a working
-		// form degrades honestly. Matches the error paths in HandleCreateNote.
 		c.HTML(http.StatusInternalServerError, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"HasLead":        true,
 			"Error":          "Erro ao carregar notas",
 		})
 		return
@@ -448,7 +443,6 @@ func (h *Handler) RenderNotesPanel(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "whatsapp/notes_panel.html", gin.H{
 		"ConversationID": convID,
-		"HasLead":        hasLead,
 		"Notes":          notes,
 	})
 }
@@ -464,7 +458,6 @@ func (h *Handler) HandleCreateNote(c *gin.Context) {
 	if content == "" {
 		c.HTML(http.StatusBadRequest, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"HasLead":        true,
 			"Error":          "A nota nao pode ser vazia",
 		})
 		return
@@ -475,7 +468,6 @@ func (h *Handler) HandleCreateNote(c *gin.Context) {
 		h.log.Error("failed to create note", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.String("user_id", userID), zap.Error(err))
 		c.HTML(http.StatusUnprocessableEntity, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"HasLead":        true,
 			"Error":          "Erro ao adicionar nota",
 		})
 		return
@@ -483,7 +475,6 @@ func (h *Handler) HandleCreateNote(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "whatsapp/notes_panel.html", gin.H{
 		"ConversationID": convID,
-		"HasLead":        true,
 		"Notes":          notes,
 	})
 }
