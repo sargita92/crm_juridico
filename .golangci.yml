@@ -23,6 +23,15 @@ linters:
       # caso-a-caso (eventual feature dedicada).
       disable:
         - fieldalignment
+    misspell:
+      # O codebase é em pt-BR e o misspell usa dicionário inglês, então palavras
+      # portuguesas comuns viram falso-positivo. Reescrever a frase toda vez
+      # (ver 26b1c60) distorce o texto para agradar o linter; a lista abaixo
+      # resolve na origem. Adicionar aqui só palavra pt-BR legítima — se for
+      # typo de verdade em inglês, corrigir o código.
+      ignore-rules:
+        - alternar # flagado como "alternator"
+        - eles # flagado como "eels"
     staticcheck:
       # Manter apenas SA* (real bugs) e U* (unused).
       # Desabilitado:

@@ -30,23 +30,44 @@ func (r *GormMessageRepository) FindByConversationID(ctx context.Context, conver
 
 	query := r.db.WithContext(ctx).Where("conversation_id = ?", conversationID)
 
+	// Two distinct reads share this method:
+	//   - AfterID set   → forward pagination from a known point: oldest-first.
+	//   - AfterID empty → "the latest N", which is what every caller actually
+	//     wants (AI prompt history, get_conversation_history tool, funnel
+	//     summaries, opening a chat in the panel). Ordering ASC here would
+	//     return the OLDEST n instead, permanently hiding recent turns once a
+	//     conversation outgrows the limit.
+	// The id tiebreak keeps the window stable when timestamps collide —
+	// WhatsApp stamps whole seconds, so bursts routinely tie.
 	if filter.AfterID != "" {
 		var ref messageModel
 		if err := r.db.WithContext(ctx).Where("id = ?", filter.AfterID).First(&ref).Error; err == nil {
 			query = query.Where("timestamp > ?", ref.Timestamp)
 		}
+		var models []messageModel
+		if err := query.Order("timestamp ASC, id ASC").Limit(limit).Find(&models).Error; err != nil {
+			return nil, err
+		}
+		return toDomainMessages(models), nil
 	}
 
 	var models []messageModel
-	if err := query.Order("timestamp ASC").Limit(limit).Find(&models).Error; err != nil {
+	if err := query.Order("timestamp DESC, id DESC").Limit(limit).Find(&models).Error; err != nil {
 		return nil, err
 	}
+	// Flip back to chronological order: callers render and prompt oldest-first.
+	for i, j := 0, len(models)-1; i < j; i, j = i+1, j-1 {
+		models[i], models[j] = models[j], models[i]
+	}
+	return toDomainMessages(models), nil
+}
 
+func toDomainMessages(models []messageModel) []domain.Message {
 	messages := make([]domain.Message, len(models))
 	for i := range models {
 		messages[i] = *msgToDomain(&models[i])
 	}
-	return messages, nil
+	return messages
 }
 
 func (r *GormMessageRepository) FindByWhatsAppMsgID(ctx context.Context, whatsappMsgID string) (*domain.Message, error) {

@@ -21,6 +21,11 @@ import (
 	specDomain "github.com/sasrgita/crm-juridico/internal/specialist/domain"
 )
 
+// aiUnavailableFallbackMessage is sent when the provider call fails so the
+// conversation does not go silent on the client.
+// ponytail: one fixed string — make it per-specialist only if a tenant asks.
+const aiUnavailableFallbackMessage = "Tive uma instabilidade aqui, mas já estou retomando seu atendimento. Vamos continuar."
+
 // ConfigResolver resolves the AI configuration for a given specialist.
 type ConfigResolver interface {
 	Resolve(ctx context.Context, specialistID string) *domain.AIConfig
@@ -88,7 +93,12 @@ type ConversationEngine struct {
 	// conversation whose specialist was dissociated from its tenant by re-adopting
 	// the router's freshly-resolved specialist. Nil disables healing.
 	specialistTenantChecker SpecialistTenantChecker
-	log                     *zap.Logger
+	// turnLock serializes turns per conversation. Every path into
+	// HandleMessages (debounce callback, playground, cross-sell follow-up) is a
+	// read-modify-write on ConversationState, so two overlapping turns lose one
+	// another's writes and rewind the conversation to an earlier step.
+	turnLock *keyedMutex
+	log      *zap.Logger
 }
 
 // SetSpecialistTenantChecker installs the optional checker that enables persona
@@ -166,6 +176,7 @@ func NewConversationEngine(
 		crossSellRuleRepo:   crossSellRuleRepo,
 		crossSellEvaluator:  crossSellEvaluator,
 		crossSellExecutor:   crossSellExecutor,
+		turnLock:            newKeyedMutex(),
 		log:                 log,
 	}
 }
@@ -182,6 +193,12 @@ func (e *ConversationEngine) HandleMessages(
 		attribute.String("specialist.id", specialistID),
 	)
 	defer span.End()
+
+	// One turn at a time per conversation. A waiting turn re-reads state and
+	// history after the holder commits, so it acts on the latest step instead
+	// of clobbering it. Different conversations are unaffected.
+	unlock := e.turnLock.Lock(conversationID)
+	defer unlock()
 
 	// Emit the cross-module latency histogram on every exit path so dashboards
 	// can trend specialist responsiveness independently of the AI-module-local
@@ -343,6 +360,16 @@ func (e *ConversationEngine) HandleMessages(
 	if err != nil {
 		status = "error"
 		aiRequestsTotal.WithLabelValues(tenantID, specialistID, cfg.Provider, cfg.Model, status).Inc()
+		// Never leave the client staring at silence. The turn still fails (logs,
+		// metrics and the caller's error path are unchanged) — this only makes
+		// the failure visible on WhatsApp, where a mute specialist reads as a
+		// broken product. State is deliberately not advanced.
+		if sendErr := e.messageSender.SendAIResponse(ctx, tenantID, conversationID, aiUnavailableFallbackMessage); sendErr != nil {
+			e.log.Warn("conversation_engine: fallback message send failed",
+				zap.String("conversation_id", conversationID),
+				zap.Error(sendErr),
+			)
+		}
 		return fmt.Errorf("conversation_engine: generate response: %w", err)
 	}
 

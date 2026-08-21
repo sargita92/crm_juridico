@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -241,4 +242,37 @@ func TestGormMessageRepository_NullWhatsAppMsgID_MultipleAllowed(t *testing.T) {
 	messages, err := repo.FindByConversationID(ctx, conv.ID, domain.MessageFilter{Limit: 50})
 	require.NoError(t, err)
 	assert.Len(t, messages, 2)
+}
+
+// A conversation longer than the limit must yield its MOST RECENT messages, in
+// chronological order. Returning the oldest N instead silently freezes every
+// consumer of "recent history" — most damagingly the AI context builder, which
+// then answers forever against the opening turns of the conversation.
+func TestGormMessageRepository_FindByConversationID_ReturnsMostRecentWhenLimited(t *testing.T) {
+	db := setupDB(t)
+	repo := NewGormMessageRepository(db)
+	tenant := createTenant(t, db)
+	contact := createContact(t, db, tenant.ID)
+	conv := createConversation(t, db, tenant.ID, contact.ID)
+	ctx := context.Background()
+
+	base := time.Now().Add(-1 * time.Hour)
+	for i := range 10 {
+		msg, err := domain.NewMessage(
+			uuid.New().String(), conv.ID, domain.MessageDirectionIncoming,
+			fmt.Sprintf("msg-%d", i), domain.MessageTypeText,
+			fmt.Sprintf("wa-recent-%d", i), base.Add(time.Duration(i)*time.Minute),
+		)
+		require.NoError(t, err)
+		require.NoError(t, repo.Create(ctx, msg))
+	}
+
+	messages, err := repo.FindByConversationID(ctx, conv.ID, domain.MessageFilter{Limit: 3})
+	require.NoError(t, err)
+	require.Len(t, messages, 3)
+
+	// Newest three, oldest-first — the order an LLM prompt expects.
+	assert.Equal(t, "msg-7", messages[0].Content)
+	assert.Equal(t, "msg-8", messages[1].Content)
+	assert.Equal(t, "msg-9", messages[2].Content)
 }

@@ -226,3 +226,57 @@ func TestContextBuilder_Build_WithToolResolver_PopulatesTools(t *testing.T) {
 	require.Len(t, req.Tools, 1)
 	assert.Equal(t, "search_leads", req.Tools[0].Name)
 }
+
+// The whole point of persisting CollectedData is to stop the specialist from
+// re-asking what the client already answered. That only works if the data
+// reaches the prompt — it used to be saved and never sent.
+func TestContextBuilder_IncludesCollectedDataInPrompt(t *testing.T) {
+	state := buildTestState()
+	state.CurrentStepIndex = 2
+	state.CollectedData = map[string]string{
+		"step_0": "68 anos",
+		"step_1": "Caxias do Sul/RS",
+	}
+
+	builder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: buildTestSpecialist()},
+		&mockStepFinder{steps: []specDomain.Step{
+			{ID: "s1", Text: "Qual a sua idade?", DataType: specDomain.StepDataTypeNumber},
+			{ID: "s2", Text: "Em qual cidade voce mora?", DataType: specDomain.StepDataTypeFreeText},
+			{ID: "s3", Text: "Voce possui documentos?", DataType: specDomain.StepDataTypeFreeText},
+		}},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+		nil,
+	)
+
+	req, err := builder.Build(context.Background(), state, "", 20)
+	require.NoError(t, err)
+
+	assert.Contains(t, req.SystemPrompt, "Dados ja coletados")
+	// Question paired with its answer, so the model can tell what is already known.
+	assert.Contains(t, req.SystemPrompt, "Qual a sua idade?: 68 anos")
+	assert.Contains(t, req.SystemPrompt, "Em qual cidade voce mora?: Caxias do Sul/RS")
+	// The pending step must not be listed as already answered.
+	assert.NotContains(t, req.SystemPrompt, "Voce possui documentos?: ")
+}
+
+func TestContextBuilder_OmitsCollectedDataBlockWhenEmpty(t *testing.T) {
+	state := buildTestState()
+
+	builder := NewContextBuilder(
+		&mockSpecialistFinder{specialist: buildTestSpecialist()},
+		&mockStepFinder{steps: []specDomain.Step{{ID: "s1", Text: "Qual a sua idade?", DataType: specDomain.StepDataTypeNumber}}},
+		&mockGuardrailFinder{},
+		&mockDocumentFetcher{},
+		&mockProductInfoFinder{},
+		&mockMessageHistoryFinder{},
+		nil,
+	)
+
+	req, err := builder.Build(context.Background(), state, "", 20)
+	require.NoError(t, err)
+	assert.NotContains(t, req.SystemPrompt, "Dados ja coletados")
+}
