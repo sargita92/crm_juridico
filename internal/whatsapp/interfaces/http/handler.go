@@ -436,7 +436,7 @@ func (h *Handler) RenderNotesPanel(c *gin.Context) {
 		h.log.Error("failed to load notes", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.Error(err))
 		c.HTML(http.StatusInternalServerError, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"Error":          "Erro ao carregar notas",
+			"Error":          "Erro ao carregar notas! Caso persista entre em contato com o suporte",
 		})
 		return
 	}
@@ -468,7 +468,11 @@ func (h *Handler) HandleCreateNote(c *gin.Context) {
 		h.log.Error("failed to create note", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.String("user_id", userID), zap.Error(err))
 		c.HTML(http.StatusUnprocessableEntity, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
-			"Error":          "Erro ao adicionar nota",
+			// A causa real (ex: tenant sem funil default, que impede criar o lead
+			// onde a nota seria guardada) fica no log acima. Na tela vale a
+			// orientacao: o operador nao resolve funil, mas sabe a quem recorrer
+			// quando o erro nao e passageiro.
+			"Error": "Erro ao adicionar nota! Caso persista entre em contato com o suporte",
 		})
 		return
 	}

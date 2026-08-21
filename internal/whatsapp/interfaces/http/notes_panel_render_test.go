@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -75,7 +76,24 @@ func TestNotesPanel_LoadErrorIsVisible(t *testing.T) {
 	deps.router.ServeHTTP(w, makeRequest(http.MethodGet, "/tenant/whatsapp/conversations/c1/notes"))
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Contains(t, w.Body.String(), "Erro ao carregar notas")
+	assert.Contains(t, w.Body.String(), "Erro ao carregar notas! Caso persista entre em contato com o suporte")
+}
+
+// Falhas do painel dizem o que fazer em seguida. Sem a orientação, o operador
+// tenta de novo indefinidamente e o problema nunca chega ao suporte.
+func TestNotesPanel_SaveErrorTellsOperatorWhatToDo(t *testing.T) {
+	deps := setupNotesRealTemplate(t)
+	deps.handler.SetNotesService(&mockNotesService{addErr: errors.New("funil default nao configurado")})
+
+	w := httptest.NewRecorder()
+	form := url.Values{"content": {"nota"}}
+	deps.router.ServeHTTP(w, makeRequest(http.MethodPost, "/tenant/whatsapp/conversations/c1/notes", form.Encode()))
+
+	require.Equal(t, http.StatusUnprocessableEntity, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "Erro ao adicionar nota! Caso persista entre em contato com o suporte")
+	assert.NotContains(t, body, "funil default", "causa interna fica no log, nao na tela")
+	assert.Contains(t, body, "<textarea", "o campo continua ali para nova tentativa")
 }
 
 func TestNotesPanel_EmptyStateWhenNoNotes(t *testing.T) {
