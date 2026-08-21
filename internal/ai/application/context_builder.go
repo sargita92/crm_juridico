@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -26,6 +27,43 @@ func compressPrompt(s string) string {
 	s = strings.ReplaceAll(s, "\n ", "\n")
 	s = reBlankLines.ReplaceAllString(s, "\n\n")
 	return strings.TrimSpace(s)
+}
+
+// renderCollectedData turns ConversationState.CollectedData into prompt lines.
+// Keys are "step_<index>" (written by ConversationState.AdvanceStep), so each
+// value is labelled with the question that produced it — far more useful to the
+// model than a bare index. Iteration follows step order, never map order, so the
+// prompt stays byte-stable across turns and stays cacheable.
+// Entries whose step no longer exists (steps edited after collection) are still
+// emitted under their raw key rather than silently dropped — losing them would
+// reopen the very loop this block closes.
+func renderCollectedData(steps []specDomain.Step, collected map[string]string) string {
+	if len(collected) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	rendered := make(map[string]bool, len(collected))
+	for i, step := range steps {
+		key := fmt.Sprintf("step_%d", i)
+		if value, ok := collected[key]; ok && value != "" {
+			sb.WriteString(fmt.Sprintf("\n- %s: %s", step.Text, value))
+			rendered[key] = true
+		}
+	}
+
+	orphans := make([]string, 0, len(collected))
+	for key, value := range collected {
+		if !rendered[key] && value != "" {
+			orphans = append(orphans, fmt.Sprintf("\n- %s: %s", key, value))
+		}
+	}
+	sort.Strings(orphans)
+	for _, line := range orphans {
+		sb.WriteString(line)
+	}
+
+	return sb.String()
 }
 
 // SpecialistFinder retrieves a specialist by its ID.
@@ -141,8 +179,18 @@ func (b *ContextBuilder) Build(ctx context.Context, state *domain.ConversationSt
 		}
 	}
 
-	// 5 & 6. Current step.
+	// 4b. Data the client already gave us. Without this block the model has no
+	// way to know a question was already answered — it re-asks, the client
+	// repeats himself, and the conversation loops. Rendered before the current
+	// step so the model reads "what I know" then "what I still need".
 	steps, _ := b.StepFinder.FindBySpecialistID(ctx, state.SpecialistID)
+	if collected := renderCollectedData(steps, state.CollectedData); collected != "" {
+		sb.WriteString("\n\n## Dados ja coletados")
+		sb.WriteString("\nO cliente JA informou os dados abaixo. NUNCA pergunte novamente por eles — use-os e siga para a proxima etapa.")
+		sb.WriteString(collected)
+	}
+
+	// 5 & 6. Current step.
 	if len(steps) > 0 && state.CurrentStepIndex < len(steps) {
 		currentStep := steps[state.CurrentStepIndex]
 		sb.WriteString(fmt.Sprintf("\n\n## Etapa atual do atendimento\n%s", currentStep.Text))
