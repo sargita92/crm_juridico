@@ -21,6 +21,7 @@
 | F03 | [CRUD de Tenants](../features/F03-crud-tenants-admin.md) | concluído | F02 | alta |
 | F04 | [CRUD de Especialistas](../features/F04-especialistas-crud.md) | concluído | F03 | alta |
 | F05 | [Treinamento de Especialistas](../features/F05-especialistas-treinamento.md) | concluído | F04 | alta |
+| F27 | [Variáveis de escritório no prompt do especialista](../features/F27-variaveis-de-escritorio-no-prompt.md) | backlog | F04, F05 | alta |
 
 ## Épico 3: WhatsApp e Funil de Vendas
 
@@ -30,6 +31,7 @@
 | F07 | [Funis de Vendas (Kanban)](../features/F07-funis-kanban.md) | concluído | F06 | alta |
 | F20 | [WhatsApp Business API (Meta) — Provider de Produção](../features/F20-whatsapp-meta-provider.md) | backlog | F06 | alta |
 | F22 | [WhatsApp Meta — Onboarding e Billing Avançado](../features/F22-whatsapp-meta-onboarding-billing.md) | backlog | F20, F11 | média |
+| F28 | [Sinal de não-lido nas notas da conversa](../features/F28-notas-sinal-de-nao-lido.md) | backlog | F06, F07 | média |
 
 ## Épico 4: Gestão de Equipe e Operação
 
