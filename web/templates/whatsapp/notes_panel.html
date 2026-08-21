@@ -32,6 +32,16 @@
 <p class="wa-notes-empty">Nenhuma anotacao</p>
 {{end}}
 {{else}}
-<p class="wa-notes-empty">Nenhum lead associado a esta conversa ainda.</p>
+{{/*
+    Sem lead nao existe onde guardar a nota, entao o formulario nao e renderizado.
+    O texto precisa dizer isso: com a mesma cara de "Nenhuma anotacao" (era o mesmo
+    .wa-notes-empty), o operador so via o campo sumido e concluia que anotacao
+    estava quebrada.
+*/}}
+<div class="wa-notes-blocked">
+    <p><strong>Ainda nao da para anotar aqui.</strong></p>
+    <p>As anotacoes ficam guardadas no lead, e esta conversa ainda nao virou um.
+       Assim que ela entrar no funil, o campo de anotacao aparece nesta janela.</p>
+</div>
 {{end}}
 {{end}}

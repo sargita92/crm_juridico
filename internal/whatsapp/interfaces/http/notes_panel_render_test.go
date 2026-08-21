@@ -65,20 +65,24 @@ func TestNotesPanel_LoadError_KeepsFormAndDoesNotClaimNoLead(t *testing.T) {
 
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, body, "Erro ao carregar notas")
-	assert.NotContains(t, body, "Nenhum lead associado",
+	assert.NotContains(t, body, "wa-notes-blocked",
 		"a load failure is not evidence that the conversation has no lead")
 	assert.Contains(t, body, "<textarea", "operator lost the form to a transient error")
 }
 
-// The genuine no-lead case must still explain itself rather than showing a form
-// that cannot work.
-func TestNotesPanel_NoLead_ExplainsInsteadOfForm(t *testing.T) {
+// The genuine no-lead case has nowhere to store a note, so the form is gone on
+// purpose. It must then say so loudly: rendered as plain grey text like
+// "Nenhuma anotacao" it is indistinguishable from the ordinary empty state, and
+// the missing field reads as a broken feature instead of a missing lead.
+func TestNotesPanel_NoLead_ExplainsWhyFormIsMissing(t *testing.T) {
 	deps := setupNotesRealTemplate(t)
 	deps.handler.SetNotesService(&mockNotesService{hasLead: false})
 
 	body := renderNotesPanel(t, deps)
 
-	assert.Contains(t, body, "Nenhum lead associado")
 	assert.False(t, strings.Contains(body, "<textarea"),
 		"a note has nowhere to be stored without a lead")
+	assert.Contains(t, body, "wa-notes-blocked",
+		"must not reuse the plain empty-state styling of 'Nenhuma anotacao'")
+	assert.Contains(t, body, "ainda nao virou um", "must say why there is no field")
 }
