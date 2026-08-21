@@ -433,8 +433,14 @@ func (h *Handler) RenderNotesPanel(c *gin.Context) {
 	hasLead, notes, err := h.notesService.NotesForConversation(c.Request.Context(), tenantID, convID)
 	if err != nil {
 		h.log.Error("failed to load notes", zap.String("tenant_id", tenantID), zap.String("conversation_id", convID), zap.Error(err))
+		// HasLead:true on purpose. The lookup failed, so whether this conversation
+		// has a lead is unknown — and the false branch renders "nenhum lead
+		// associado", stating as fact something we did not establish and removing
+		// the form, which leaves no way to retry. Showing the error over a working
+		// form degrades honestly. Matches the error paths in HandleCreateNote.
 		c.HTML(http.StatusInternalServerError, "whatsapp/notes_panel.html", gin.H{
 			"ConversationID": convID,
+			"HasLead":        true,
 			"Error":          "Erro ao carregar notas",
 		})
 		return
