@@ -61,6 +61,7 @@
 |---|---------|--------|-------------|------------|
 | F15 | [MCP Interno para Especialistas](../features/F15-mcp-interno-especialistas.md) | concluído | F05 | média |
 | F16 | [Motor de IA dos Especialistas](../features/F16-motor-ia-especialistas.md) | concluído | F05, F06, F07, F10 | alta |
+| F29 | [Tools do Especialista: usabilidade e flexibilidade](../features/F29-tools-do-especialista-usabilidade.md) | backlog | F15 | média |
 
 ## Épico 8: Marketing
 
